@@ -269,4 +269,7 @@ async function syncWithRetry(syncFunction, attempt = 1) {
   try {
     await syncFunction();
   } catch (error) {
-    console.error(`
+    console.error('[Service Worker] Sync attempt failed:', error);
+    // Optionally add retry logic here
+  }
+}
