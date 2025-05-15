@@ -128,6 +128,10 @@ self.addEventListener('activate', (event) => {
 
 // Enhanced fetch handler with better caching strategies
 self.addEventListener('fetch', (event) => {
+  // Don't intercept requests for the service worker itself
+  if (event.request.url.endsWith('service-worker.js')) {
+    return;
+  }
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
@@ -247,6 +251,12 @@ async function handleAssetRequest(request) {
       const offlinePage = await cache.match('/offline.html');
       if (offlinePage) {
         return offlinePage;
+      } else {
+        // If offline.html is missing, return a fallback response
+        return new Response('<h1>Offline</h1><p>The application is offline and no offline page is available.</p>', {
+          status: 503,
+          headers: { 'Content-Type': 'text/html' }
+        });
       }
     }
 
