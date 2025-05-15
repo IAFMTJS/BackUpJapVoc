@@ -13,6 +13,7 @@ root.render(
   </React.StrictMode>
 );
 
+/*
 // Register service worker only in production mode
 if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
   window.addEventListener('load', async () => {
@@ -93,3 +94,4 @@ if (process.env.NODE_ENV === 'development') {
     });
   }
 } 
+*/ 
