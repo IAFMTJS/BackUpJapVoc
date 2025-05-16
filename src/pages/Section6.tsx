@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
+import { playDynamicAudio } from '../utils/audio';
 
 interface ReadingMaterial {
   title: string;
@@ -113,20 +114,18 @@ const Section6 = () => {
         <div className="flex items-center gap-2">
           <p className="text-lg leading-relaxed">{material.content}</p>
           <button
-            onClick={() => {
-              const utterance = new window.SpeechSynthesisUtterance(material.content);
-              utterance.lang = 'ja-JP';
-              window.speechSynthesis.speak(utterance);
-            }}
-            className="ml-2 p-2 rounded-full hover:bg-opacity-10"
-            title="Play Audio"
+            onClick={() => playDynamicAudio(material.content)}
+            className="ml-2 p-2 rounded-full hover:bg-opacity-10 hover:bg-gray-200"
+            title="Play Reading Audio"
           >
-            ��
+            🔊
           </button>
         </div>
-        <p className="text-gray-500 italic mt-2">
-          {romajiMap[material.content.trim()] || 'Loading...'}
-        </p>
+        {settings.showRomajiReading && (
+          <p className="text-gray-500 italic mt-2">
+            {romajiMap[material.content.trim()] || 'Loading...'}
+          </p>
+        )}
       </div>
 
       <div className="mb-4">
@@ -139,12 +138,23 @@ const Section6 = () => {
         <div className="flex flex-wrap gap-2">
           {material.vocabulary.map((word, i) => (
             <div key={i} className="flex flex-col items-center">
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                {word}
-              </span>
-              <span className="text-xs text-gray-500 mt-1">
-                {romajiMap[word.trim()] || 'Loading...'}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  {word}
+                </span>
+                <button
+                  onClick={() => playDynamicAudio(word)}
+                  className="p-1 rounded-full hover:bg-gray-200"
+                  title="Play Word Audio"
+                >
+                  🔊
+                </button>
+              </div>
+              {settings.showRomajiReading && (
+                <span className="text-xs text-gray-500 mt-1">
+                  {romajiMap[word.trim()] || 'Loading...'}
+                </span>
+              )}
             </div>
           ))}
         </div>

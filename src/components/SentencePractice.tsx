@@ -3,6 +3,7 @@ import { GrammarExample, GrammarDifficulty, GrammarCategory, grammarExamples } f
 import { useTheme } from '../context/ThemeContext';
 import { useProgress } from '../context/ProgressContext';
 import { checkAnswer, calculateScore, calculateAverageTime } from '../utils/quizUtils';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 // Sound effects
 const correctSound = new Audio('/sounds/correct.mp3');
@@ -170,10 +171,14 @@ const SentencePractice: React.FC = () => {
     }
   };
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   useEffect(() => {
@@ -348,7 +353,7 @@ const SentencePractice: React.FC = () => {
             {getBlankedSentence(currentExample.japanese, 0)}
           </div>
           <button
-            onClick={() => handlePlayAudio(currentExample.japanese)}
+            onClick={() => handlePlayAudio(currentExample.japanese, currentExample.id)}
             className="ml-2 p-2 rounded-full hover:bg-opacity-10"
             title="Play Audio"
           >
@@ -417,7 +422,7 @@ const SentencePractice: React.FC = () => {
           )}
 
           <button
-            onClick={() => handlePlayAudio(currentExample.japanese)}
+            onClick={() => handlePlayAudio(currentExample.japanese, currentExample.id)}
             className="ml-2 p-2 rounded-full hover:bg-opacity-10"
             title="Play Audio"
           >

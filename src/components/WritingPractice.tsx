@@ -6,6 +6,7 @@ import { useProgress } from '../context/ProgressContext';
 import { useTheme } from '../context/ThemeContext';
 import { QuizWord, quizWords } from '../data/quizData';
 import { Kanji, kanjiList } from '../data/kanjiData';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 type WritingMode = 'hiragana' | 'katakana';
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -634,10 +635,14 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     setTotalItems(mode, items.length);
   }, [mode, difficulty]);
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   return (
@@ -757,7 +762,7 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
               </div>
             )}
             <button
-              onClick={() => handlePlayAudio(state.currentWord && 'japanese' in state.currentWord ? state.currentWord.japanese : '')}
+              onClick={() => handlePlayAudio(state.currentWord && 'japanese' in state.currentWord ? state.currentWord.japanese : '', state.currentWord && 'id' in state.currentWord ? state.currentWord.id : undefined)}
               className="ml-2 p-2 rounded-full hover:bg-opacity-10"
               title="Play Audio"
             >

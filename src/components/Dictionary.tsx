@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, Stack, Chip, Button, Alert } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import { wordLevels } from '../data/wordLevels';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 type DictionaryItem = QuizWord | Kanji;
 type FilterType = 'all' | 'unmarked' | 'marked' | 'mastered';
@@ -487,10 +488,14 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     setSelectedItem(item);
   };
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   const renderLockedAlert = () => (
@@ -556,7 +561,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
             <button
               onClick={e => {
                 e.stopPropagation();
-                handlePlayAudio(item.japanese);
+                handlePlayAudio(item.japanese, 'japanese' in item ? item.id : undefined);
               }}
               title="Play Audio"
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}
@@ -620,7 +625,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
                 {item.character}
               </Typography>
               <button
-                onClick={() => handlePlayAudio(item.character)}
+                onClick={() => handlePlayAudio(item.character, item.id)}
                 title="Play Audio"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}
               >
@@ -770,7 +775,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
                 {item.japanese}
               </Typography>
               <button
-                onClick={() => handlePlayAudio(item.japanese)}
+                onClick={() => handlePlayAudio(item.japanese, item.id)}
                 title="Play Audio"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}
               >

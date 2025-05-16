@@ -31,6 +31,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import { Progress } from './ui/progress';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { CheckCircle as CheckCircleIconLucide, Lock as LockIconLucide, AlertTriangle as AlertIcon } from 'lucide-react';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 interface WordLevelManagerProps {
   userProgress: UserProgress;
@@ -117,10 +118,14 @@ const WordLevelManager: React.FC<WordLevelManagerProps> = ({
     }
   };
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   const renderLevelRequirements = (level: number) => {
@@ -320,7 +325,7 @@ const WordLevelManager: React.FC<WordLevelManagerProps> = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handlePlayAudio(word.japanese);
+                        handlePlayAudio(word.japanese, word.id);
                       }}
                       className="ml-2 p-2 rounded-full hover:bg-opacity-10"
                       title="Play Audio"

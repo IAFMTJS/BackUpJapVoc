@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { useProgress } from '../context/ProgressContext';
 import { useSound } from '../context/SoundContext';
 import { Kanji, kanjiList } from '../data/kanjiData';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 type AnswerType = 'kanji' | 'meaning' | 'reading';
@@ -169,10 +170,14 @@ const KanjiQuiz: React.FC = () => {
     }
   }, [settings.useTimer, quizState.mode, timeRemaining, checkAnswer, handleNext]);
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   const renderQuizContent = () => {
@@ -405,7 +410,7 @@ const KanjiQuiz: React.FC = () => {
         )}
 
         <button
-          onClick={() => handlePlayAudio(currentKanji.english || currentKanji.character)}
+          onClick={() => handlePlayAudio(currentKanji.character, currentKanji.id)}
           className="ml-2 p-2 rounded-full hover:bg-opacity-10"
           title="Play Audio"
         >

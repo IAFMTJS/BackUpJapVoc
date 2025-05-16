@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { quizWords } from '../data/quizData';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 interface Card {
   id: number;
@@ -86,10 +87,14 @@ const MemoryGame: React.FC = () => {
     setGameOver(false);
   };
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   return (
@@ -109,7 +114,7 @@ const MemoryGame: React.FC = () => {
             className={`h-20 w-full rounded-lg border text-lg font-bold flex items-center justify-center transition-all duration-200 ${card.isMatched ? 'bg-green-200' : card.isFlipped ? 'bg-blue-100' : 'bg-gray-200'}`}
             onClick={() => {
               handleFlip(idx);
-              handlePlayAudio(card.value as string);
+              handlePlayAudio(card.value as string, card.id);
             }}
             disabled={card.isFlipped || card.isMatched || flipped.length === 2}
           >

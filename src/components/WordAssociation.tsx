@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { quizWords, Category } from '../data/quizData';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 interface GameState {
   currentWord: typeof quizWords[0] | null;
@@ -87,10 +88,14 @@ const WordAssociation: React.FC = () => {
     }));
   };
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   if (gameState.currentQuestion >= gameState.totalQuestions) {
@@ -194,7 +199,7 @@ const WordAssociation: React.FC = () => {
           </button>
 
           <button
-            onClick={() => handlePlayAudio(gameState.currentWord.japanese)}
+            onClick={() => handlePlayAudio(gameState.currentWord?.japanese || '', gameState.currentWord?.id)}
             className="ml-2 p-2 rounded-full hover:bg-opacity-10"
             title="Play Audio"
           >

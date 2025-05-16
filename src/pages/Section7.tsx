@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
+import { playDynamicAudio } from '../utils/audio';
 
 interface JLPTContent {
   grammar: {
@@ -171,8 +172,15 @@ const Section7 = () => {
               <p className="text-gray-700 mb-4">{grammar.meaning}</p>
               <div className="space-y-2">
                 {grammar.examples.map((example, i) => (
-                  <div key={i}>
+                  <div key={i} className="flex items-center gap-2">
                     <p className="text-lg">{example}</p>
+                    <button
+                      onClick={() => playDynamicAudio(example)}
+                      className="p-1 rounded-full hover:bg-gray-200"
+                      title="Play Example Audio"
+                    >
+                      🔊
+                    </button>
                     {settings.showRomajiJLPT && (
                       <p className="text-gray-500 italic">
                         {romajiMap[example.trim()] || 'Loading...'}
@@ -192,7 +200,16 @@ const Section7 = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {content.vocabulary.map((vocab, index) => (
             <div key={index} className="bg-gray-50 p-4 rounded-lg">
-              <div className="font-medium">{vocab.word}</div>
+              <div className="flex items-center gap-2">
+                <div className="font-medium">{vocab.word}</div>
+                <button
+                  onClick={() => playDynamicAudio(vocab.word)}
+                  className="p-1 rounded-full hover:bg-gray-200"
+                  title="Play Word Audio"
+                >
+                  🔊
+                </button>
+              </div>
               <div className="text-gray-600">{vocab.reading}</div>
               <div className="text-gray-700 mt-1">{vocab.meaning}</div>
               {settings.showRomajiJLPT && (
@@ -216,13 +233,9 @@ const Section7 = () => {
                 <div className="flex items-center gap-2">
                   <p className="text-lg leading-relaxed">{reading.passage}</p>
                   <button
-                    onClick={() => {
-                      const utterance = new window.SpeechSynthesisUtterance(reading.passage);
-                      utterance.lang = 'ja-JP';
-                      window.speechSynthesis.speak(utterance);
-                    }}
-                    className="ml-2 p-2 rounded-full hover:bg-opacity-10"
-                    title="Play Audio"
+                    onClick={() => playDynamicAudio(reading.passage)}
+                    className="ml-2 p-2 rounded-full hover:bg-gray-200"
+                    title="Play Passage Audio"
                   >
                     🔊
                   </button>
@@ -236,7 +249,16 @@ const Section7 = () => {
               <div className="space-y-4">
                 {reading.questions.map((question, qIndex) => (
                   <div key={qIndex} className="border-t pt-4">
-                    <p className="font-medium mb-2">{question.question}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="font-medium">{question.question}</p>
+                      <button
+                        onClick={() => playDynamicAudio(question.question)}
+                        className="p-1 rounded-full hover:bg-gray-200"
+                        title="Play Question Audio"
+                      >
+                        🔊
+                      </button>
+                    </div>
                     <div className="space-y-2">
                       {question.options.map((option, oIndex) => (
                         <div

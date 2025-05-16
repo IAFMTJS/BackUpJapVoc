@@ -1,4 +1,5 @@
 import React from 'react';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 interface AnimePhraseCardProps {
   japanese: string;
@@ -12,6 +13,7 @@ interface AnimePhraseCardProps {
   animeImage?: string;
   characterName?: string;
   animeTitle?: string;
+  id?: string;
 }
 
 const AnimePhraseCard: React.FC<AnimePhraseCardProps> = ({
@@ -25,15 +27,20 @@ const AnimePhraseCard: React.FC<AnimePhraseCardProps> = ({
   showEnglish,
   animeImage,
   characterName,
-  animeTitle
+  animeTitle,
+  id
 }) => {
   // Use the provided animeImage directly, it should already be a full path
   const imageUrl = animeImage || '/anime/default.JPG';
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = () => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(japanese);
+    }
   };
 
   return (
@@ -44,7 +51,7 @@ const AnimePhraseCard: React.FC<AnimePhraseCardProps> = ({
           {japanese}
         </h2>
         <button
-          onClick={() => handlePlayAudio(japanese)}
+          onClick={handlePlayAudio}
           className="ml-2 p-2 rounded-full hover:bg-opacity-10"
           title="Play Audio"
         >

@@ -11,6 +11,7 @@ import { useWordLevel } from '../context/WordLevelContext';
 import { wordLevels } from '../data/wordLevels';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, Stack, Chip, Button, Alert, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 // Add type declaration for react-transition-group
 declare module 'react-transition-group' {
@@ -441,10 +442,14 @@ const Quiz: React.FC = () => {
     return itemProgress?.correct > 0;
   }, [settings.category, progress]);
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   // Refactored renderWord: only kana+romaji for H&K, only Japanese for others
@@ -467,9 +472,9 @@ const Quiz: React.FC = () => {
             <h3 className="text-xl font-bold flex items-center gap-2">
               {word.japanese}
               <button
-                onClick={() => handlePlayAudio(word.japanese)}
+                onClick={() => handlePlayAudio(word.japanese, word.id)}
+                className="ml-2 p-2 rounded-full hover:bg-opacity-10"
                 title="Play Audio"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}
               >
                 🔊
               </button>
@@ -637,9 +642,9 @@ const Quiz: React.FC = () => {
         <div className="text-3xl font-bold mb-2 flex items-center gap-2">
           {word.japanese}
           <button
-            onClick={() => handlePlayAudio(word.japanese)}
+            onClick={() => handlePlayAudio(word.japanese, word.id)}
+            className="ml-2 p-2 rounded-full hover:bg-opacity-10"
             title="Play Audio"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}
           >
             🔊
           </button>

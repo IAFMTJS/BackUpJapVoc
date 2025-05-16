@@ -5,6 +5,7 @@ import { useProgress } from '../context/ProgressContext';
 import { checkAnswer, calculateScore, calculateAverageTime } from '../utils/quizUtils';
 import QuizModeSelector, { QuizMode } from './QuizModeSelector';
 import { Chip } from '@mui/material';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 // Sound effects
 const correctSound = new Audio('/sounds/correct.mp3');
@@ -29,6 +30,7 @@ interface QuizWord {
   }>;
   notes?: string;
   jlptLevel?: string;
+  id?: string;
 }
 
 const WordPractice: React.FC = () => {
@@ -218,10 +220,14 @@ const WordPractice: React.FC = () => {
     }
   };
 
-  const handlePlayAudio = (text: string) => {
-    const utterance = new window.SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   useEffect(() => {
@@ -490,7 +496,7 @@ const WordPractice: React.FC = () => {
                 <div className={`text-3xl font-bold text-center mb-4 ${themeClasses.text}`}>
                   {currentWord.japanese}
                   <button
-                    onClick={() => handlePlayAudio(currentWord.japanese)}
+                    onClick={() => handlePlayAudio(currentWord.japanese, currentWord.id)}
                     className="ml-2 p-2 rounded-full hover:bg-opacity-10"
                     title="Play Audio"
                   >

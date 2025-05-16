@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useWordLevel } from '../context/WordLevelContext';
 import { JapaneseWord } from '../data/wordLevels';
 import { useTheme } from '../context/ThemeContext';
+import { playAudio, playDynamicAudio } from '../utils/audio';
+import { QuizWord } from '../data/quizData';
 
 type PracticeMode = 'japanese-to-english' | 'english-to-japanese' | 'typing';
 
@@ -189,11 +191,14 @@ const WordLevelPractice: React.FC = () => {
     setPracticeState(prev => ({ ...prev, showHint: true }));
   };
 
-  const handlePlayAudio = () => {
-    if (!currentWord) return;
-    const utterance = new SpeechSynthesisUtterance(currentWord.japanese);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
+  const handlePlayAudio = (text: string, id?: string) => {
+    if (id) {
+      // Use pre-generated audio if we have an ID
+      playAudio(id);
+    } else {
+      // Fallback to dynamic audio for content without an ID
+      playDynamicAudio(text);
+    }
   };
 
   const renderPracticeContent = () => {
@@ -223,8 +228,8 @@ const WordLevelPractice: React.FC = () => {
                currentWord.romaji}
             </h2>
             <button
-              onClick={handlePlayAudio}
-              className={`p-2 rounded-full hover:bg-opacity-10 ${themeClasses.button.outline}`}
+              onClick={() => handlePlayAudio(currentWord.japanese, currentWord.id)}
+              className="ml-2 p-2 rounded-full hover:bg-opacity-10"
               title="Play Audio"
             >
               🔊
