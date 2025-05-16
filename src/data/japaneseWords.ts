@@ -2,29 +2,96 @@ import { JapaneseWord, ExampleSentence } from './types';
 import processedWords from './processed_words.json';
 
 // Helper to convert JLPT level string to number and difficulty
-function parseLevel(level: string): { level: number; difficulty: 'beginner' | 'intermediate' | 'advanced'; jlptLevel?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' } {
+function parseLevel(level: string, category?: string): { level: number; difficulty: 'beginner' | 'intermediate' | 'advanced'; jlptLevel?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' } {
   const jlptLevel = (level || '').toUpperCase() as 'N5' | 'N4' | 'N3' | 'N2' | 'N1' | undefined;
   
-  switch (jlptLevel) {
-    case 'N5':
-      return { level: 1, difficulty: 'beginner', jlptLevel: 'N5' };
-    case 'N4':
-      return { level: 2, difficulty: 'beginner', jlptLevel: 'N4' };
-    case 'N3':
-      return { level: 3, difficulty: 'intermediate', jlptLevel: 'N3' };
-    case 'N2':
-      return { level: 4, difficulty: 'intermediate', jlptLevel: 'N2' };
-    case 'N1':
-      return { level: 5, difficulty: 'advanced', jlptLevel: 'N1' };
-    default:
-      // fallback: try to parse as number, else level 1
-      const n = parseInt(level, 10);
-      const fallbackLevel = isNaN(n) ? 1 : n;
-      return {
-        level: fallbackLevel,
-        difficulty: fallbackLevel <= 2 ? 'beginner' : fallbackLevel <= 4 ? 'intermediate' : 'advanced'
-      };
+  // Define level distribution based on JLPT and category
+  const levelDistribution = {
+    'N5': {
+      greeting: 1,
+      number: 1,
+      pronoun: 1,
+      question: 1,
+      particle: 2,
+      verb: 2,
+      adjective: 2,
+      adverb: 2,
+      default: 1
+    },
+    'N4': {
+      verb: 2,
+      adjective: 2,
+      adverb: 2,
+      particle: 2,
+      time: 3,
+      food: 3,
+      drink: 3,
+      transportation: 3,
+      shopping: 3,
+      default: 2
+    },
+    'N3': {
+      family: 4,
+      emotion: 4,
+      body: 4,
+      health: 4,
+      housing: 4,
+      work: 5,
+      education: 5,
+      hobby: 5,
+      travel: 5,
+      money: 5,
+      default: 3
+    },
+    'N2': {
+      verb: 6,
+      adjective: 6,
+      adverb: 6,
+      conjunction: 6,
+      idiom: 7,
+      proverb: 7,
+      onomatopoeia: 7,
+      technology: 8,
+      business: 8,
+      academic: 8,
+      default: 6
+    },
+    'N1': {
+      literature: 9,
+      formal: 9,
+      advanced: 9,
+      slang: 10,
+      colloquial: 10,
+      nuanced: 10,
+      default: 9
+    }
+  };
+
+  if (jlptLevel) {
+    const distribution = levelDistribution[jlptLevel];
+    const wordLevel = category ? (distribution[category] || distribution.default) : distribution.default;
+    
+    return {
+      level: wordLevel,
+      difficulty: wordLevel <= 2 ? 'beginner' : wordLevel <= 4 ? 'intermediate' : 'advanced',
+      jlptLevel
+    };
   }
+
+  // If no JLPT level, try to parse as number
+  const n = parseInt(level, 10);
+  if (!isNaN(n) && n >= 1 && n <= 10) {
+    return {
+      level: n,
+      difficulty: n <= 2 ? 'beginner' : n <= 4 ? 'intermediate' : 'advanced'
+    };
+  }
+
+  // Default to level 1 for unknown words
+  return {
+    level: 1,
+    difficulty: 'beginner'
+  };
 }
 
 // Helper to process example sentences
@@ -58,7 +125,7 @@ function processExamples(word: any): ExampleSentence[] {
 
 // Map processedWords to JapaneseWord[]
 export const allWords: JapaneseWord[] = (processedWords as any[]).map((w, idx) => {
-  const { level, difficulty, jlptLevel } = parseLevel(w.level);
+  const { level, difficulty, jlptLevel } = parseLevel(w.level, w.category);
   
   return {
     id: `cw-${idx + 1}`,
