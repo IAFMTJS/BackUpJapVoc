@@ -48,17 +48,157 @@ function determineCategory(english) {
     return 'noun'; // Default to noun if no other category matches
 }
 
-// Function to determine word level based on complexity
-function determineLevel(japanese, english) {
-    // Simple heuristic for level determination
-    if (containsKanji(japanese)) {
-        return 2; // Words with kanji go to level 2
-    } else if (isKatakana(japanese)) {
-        return 3; // Katakana words (often loanwords) go to level 3
-    } else if (isHiragana(japanese)) {
-        return 1; // Basic hiragana words go to level 1
+// Function to determine word level based on complexity and category
+function determineLevel(japanese, english, category) {
+    // Define level distribution based on JLPT and category
+    const levelDistribution = {
+        'N5': {
+            // Level 1: Basic survival words (greetings, numbers, pronouns)
+            greeting: 1,
+            number: 1,
+            pronoun: 1,
+            question: 1,
+            // Level 2: Simple nouns (time, weather, directions)
+            time: 2,
+            weather: 2,
+            direction: 2,
+            color: 2,
+            // Level 3: Basic particles and simple verbs
+            particle: 3,
+            verb: 3,
+            // Level 4: Basic adjectives and adverbs
+            adjective: 4,
+            adverb: 4,
+            // Level 5: Common nouns (food, family, body)
+            food: 5,
+            drink: 5,
+            family: 5,
+            body: 5,
+            // Level 6: Basic actions and states
+            action: 6,
+            movement: 6,
+            'change of state': 6,
+            default: 3
+        },
+        'N4': {
+            // Level 3: Basic particles and simple verbs
+            particle: 3,
+            verb: 3,
+            // Level 4: Basic adjectives and adverbs
+            adjective: 4,
+            adverb: 4,
+            // Level 5: Common nouns (food, family, body)
+            food: 5,
+            drink: 5,
+            family: 5,
+            body: 5,
+            // Level 6: Basic actions and states
+            action: 6,
+            movement: 6,
+            'change of state': 6,
+            // Level 7: Transportation and shopping
+            transportation: 7,
+            shopping: 7,
+            // Level 8: Emotions and health
+            emotion: 8,
+            health: 8,
+            housing: 8,
+            // Level 9: Work and education
+            work: 9,
+            education: 9,
+            hobby: 9,
+            travel: 9,
+            money: 9,
+            default: 6
+        },
+        'N3': {
+            // Level 7: Transportation and shopping
+            transportation: 7,
+            shopping: 7,
+            // Level 8: Emotions and health
+            emotion: 8,
+            health: 8,
+            housing: 8,
+            // Level 9: Work and education
+            work: 9,
+            education: 9,
+            hobby: 9,
+            travel: 9,
+            money: 9,
+            // Level 10: Technology and business
+            technology: 10,
+            business: 10,
+            academic: 10,
+            default: 8
+        },
+        'N2': {
+            // Level 9: Work and education
+            work: 9,
+            education: 9,
+            hobby: 9,
+            travel: 9,
+            money: 9,
+            // Level 10: Advanced language
+            technology: 10,
+            business: 10,
+            academic: 10,
+            verb: 10,
+            adjective: 10,
+            adverb: 10,
+            conjunction: 10,
+            idiom: 10,
+            proverb: 10,
+            onomatopoeia: 10,
+            default: 9
+        },
+        'N1': {
+            // Level 10: Advanced language
+            literature: 10,
+            formal: 10,
+            advanced: 10,
+            slang: 10,
+            colloquial: 10,
+            nuanced: 10,
+            default: 10
+        }
+    };
+
+    // First determine the category if not provided
+    if (!category) {
+        category = determineCategory(english);
     }
-    return 1; // Default to level 1
+
+    // Normalize category name to match distribution rules
+    const normalizedCategory = category.toLowerCase().replace(/\s+/g, '');
+    
+    // Determine JLPT level based on word characteristics and category
+    let jlptLevel = 'N5';
+    
+    // Category-based JLPT level determination
+    if (['verb', 'adjective', 'adverb', 'particle', 'action', 'movement', 'change of state'].includes(normalizedCategory)) {
+        jlptLevel = 'N4';  // Basic verbs, adjectives, adverbs, and related categories are N4
+    } else if (['technology', 'business', 'academic'].includes(normalizedCategory)) {
+        jlptLevel = 'N2';
+    } else if (['literature', 'formal', 'advanced'].includes(normalizedCategory)) {
+        jlptLevel = 'N1';
+    }
+
+    // Adjust JLPT level based on word characteristics
+    if (containsKanji(japanese)) {
+        // Words with kanji are typically N4 or higher
+        if (jlptLevel === 'N5') {
+            jlptLevel = 'N4';
+        }
+    } else if (isKatakana(japanese)) {
+        // Katakana words (often loanwords) are typically N4 or higher
+        if (jlptLevel === 'N5') {
+            jlptLevel = 'N4';
+        }
+    }
+
+    // Get the appropriate level based on JLPT level and category
+    const distribution = levelDistribution[jlptLevel];
+    return normalizedCategory ? (distribution[normalizedCategory] || distribution.default) : distribution.default;
 }
 
 async function processExcel() {
@@ -120,7 +260,7 @@ async function processExcel() {
                     english: english.trim(),
                     romaji: romaji.trim(),
                     category: currentCategory || 'Uncategorized',
-                    level: 'N5', // Default level
+                    level: determineLevel(kana || kanji, english, currentCategory),
                     sheet: sheetName
                 };
                 
@@ -128,6 +268,23 @@ async function processExcel() {
             }
         }
         
+        // --- NEW: Evenly distribute by difficulty into 10 levels, max 100 per level ---
+        processedWords.sort((a, b) => a.level - b.level);
+        const maxPerLevel = 100;
+        let currentLevel = 1;
+        let countInLevel = 0;
+        for (let i = 0; i < processedWords.length; i++) {
+            processedWords[i].level = currentLevel;
+            countInLevel++;
+            if (countInLevel >= maxPerLevel) {
+                currentLevel++;
+                countInLevel = 0;
+                if (currentLevel > 10) break;
+            }
+        }
+        processedWords.length = Math.min(processedWords.length, 10 * maxPerLevel);
+        // --- END NEW ---
+
         // Save processed words
         const outputPath = path.join(__dirname, '..', 'src', 'data', 'processed_words.json');
         await fs.writeFile(outputPath, JSON.stringify(processedWords, null, 2));
