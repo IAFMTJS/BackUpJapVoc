@@ -118,14 +118,8 @@ const WordLevelManager: React.FC<WordLevelManagerProps> = ({
     }
   };
 
-  const handlePlayAudio = (text: string, id?: string) => {
-    if (id) {
-      // Use pre-generated audio if we have an ID
-      playAudio(id);
-    } else {
-      // Fallback to dynamic audio for content without an ID
-      playDynamicAudio(text);
-    }
+  const handlePlayAudio = (japanese: string) => {
+    playAudio(japanese);
   };
 
   const renderLevelRequirements = (level: number) => {
@@ -325,7 +319,7 @@ const WordLevelManager: React.FC<WordLevelManagerProps> = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handlePlayAudio(word.japanese, word.id);
+                        handlePlayAudio(word.japanese);
                       }}
                       className="ml-2 p-2 rounded-full hover:bg-opacity-10"
                       title="Play Audio"

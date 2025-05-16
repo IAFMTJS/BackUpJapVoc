@@ -635,14 +635,8 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     setTotalItems(mode, items.length);
   }, [mode, difficulty]);
 
-  const handlePlayAudio = (text: string, id?: string) => {
-    if (id) {
-      // Use pre-generated audio if we have an ID
-      playAudio(id);
-    } else {
-      // Fallback to dynamic audio for content without an ID
-      playDynamicAudio(text);
-    }
+  const handlePlayAudio = (japanese: string) => {
+    playAudio(japanese);
   };
 
   return (
@@ -762,7 +756,7 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
               </div>
             )}
             <button
-              onClick={() => handlePlayAudio(state.currentWord && 'japanese' in state.currentWord ? state.currentWord.japanese : '', state.currentWord && 'id' in state.currentWord ? state.currentWord.id : undefined)}
+              onClick={() => handlePlayAudio(state.currentWord && 'japanese' in state.currentWord ? state.currentWord.japanese : '')}
               className="ml-2 p-2 rounded-full hover:bg-opacity-10"
               title="Play Audio"
             >

@@ -1,59 +1,88 @@
 import { allWords } from './japaneseWords';
 import { JapaneseWord, ExampleSentence, WordLevel, LevelRequirement, WordProgress, LevelProgress, QuizAttempt, JLPTTest, ReadingPractice, UserProgress } from './types';
+import { levelDistribution, wordBelongsInLevel } from './levelRules';
 
-// Example of first 200 words (Level 1) - You'll need to add the rest
-export const wordLevels: WordLevel[] = [
-  {
-    level: 1,
-    requiredScore: 80,
-    description: "Essential Survival Japanese - Basic greetings, numbers, and everyday expressions",
-    unlocked: true,
-    jlptLevel: 'N5',
-    practiceCategories: ['greeting', 'number', 'pronoun', 'question'],
+// First pass: distribute words based on category and JLPT level rules
+const initialWordsByLevel: { [key: number]: JapaneseWord[] } = {};
+for (let level = 1; level <= 10; level++) {
+  initialWordsByLevel[level] = allWords.filter(word => wordBelongsInLevel(word, level));
+}
+
+// Second pass: redistribute words to ensure 100 words per level
+const wordsByLevel: { [key: number]: JapaneseWord[] } = {};
+const maxWordsPerLevel = 100;
+let remainingWords: JapaneseWord[] = [];
+
+// First, fill each level up to maxWordsPerLevel with words that belong there
+for (let level = 1; level <= 10; level++) {
+  wordsByLevel[level] = initialWordsByLevel[level].slice(0, maxWordsPerLevel);
+  remainingWords = [...remainingWords, ...initialWordsByLevel[level].slice(maxWordsPerLevel)];
+}
+
+// Then, distribute remaining words to fill up levels that are below maxWordsPerLevel
+for (let level = 1; level <= 10; level++) {
+  while (wordsByLevel[level].length < maxWordsPerLevel && remainingWords.length > 0) {
+    const word = remainingWords.shift();
+    if (word) {
+      wordsByLevel[level].push(word);
+    }
+  }
+}
+
+// Create the word levels array
+export const wordLevels: WordLevel[] = Array.from({ length: 10 }, (_, i) => {
+  const level = i + 1;
+  const rules = levelDistribution[level];
+  const words = wordsByLevel[level];
+  
+  // Log the number of words in each level
+  console.log(`Level ${level}: ${words.length} words`);
+  
+  return {
+    level,
+    requiredScore: level === 1 ? 0 : 80,
+    description: rules.description,
+    unlocked: level === 1,
+    jlptLevel: rules.jlptLevels[0] as 'N5' | 'N4' | 'N3' | 'N2' | 'N1',
+    practiceCategories: rules.categories,
     requiredWordMastery: {
-      minWords: 20,  // Must master at least 20 words
-      masteryThreshold: 80  // Must master 80% of words
+      minWords: Math.max(20, Math.floor(words.length * 0.2)),
+      masteryThreshold: 80
     },
     requirements: [
       {
         type: 'quiz',
-        description: "Complete 3 quizzes with 80% or higher score",
-        target: 3,
+        description: `Complete ${level} quizzes with 80% or higher score`,
+        target: level,
         current: 0,
         completed: false
       },
       {
         type: 'practice',
-        description: "Master 20 basic words",
-        target: 20,
+        description: `Master ${Math.max(20, Math.floor(words.length * 0.2))} words`,
+        target: Math.max(20, Math.floor(words.length * 0.2)),
         current: 0,
         completed: false
       },
       {
         type: 'reading',
-        description: "Read and understand 2 basic texts",
-        target: 2,
+        description: `Read and understand ${level} texts`,
+        target: level,
         current: 0,
         completed: false
       }
     ],
     readingMaterials: [
       {
-        title: "Basic Greetings",
-        difficulty: "easy",
-        content: "こんにちは。\nおはようございます。\nこんばんは。\nおやすみなさい。",
-        vocabulary: ["こんにちは", "おはようございます", "こんばんは", "おやすみなさい"]
-      },
-      {
-        title: "Numbers 1-10",
-        difficulty: "easy",
-        content: "いち\nに\nさん\nよん\nご\nろく\nなな\nはち\nきゅう\nじゅう",
-        vocabulary: ["いち", "に", "さん", "よん", "ご", "ろく", "なな", "はち", "きゅう", "じゅう"]
+        title: `Level ${level} Reading 1`,
+        difficulty: level <= 3 ? "easy" : level <= 6 ? "medium" : "hard",
+        content: "Sample reading content will be added later.",
+        vocabulary: words.slice(0, 10).map(w => w.japanese)
       }
     ],
-    words: allWords.filter(word => word.level === 1)
-  }
-];
+    words
+  };
+});
 
 // Helper function to calculate word mastery
 export const calculateWordMastery = (level: number, userProgress: UserProgress) => {
@@ -69,7 +98,7 @@ export const calculateWordMastery = (level: number, userProgress: UserProgress) 
 
   const totalWords = levelData.words.length;
   const masteredWords = levelData.words.filter(word => {
-    const progress = userProgress.wordProgress[word.id];
+    const progress = userProgress.wordProgress[word.japanese];
     return progress?.mastered || false;
   }).length;
 
@@ -101,7 +130,7 @@ export const calculateLevelScore = (level: number, userProgress: UserProgress): 
   if (totalWords === 0) return 0;
 
   const masteredWords = words.filter(word => {
-    const progress = userProgress.wordProgress[word.id];
+    const progress = userProgress.wordProgress[word.japanese];
     return progress?.mastered || false;
   }).length;
 

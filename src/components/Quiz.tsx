@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef, ChangeEvent, FormEvent } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { allWords as quizWords, Category } from '../data/japaneseWords';
+import { allWords } from '../data/japaneseWords';
 import { useProgress } from '../context/ProgressContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
 import { CSSTransition, CSSTransitionProps } from 'react-transition-group';
@@ -80,6 +80,7 @@ interface QuizWord {
   jlptLevel?: string;
   isHiragana: boolean;
   isKatakana: boolean;
+  level: number;
 }
 
 interface ThemeClasses {
@@ -119,62 +120,16 @@ interface LevelStats {
   averageScore: number;
 }
 
-const categories = [
-  // Basic Categories
-  { id: 'greeting', name: 'Greetings' },
-  { id: 'question', name: 'Questions' },
-  { id: 'pronoun', name: 'Pronouns' },
-  
-  // Parts of Speech
-  { id: 'verb', name: 'Verbs' },
-  { id: 'adjective', name: 'Adjectives' },
-  { id: 'adverb', name: 'Adverbs' },
-  { id: 'particle', name: 'Particles' },
-  { id: 'conjunction', name: 'Conjunctions' },
-  { id: 'interjection', name: 'Interjections' },
-  
-  // Topic Categories
-  { id: 'food', name: 'Food & Drinks' },
-  { id: 'drink', name: 'Drinks' },
-  { id: 'animals', name: 'Animals' },
-  { id: 'colors', name: 'Colors' },
-  { id: 'numbers', name: 'Numbers' },
-  { id: 'family', name: 'Family' },
-  { id: 'weather', name: 'Weather' },
-  { id: 'time', name: 'Time & Dates' },
-  { id: 'transportation', name: 'Transportation' },
-  { id: 'clothing', name: 'Clothing' },
-  { id: 'body', name: 'Body Parts' },
-  { id: 'emotions', name: 'Emotions' },
-  { id: 'school', name: 'School' },
-  { id: 'work', name: 'Work' },
-  { id: 'hobbies', name: 'Hobbies' },
-  { id: 'nature', name: 'Nature' },
-  { id: 'house', name: 'House' },
-  { id: 'city', name: 'City' },
-  { id: 'technology', name: 'Technology' },
-  { id: 'health', name: 'Health' },
-  { id: 'travel', name: 'Travel' },
-  { id: 'shopping', name: 'Shopping' },
-  { id: 'money', name: 'Money' },
-  { id: 'direction', name: 'Directions' },
-  { id: 'location', name: 'Locations' },
-  { id: 'measurement', name: 'Measurements' },
-  
-  // Special Categories
-  { id: 'idiom', name: 'Idioms' },
-  { id: 'proverb', name: 'Proverbs' },
-  { id: 'onomatopoeia', name: 'Onomatopoeia' },
-  { id: 'honorific', name: 'Honorifics' },
-  { id: 'slang', name: 'Slang' },
-  
-  // Writing Systems
-  { id: 'hiragana', name: 'Hiragana' },
-  { id: 'katakana', name: 'Katakana' },
-  
-  // All Categories
-  { id: 'all', name: 'All Categories' }
-] as const;
+// Dynamic categories based on allWords
+const getAvailableCategories = () => {
+  const categorySet = new Set<string>();
+  allWords.forEach(word => {
+    if (word.category) categorySet.add(word.category);
+  });
+  const categories = Array.from(categorySet).map(cat => ({ id: cat, name: cat.charAt(0).toUpperCase() + cat.slice(1) }));
+  // Add 'All Words' option at the top
+  return [{ id: 'all', name: 'All Words' }, ...categories];
+};
 
 const motivationalMessages = {
   positive: [
@@ -198,12 +153,30 @@ const motivationalMessages = {
   ]
 };
 
+// Remove hiragana and katakana from Category type
+export type Category = 
+  // Basic Categories
+  | 'greeting' | 'question' | 'pronoun'
+  // Parts of Speech
+  | 'verb' | 'adjective' | 'adverb' | 'particle' | 'conjunction' | 'interjection'
+  // Topic Categories
+  | 'food' | 'drink' | 'animals' | 'colors' | 'numbers' | 'family' | 'weather' | 'time' 
+  | 'transportation' | 'clothing' | 'body' | 'emotions' | 'school' | 'work' | 'hobbies' 
+  | 'nature' | 'house' | 'city' | 'technology' | 'health' | 'travel' | 'shopping' 
+  | 'money' | 'direction' | 'location' | 'measurement'
+  // Special Categories
+  | 'idiom' | 'proverb' | 'onomatopoeia' | 'honorific' | 'slang'
+  // Writing Systems
+  | 'hiragana' | 'katakana'
+  // All Categories
+  | 'all';
+
 const Quiz: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
   const { settings: appSettings } = useApp();
   const { updateProgress, progress } = useProgress();
   const { currentLevel, unlockedLevels, updateWordProgress, updateQuizProgress } = useWordLevel();
-  const [questions, setQuestions] = useState<typeof quizWords>([]);
+  const [questions, setQuestions] = useState<typeof allWords>([]);
   const [quizState, setQuizState] = useState<QuizState>({
     mode: 'setup',
     currentQuestion: 0,
@@ -245,6 +218,13 @@ const Quiz: React.FC = () => {
   const [extraHardInput, setExtraHardInput] = useState({ english: '', japanese: '' });
   const [levelStats, setLevelStats] = useState<LevelStats[]>([]);
   const [questionsLoaded, setQuestionsLoaded] = useState(false);
+  const [categoryList, setCategoryList] = useState<{ id: string; name: string }[]>(getAvailableCategories());
+
+  // Add isHKQuiz definition
+  const isHKQuiz = useMemo(() => 
+    settings.category === 'hiragana' || settings.category === 'katakana',
+    [settings.category]
+  );
 
   const getThemeClasses = () => {
     if (isDarkMode) {
@@ -295,34 +275,36 @@ const Quiz: React.FC = () => {
 
   const themeClasses = useMemo(() => getThemeClasses(), [theme, isDarkMode]);
 
-  const generateOptions = useCallback((correctWord: QuizWord, allWords: QuizWord[]): string[] => {
-    // Get other words from the same category and difficulty, excluding the correct answer
-    const otherWords = allWords.filter(word => 
-      word.category === correctWord.category && 
-      word.difficulty === correctWord.difficulty &&
-      word.english !== correctWord.english
-    );
-    // Shuffle and take 3 random options
-    const shuffled = [...otherWords]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
-      .map(word => word.english);
-    // Add the correct answer and shuffle all options
-    const allOptions = [...shuffled, correctWord.english]
-      .sort(() => Math.random() - 0.5);
-    // Ensure there are always 4 options, and the correct answer is included
-    if (!allOptions.includes(correctWord.english)) {
-      allOptions[0] = correctWord.english;
-    }
-    return allOptions.slice(0, 4);
+  const generateOptions = useCallback((correctWord, allWords) => {
+    const otherWords = allWords.filter(word => word.category === correctWord.category && word.english !== correctWord.english);
+    const shuffled = [...otherWords].sort(() => Math.random() - 0.5).slice(0, 3).map(word => word.english);
+    const allOptions = [...shuffled, correctWord.english].sort(() => Math.random() - 0.5);
+    return allOptions;
   }, []);
 
   const generateQuiz = useCallback((): void => {
-    let filteredWords = quizWords.filter(word => {
-      if (settings.category === 'hiragana') return word.isHiragana;
-      if (settings.category === 'katakana') return word.isKatakana;
-      return settings.category === 'all' || word.category === settings.category;
+    let filteredWords = allWords.filter(word => {
+      // For 'all', include all words for unlocked levels
+      if (settings.category === 'all') {
+        return word.level <= settings.level;
+      }
+      // For hiragana/katakana categories, use the same strict filtering as handleLoadQuestions
+      if (settings.category === 'hiragana') {
+        return word.category === 'hiragana' && word.isHiragana && !word.isKatakana && word.level <= settings.level;
+      }
+      if (settings.category === 'katakana') {
+        return word.category === 'katakana' && word.isKatakana && !word.isHiragana && word.level <= settings.level;
+      }
+      // For other categories, filter by category and unlocked level
+      return word.category === settings.category && word.level <= settings.level;
     });
+
+    // If practicing kana (but not in hiragana/katakana category), filter by kana type
+    if (settings.answerType === 'hiragana' && settings.category !== 'hiragana') {
+      filteredWords = filteredWords.filter(word => word.japanese && /^[\u3040-\u309F]+$/.test(word.japanese));
+    } else if (settings.answerType === 'katakana' && settings.category !== 'katakana') {
+      filteredWords = filteredWords.filter(word => word.japanese && /^[\u30A0-\u30FF]+$/.test(word.japanese));
+    }
 
     const questionCount = Math.min(settings.questionCount, 50);
     const shuffled = [...filteredWords]
@@ -330,33 +312,49 @@ const Quiz: React.FC = () => {
       .slice(0, questionCount);
     
     setQuestions(shuffled);
-    setQuizState((prev: QuizState) => ({
-      ...prev,
-      currentQuestion: 0,
-      selectedAnswer: null,
-      showFeedback: false,
-      isCorrect: null,
-      showCorrect: false,
-      currentWord: null,
-      options: [],
-      score: 0,
-      totalQuestions: 0,
-      completed: false
-    }));
-  }, [settings.category, settings.questionCount]);
+    setQuestionsLoaded(true);
+  }, [settings.category, settings.level, settings.answerType, settings.questionCount, allWords]);
 
   const handleStartQuiz = (): void => {
-    generateQuiz();
-    setQuizState((prev: QuizState) => ({
-      ...prev,
-      mode: 'quiz'
-    }));
-    setTimeStarted(new Date());
-    setTimeEnded(null);
-    setCurrentStreak(0);
-    setBestStreak(0);
-    setShowFeedback(false);
-    setFeedback(false);
+    // For H&K, load questions first
+    let filteredWords: JapaneseWord[] = [];
+    if (settings.category === 'hiragana' || settings.category === 'katakana') {
+      filteredWords = allWords.filter(word => {
+        if (settings.category === 'hiragana') {
+          return word.category === 'hiragana' && word.isHiragana && !word.isKatakana;
+        }
+        if (settings.category === 'katakana') {
+          return word.category === 'katakana' && word.isKatakana && !word.isHiragana;
+        }
+        return false;
+      });
+    } else if (settings.category === 'all') {
+      filteredWords = allWords;
+    } else {
+      filteredWords = allWords.filter(word => word.category === settings.category);
+    }
+    // Shuffle and limit
+    const shuffled = [...filteredWords].sort(() => Math.random() - 0.5);
+    const questions = shuffled.slice(0, settings.questionCount);
+    // Debug log
+    console.log('handleStartQuiz: filteredWords.length =', filteredWords.length);
+    console.log('handleStartQuiz: questions.length =', questions.length);
+    // Set quiz state
+    if (questions.length > 0) {
+      setQuizState({
+        mode: 'quiz',
+        questions,
+        currentQuestion: 0,
+        currentWord: questions[0],
+        score: 0,
+        totalQuestions: 0,
+        completed: false
+      });
+      console.log('handleStartQuiz: quizState set to quiz mode with first question:', questions[0]);
+    } else {
+      alert('No questions available for the selected settings.');
+      console.log('handleStartQuiz: No questions available.');
+    }
   };
 
   const showMotivation = useCallback((type: 'positive' | 'encouragement') => {
@@ -584,7 +582,7 @@ const Quiz: React.FC = () => {
 
   // Memoize filtered questions to prevent recalculation
   const filteredQuestions = useMemo(() => {
-    let filtered = quizWords.filter(word => {
+    let filtered = allWords.filter(word => {
       const matchesCategory = settings.category === 'all' || word.category === settings.category;
       return matchesCategory;
     });
@@ -600,7 +598,7 @@ const Quiz: React.FC = () => {
   }, [quizState.currentQuestion, questions, settings.quizType, generateOptions]);
 
   // Optimize romaji conversion with batch processing
-  const updateRomajiBatch = useCallback(async (words: typeof quizWords) => {
+  const updateRomajiBatch = useCallback(async (words: typeof allWords) => {
     const newWords = words.filter(word => !romajiCache[word.japanese]);
     if (newWords.length === 0) return;
 
@@ -656,20 +654,15 @@ const Quiz: React.FC = () => {
 
   // Get available words based on current level and settings
   const getAvailableWords = useCallback(() => {
-    return quizWords.filter(word => {
-      // For hiragana/katakana, always include all such characters
-      if (settings.category === 'hiragana') return word.isHiragana;
-      if (settings.category === 'katakana') return word.isKatakana;
+    return allWords.filter(word => {
       // For 'all', include all words for unlocked levels
       if (settings.category === 'all') {
-        const wordLevel = wordLevels.find(level => level.words.some(w => w.japanese === word.japanese));
-        return !wordLevel || unlockedLevels.includes(wordLevel.level);
+        return word.level <= settings.level;
       }
       // Otherwise, filter by category and unlocked level
-      const wordLevel = wordLevels.find(level => level.words.some(w => w.japanese === word.japanese));
-      return word.category === settings.category && (!wordLevel || unlockedLevels.includes(wordLevel.level));
+      return word.category === settings.category && word.level <= settings.level;
     });
-  }, [settings.category, unlockedLevels]);
+  }, [settings.category, settings.level]);
 
   // Start a new quiz
   const startQuiz = useCallback(() => {
@@ -743,36 +736,22 @@ const Quiz: React.FC = () => {
     </FormControl>
   );
 
-  // Render category selection with level restrictions
-  const renderCategorySelection = () => {
-    const currentLevelData = wordLevels.find(l => l.level === settings.level);
-    const availableCategories = currentLevelData?.practiceCategories || [];
-
-    return (
-      <FormControl fullWidth sx={{ mb: 2 }}>
-        <InputLabel>Category</InputLabel>
-        <Select
-          value={settings.category}
-          onChange={(e) => {
-            const cat = e.target.value as Category;
-            setSettings(prev => ({
-              ...prev,
-              category: cat,
-              difficulty: (cat === 'hiragana' || cat === 'katakana') ? 'easy' : prev.difficulty
-            }));
-          }}
-          className={`w-full p-3 rounded-lg border ${themeClasses.input}`}
-        >
-          <MenuItem value="all">All Categories</MenuItem>
-          {availableCategories.map(category => (
-            <MenuItem key={category} value={category}>
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    );
-  };
+  // Update the category selection UI to include Hiragana/Katakana categories
+  const renderCategorySelection = () => (
+    <FormControl fullWidth sx={{ mb: 2 }}>
+      <InputLabel id="category-label">Category</InputLabel>
+      <Select
+        labelId="category-label"
+        value={settings.category}
+        label="Category"
+        onChange={e => setSettings(s => ({ ...s, category: e.target.value as Category }))}
+      >
+        {categoryList.map(cat => (
+          <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
 
   // Add function to calculate level statistics
   const calculateLevelStats = useCallback(() => {
@@ -782,7 +761,7 @@ const Quiz: React.FC = () => {
     const levels = wordLevels.filter(level => unlockedLevels.includes(level.level));
     
     levels.forEach(level => {
-      const levelWords = quizWords.filter(word => 
+      const levelWords = allWords.filter(word => 
         level.words.some(w => w.japanese === word.japanese)
       );
       
@@ -888,127 +867,58 @@ const Quiz: React.FC = () => {
     </Box>
   );
 
-  // Utility functions for H&K quizzes
-  function getHiraganaWords() {
-    return quizWords.filter(word => /[\u3040-\u309F]/.test(word.japanese));
-  }
-  function getKatakanaWords() {
-    return quizWords.filter(word => /[\u30A0-\u30FF]/.test(word.japanese));
-  }
+  // Add handleLoadQuestions function
+  const handleLoadQuestions = useCallback(() => {
+    const filteredWords = allWords.filter(word => {
+      if (settings.category === 'hiragana') {
+        return word.category === 'hiragana' && word.isHiragana && !word.isKatakana;
+      }
+      if (settings.category === 'katakana') {
+        return word.category === 'katakana' && word.isKatakana && !word.isHiragana;
+      }
+      return false;
+    });
 
-  // Add explicit question loading for H&K quizzes
-  const handleLoadQuestions = () => {
-    let words = [];
-    if (settings.category === 'hiragana') words = getHiraganaWords();
-    else if (settings.category === 'katakana') words = getKatakanaWords();
-    else words = quizWords;
-    // Shuffle and pick N questions
-    words = words.sort(() => Math.random() - 0.5).slice(0, settings.questionCount);
-    setQuestions(words);
-    setQuestionsLoaded(true);
-  };
+    if (filteredWords.length > 0) {
+      // Shuffle and limit to the selected number of questions
+      const shuffled = [...filteredWords]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, settings.questionCount);
+      setQuestions(shuffled);
+      setQuestionsLoaded(true);
+    } else {
+      // Show error message if no questions are available
+      alert('No questions available for the selected category. Please try a different category or level.');
+    }
+  }, [settings.category, settings.questionCount, allWords]);
 
-  // Modify the quiz setup UI to include level statistics
+  // Update the quiz setup UI to include kana practice options
   const renderQuizSetup = () => (
     <div className="space-y-6">
       {/* Level Statistics */}
       {renderLevelStats()}
 
-      {/* Existing quiz setup UI */}
+      {/* Category Selection */}
+      {renderCategorySelection()}
+
+      {/* Kana Practice Type Selection */}
       <div>
-        <label className={`block mb-2 ${themeClasses.text}`}>Select Level:</label>
+        <label className={`block mb-2 ${themeClasses.text}`}>Practice Type:</label>
         <select
-          value={settings.level}
-          onChange={(e) => setSettings(prev => ({ ...prev, level: Number(e.target.value) }))}
+          value={settings.answerType || 'romaji'}
+          onChange={(e) => setSettings(prev => ({ 
+            ...prev, 
+            answerType: e.target.value as AnswerType 
+          }))}
           className={`w-full p-3 rounded-lg border ${themeClasses.input}`}
         >
-          {wordLevels
-            .filter(level => unlockedLevels.includes(level.level))
-            .map(level => (
-              <option key={level.level} value={level.level}>
-                Level {level.level} ({levelStats.find(s => s.level === level.level)?.totalWords || 0} words)
-              </option>
-            ))}
+          <option value="romaji">Practice with Romaji</option>
+          <option value="hiragana">Practice Hiragana</option>
+          <option value="katakana">Practice Katakana</option>
         </select>
       </div>
 
-      <div>
-        <label className={`block mb-2 ${themeClasses.text}`}>Select Category:</label>
-        <select
-          value={settings.category}
-          onChange={(e) => {
-            const cat = e.target.value as Category;
-            setSettings(prev => ({
-              ...prev,
-              category: cat,
-              difficulty: (cat === 'hiragana' || cat === 'katakana') ? 'easy' : prev.difficulty
-            }));
-          }}
-          className={`w-full p-3 rounded-lg border ${themeClasses.input}`}
-        >
-          <optgroup label="Basic Categories">
-            <option value="greeting">Greetings</option>
-            <option value="question">Questions</option>
-            <option value="pronoun">Pronouns</option>
-          </optgroup>
-          
-          <optgroup label="Parts of Speech">
-            <option value="verb">Verbs</option>
-            <option value="adjective">Adjectives</option>
-            <option value="adverb">Adverbs</option>
-            <option value="particle">Particles</option>
-            <option value="conjunction">Conjunctions</option>
-            <option value="interjection">Interjections</option>
-          </optgroup>
-          
-          <optgroup label="Topic Categories">
-            <option value="food">Food & Drinks</option>
-            <option value="drink">Drinks</option>
-            <option value="animals">Animals</option>
-            <option value="colors">Colors</option>
-            <option value="numbers">Numbers</option>
-            <option value="family">Family</option>
-            <option value="weather">Weather</option>
-            <option value="time">Time & Dates</option>
-            <option value="transportation">Transportation</option>
-            <option value="clothing">Clothing</option>
-            <option value="body">Body Parts</option>
-            <option value="emotions">Emotions</option>
-            <option value="school">School</option>
-            <option value="work">Work</option>
-            <option value="hobbies">Hobbies</option>
-            <option value="nature">Nature</option>
-            <option value="house">House</option>
-            <option value="city">City</option>
-            <option value="technology">Technology</option>
-            <option value="health">Health</option>
-            <option value="travel">Travel</option>
-            <option value="shopping">Shopping</option>
-            <option value="money">Money</option>
-            <option value="direction">Directions</option>
-            <option value="location">Locations</option>
-            <option value="measurement">Measurements</option>
-          </optgroup>
-          
-          <optgroup label="Special Categories">
-            <option value="idiom">Idioms</option>
-            <option value="proverb">Proverbs</option>
-            <option value="onomatopoeia">Onomatopoeia</option>
-            <option value="honorific">Honorifics</option>
-            <option value="slang">Slang</option>
-          </optgroup>
-          
-          <optgroup label="Writing Systems">
-            <option value="hiragana">Hiragana</option>
-            <option value="katakana">Katakana</option>
-          </optgroup>
-          
-          <optgroup label="All Categories">
-            <option value="all">All Categories</option>
-          </optgroup>
-        </select>
-      </div>
-
+      {/* Rest of the quiz setup UI */}
       <div>
         <label className={`block mb-2 ${themeClasses.text}`}>Select Difficulty:</label>
         <select
@@ -1023,63 +933,29 @@ const Quiz: React.FC = () => {
         </select>
       </div>
 
-      {settings.difficulty === 'hard' && (
-        <div>
-          <label className={`block mb-2 ${themeClasses.text}`}>Answer Type:</label>
-          <select
-            value={settings.answerType}
-            onChange={(e) => setSettings(prev => ({ ...prev, answerType: e.target.value as AnswerType }))}
-            className={`w-full p-3 rounded-lg border ${themeClasses.input}`}
-          >
-            <option value="hiragana">Hiragana</option>
-            <option value="katakana">Katakana</option>
-            <option value="romaji">Romaji</option>
-          </select>
-        </div>
-      )}
-
       <div>
         <label className={`block mb-2 ${themeClasses.text}`}>Number of Questions:</label>
         <select
           value={settings.questionCount}
           onChange={(e) => {
-            const value = Math.min(Number(e.target.value), 50);
+            const value = Math.max(10, Math.min(Number(e.target.value), 50));
             setSettings(prev => ({ ...prev, questionCount: value }));
           }}
           className={`w-full p-3 rounded-lg border ${themeClasses.input}`}
         >
-          <option value="5">5 Questions</option>
           <option value="10">10 Questions</option>
-          <option value="15">15 Questions</option>
           <option value="20">20 Questions</option>
-          <option value="25">25 Questions</option>
-          <option value="30">30 Questions</option>
-          <option value="35">35 Questions</option>
-          <option value="40">40 Questions</option>
-          <option value="45">45 Questions</option>
           <option value="50">50 Questions</option>
         </select>
       </div>
 
-      {/* Only show Load Questions for H&K */}
-      {(settings.category === 'hiragana' || settings.category === 'katakana') && !questionsLoaded && (
-        <button
-          onClick={handleLoadQuestions}
-          className={`w-full p-3 rounded-lg ${themeClasses.button.primary}`}
-        >
-          Load Questions
-        </button>
-      )}
-
-      {/* Only show Start Quiz if questions are loaded for H&K, or always for others */}
-      {((settings.category === 'hiragana' || settings.category === 'katakana') ? questionsLoaded : true) && (
-        <button
-          onClick={handleStartQuiz}
-          className={`w-full p-3 rounded-lg ${themeClasses.button.primary}`}
-        >
-          Start Quiz
-        </button>
-      )}
+      {/* Always show Start Quiz button */}
+      <button
+        onClick={handleStartQuiz}
+        className={`w-full p-3 rounded-lg ${themeClasses.button.primary}`}
+      >
+        Start Quiz
+      </button>
     </div>
   );
 
@@ -1106,8 +982,8 @@ const Quiz: React.FC = () => {
             </div>
           </div>
 
-          {/* In the quiz UI, use writing mode for H&K Quiz */}
-          {(settings.category === 'hiragana' || settings.category === 'katakana') && isHKQuiz ? (
+          {/* Use isHKQuiz for quiz mode selection */}
+          {isHKQuiz ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               {settings.difficulty === 'extraHard' ? (
                 <>
@@ -1247,30 +1123,17 @@ const Quiz: React.FC = () => {
     }
   };
 
+  // In the main render function, add a debug log
+  console.log('Quiz render: quizState =', quizState);
+  console.log('Quiz render: currentWord =', quizState.currentWord);
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" component="h1" gutterBottom>
         Japanese Quiz
       </Typography>
 
-      {!quizState.currentWord && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Quiz Settings
-          </Typography>
-          <Stack spacing={2}>
-            {renderLevelSelection()}
-            {renderCategorySelection()}
-            {/* ... other settings ... */}
-          </Stack>
-          {/* ... existing button ... */}
-          {getAvailableWords().length === 0 && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              No words available for the current settings. Try changing the level or category.
-            </Alert>
-          )}
-        </Box>
-      )}
+      {quizState.mode === 'setup' && renderQuizSetup()}
 
       {/* ... rest of the quiz UI ... */}
       {questions.length === 0 && (

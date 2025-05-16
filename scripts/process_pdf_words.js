@@ -1,7 +1,15 @@
+// This script now uses the shared level logic from src/data/levelRules.ts
+// Do not duplicate level rules here—always update src/data/levelRules.ts if changes are needed.
+
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const pdf = require('pdf-parse');
+const tsNode = require('ts-node');
+tsNode.register();
+
+// Import shared level logic
+const { levelDistribution, wordBelongsInLevel } = require('../src/data/levelRules.ts');
 
 // Function to determine if a string contains kanji
 function containsKanji(str) {
@@ -26,24 +34,45 @@ function isJapanese(str) {
 // Function to determine word category based on English translation
 function determineCategory(english) {
     const categories = {
+        'greeting': ['hello', 'hi', 'good morning', 'good evening', 'good night', 'bye', 'see you'],
+        'number': ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'hundred', 'thousand'],
         'pronoun': ['i', 'you', 'he', 'she', 'it', 'we', 'they', 'this', 'that', 'these', 'those'],
+        'question': ['who', 'what', 'where', 'when', 'why', 'how'],
+        'hiragana': [],
+        'katakana': [],
         'verb': ['to', 'is', 'are', 'was', 'were', 'have', 'has', 'had', 'do', 'does', 'did', 'go', 'come', 'eat', 'drink', 'sleep', 'walk', 'run'],
         'adjective': ['big', 'small', 'good', 'bad', 'hot', 'cold', 'new', 'old', 'beautiful', 'ugly', 'happy', 'sad'],
         'adverb': ['very', 'quickly', 'slowly', 'well', 'badly', 'often', 'sometimes', 'never', 'always'],
-        'number': ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'hundred', 'thousand'],
+        'particle': [],
         'time': ['today', 'tomorrow', 'yesterday', 'morning', 'afternoon', 'evening', 'night', 'week', 'month', 'year'],
-        'place': ['here', 'there', 'where', 'home', 'school', 'work', 'hospital', 'station', 'park', 'restaurant'],
-        'family': ['mother', 'father', 'sister', 'brother', 'grandmother', 'grandfather', 'aunt', 'uncle'],
         'food': ['rice', 'bread', 'meat', 'fish', 'vegetable', 'fruit', 'water', 'tea', 'coffee', 'milk'],
-        'weather': ['sunny', 'rainy', 'cloudy', 'snowy', 'hot', 'cold', 'warm', 'cool'],
+        'drink': ['water', 'tea', 'coffee', 'milk', 'juice'],
+        'transportation': ['car', 'bus', 'train', 'bicycle', 'airplane', 'ship', 'taxi', 'subway'],
+        'shopping': ['shop', 'store', 'buy', 'sell', 'price', 'money'],
+        'family': ['mother', 'father', 'sister', 'brother', 'grandmother', 'grandfather', 'aunt', 'uncle'],
         'emotion': ['happy', 'sad', 'angry', 'scared', 'surprised', 'excited', 'tired', 'bored'],
         'body': ['head', 'hand', 'foot', 'eye', 'ear', 'nose', 'mouth', 'hair', 'face'],
-        'clothing': ['shirt', 'pants', 'dress', 'shoes', 'hat', 'coat', 'socks', 'underwear'],
-        'transportation': ['car', 'bus', 'train', 'bicycle', 'airplane', 'ship', 'taxi', 'subway'],
-        'occupation': ['teacher', 'doctor', 'student', 'worker', 'engineer', 'artist', 'writer', 'singer'],
-        'education': ['school', 'university', 'class', 'book', 'pen', 'pencil', 'paper', 'test', 'exam']
+        'health': ['sick', 'ill', 'healthy', 'medicine', 'doctor', 'hospital'],
+        'housing': ['house', 'home', 'apartment', 'room', 'kitchen', 'bathroom'],
+        'work': ['work', 'job', 'office', 'company', 'boss', 'colleague'],
+        'education': ['school', 'university', 'class', 'book', 'pen', 'pencil', 'paper', 'test', 'exam'],
+        'hobby': ['hobby', 'music', 'movie', 'game', 'sport', 'reading'],
+        'travel': ['travel', 'trip', 'journey', 'tour', 'visit'],
+        'money': ['money', 'yen', 'dollar', 'euro', 'pay', 'cost'],
+        'conjunction': ['and', 'but', 'or', 'so', 'because', 'although'],
+        'idiom': [],
+        'proverb': [],
+        'onomatopoeia': [],
+        'technology': ['computer', 'phone', 'internet', 'app', 'software', 'hardware'],
+        'business': ['business', 'company', 'manager', 'employee', 'client'],
+        'academic': ['academic', 'research', 'study', 'university', 'professor'],
+        'literature': ['literature', 'novel', 'poem', 'author', 'story'],
+        'formal': ['formal', 'polite', 'respect', 'honorific'],
+        'advanced': ['advanced', 'complex', 'difficult'],
+        'slang': ['slang', 'colloquial', 'casual'],
+        'colloquial': ['colloquial', 'casual', 'informal'],
+        'nuanced': ['nuance', 'subtle', 'implied']
     };
-
     const lowerEnglish = english.toLowerCase();
     for (const [category, words] of Object.entries(categories)) {
         if (words.some(word => lowerEnglish.includes(word))) {
@@ -53,157 +82,14 @@ function determineCategory(english) {
     return 'noun'; // Default to noun if no other category matches
 }
 
-// Function to determine word level based on complexity and category
-function determineLevel(japanese, english, category) {
-    // Define level distribution based on JLPT and category
-    const levelDistribution = {
-        'N5': {
-            // Level 1: Basic survival words (greetings, numbers, pronouns)
-            greeting: 1,
-            number: 1,
-            pronoun: 1,
-            question: 1,
-            // Level 2: Simple nouns (time, weather, directions)
-            time: 2,
-            weather: 2,
-            direction: 2,
-            color: 2,
-            // Level 3: Basic particles and simple verbs
-            particle: 3,
-            verb: 3,
-            // Level 4: Basic adjectives and adverbs
-            adjective: 4,
-            adverb: 4,
-            // Level 5: Common nouns (food, family, body)
-            food: 5,
-            drink: 5,
-            family: 5,
-            body: 5,
-            // Level 6: Basic actions and states
-            action: 6,
-            movement: 6,
-            'change of state': 6,
-            default: 3
-        },
-        'N4': {
-            // Level 3: Basic particles and simple verbs
-            particle: 3,
-            verb: 3,
-            // Level 4: Basic adjectives and adverbs
-            adjective: 4,
-            adverb: 4,
-            // Level 5: Common nouns (food, family, body)
-            food: 5,
-            drink: 5,
-            family: 5,
-            body: 5,
-            // Level 6: Basic actions and states
-            action: 6,
-            movement: 6,
-            'change of state': 6,
-            // Level 7: Transportation and shopping
-            transportation: 7,
-            shopping: 7,
-            // Level 8: Emotions and health
-            emotion: 8,
-            health: 8,
-            housing: 8,
-            // Level 9: Work and education
-            work: 9,
-            education: 9,
-            hobby: 9,
-            travel: 9,
-            money: 9,
-            default: 6
-        },
-        'N3': {
-            // Level 7: Transportation and shopping
-            transportation: 7,
-            shopping: 7,
-            // Level 8: Emotions and health
-            emotion: 8,
-            health: 8,
-            housing: 8,
-            // Level 9: Work and education
-            work: 9,
-            education: 9,
-            hobby: 9,
-            travel: 9,
-            money: 9,
-            // Level 10: Technology and business
-            technology: 10,
-            business: 10,
-            academic: 10,
-            default: 8
-        },
-        'N2': {
-            // Level 9: Work and education
-            work: 9,
-            education: 9,
-            hobby: 9,
-            travel: 9,
-            money: 9,
-            // Level 10: Advanced language
-            technology: 10,
-            business: 10,
-            academic: 10,
-            verb: 10,
-            adjective: 10,
-            adverb: 10,
-            conjunction: 10,
-            idiom: 10,
-            proverb: 10,
-            onomatopoeia: 10,
-            default: 9
-        },
-        'N1': {
-            // Level 10: Advanced language
-            literature: 10,
-            formal: 10,
-            advanced: 10,
-            slang: 10,
-            colloquial: 10,
-            nuanced: 10,
-            default: 10
-        }
-    };
-
-    // First determine the category if not provided
-    if (!category) {
-        category = determineCategory(english);
+// Function to assign a level to a word using the shared logic
+function assignLevel(word) {
+  for (let level = 1; level <= 10; level++) {
+    if (wordBelongsInLevel(word, level)) {
+      return level;
     }
-
-    // Normalize category name to match distribution rules
-    const normalizedCategory = category.toLowerCase().replace(/\s+/g, '');
-    
-    // Determine JLPT level based on word characteristics and category
-    let jlptLevel = 'N5';
-    
-    // Category-based JLPT level determination
-    if (['verb', 'adjective', 'adverb', 'particle', 'action', 'movement', 'change of state'].includes(normalizedCategory)) {
-        jlptLevel = 'N4';  // Basic verbs, adjectives, adverbs, and related categories are N4
-    } else if (['technology', 'business', 'academic'].includes(normalizedCategory)) {
-        jlptLevel = 'N2';
-    } else if (['literature', 'formal', 'advanced'].includes(normalizedCategory)) {
-        jlptLevel = 'N1';
-    }
-
-    // Adjust JLPT level based on word characteristics
-    if (containsKanji(japanese)) {
-        // Words with kanji are typically N4 or higher
-        if (jlptLevel === 'N5') {
-            jlptLevel = 'N4';
-        }
-    } else if (isKatakana(japanese)) {
-        // Katakana words (often loanwords) are typically N4 or higher
-        if (jlptLevel === 'N5') {
-            jlptLevel = 'N4';
-        }
-    }
-
-    // Get the appropriate level based on JLPT level and category
-    const distribution = levelDistribution[jlptLevel];
-    return normalizedCategory ? (distribution[normalizedCategory] || distribution.default) : distribution.default;
+  }
+  return 1; // fallback
 }
 
 // Function to clean and normalize text
@@ -219,6 +105,15 @@ function cleanText(text) {
 function extractRomaji(text) {
     const romajiMatch = text.match(/\[([a-zA-Z\s]+)\]/);
     return romajiMatch ? romajiMatch[1].trim() : '';
+}
+
+// Function to assign JLPT level based on assigned level
+function assignJlptLevel(level) {
+    if (level <= 2) return 'N5';
+    if (level <= 4) return 'N4';
+    if (level <= 6) return 'N3';
+    if (level <= 8) return 'N2';
+    return 'N1';
 }
 
 async function processPDF() {
@@ -273,11 +168,12 @@ async function processPDF() {
                     japanese: japanese,
                     english: english,
                     romaji: romaji,
-                    hiragana: isHiragana(japanese) ? japanese : '', // We'll need to add hiragana conversion
+                    hiragana: isHiragana(japanese) ? japanese : '',
                     kanji: containsKanji(japanese) ? japanese : undefined,
-                    level: determineLevel(japanese, english, determineCategory(english)),
+                    level: assignLevel(word),
                     category: determineCategory(english),
-                    examples: [], // We'll need to add example sentences later
+                    jlptLevel: assignJlptLevel(assignLevel(word)),
+                    examples: [],
                     notes: ''
                 };
                 
@@ -288,18 +184,27 @@ async function processPDF() {
             }
         }
         
-        // Group words by level
-        const wordsByLevel = processedWords.reduce((acc, word) => {
-            if (!acc[word.level]) {
-                acc[word.level] = [];
+        // --- NEW: Evenly distribute by difficulty into 10 levels, max 100 per level ---
+        processedWords.sort((a, b) => a.level - b.level);
+        const maxPerLevel = 100;
+        let currentLevel = 1;
+        let countInLevel = 0;
+        for (let i = 0; i < processedWords.length; i++) {
+            processedWords[i].level = currentLevel;
+            processedWords[i].jlptLevel = assignJlptLevel(currentLevel);
+            countInLevel++;
+            if (countInLevel >= maxPerLevel) {
+                currentLevel++;
+                countInLevel = 0;
+                if (currentLevel > 10) break;
             }
-            acc[word.level].push(word);
-            return acc;
-        }, {});
-        
-        // Save the processed words
+        }
+        processedWords.length = Math.min(processedWords.length, 10 * maxPerLevel);
+        // --- END NEW ---
+
+        // Save the processed words as a flat array
         const outputPath = path.join(__dirname, '..', 'src', 'data', 'processed_words.json');
-        fs.writeFileSync(outputPath, JSON.stringify(wordsByLevel, null, 2));
+        fs.writeFileSync(outputPath, JSON.stringify(processedWords, null, 2));
         
         console.log(`Processed ${processedWords.length} words`);
         console.log('Words saved to:', outputPath);

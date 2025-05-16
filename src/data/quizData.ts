@@ -5097,6 +5097,258 @@ export const quizWords: QuizWord[] = [
     "romaji": "n",
     "isHiragana": false,
     "isKatakana": true
+  },
+  {
+    "japanese": "こんにちは",
+    "english": "hello",
+    "category": "greeting",
+    "difficulty": "easy",
+    "romaji": "konnichiwa",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "コンニチハ",
+    "english": "hello",
+    "category": "greeting",
+    "difficulty": "easy",
+    "romaji": "konnichiwa",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "なに",
+    "english": "what",
+    "category": "question",
+    "difficulty": "easy",
+    "romaji": "nani",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "ナニ",
+    "english": "what",
+    "category": "question",
+    "difficulty": "easy",
+    "romaji": "nani",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "わたし",
+    "english": "I, me",
+    "category": "pronoun",
+    "difficulty": "easy",
+    "romaji": "watashi",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "ワタシ",
+    "english": "I, me",
+    "category": "pronoun",
+    "difficulty": "easy",
+    "romaji": "watashi",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "たべる",
+    "english": "to eat",
+    "category": "verb",
+    "difficulty": "easy",
+    "romaji": "taberu",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "タベル",
+    "english": "to eat",
+    "category": "verb",
+    "difficulty": "easy",
+    "romaji": "taberu",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "あかい",
+    "english": "red",
+    "category": "adjective",
+    "difficulty": "easy",
+    "romaji": "akai",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "アカイ",
+    "english": "red",
+    "category": "adjective",
+    "difficulty": "easy",
+    "romaji": "akai",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "ゆっくり",
+    "english": "slowly",
+    "category": "adverb",
+    "difficulty": "easy",
+    "romaji": "yukkuri",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "ユックリ",
+    "english": "slowly",
+    "category": "adverb",
+    "difficulty": "easy",
+    "romaji": "yukkuri",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "は",
+    "english": "topic particle",
+    "category": "particle",
+    "difficulty": "easy",
+    "romaji": "wa",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "ハ",
+    "english": "topic particle",
+    "category": "particle",
+    "difficulty": "easy",
+    "romaji": "wa",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "そして",
+    "english": "and (then)",
+    "category": "conjunction",
+    "difficulty": "easy",
+    "romaji": "soshite",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "ソシテ",
+    "english": "and (then)",
+    "category": "conjunction",
+    "difficulty": "easy",
+    "romaji": "soshite",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "ああ",
+    "english": "ah! (interjection)",
+    "category": "interjection",
+    "difficulty": "easy",
+    "romaji": "aa",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "アア",
+    "english": "ah! (interjection)",
+    "category": "interjection",
+    "difficulty": "easy",
+    "romaji": "aa",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "ごはん",
+    "english": "rice, meal",
+    "category": "food",
+    "difficulty": "easy",
+    "romaji": "gohan",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "ゴハン",
+    "english": "rice, meal",
+    "category": "food",
+    "difficulty": "easy",
+    "romaji": "gohan",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "みず",
+    "english": "water",
+    "category": "drink",
+    "difficulty": "easy",
+    "romaji": "mizu",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "ミズ",
+    "english": "water",
+    "category": "drink",
+    "difficulty": "easy",
+    "romaji": "mizu",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "ねこ",
+    "english": "cat",
+    "category": "animals",
+    "difficulty": "easy",
+    "romaji": "neko",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "ネコ",
+    "english": "cat",
+    "category": "animals",
+    "difficulty": "easy",
+    "romaji": "neko",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "あか",
+    "english": "red",
+    "category": "colors",
+    "difficulty": "easy",
+    "romaji": "aka",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "アカ",
+    "english": "red",
+    "category": "colors",
+    "difficulty": "easy",
+    "romaji": "aka",
+    "isHiragana": false,
+    "isKatakana": true
+  },
+  {
+    "japanese": "いち",
+    "english": "one",
+    "category": "numbers",
+    "difficulty": "easy",
+    "romaji": "ichi",
+    "isHiragana": true,
+    "isKatakana": false
+  },
+  {
+    "japanese": "イチ",
+    "english": "one",
+    "category": "numbers",
+    "difficulty": "easy",
+    "romaji": "ichi",
+    "isHiragana": false,
+    "isKatakana": true
   }
 ];
 

@@ -220,14 +220,8 @@ const WordPractice: React.FC = () => {
     }
   };
 
-  const handlePlayAudio = (text: string, id?: string) => {
-    if (id) {
-      // Use pre-generated audio if we have an ID
-      playAudio(id);
-    } else {
-      // Fallback to dynamic audio for content without an ID
-      playDynamicAudio(text);
-    }
+  const handlePlayAudio = (japanese: string) => {
+    playAudio(japanese);
   };
 
   useEffect(() => {
@@ -496,7 +490,7 @@ const WordPractice: React.FC = () => {
                 <div className={`text-3xl font-bold text-center mb-4 ${themeClasses.text}`}>
                   {currentWord.japanese}
                   <button
-                    onClick={() => handlePlayAudio(currentWord.japanese, currentWord.id)}
+                    onClick={() => handlePlayAudio(currentWord.japanese)}
                     className="ml-2 p-2 rounded-full hover:bg-opacity-10"
                     title="Play Audio"
                   >

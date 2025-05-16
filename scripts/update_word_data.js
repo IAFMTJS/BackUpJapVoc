@@ -7,38 +7,66 @@ const words = JSON.parse(fs.readFileSync(processedWordsPath, 'utf8'));
 
 // Category mapping from old to new categories
 const categoryMapping = {
-  'People': 'noun',
-  'Animals': 'noun',
-  'Food': 'food',
-  'Drink': 'drink',
-  'Time': 'time',
-  'Numbers': 'number',
+  // Basic Categories
   'Greetings': 'greeting',
+  'Numbers': 'number',
+  'Pronouns': 'pronoun',
+  'Questions': 'question',
+  
+  // Parts of Speech
   'Verbs': 'verb',
   'Adjectives': 'adjective',
   'Adverbs': 'adverb',
   'Particles': 'particle',
+  'Conjunctions': 'conjunction',
+  'Interjections': 'interjection',
+  'Pre-noun adjectival': 'adjective',
+  
+  // Topic Categories
+  'Food': 'food',
+  'Drink': 'drink',
+  'Animals': 'animal',
+  'Colors': 'color',
+  'Time': 'time',
   'Family': 'family',
   'Weather': 'weather',
   'Body': 'body',
   'Health': 'health',
-  'Transportation': 'transportation',
   'Work': 'work',
   'Education': 'education',
+  'Hobbies': 'hobby',
+  'Travel': 'travel',
   'Shopping': 'shopping',
   'Money': 'money',
-  'Technology': 'technology',
+  'Transportation': 'transportation',
   'Nature': 'nature',
-  'Animals': 'animal',
-  'Colors': 'color',
-  'Directions': 'direction',
-  'Location': 'location',
-  'Measurement': 'measurement',
+  'Housing': 'housing',
+  'Technology': 'technology',
+  'Business': 'business',
+  'Academic': 'academic',
+  'Language': 'language',
+  'Media': 'media',
+  'Others': 'other',
+  'Abstract nouns': 'abstract',
+  'Forms': 'form',
+  'Activities': 'activity',
+  'Emotions': 'emotion',
+  'Directions and positions': 'direction',
+  'Plants': 'plant',
+  'Crops': 'crop',
+  'People': 'person',
+  
+  // Special Categories
   'Idioms': 'idiom',
   'Proverbs': 'proverb',
   'Onomatopoeia': 'onomatopoeia',
   'Honorific': 'honorific',
-  'Slang': 'slang'
+  'Slang': 'slang',
+  'Colloquial': 'colloquial',
+  'Nuanced': 'nuanced',
+  'Literature': 'literature',
+  'Formal': 'formal',
+  'Advanced': 'advanced'
 };
 
 // Example sentences for common words
@@ -261,7 +289,7 @@ const exampleSentences = {
 // Update the words with new structure
 const updatedWords = words.map(word => {
   // Get the new category
-  const newCategory = categoryMapping[word.category] || 'noun';
+  const newCategory = categoryMapping[word.category] || word.category.toLowerCase();
   
   // Get example sentences if available
   const examples = exampleSentences[word.kanji] || [];

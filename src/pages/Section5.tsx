@@ -5,7 +5,7 @@ import { useProgress } from '../context/ProgressContext';
 import { useWordLevel } from '../context/WordLevelContext';
 import { useSound } from '../context/SoundContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
-import { allWords } from '../data/quizData';
+import { allWords } from '../data/japaneseWords';
 import { wordLevels } from '../data/wordLevels';
 import { Box, Typography, Stack, Chip, Button, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';

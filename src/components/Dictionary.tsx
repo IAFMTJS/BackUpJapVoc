@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress, ProgressItem } from '../context/ProgressContext';
 import { useWordLevel } from '../context/WordLevelContext';
-import { QuizWord, quizWords } from '../data/quizData';
+import { allWords } from '../data/japaneseWords';
 import { Kanji, kanjiList } from '../data/kanjiData';
 import { useSound } from '../context/SoundContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
@@ -70,7 +70,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
       let katakanaFiltered: DictionaryItem[] = [];
 
       // Get all words up to the current level
-      const availableWords = quizWords.filter(word => {
+      const availableWords = allWords.filter(word => {
         const wordLevel = wordLevels.find(level => 
           level.words.some(w => w.japanese === word.japanese)
         );
@@ -289,7 +289,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     const levels = wordLevels.filter(level => unlockedLevels.includes(level.level));
     
     levels.forEach(level => {
-      const levelWords = quizWords.filter(word => 
+      const levelWords = allWords.filter(word => 
         level.words.some(w => w.japanese === word.japanese)
       );
       
@@ -477,7 +477,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
   const handleItemClick = (item: DictionaryItem) => {
     // Check if the word is available at the current level
     const wordLevel = wordLevels.find(level => 
-      level.words.some(w => w.japanese === item.japanese)
+      level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
     );
 
     if (wordLevel && !unlockedLevels.includes(wordLevel.level)) {
@@ -488,14 +488,8 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     setSelectedItem(item);
   };
 
-  const handlePlayAudio = (text: string, id?: string) => {
-    if (id) {
-      // Use pre-generated audio if we have an ID
-      playAudio(id);
-    } else {
-      // Fallback to dynamic audio for content without an ID
-      playDynamicAudio(text);
-    }
+  const handlePlayAudio = (japanese: string) => {
+    playAudio(japanese);
   };
 
   const renderLockedAlert = () => (
@@ -535,7 +529,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
   const renderItem = (item: DictionaryItem) => {
     const wordLevel = wordLevels.find(level => 
-      level.words.some(w => w.japanese === item.japanese)
+      level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
     );
     const isLocked = wordLevel && !unlockedLevels.includes(wordLevel.level);
     const isMarked = isItemMarked('japanese' in item ? item.japanese : item.character);
@@ -561,7 +555,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
             <button
               onClick={e => {
                 e.stopPropagation();
-                handlePlayAudio(item.japanese, 'japanese' in item ? item.id : undefined);
+                handlePlayAudio(item.japanese);
               }}
               title="Play Audio"
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}
@@ -625,7 +619,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
                 {item.character}
               </Typography>
               <button
-                onClick={() => handlePlayAudio(item.character, item.id)}
+                onClick={() => handlePlayAudio(item.character)}
                 title="Play Audio"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}
               >
@@ -775,7 +769,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
                 {item.japanese}
               </Typography>
               <button
-                onClick={() => handlePlayAudio(item.japanese, item.id)}
+                onClick={() => handlePlayAudio(item.japanese)}
                 title="Play Audio"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}
               >

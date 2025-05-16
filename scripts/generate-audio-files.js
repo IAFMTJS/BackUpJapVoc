@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const gTTS = require('gtts');
 const commonWords = require('../src/data/common-words.json');
+const crypto = require('crypto');
 
 // Log the exact length of the data
 console.log('Number of words in common-words.json:', commonWords.length);
@@ -16,6 +17,11 @@ if (!fs.existsSync(audioDir)) {
 let successCount = 0;
 let errorCount = 0;
 let skippedCount = 0;
+
+// Helper to create a SHA-1 hash from a string (safe for filenames)
+function hashJapanese(text) {
+  return crypto.createHash('sha1').update(text).digest('hex');
+}
 
 async function generateAudioFile(text, filename) {
   const filepath = path.join(audioDir, filename);
@@ -62,19 +68,24 @@ async function generateAllAudioFiles() {
         batch.map(async (word) => {
           try {
             // Generate audio for the Japanese word
-            const filename = `cw-${word.id}.mp3`;
+            const hash = hashJapanese(word.japanese);
+            const filename = `${hash}.mp3`;
             await generateAudioFile(word.japanese, filename);
+            // For debugging: log mapping
+            fs.appendFileSync(path.join(audioDir, 'audio_map.txt'), `${word.japanese} => ${filename}\n`);
             
             // Generate audio for example sentences if they exist
             if (word.examples && word.examples.length > 0) {
               for (let j = 0; j < word.examples.length; j++) {
                 const example = word.examples[j];
-                const exampleFilename = `cw-${word.id}_example_${j + 1}.mp3`;
+                const exampleHash = hashJapanese(example);
+                const exampleFilename = `${exampleHash}_example_${j + 1}.mp3`;
                 await generateAudioFile(example, exampleFilename);
+                fs.appendFileSync(path.join(audioDir, 'audio_map.txt'), `${example} => ${exampleFilename}\n`);
               }
             }
           } catch (wordError) {
-            console.error(`Error processing word ${word.id}:`, wordError);
+            console.error(`Error processing word ${word.japanese}:`, wordError);
           }
         })
       );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWordLevel } from '../context/WordLevelContext';
-import { JapaneseWord } from '../data/wordLevels';
+import { JapaneseWord } from '../data/types';
 import { useTheme } from '../context/ThemeContext';
 import { playAudio, playDynamicAudio } from '../utils/audio';
 import { QuizWord } from '../data/quizData';
@@ -191,14 +191,8 @@ const WordLevelPractice: React.FC = () => {
     setPracticeState(prev => ({ ...prev, showHint: true }));
   };
 
-  const handlePlayAudio = (text: string, id?: string) => {
-    if (id) {
-      // Use pre-generated audio if we have an ID
-      playAudio(id);
-    } else {
-      // Fallback to dynamic audio for content without an ID
-      playDynamicAudio(text);
-    }
+  const handlePlayAudio = (japanese: string) => {
+    playAudio(japanese);
   };
 
   const renderPracticeContent = () => {
@@ -228,7 +222,7 @@ const WordLevelPractice: React.FC = () => {
                currentWord.romaji}
             </h2>
             <button
-              onClick={() => handlePlayAudio(currentWord.japanese, currentWord.id)}
+              onClick={() => handlePlayAudio(currentWord.japanese)}
               className="ml-2 p-2 rounded-full hover:bg-opacity-10"
               title="Play Audio"
             >

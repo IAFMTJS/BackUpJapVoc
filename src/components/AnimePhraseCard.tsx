@@ -34,13 +34,7 @@ const AnimePhraseCard: React.FC<AnimePhraseCardProps> = ({
   const imageUrl = animeImage || '/anime/default.JPG';
 
   const handlePlayAudio = () => {
-    if (id) {
-      // Use pre-generated audio if we have an ID
-      playAudio(id);
-    } else {
-      // Fallback to dynamic audio for content without an ID
-      playDynamicAudio(japanese);
-    }
+    playAudio(japanese);
   };
 
   return (

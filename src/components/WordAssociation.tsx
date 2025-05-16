@@ -88,14 +88,8 @@ const WordAssociation: React.FC = () => {
     }));
   };
 
-  const handlePlayAudio = (text: string, id?: string) => {
-    if (id) {
-      // Use pre-generated audio if we have an ID
-      playAudio(id);
-    } else {
-      // Fallback to dynamic audio for content without an ID
-      playDynamicAudio(text);
-    }
+  const handlePlayAudio = (japanese: string) => {
+    playAudio(japanese);
   };
 
   if (gameState.currentQuestion >= gameState.totalQuestions) {
@@ -199,7 +193,7 @@ const WordAssociation: React.FC = () => {
           </button>
 
           <button
-            onClick={() => handlePlayAudio(gameState.currentWord?.japanese || '', gameState.currentWord?.id)}
+            onClick={() => handlePlayAudio(gameState.currentWord?.japanese || '')}
             className="ml-2 p-2 rounded-full hover:bg-opacity-10"
             title="Play Audio"
           >

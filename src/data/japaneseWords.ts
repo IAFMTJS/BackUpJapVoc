@@ -2,7 +2,16 @@ import { JapaneseWord, ExampleSentence } from './types';
 import processedWords from './processed_words.json';
 
 // Helper to convert JLPT level string to number and difficulty
-function parseLevel(level: string | undefined | null, category?: string): { level: number; difficulty: 'beginner' | 'intermediate' | 'advanced'; jlptLevel?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' } {
+function parseLevel(level: string | number | undefined | null, category?: string): { level: number; difficulty: 'beginner' | 'intermediate' | 'advanced'; jlptLevel?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' } {
+  // If level is a number, handle it directly
+  if (typeof level === 'number') {
+    return {
+      level: level,
+      difficulty: level <= 2 ? 'beginner' : level <= 4 ? 'intermediate' : 'advanced'
+    };
+  }
+
+  // If level is a string, try to parse as JLPT level first
   const jlptLevel = level ? (level.toUpperCase() as 'N5' | 'N4' | 'N3' | 'N2' | 'N1' | undefined) : undefined;
   
   // Define level distribution based on JLPT and category
@@ -78,15 +87,6 @@ function parseLevel(level: string | undefined | null, category?: string): { leve
     };
   }
 
-  // If no JLPT level, try to parse as number
-  const n = parseInt(level, 10);
-  if (!isNaN(n) && n >= 1 && n <= 10) {
-    return {
-      level: n,
-      difficulty: n <= 2 ? 'beginner' : n <= 4 ? 'intermediate' : 'advanced'
-    };
-  }
-
   // Default to level 1 for unknown words
   return {
     level: 1,
@@ -139,7 +139,9 @@ export const allWords: JapaneseWord[] = (processedWords as any[]).map((w, idx) =
     jlptLevel,
     category: w.category || 'noun',
     examples: processExamples(w),
-    notes: w.notes || ''
+    notes: w.notes || '',
+    isHiragana: /^[\u3040-\u309F]+$/.test(w.kana),
+    isKatakana: /^[\u30A0-\u30FF]+$/.test(w.kana)
   };
 });
 
@@ -168,6 +170,12 @@ allWords.forEach(word => {
   wordsByCategory[cat].push(word);
 });
 
+// Log the number of words in each category
+console.log('Words by category:');
+Object.entries(wordsByCategory).forEach(([category, words]) => {
+  console.log(`${category}: ${words.length} words`);
+});
+
 // Group by JLPT level
 export const wordsByJLPT: Record<string, JapaneseWord[]> = {};
 allWords.forEach(word => {
@@ -175,6 +183,12 @@ allWords.forEach(word => {
     if (!wordsByJLPT[word.jlptLevel]) wordsByJLPT[word.jlptLevel] = [];
     wordsByJLPT[word.jlptLevel].push(word);
   }
+});
+
+// Log the number of words in each JLPT level
+console.log('Words by JLPT level:');
+Object.entries(wordsByJLPT).forEach(([level, words]) => {
+  console.log(`${level}: ${words.length} words`);
 });
 
 // We'll continue adding more words in subsequent edits... 

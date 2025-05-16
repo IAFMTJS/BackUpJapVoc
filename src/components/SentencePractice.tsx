@@ -171,14 +171,8 @@ const SentencePractice: React.FC = () => {
     }
   };
 
-  const handlePlayAudio = (text: string, id?: string) => {
-    if (id) {
-      // Use pre-generated audio if we have an ID
-      playAudio(id);
-    } else {
-      // Fallback to dynamic audio for content without an ID
-      playDynamicAudio(text);
-    }
+  const handlePlayAudio = (japanese: string) => {
+    playAudio(japanese);
   };
 
   useEffect(() => {
@@ -353,7 +347,7 @@ const SentencePractice: React.FC = () => {
             {getBlankedSentence(currentExample.japanese, 0)}
           </div>
           <button
-            onClick={() => handlePlayAudio(currentExample.japanese, currentExample.id)}
+            onClick={() => handlePlayAudio(currentExample.japanese)}
             className="ml-2 p-2 rounded-full hover:bg-opacity-10"
             title="Play Audio"
           >
@@ -422,7 +416,7 @@ const SentencePractice: React.FC = () => {
           )}
 
           <button
-            onClick={() => handlePlayAudio(currentExample.japanese, currentExample.id)}
+            onClick={() => handlePlayAudio(currentExample.japanese)}
             className="ml-2 p-2 rounded-full hover:bg-opacity-10"
             title="Play Audio"
           >
