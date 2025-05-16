@@ -61,7 +61,7 @@ export const allWords: JapaneseWord[] = (processedWords as any[]).map((w, idx) =
   const { level, difficulty, jlptLevel } = parseLevel(w.level);
   
   return {
-    id: `w-${idx + 1}`,
+    id: `cw-${idx + 1}`,
     japanese: w.kanji && w.kanji.length > 0 ? w.kanji : w.kana,
     english: w.english,
     romaji: w.romaji,

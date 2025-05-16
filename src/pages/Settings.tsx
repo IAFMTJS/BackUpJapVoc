@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import type { Settings } from '../context/AppContext';
 import { useProgress } from '../context/ProgressContext';
 import { downloadOfflineData } from '../utils/offlineData';
+import AudioManager from '../components/AudioManager';
 
 const SettingsPage: React.FC = () => {
   const { theme, isDarkMode, setTheme, toggleDarkMode } = useTheme();
@@ -110,7 +111,7 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
           {/* Theme Settings */}
           <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
             <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>Appearance</h2>
@@ -182,6 +183,17 @@ const SettingsPage: React.FC = () => {
                 </button>
                 {downloadSuccess && <span className="text-green-600 font-semibold">Offline data opgeslagen!</span>}
                 {downloadError && <span className="text-red-600 font-semibold">{downloadError}</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Audio Settings */}
+          <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
+            <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>Audio Settings</h2>
+            <div className="space-y-4">
+              {renderToggle('autoPlay', 'Auto Play', 'Automatically play audio for new words')}
+              <div className="mt-6">
+                <AudioManager />
               </div>
             </div>
           </div>
