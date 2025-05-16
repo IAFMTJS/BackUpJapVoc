@@ -2,8 +2,8 @@ import { JapaneseWord, ExampleSentence } from './types';
 import processedWords from './processed_words.json';
 
 // Helper to convert JLPT level string to number and difficulty
-function parseLevel(level: string, category?: string): { level: number; difficulty: 'beginner' | 'intermediate' | 'advanced'; jlptLevel?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' } {
-  const jlptLevel = (level || '').toUpperCase() as 'N5' | 'N4' | 'N3' | 'N2' | 'N1' | undefined;
+function parseLevel(level: string | undefined | null, category?: string): { level: number; difficulty: 'beginner' | 'intermediate' | 'advanced'; jlptLevel?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' } {
+  const jlptLevel = level ? (level.toUpperCase() as 'N5' | 'N4' | 'N3' | 'N2' | 'N1' | undefined) : undefined;
   
   // Define level distribution based on JLPT and category
   const levelDistribution = {
