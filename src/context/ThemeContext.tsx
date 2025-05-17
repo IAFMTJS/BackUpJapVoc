@@ -40,7 +40,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   return (
     <ThemeContext.Provider value={value}>
-      <div className={isDarkMode ? 'dark' : theme}>
+      <div className={`${isDarkMode ? 'dark' : ''} theme-${theme}`}>
         {children}
       </div>
     </ThemeContext.Provider>

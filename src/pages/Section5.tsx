@@ -10,6 +10,7 @@ import { wordLevels } from '../data/wordLevels';
 import { Box, Typography, Stack, Chip, Button, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import SettingsPanel from '../components/Settings';
+import { playAudio, playDynamicAudio } from '../utils/audio';
 
 interface Category {
   id: string;
@@ -282,6 +283,11 @@ const Section5 = () => {
     const key = `${section}-${word.japanese}`;
     const isMarked = progress[key]?.correct > 0;
 
+    const handlePlayAudio = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      playAudio(word.japanese);
+    };
+
     return (
       <Box
         key={word.japanese}
@@ -298,9 +304,22 @@ const Section5 = () => {
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box>
-            <Typography variant="h6" component="h3">
-              {word.japanese}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="h6" component="h3">
+                {word.japanese}
+              </Typography>
+              <Button
+                onClick={handlePlayAudio}
+                sx={{ 
+                  minWidth: 'auto', 
+                  p: 0.5,
+                  '&:hover': { bgcolor: 'action.hover' }
+                }}
+                title="Play Audio"
+              >
+                🔊
+              </Button>
+            </Box>
             {settings.showRomajiVocabulary && (
               <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
                 {romajiMap[word.japanese.trim()] || 'Loading...'}

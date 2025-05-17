@@ -6,11 +6,13 @@ import type { Settings } from '../context/AppContext';
 import { useProgress } from '../context/ProgressContext';
 import { downloadOfflineData } from '../utils/offlineData';
 import AudioManager from '../components/AudioManager';
+import { useAccessibility } from '../context/AccessibilityContext';
 
 const SettingsPage: React.FC = () => {
   const { theme, isDarkMode, setTheme, toggleDarkMode } = useTheme();
   const { settings, updateSettings } = useApp();
   const { progress: progressData, resetProgress } = useProgress();
+  const { settings: accessibilitySettings, updateSettings: updateAccessibilitySettings } = useAccessibility();
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
   const [downloadSuccess, setDownloadSuccess] = React.useState(false);
@@ -98,6 +100,99 @@ const SettingsPage: React.FC = () => {
       setIsDownloading(false);
     }
   };
+
+  const renderAccessibilitySettings = () => (
+    <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
+      <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>Accessibility Settings</h2>
+      
+      <div className="space-y-4">
+        <div>
+          <label className={`block mb-2 ${themeClasses.text}`}>Font Size</label>
+          <select
+            value={accessibilitySettings.fontSize}
+            onChange={(e) => updateAccessibilitySettings({ fontSize: e.target.value as 'small' | 'medium' | 'large' })}
+            className={`w-full p-2 rounded ${themeClasses.select}`}
+          >
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="highContrast"
+            checked={accessibilitySettings.highContrast}
+            onChange={(e) => updateAccessibilitySettings({ highContrast: e.target.checked })}
+            className="form-checkbox h-5 w-5 text-blue-600"
+          />
+          <label htmlFor="highContrast" className={themeClasses.text}>
+            High Contrast Mode
+          </label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="reducedMotion"
+            checked={accessibilitySettings.reducedMotion}
+            onChange={(e) => updateAccessibilitySettings({ reducedMotion: e.target.checked })}
+            className="form-checkbox h-5 w-5 text-blue-600"
+          />
+          <label htmlFor="reducedMotion" className={themeClasses.text}>
+            Reduced Motion
+          </label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="screenReader"
+            checked={accessibilitySettings.screenReader}
+            onChange={(e) => updateAccessibilitySettings({ screenReader: e.target.checked })}
+            className="form-checkbox h-5 w-5 text-blue-600"
+          />
+          <label htmlFor="screenReader" className={themeClasses.text}>
+            Screen Reader Optimizations
+          </label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="keyboardNavigation"
+            checked={accessibilitySettings.keyboardNavigation}
+            onChange={(e) => updateAccessibilitySettings({ keyboardNavigation: e.target.checked })}
+            className="form-checkbox h-5 w-5 text-blue-600"
+          />
+          <label htmlFor="keyboardNavigation" className={themeClasses.text}>
+            Enhanced Keyboard Navigation
+          </label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="focusHighlight"
+            checked={accessibilitySettings.focusHighlight}
+            onChange={(e) => updateAccessibilitySettings({ focusHighlight: e.target.checked })}
+            className="form-checkbox h-5 w-5 text-blue-600"
+          />
+          <label htmlFor="focusHighlight" className={themeClasses.text}>
+            Focus Highlight
+          </label>
+        </div>
+
+        <button
+          onClick={() => updateAccessibilitySettings(defaultSettings)}
+          className={`mt-4 px-4 py-2 rounded ${themeClasses.button}`}
+        >
+          Reset Accessibility Settings
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
@@ -219,6 +314,9 @@ const SettingsPage: React.FC = () => {
               {renderToggle('useHiraganaGames', 'Use Hiragana in Games', 'Use hiragana instead of katakana in games')}
             </div>
           </div>
+
+          {/* Accessibility Settings */}
+          {renderAccessibilitySettings()}
 
           {/* Progress Section */}
           <div className={`rounded-lg shadow-md p-6 ${themeClasses.container} md:col-span-2`}>

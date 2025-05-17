@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
-import { playDynamicAudio } from '../utils/audio';
+import { playAudio } from '../utils/audio';
 
 interface JLPTContent {
   grammar: {
@@ -175,7 +175,7 @@ const Section7 = () => {
                   <div key={i} className="flex items-center gap-2">
                     <p className="text-lg">{example}</p>
                     <button
-                      onClick={() => playDynamicAudio(example)}
+                      onClick={() => playAudio(example)}
                       className="p-1 rounded-full hover:bg-gray-200"
                       title="Play Example Audio"
                     >
@@ -203,7 +203,7 @@ const Section7 = () => {
               <div className="flex items-center gap-2">
                 <div className="font-medium">{vocab.word}</div>
                 <button
-                  onClick={() => playDynamicAudio(vocab.word)}
+                  onClick={() => playAudio(vocab.word)}
                   className="p-1 rounded-full hover:bg-gray-200"
                   title="Play Word Audio"
                 >
@@ -233,7 +233,7 @@ const Section7 = () => {
                 <div className="flex items-center gap-2">
                   <p className="text-lg leading-relaxed">{reading.passage}</p>
                   <button
-                    onClick={() => playDynamicAudio(reading.passage)}
+                    onClick={() => playAudio(reading.passage)}
                     className="ml-2 p-2 rounded-full hover:bg-gray-200"
                     title="Play Passage Audio"
                   >
@@ -252,7 +252,7 @@ const Section7 = () => {
                     <div className="flex items-center gap-2 mb-2">
                       <p className="font-medium">{question.question}</p>
                       <button
-                        onClick={() => playDynamicAudio(question.question)}
+                        onClick={() => playAudio(question.question)}
                         className="p-1 rounded-full hover:bg-gray-200"
                         title="Play Question Audio"
                       >

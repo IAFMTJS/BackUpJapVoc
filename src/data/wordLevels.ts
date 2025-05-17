@@ -1,6 +1,7 @@
 import { allWords } from './japaneseWords';
 import { JapaneseWord, ExampleSentence, WordLevel, LevelRequirement, WordProgress, LevelProgress, QuizAttempt, JLPTTest, ReadingPractice, UserProgress } from './types';
 import { levelDistribution, wordBelongsInLevel } from './levelRules';
+import { readingMaterials } from './readingMaterials';
 
 // First pass: distribute words based on category and JLPT level rules
 const initialWordsByLevel: { [key: number]: JapaneseWord[] } = {};
@@ -72,14 +73,7 @@ export const wordLevels: WordLevel[] = Array.from({ length: 10 }, (_, i) => {
         completed: false
       }
     ],
-    readingMaterials: [
-      {
-        title: `Level ${level} Reading 1`,
-        difficulty: level <= 3 ? "easy" : level <= 6 ? "medium" : "hard",
-        content: "Sample reading content will be added later.",
-        vocabulary: words.slice(0, 10).map(w => w.japanese)
-      }
-    ],
+    readingMaterials: readingMaterials[level] || [],
     words
   };
 });

@@ -7,16 +7,17 @@ import { useProgress } from '../context/ProgressContext';
 import { ProgressItem } from '../types';
 import { quizWords } from '../data/quizData';
 import { kanjiList } from '../data/kanjiData';
+import { beginnerPhrases } from './AnimeSection';
 
 type TabType = 'progress' | 'dictionary';
 
 const sections = [
   { 
-    id: 'quiz', 
-    name: 'H&K Quiz', 
+    id: 'vocabulary', 
+    name: 'Vocabulary Quiz', 
     icon: '📝', 
     total: quizWords.filter(item => item.isHiragana).length + quizWords.filter(item => item.isKatakana).length,
-    description: 'Test your knowledge of Hiragana and Katakana'
+    description: 'Test your knowledge of Japanese vocabulary'
   },
   { 
     id: 'dictionary', 
@@ -28,7 +29,7 @@ const sections = [
   { 
     id: 'kanji', 
     name: 'Kanji', 
-    icon: '漢', 
+    icon: '🀄', 
     total: kanjiList.length,
     description: 'Master Japanese characters'
   },
@@ -37,20 +38,21 @@ const sections = [
     name: 'Games', 
     icon: '🎮', 
     total: 50,
-    description: 'Learn through interactive games'
+    description: 'Learn through interactive games',
+    path: '/games'
   },
   { 
-    id: 'vocabulary', 
-    name: 'Vocabbuilder', 
+    id: 'vocabulary-builder', 
+    name: 'Vocabulary Builder', 
     icon: '📚', 
     total: quizWords.length,
     description: 'Build your vocabulary systematically'
   },
   { 
     id: 'anime', 
-    name: 'Anime section', 
+    name: 'Anime Section', 
     icon: '🎬', 
-    total: 30,
+    total: beginnerPhrases.length,
     description: 'Learn from anime and manga'
   },
 ];
@@ -140,9 +142,9 @@ const ProgressPage: React.FC = () => {
       sectionItems = Object.values(progress).filter(item =>
         item.section === 'hiragana' || item.section === 'katakana' || item.section === 'kanji'
       );
-    } else if (section.id === 'quiz') {
+    } else if (section.id === 'vocabulary') {
       sectionItems = Object.values(progress).filter(item =>
-        item.section === 'hiragana' || item.section === 'katakana'
+        item.section === 'vocabulary'
       );
     } else {
       sectionItems = Object.values(progress).filter(item => item.section === section.id);
@@ -152,9 +154,8 @@ const ProgressPage: React.FC = () => {
     let sectionCompleted = 0;
     if (section.id === 'dictionary') {
       sectionCompleted = sectionItems.filter(item => item.correct >= 3).length;
-    } else if (section.id === 'quiz') {
-      // Only count as completed if mastered (20+ correct)
-      sectionCompleted = sectionItems.filter(item => item.correct >= 20).length;
+    } else if (section.id === 'vocabulary') {
+      sectionCompleted = sectionItems.filter(item => item.correct >= 5).length;
     } else {
       sectionCompleted = sectionItems.filter(item => item.correct > 0).length;
     }
@@ -222,16 +223,16 @@ const ProgressPage: React.FC = () => {
     }
   };
 
-  // Update calculateSectionStats function signature
+  // Update calculateSectionStats function
   const calculateSectionStats = (sectionId: string, progress: Record<string, ProgressItem>): SectionStats => {
     let sectionItems: ProgressItem[] = [];
     if (sectionId === 'dictionary') {
       sectionItems = Object.values(progress).filter(item =>
         item.section === 'hiragana' || item.section === 'katakana' || item.section === 'kanji'
       );
-    } else if (sectionId === 'quiz') {
+    } else if (sectionId === 'vocabulary') {
       sectionItems = Object.values(progress).filter(item =>
-        item.section === 'hiragana' || item.section === 'katakana'
+        item.section === 'vocabulary'
       );
     } else {
       sectionItems = Object.values(progress).filter(item => item.section === sectionId);
@@ -245,12 +246,12 @@ const ProgressPage: React.FC = () => {
       almostMastered: 0,
       mastered: 0
     };
-    if (sectionId === 'quiz') {
-      // H&K Quiz mastery logic
+    
+    if (sectionId === 'vocabulary') {
       masteryLevels = {
-        started: sectionItems.filter(item => item.correct >= 10 && item.correct < 20).length,
-        almostMastered: 0, // Not used for this section
-        mastered: sectionItems.filter(item => item.correct >= 20).length
+        started: sectionItems.filter(item => item.correct >= 1 && item.correct < 3).length,
+        almostMastered: sectionItems.filter(item => item.correct >= 3 && item.correct < 5).length,
+        mastered: sectionItems.filter(item => item.correct >= 5).length
       };
     } else if (sectionId === 'dictionary') {
       masteryLevels = {
@@ -266,8 +267,7 @@ const ProgressPage: React.FC = () => {
       progressPercentage = totalPossibleItems > 0
         ? (masteryLevels.mastered / totalPossibleItems) * 100
         : 0;
-    } else if (sectionId === 'quiz') {
-      // Only mastered items count for progress
+    } else if (sectionId === 'vocabulary') {
       progressPercentage = totalPossibleItems > 0
         ? (masteryLevels.mastered / totalPossibleItems) * 100
         : 0;
@@ -290,7 +290,7 @@ const ProgressPage: React.FC = () => {
         totalItems: totalPossibleItems,
         progressPercentage
       };
-    } else if (sectionId === 'quiz') {
+    } else if (sectionId === 'vocabulary') {
       return {
         masteryLevels,
         recentActivity,
@@ -344,15 +344,15 @@ const ProgressPage: React.FC = () => {
         {/* Section Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sections.map((section) => {
-            const sectionStats = section.id === 'dictionary' || section.id === 'quiz'
+            const sectionStats = section.id === 'dictionary' || section.id === 'vocabulary'
               ? calculateSectionStats(section.id, progress)
               : calculateSectionStats(section.id, progress);
             const sectionPercent = Math.round(sectionStats.progressPercentage);
             
             const isDictionarySection = section.id === 'dictionary';
-            const isQuizSection = section.id === 'quiz';
+            const isVocabularySection = section.id === 'vocabulary';
             const dictionaryStats = isDictionarySection ? sectionStats as DictionaryStats : null;
-            const quizStats = isQuizSection ? sectionStats as DictionaryStats : null;
+            const vocabularyStats = isVocabularySection ? sectionStats as DictionaryStats : null;
             
             return (
               <div 
@@ -431,8 +431,8 @@ const ProgressPage: React.FC = () => {
                       </div>
                     </div>
                   </>
-                ) : isQuizSection && quizStats ? (
-                  // H&K Quiz-specific stats
+                ) : isVocabularySection && vocabularyStats ? (
+                  // Vocabulary Quiz-specific stats
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div className={`p-3 rounded-lg ${themeClasses.container} border ${themeClasses.border}`}>
@@ -441,13 +441,13 @@ const ProgressPage: React.FC = () => {
                           <div>
                             <div className={`text-xs ${themeClasses.subtext}`}>In Progress</div>
                             <div className={`text-lg font-bold ${themeClasses.text}`}>
-                              {quizStats.masteryLevels.started}
+                              {vocabularyStats.masteryLevels.started}
                             </div>
                           </div>
                           <div>
                             <div className={`text-xs ${themeClasses.subtext}`}>Mastered</div>
                             <div className={`text-lg font-bold ${themeClasses.text}`}>
-                              {quizStats.masteryLevels.mastered} / {quizStats.totalItems}
+                              {vocabularyStats.masteryLevels.mastered} / {vocabularyStats.totalItems}
                             </div>
                           </div>
                         </div>
@@ -455,7 +455,7 @@ const ProgressPage: React.FC = () => {
                       <div className={`p-3 rounded-lg ${themeClasses.container} border ${themeClasses.border}`}>
                         <div className={`text-sm font-medium ${themeClasses.text} mb-1`}>Recent Activity</div>
                         <div className={`text-lg font-bold ${themeClasses.text}`}>
-                          {quizStats.recentActivity} items in last 7 days
+                          {vocabularyStats.recentActivity} items in last 7 days
                         </div>
                       </div>
                     </div>
@@ -476,6 +476,9 @@ const ProgressPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                )}
+                {section.id === 'games' && (
+                  <a href="/games" className="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">Go to Games</a>
                 )}
               </div>
             );

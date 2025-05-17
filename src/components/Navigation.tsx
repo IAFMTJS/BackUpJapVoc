@@ -13,14 +13,16 @@ const Navigation = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   
   const mainLinks = [
-    { path: '/section1', name: 'Hiragana & Katakana Quiz', shortName: 'H&K Quiz' },
+    { path: '/vocabulary', name: 'Vocabulary Quiz', shortName: 'Vocab Quiz' },
+    { path: '/srs', name: 'Spaced Repetition', shortName: 'SRS' },
+    { path: '/kana', name: 'Kana Learning', shortName: 'Kana' },
     { path: '/section2', name: 'Dictionary', shortName: 'Dict' },
     { path: '/writing-practice', name: 'Writing Practice', shortName: 'Write' },
     { path: '/section4', name: 'Kanji Quiz', shortName: 'Kanji' },
     { path: '/section5', name: 'Vocabulary Builder', shortName: 'Vocab' },
     { path: '/section6', name: 'Reading Practice', shortName: 'Read' },
     { path: '/section7', name: 'JLPT Preparation', shortName: 'JLPT' },
-    { path: '/section8', name: 'Interactive Games', shortName: 'Games' },
+    { path: '/games', name: 'Interactive Games', shortName: 'Games' },
     { path: '/word-levels', name: 'Word Levels', shortName: 'Levels' },
   ];
   const extraLinks = [

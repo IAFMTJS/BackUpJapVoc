@@ -1,21 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useWordLevel } from '../context/WordLevelContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
-import { playDynamicAudio } from '../utils/audio';
+import { playAudio } from '../utils/audio';
 
 interface ReadingMaterial {
   title: string;
   content: string;
   translation: string;
   vocabulary: string[];
+  level: number;
 }
 
 const Section6 = () => {
   const { settings } = useApp();
-  const [selectedType, setSelectedType] = useState<string>('hiragana');
-  const [selectedLevel, setSelectedLevel] = useState<string>('beginner');
-  const [romajiMap, setRomajiMap] = useState<{ [key: string]: string }>({});
+  const { updateReadingProgress } = useWordLevel();
+  const [selectedType, setSelectedType] = useState<'hiragana' | 'katakana'>('hiragana');
+  const [selectedLevel, setSelectedLevel] = useState<'beginner' | 'intermediate'>('beginner');
+  const [completedMaterials, setCompletedMaterials] = useState<Set<string>>(new Set());
+  const [romajiMap, setRomajiMap] = useState<Record<string, string>>({});
 
   // Get current materials based on selected type and level
   const currentMaterials = useMemo(() => {
@@ -26,13 +30,15 @@ const Section6 = () => {
             title: 'はじめまして',
             content: 'わたしは たなか です。にほんじん です。よろしく おねがいします。',
             translation: 'Nice to meet you. I am Tanaka. I am Japanese. Please be kind to me.',
-            vocabulary: ['はじめまして', 'わたし', 'たなか', 'にほんじん', 'よろしく おねがいします']
+            vocabulary: ['はじめまして', 'わたし', 'たなか', 'にほんじん', 'よろしく おねがいします'],
+            level: 1
           },
           {
             title: 'わたしの いえ',
             content: 'わたしの いえは ちいさい です。でも、きれい です。にわに はな が あります。',
             translation: 'My house is small. But it is beautiful. There are flowers in the garden.',
-            vocabulary: ['いえ', 'ちいさい', 'きれい', 'にわ', 'はな']
+            vocabulary: ['いえ', 'ちいさい', 'きれい', 'にわ', 'はな'],
+            level: 1
           }
         ],
         intermediate: [
@@ -40,7 +46,8 @@ const Section6 = () => {
             title: 'まいにちの せいかつ',
             content: 'まいあさ 6じに おきます。7じに あさごはんを たべます。8じに がっこうに いきます。',
             translation: 'I wake up at 6 every morning. I eat breakfast at 7. I go to school at 8.',
-            vocabulary: ['まいあさ', 'おきます', 'あさごはん', 'たべます', 'がっこう']
+            vocabulary: ['まいあさ', 'おきます', 'あさごはん', 'たべます', 'がっこう'],
+            level: 2
           }
         ]
       },
@@ -50,13 +57,15 @@ const Section6 = () => {
             title: 'レストランで',
             content: 'ハンバーガーと コーラを ください。サラダも おねがいします。',
             translation: 'Please give me a hamburger and cola. I would also like a salad.',
-            vocabulary: ['レストラン', 'ハンバーガー', 'コーラ', 'サラダ']
+            vocabulary: ['レストラン', 'ハンバーガー', 'コーラ', 'サラダ'],
+            level: 1
           },
           {
             title: 'ショッピング',
             content: 'デパートで シャツと ズボンを かいました。とても たかい です。',
             translation: 'I bought a shirt and pants at the department store. They are very expensive.',
-            vocabulary: ['ショッピング', 'デパート', 'シャツ', 'ズボン', 'たかい']
+            vocabulary: ['ショッピング', 'デパート', 'シャツ', 'ズボン', 'たかい'],
+            level: 1
           }
         ],
         intermediate: [
@@ -64,7 +73,8 @@ const Section6 = () => {
             title: 'インターネット',
             content: 'インターネットで ニュースを よみます。メールも おくります。',
             translation: 'I read news on the internet. I also send emails.',
-            vocabulary: ['インターネット', 'ニュース', 'メール', 'おくります']
+            vocabulary: ['インターネット', 'ニュース', 'メール', 'おくります'],
+            level: 2
           }
         ]
       }
@@ -105,16 +115,34 @@ const Section6 = () => {
     }
   };
 
+  const handleCompleteMaterial = (material: ReadingMaterial) => {
+    const materialKey = `${material.level}-${material.title}`;
+    if (!completedMaterials.has(materialKey)) {
+      updateReadingProgress(material.level, true);
+      setCompletedMaterials(prev => new Set([...prev, materialKey]));
+    }
+  };
+
   const renderReadingMaterial = (material: ReadingMaterial) => (
     <div className="bg-gray-50 p-6 rounded-lg">
-      <h3 className="text-xl font-semibold mb-4">{material.title}</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-semibold">{material.title}</h3>
+        {!completedMaterials.has(`${material.level}-${material.title}`) && (
+          <button
+            onClick={() => handleCompleteMaterial(material)}
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+          >
+            Mark as Completed
+          </button>
+        )}
+      </div>
       
       <div className="mb-4">
         <h4 className="font-medium mb-2">Reading:</h4>
         <div className="flex items-center gap-2">
           <p className="text-lg leading-relaxed">{material.content}</p>
           <button
-            onClick={() => playDynamicAudio(material.content)}
+            onClick={() => playAudio(material.content)}
             className="ml-2 p-2 rounded-full hover:bg-opacity-10 hover:bg-gray-200"
             title="Play Reading Audio"
           >
@@ -133,7 +161,7 @@ const Section6 = () => {
         <p className="text-gray-700">{material.translation}</p>
       </div>
 
-      <div>
+      <div className="mb-4">
         <h4 className="font-medium mb-2">Vocabulary:</h4>
         <div className="flex flex-wrap gap-2">
           {material.vocabulary.map((word, i) => (
@@ -143,7 +171,7 @@ const Section6 = () => {
                   {word}
                 </span>
                 <button
-                  onClick={() => playDynamicAudio(word)}
+                  onClick={() => playAudio(word)}
                   className="p-1 rounded-full hover:bg-gray-200"
                   title="Play Word Audio"
                 >

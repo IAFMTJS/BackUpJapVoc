@@ -60,14 +60,14 @@ const Home: React.FC = () => {
   const themeClasses = getThemeClasses();
 
   const sections = [
-    { id: 'section1', name: 'Hiragana & Katakana Quiz', icon: '🎯', path: '/section1' },
+    { id: 'vocabulary', name: 'Vocabulary Quiz', icon: '📝', path: '/vocabulary' },
     { id: 'section2', name: 'Dictionary', icon: '📚', path: '/section2' },
     { id: 'section3', name: 'Writing Practice', icon: '✍️', path: '/section3' },
     { id: 'section4', name: 'Kanji Quiz', icon: '📝', path: '/section4' },
     { id: 'section5', name: 'Vocabulary Builder', icon: '📝', path: '/section5' },
     { id: 'section6', name: 'Reading Practice', icon: '📖', path: '/section6' },
     { id: 'section7', name: 'JLPT Preparation', icon: '🎓', path: '/section7' },
-    { id: 'section8', name: 'Interactive Games', icon: '🎮', path: '/section8' }
+    { id: 'games', name: 'Interactive Games', icon: '🎮', path: '/games' }
   ];
 
   return (

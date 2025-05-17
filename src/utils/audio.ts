@@ -1,65 +1,196 @@
 // Audio player utility
+import { SHA1 } from 'crypto-js';
+
 let audioPlayer: HTMLAudioElement | null = null;
+let audioQueue: string[] = [];
+let isPlaying = false;
+let audioMap: { [key: string]: string } = {};
 
-// Helper to create a SHA-1 hash from a string (safe for filenames)
-function hashJapanese(text: string): string {
-  // Use SubtleCrypto if available (browser), else fallback to a simple hash (for Node/testing)
-  if (window.crypto && window.crypto.subtle) {
-    // This is async, but for simplicity, use a sync fallback for now
-    // In production, you may want to use async hashing
-    // Here, we'll use a simple hash for compatibility
-    let hash = 0, i, chr;
-    for (i = 0; i < text.length; i++) {
-      chr = text.charCodeAt(i);
-      hash = ((hash << 5) - hash) + chr;
-      hash |= 0;
-    }
-    return hash.toString(16);
-  } else {
-    // Fallback: simple hash
-    let hash = 0, i, chr;
-    for (i = 0; i < text.length; i++) {
-      chr = text.charCodeAt(i);
-      hash = ((hash << 5) - hash) + chr;
-      hash |= 0;
-    }
-    return hash.toString(16);
+// Load audio map
+const loadAudioMap = async () => {
+  try {
+    const response = await fetch('/audio/audio_map.txt');
+    if (!response.ok) throw new Error('Failed to load audio map');
+    const text = await response.text();
+    
+    // Parse the audio map
+    audioMap = text.split('\n').reduce((map, line) => {
+      const [japanese, filename] = line.split(' => ');
+      if (japanese && filename) {
+        map[japanese.trim()] = filename.trim();
+      }
+      return map;
+    }, {} as { [key: string]: string });
+    
+    console.log('Audio map loaded successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to load audio map:', error);
+    return false;
   }
-}
-
-export const playAudio = (japanese: string, type: 'word' | 'example' = 'word', exampleIndex?: number) => {
-  // Stop any currently playing audio
-  if (audioPlayer) {
-    audioPlayer.pause();
-    audioPlayer = null;
-  }
-
-  // Construct the audio file path using the hash
-  const hash = hashJapanese(japanese);
-  let filename = `${hash}.mp3`;
-  if (type === 'example' && exampleIndex !== undefined) {
-    filename = `${hash}_example_${exampleIndex + 1}.mp3`;
-  }
-
-  // Create and play the audio
-  audioPlayer = new Audio(`/audio/${filename}`);
-  audioPlayer.play().catch(error => {
-    console.error('Error playing audio:', error);
-    // Fallback to Web Speech API if audio file is not found
-    const utterance = new SpeechSynthesisUtterance(japanese);
-    utterance.lang = 'ja-JP';
-    window.speechSynthesis.speak(utterance);
-  });
-
-  // Clean up when audio finishes playing
-  audioPlayer.onended = () => {
-    audioPlayer = null;
-  };
 };
 
-// Fallback to Web Speech API for dynamic content
-export const playDynamicAudio = (text: string) => {
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'ja-JP';
-  window.speechSynthesis.speak(utterance);
+// Helper to get audio filename from Japanese text
+async function getAudioFilename(text: string): Promise<string> {
+  // If audio map is empty, try to load it
+  if (Object.keys(audioMap).length === 0) {
+    await loadAudioMap();
+  }
+  
+  // Try to find exact match
+  if (audioMap[text]) {
+    return audioMap[text];
+  }
+  
+  // If no exact match, try to find a partial match
+  const partialMatch = Object.entries(audioMap).find(([key]) => text.includes(key));
+  if (partialMatch) {
+    return partialMatch[1];
+  }
+  
+  // If no match found, use SHA-1 hash as fallback
+  return `${SHA1(text).toString()}.mp3`;
+}
+
+// Play audio with retry and fallback
+export const playAudio = async (text: string, type: 'word' | 'example' = 'word'): Promise<void> => {
+  const filename = await getAudioFilename(text);
+  const audioPath = `/audio/${filename}`;
+  console.log(`[playAudio] Requested:`, { text, filename, audioPath });
+  if (audioMap[text]) {
+    console.log(`[playAudio] Found in audio map: ${text} => ${filename}`);
+  } else {
+    console.warn(`[playAudio] Not found in audio map, using SHA1 fallback for: ${text}`);
+  }
+  try {
+    // Try to play from cache first
+    const cache = await caches.open('japvoc-audio-v1.0.0');
+    const cachedResponse = await cache.match(audioPath);
+    if (cachedResponse) {
+      const blob = await cachedResponse.blob();
+      const url = URL.createObjectURL(blob);
+      if (audioPlayer) {
+        audioPlayer.pause();
+        URL.revokeObjectURL(audioPlayer.src);
+      }
+      audioPlayer = new Audio(url);
+      await audioPlayer.play();
+      audioPlayer.onended = () => {
+        URL.revokeObjectURL(url);
+        audioPlayer = null;
+      };
+      return;
+    }
+    // If not in cache, try to fetch and cache
+    const response = await fetch(audioPath);
+    if (!response.ok) {
+      console.error(`[playAudio] Failed to fetch audio from server:`, { audioPath, status: response.status });
+      throw new Error(`Failed to fetch audio: ${response.status}`);
+    }
+    // Cache the response
+    await cache.put(audioPath, response.clone());
+    // Play the audio
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    if (audioPlayer) {
+      audioPlayer.pause();
+      URL.revokeObjectURL(audioPlayer.src);
+    }
+    audioPlayer = new Audio(url);
+    await audioPlayer.play();
+    audioPlayer.onended = () => {
+      URL.revokeObjectURL(url);
+      audioPlayer = null;
+    };
+  } catch (error) {
+    console.error(`[playAudio] Failed to play audio for:`, { text, filename, audioPath, error });
+    // Fallback to Web Speech API
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 0.8;
+      utterance.pitch = 1;
+      // Try to find a Japanese voice
+      const voices = window.speechSynthesis.getVoices();
+      const japaneseVoice = voices.find(voice => voice.lang.includes('ja'));
+      if (japaneseVoice) {
+        utterance.voice = japaneseVoice;
+      }
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.error('[playAudio] Web Speech API not supported');
+    }
+  }
+};
+
+// Queue management
+const processQueue = async () => {
+  if (isPlaying || audioQueue.length === 0) return;
+  
+  isPlaying = true;
+  const nextText = audioQueue.shift();
+  if (!nextText) {
+    isPlaying = false;
+    return;
+  }
+
+  try {
+    await playAudio(nextText);
+  } catch (error) {
+    console.error('Error playing audio from queue:', error);
+  } finally {
+    isPlaying = false;
+    processQueue(); // Process next item in queue
+  }
+};
+
+// Add to queue
+export const queueAudio = (text: string) => {
+  audioQueue.push(text);
+  if (!isPlaying) {
+    processQueue();
+  }
+};
+
+// Clear queue
+export const clearAudioQueue = () => {
+  audioQueue = [];
+  if (audioPlayer) {
+    audioPlayer.pause();
+    URL.revokeObjectURL(audioPlayer.src);
+    audioPlayer = null;
+  }
+  isPlaying = false;
+};
+
+// Initialize cache
+export const initializeAudioCache = async () => {
+  try {
+    const cache = await caches.open('japvoc-audio-v1.0.0');
+    await loadAudioMap(); // Load audio map during initialization
+    console.log('Audio cache initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize audio cache:', error);
+    return false;
+  }
+};
+
+// Check if audio is available
+export const hasAudio = async (text: string): Promise<boolean> => {
+  const filename = await getAudioFilename(text);
+  const audioPath = `/audio/${filename}`;
+  
+  try {
+    const cache = await caches.open('japvoc-audio-v1.0.0');
+    const cachedResponse = await cache.match(audioPath);
+    if (cachedResponse) return true;
+    
+    // If not in cache, check if file exists
+    const response = await fetch(audioPath, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.error('Error checking audio availability:', error);
+    return false;
+  }
 }; 

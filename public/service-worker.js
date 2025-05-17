@@ -4,7 +4,20 @@
 const APP_VERSION = '1.0.0';
 const CACHE_NAME = `japvoc-cache-v${APP_VERSION}`;
 const DATA_CACHE_NAME = `japvoc-data-v${APP_VERSION}`;
+const AUDIO_CACHE_NAME = `japvoc-audio-v${APP_VERSION}`;
 const ROMAJI_DATA_URL = '/romaji-data.json';
+
+// Add audio optimization configuration
+const AUDIO_OPTIMIZATION = {
+  high: {
+    bitrate: '128k',
+    sampleRate: 44100
+  },
+  low: {
+    bitrate: '64k',
+    sampleRate: 22050
+  }
+};
 
 // Cache configuration
 const CACHE_CONFIG = {
@@ -23,6 +36,18 @@ const CACHE_CONFIG = {
     name: DATA_CACHE_NAME,
     urls: [ROMAJI_DATA_URL],
     strategy: 'stale-while-revalidate'
+  },
+  audio: {
+    name: AUDIO_CACHE_NAME,
+    strategy: 'cache-first',
+    patterns: ['/audio/'],
+    preCacheUrls: [
+      // Add essential audio files for level 1
+      '/audio/level1/greetings.mp3',
+      '/audio/level1/numbers.mp3',
+      '/audio/level1/basic_phrases.mp3'
+    ],
+    optimization: AUDIO_OPTIMIZATION
   }
 };
 
@@ -83,13 +108,37 @@ self.addEventListener('install', (event) => {
         } catch (error) {
           console.warn('[Service Worker] Failed to cache romaji data:', error);
         }
+      }),
+
+      // Pre-cache common audio files
+      caches.open(CACHE_CONFIG.audio.name).then(async cache => {
+        console.log('[Service Worker] Pre-caching common audio files...');
+        const urls = CACHE_CONFIG.audio.preCacheUrls;
+        const results = await Promise.allSettled(
+          urls.map(url => 
+            fetch(url)
+              .then(response => {
+                if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
+                return cache.put(url, response);
+              })
+              .catch(error => {
+                console.warn(`[Service Worker] Failed to pre-cache ${url}:`, error);
+                return null;
+              })
+          )
+        );
+        
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+          console.warn('[Service Worker] Some audio files failed to pre-cache:', failed);
+        }
+        return results;
       })
     ]).then(() => {
       console.log('[Service Worker] Cache operations completed');
       return self.skipWaiting();
     }).catch(error => {
       console.error('[Service Worker] Cache operation failed:', error);
-      // Don't throw here, allow the service worker to activate even if caching fails
     })
   );
 });
@@ -222,6 +271,11 @@ async function handleApiRequest(request) {
 
 // Handle asset requests with network-first strategy in development
 async function handleAssetRequest(request) {
+  // Special handling for audio files
+  if (request.url.includes('/audio/')) {
+    return handleAudioRequest(request);
+  }
+
   try {
     // Try network first
     const response = await fetch(request);
@@ -252,7 +306,6 @@ async function handleAssetRequest(request) {
       if (offlinePage) {
         return offlinePage;
       } else {
-        // If offline.html is missing, return a fallback response
         return new Response('<h1>Offline</h1><p>The application is offline and no offline page is available.</p>', {
           status: 503,
           headers: { 'Content-Type': 'text/html' }
@@ -260,9 +313,143 @@ async function handleAssetRequest(request) {
       }
     }
 
-    // If all else fails, throw the error
     throw error;
   }
+}
+
+// Add audio optimization function
+async function optimizeAudio(audioBlob, quality = 'high') {
+  const config = AUDIO_OPTIMIZATION[quality];
+  
+  // Create an audio context
+  const audioContext = new AudioContext({ sampleRate: config.sampleRate });
+  
+  try {
+    // Decode the audio data
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    
+    // Create a new buffer with the target sample rate
+    const offlineContext = new OfflineAudioContext(
+      audioBuffer.numberOfChannels,
+      audioBuffer.duration * config.sampleRate,
+      config.sampleRate
+    );
+    
+    // Create a source node
+    const source = offlineContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(offlineContext.destination);
+    source.start();
+    
+    // Render the audio
+    const renderedBuffer = await offlineContext.startRendering();
+    
+    // Convert to blob with appropriate bitrate
+    const wavBlob = await new Promise(resolve => {
+      const wav = audioBufferToWav(renderedBuffer);
+      resolve(new Blob([wav], { type: 'audio/wav' }));
+    });
+    
+    // Convert to MP3 with specified bitrate
+    const mp3Blob = await convertToMp3(wavBlob, config.bitrate);
+    
+    return mp3Blob;
+  } finally {
+    audioContext.close();
+  }
+}
+
+// Update handleAudioRequest function
+async function handleAudioRequest(request) {
+  const cache = await caches.open(CACHE_CONFIG.audio.name);
+  const quality = await getAudioQuality(); // Get user's preferred quality
+  
+  try {
+    // Try cache first
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      console.log('[Service Worker] Serving audio from cache:', request.url);
+      
+      // Update cache in background if online
+      if (navigator.onLine) {
+        fetch(request).then(async response => {
+          if (response.ok) {
+            const blob = await response.blob();
+            const optimizedBlob = await optimizeAudio(blob, quality);
+            await cache.put(request, new Response(optimizedBlob));
+            console.log('[Service Worker] Updated audio cache:', request.url);
+          }
+        }).catch(error => {
+          console.error('[Service Worker] Failed to update audio cache:', error);
+        });
+      }
+      
+      return cachedResponse;
+    }
+    
+    // If not in cache and online, fetch and optimize
+    if (navigator.onLine) {
+      console.log('[Service Worker] Fetching audio from network:', request.url);
+      const response = await fetch(request);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch audio: ${response.status}`);
+      }
+      
+      // Optimize the audio
+      const blob = await response.blob();
+      const optimizedBlob = await optimizeAudio(blob, quality);
+      
+      // Cache the optimized version
+      await cache.put(request, new Response(optimizedBlob));
+      return new Response(optimizedBlob);
+    }
+    
+    // If offline and not in cache, return fallback response
+    return new Response(
+      JSON.stringify({ 
+        error: 'offline',
+        message: 'Audio not available offline. Using text-to-speech as fallback.'
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    console.error('[Service Worker] Error handling audio request:', error);
+    
+    // If offline, return fallback response
+    if (!navigator.onLine) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'offline',
+          message: 'Audio not available offline. Using text-to-speech as fallback.'
+        }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    throw error;
+  }
+}
+
+// Add helper function to get user's preferred audio quality
+async function getAudioQuality() {
+  try {
+    const cache = await caches.open(CACHE_CONFIG.audio.name);
+    const settings = await cache.match('/audio-settings.json');
+    if (settings) {
+      const data = await settings.json();
+      return data.quality || 'high';
+    }
+  } catch (error) {
+    console.error('[Service Worker] Failed to get audio quality settings:', error);
+  }
+  return 'high'; // Default to high quality
 }
 
 // Enhanced background sync with retry logic
