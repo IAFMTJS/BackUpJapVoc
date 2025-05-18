@@ -1,10 +1,11 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Progress from '../components/Progress';
 
 const Home: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
+  const navigate = useNavigate();
 
   const getThemeClasses = () => {
     if (isDarkMode) {
@@ -67,13 +68,22 @@ const Home: React.FC = () => {
     { id: 'section5', name: 'Vocabulary Builder', icon: '📝', path: '/section5' },
     { id: 'section6', name: 'Reading Practice', icon: '📖', path: '/section6' },
     { id: 'section7', name: 'JLPT Preparation', icon: '🎓', path: '/section7' },
-    { id: 'games', name: 'Interactive Games', icon: '🎮', path: '/games' }
+    { id: 'games', name: 'Interactive Games', icon: '🎮', path: '/games' },
+    { id: 'romaji', name: 'Romaji Learning', icon: '🔤', path: '/romaji', description: 'Master Japanese words, sentences, and stories using romaji and audio.' },
   ];
 
   return (
     <div className={`min-h-screen py-8 px-4 ${themeClasses.container}`}>
       <div className="max-w-4xl mx-auto">
         <h1 className={`text-4xl font-bold mb-8 ${themeClasses.text}`}>Welcome to JapVoc!</h1>
+        <div className="flex justify-center my-6">
+          <button
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 text-lg font-semibold transition"
+            onClick={() => navigate('/how-to-use')}
+          >
+            How to Use This Site
+          </button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
           {sections.map((section) => (
             <Link
@@ -86,7 +96,7 @@ const Home: React.FC = () => {
                 <h2 className={`text-base sm:text-lg font-semibold ${themeClasses.text}`}>{section.name}</h2>
               </div>
               <p className={`text-sm ${themeClasses.text} opacity-75`}>
-                Click to start learning
+                {section.description || 'Click to start learning'}
               </p>
             </Link>
           ))}
@@ -101,10 +111,6 @@ const Home: React.FC = () => {
           <p className={`text-base sm:text-lg ${themeClasses.text} opacity-75 max-w-2xl mx-auto`}>
             Your comprehensive Japanese learning companion
           </p>
-        </div>
-
-        <div className={`${themeClasses.container} rounded-lg shadow-md p-4 sm:p-6`}>
-          <Progress detailed={false} />
         </div>
       </div>
     </div>

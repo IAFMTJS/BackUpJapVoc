@@ -1,13 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import type { Settings } from '../context/AppContext';
+import { getCacheStats, clearCache } from '../utils/AudioCache';
 
 type SettingsKey = keyof Settings;
 
 const SettingsPanel: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
   const { settings, updateSettings } = useApp();
+
+  // Audio cache state
+  const [cacheStats, setCacheStats] = useState<{ fileCount: number; totalSize: number }>({ fileCount: 0, totalSize: 0 });
+  const [clearing, setClearing] = useState(false);
+
+  useEffect(() => {
+    getCacheStats().then(setCacheStats);
+  }, [clearing]);
+
+  const handleClearCache = async () => {
+    setClearing(true);
+    await clearCache();
+    setClearing(false);
+    setCacheStats({ fileCount: 0, totalSize: 0 });
+  };
 
   const getThemeClasses = () => {
     const themeClasses = {
@@ -71,6 +87,23 @@ const SettingsPanel: React.FC = () => {
               {renderToggle('showRomajiGames', 'Show Romaji')}
               {renderToggle('useHiraganaGames', 'Use Hiragana (instead of Katakana)')}
             </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className={`font-medium mb-4 ${getThemeClasses().text}`}>Audio Cache</h3>
+          <div className="space-y-2">
+            <div className={`text-sm ${getThemeClasses().text}`}>
+              Cached files: {cacheStats.fileCount}<br />
+              Total size: {(cacheStats.totalSize / (1024 * 1024)).toFixed(2)} MB
+            </div>
+            <button
+              onClick={handleClearCache}
+              disabled={clearing}
+              className={`px-4 py-2 rounded ${clearing ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 text-white'}`}
+            >
+              {clearing ? 'Clearing...' : 'Clear Audio Cache'}
+            </button>
           </div>
         </div>
       </div>

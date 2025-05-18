@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { ProgressProvider } from './context/ProgressContext';
+import { ProgressProvider, useProgress } from './context/ProgressContext';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { SoundProvider } from './context/SoundContext';
@@ -35,12 +35,61 @@ import ProgressSection from './pages/ProgressSection';
 import SRSPage from './pages/SRSPage';
 import KanaSection from './pages/KanaSection';
 import GamesPage from './pages/GamesPage';
+import RomajiSection from './pages/RomajiSection';
+import VirtualTeacherPanel from './components/VirtualTeacherPanel';
+import { useNavigate, useLocation } from 'react-router-dom';
+import HowToUsePage from './pages/HowToUsePage';
 
 const App = () => {
   useEffect(() => {
     // Initialize security measures
     initializeSecurity();
   }, []);
+
+  // --- Virtual Teacher Panel global integration ---
+  // Use hooks inside a wrapper component
+  const VirtualTeacherPanelWrapper = () => {
+    const { progress } = useProgress();
+    const navigate = useNavigate();
+    const location = useLocation();
+    // Hide on login, signup, reset-password, update-password, settings
+    const hiddenPaths = ['/login', '/signup', '/reset-password', '/update-password', '/settings'];
+    if (hiddenPaths.includes(location.pathname)) return null;
+    // Aggregate progress for the panel
+    // These are example calculations; adjust as needed for your app's logic
+    const masteredWords = Object.values(progress).filter(p => p.section === 'Words' && p.correct >= 1).length;
+    const practicedSentences = Object.values(progress).filter(p => p.section === 'Sentences' && p.correct >= 1).length;
+    const listeningCount = Object.values(progress).filter(p => p.section === 'Listening' && p.correct >= 1).length;
+    const timedScore = Object.values(progress).filter(p => p.section === 'Timed' && p.correct >= 1).length;
+    const reviewCount = Object.values(progress).filter(p => p.section === 'Review' && p.correct >= 1).length;
+    const handleGoToSection = (section) => {
+      // Map section names to routes
+      const map = {
+        'Practice': '/romaji',
+        'Words': '/vocabulary',
+        'Sentences': '/romaji',
+        'Stories': '/romaji',
+        'Games': '/games',
+        'Review': '/progress',
+        'Listening': '/romaji',
+        'Timed': '/romaji',
+      };
+      navigate(map[section] || '/');
+    };
+    return (
+      <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000 }}>
+        <VirtualTeacherPanel
+          masteredWords={masteredWords}
+          practicedSentences={practicedSentences}
+          listeningCount={listeningCount}
+          timedScore={timedScore}
+          reviewCount={reviewCount}
+          onGoToSection={handleGoToSection}
+        />
+      </div>
+    );
+  };
+  // --- end Virtual Teacher Panel wrapper ---
 
   return (
     <ThemeProvider>
@@ -80,10 +129,14 @@ const App = () => {
                               <Route path="/word-levels" element={<WordLevelsPage />} />
                               <Route path="/vocabulary" element={<VocabularySection />} />
                               <Route path="/games" element={<GamesPage />} />
+                              <Route path="/romaji" element={<RomajiSection />} />
+                              <Route path="/how-to-use" element={<HowToUsePage />} />
                             </Routes>
                           </div>
                         </main>
                         <SessionWarning />
+                        {/* Add the Virtual Teacher Panel globally */}
+                        <VirtualTeacherPanelWrapper />
                       </div>
                     </Router>
                   </AccessibilityProvider>

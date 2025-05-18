@@ -1,4 +1,5 @@
 import { SHA1 } from 'crypto-js';
+import { getAudio, setAudio } from '../utils/AudioCache';
 
 interface AudioCacheStats {
   totalSize: number;
@@ -73,31 +74,26 @@ export class AudioManager {
   }
 
   async preloadLevelAudio(level: number, onProgress?: (progress: number) => void) {
-    const cache = await caches.open('japvoc-audio-v1.0.0');
     const audioFiles = await this.getLevelAudioFiles(level);
-    
     let loaded = 0;
     const total = audioFiles.length;
-    
     for (const file of audioFiles) {
       try {
-        const response = await fetch(file);
-        if (!response.ok) throw new Error(`Failed to fetch ${file}`);
-        
-        await cache.put(file, response.clone());
-        this.cacheStats.lastAccessed[file] = Date.now();
-        
+        // Use filename from path
+        const filename = file.split('/').pop() || file;
+        // Check if already cached in IndexedDB
+        const alreadyCached = await getAudio(filename);
+        if (!alreadyCached) {
+          const response = await fetch(file);
+          if (!response.ok) throw new Error(`Failed to fetch ${file}`);
+          const blob = await response.blob();
+          await setAudio(filename, blob);
+          this.cacheStats.totalSize += blob.size;
+          this.cacheStats.fileCount++;
+        }
         loaded++;
         const progress = (loaded / total) * 100;
         onProgress?.(progress);
-        
-        // Update cache stats
-        const blob = await response.blob();
-        this.cacheStats.totalSize += blob.size;
-        this.cacheStats.fileCount++;
-        
-        // Check cache size and clean if needed
-        await this.manageCacheSize();
       } catch (error) {
         console.error(`Failed to preload audio file ${file}:`, error);
       }
@@ -143,42 +139,26 @@ export class AudioManager {
 
   async playAudio(text: string, onProgress?: (progress: number) => void): Promise<void> {
     const hash = SHA1(text).toString();
-    const audioPath = `/audio/${hash}.mp3`;
-    
-    // Update last accessed time
+    const filename = `${hash}.mp3`;
+    const audioPath = `/audio/${filename}`;
     this.cacheStats.lastAccessed[audioPath] = Date.now();
-    
     try {
-      const cache = await caches.open('japvoc-audio-v1.0.0');
-      const cachedResponse = await cache.match(audioPath);
-      
-      if (cachedResponse) {
-        const audio = new Audio(URL.createObjectURL(await cachedResponse.blob()));
-        await audio.play();
-        return;
+      // Try to play from IndexedDB cache first
+      let blob = await getAudio(filename);
+      if (!blob) {
+        // If not in cache, fetch and cache
+        const response = await fetch(audioPath);
+        if (!response.ok) throw new Error(`Failed to fetch audio: ${response.status}`);
+        blob = await response.blob();
+        await setAudio(filename, blob);
+        this.cacheStats.totalSize += blob.size;
+        this.cacheStats.fileCount++;
       }
-      
-      // If not in cache, fetch and cache
-      const response = await fetch(audioPath);
-      if (!response.ok) throw new Error(`Failed to fetch audio: ${response.status}`);
-      
-      // Cache the response
-      await cache.put(audioPath, response.clone());
-      
-      // Update cache stats
-      const blob = await response.blob();
-      this.cacheStats.totalSize += blob.size;
-      this.cacheStats.fileCount++;
-      
-      // Play the audio
+      // Play the audio from blob
       const audio = new Audio(URL.createObjectURL(blob));
       await audio.play();
-      
-      // Check cache size and clean if needed
-      await this.manageCacheSize();
     } catch (error) {
       console.error('Failed to play audio:', error);
-      // Fallback to Web Speech API
       this.useWebSpeechFallback(text);
     }
   }

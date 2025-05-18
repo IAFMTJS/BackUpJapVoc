@@ -1,5 +1,6 @@
 // Audio player utility
 import { SHA1 } from 'crypto-js';
+import { getAudio, setAudio } from './AudioCache';
 
 let audioPlayer: HTMLAudioElement | null = null;
 let audioQueue: string[] = [];
@@ -63,34 +64,19 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
     console.warn(`[playAudio] Not found in audio map, using SHA1 fallback for: ${text}`);
   }
   try {
-    // Try to play from cache first
-    const cache = await caches.open('japvoc-audio-v1.0.0');
-    const cachedResponse = await cache.match(audioPath);
-    if (cachedResponse) {
-      const blob = await cachedResponse.blob();
-      const url = URL.createObjectURL(blob);
-      if (audioPlayer) {
-        audioPlayer.pause();
-        URL.revokeObjectURL(audioPlayer.src);
+    // Try to play from IndexedDB cache first
+    let blob = await getAudio(filename);
+    if (!blob) {
+      // If not in cache, fetch and cache
+      const response = await fetch(audioPath);
+      if (!response.ok) {
+        console.error(`[playAudio] Failed to fetch audio from server:`, { audioPath, status: response.status });
+        throw new Error(`Failed to fetch audio: ${response.status}`);
       }
-      audioPlayer = new Audio(url);
-      await audioPlayer.play();
-      audioPlayer.onended = () => {
-        URL.revokeObjectURL(url);
-        audioPlayer = null;
-      };
-      return;
+      blob = await response.blob();
+      await setAudio(filename, blob);
     }
-    // If not in cache, try to fetch and cache
-    const response = await fetch(audioPath);
-    if (!response.ok) {
-      console.error(`[playAudio] Failed to fetch audio from server:`, { audioPath, status: response.status });
-      throw new Error(`Failed to fetch audio: ${response.status}`);
-    }
-    // Cache the response
-    await cache.put(audioPath, response.clone());
-    // Play the audio
-    const blob = await response.blob();
+    // Play the audio from blob
     const url = URL.createObjectURL(blob);
     if (audioPlayer) {
       audioPlayer.pause();

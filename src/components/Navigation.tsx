@@ -24,6 +24,7 @@ const Navigation = () => {
     { path: '/section7', name: 'JLPT Preparation', shortName: 'JLPT' },
     { path: '/games', name: 'Interactive Games', shortName: 'Games' },
     { path: '/word-levels', name: 'Word Levels', shortName: 'Levels' },
+    { path: '/romaji', name: 'Romaji Learning', shortName: 'Romaji' },
   ];
   const extraLinks = [
     { path: '/anime', name: 'Anime & Manga Phrases', shortName: 'Anime' },

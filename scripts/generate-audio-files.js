@@ -50,47 +50,96 @@ async function generateAudioFile(text, filename) {
   });
 }
 
+// --- ADDED: Load extra sources for sentences, stories, readings, grammar ---
+const romajiWordsPath = path.join(__dirname, '../src/data/romajiWords.ts');
+const readingMaterialsPath = path.join(__dirname, '../src/data/readingMaterials.ts');
+const grammarDataPath = path.join(__dirname, '../src/data/grammarData.ts');
+
+function extractFromRomajiWords() {
+  const content = fs.readFileSync(romajiWordsPath, 'utf8');
+  const sentences = [];
+  const stories = [];
+  // Extract romajiSentences
+  const sentMatch = content.match(/export const romajiSentences = \[(.*?)\];/s);
+  if (sentMatch) {
+    const arr = eval(sentMatch[0].replace('export const romajiSentences =', ''));
+    for (const s of arr) sentences.push(s.japanese);
+  }
+  // Extract romajiStories
+  const storyMatch = content.match(/export const romajiStories = \[(.*?)\];/s);
+  if (storyMatch) {
+    const arr = eval(storyMatch[0].replace('export const romajiStories =', ''));
+    for (const s of arr) stories.push(s.japanese);
+  }
+  return { sentences, stories };
+}
+
+function extractFromReadingMaterials() {
+  const content = fs.readFileSync(readingMaterialsPath, 'utf8');
+  const matches = [...content.matchAll(/content: "([^"]+)"/g)];
+  return matches.map(m => m[1]);
+}
+
+function extractFromGrammarData() {
+  const content = fs.readFileSync(grammarDataPath, 'utf8');
+  const matches = [...content.matchAll(/japanese: '([^']+)'/g)];
+  return matches.map(m => m[1]);
+}
+
+const animeSectionPath = path.join(__dirname, '../src/pages/AnimeSection.tsx');
+
+function extractFromAnimeSection() {
+  const content = fs.readFileSync(animeSectionPath, 'utf8');
+  // Match beginnerPhrases array
+  const arrMatch = content.match(/const beginnerPhrases: AnimePhrase\[\] = \[(.*?)\];/s);
+  if (!arrMatch) return [];
+  const arrStr = arrMatch[1];
+  // Match all japanese and example fields
+  const japaneseMatches = [...arrStr.matchAll(/japanese: "([^"]+)"/g)].map(m => m[1]);
+  const exampleMatches = [...arrStr.matchAll(/example: "([^"]+)"/g)].map(m => m[1]);
+  return [...japaneseMatches, ...exampleMatches];
+}
+
 async function generateAllAudioFiles() {
   console.log('Starting audio file generation...');
   console.log(`Total words to process: ${commonWords.length}`);
-  
+
+  // --- ADDED: Gather all extra texts ---
+  const { sentences, stories } = extractFromRomajiWords();
+  const readings = extractFromReadingMaterials();
+  const grammarExamples = extractFromGrammarData();
+  const animePhrases = extractFromAnimeSection();
+  const extraTexts = [...sentences, ...stories, ...readings, ...grammarExamples, ...animePhrases];
+
+  // ---
   // Process words in batches to avoid overwhelming the system
   const batchSize = 10;
   const words = commonWords;
-  
-  for (let i = 0; i < words.length; i += batchSize) {
-    const batch = words.slice(i, i + batchSize);
-    console.log(`\nProcessing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(words.length / batchSize)}`);
-    console.log(`Progress: ${i + 1}-${Math.min(i + batchSize, words.length)} of ${words.length} words`);
-    
+  const allTexts = [
+    ...words.map(w => w.japanese),
+    ...extraTexts
+  ];
+  // Remove duplicates
+  const uniqueTexts = Array.from(new Set(allTexts));
+
+  for (let i = 0; i < uniqueTexts.length; i += batchSize) {
+    const batch = uniqueTexts.slice(i, i + batchSize);
+    console.log(`\nProcessing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(uniqueTexts.length / batchSize)}`);
+    console.log(`Progress: ${i + 1}-${Math.min(i + batchSize, uniqueTexts.length)} of ${uniqueTexts.length} items`);
+
     try {
       await Promise.all(
-        batch.map(async (word) => {
+        batch.map(async (text) => {
           try {
-            // Generate audio for the Japanese word
-            const hash = hashJapanese(word.japanese);
+            const hash = hashJapanese(text);
             const filename = `${hash}.mp3`;
-            await generateAudioFile(word.japanese, filename);
-            // For debugging: log mapping
-            fs.appendFileSync(path.join(audioDir, 'audio_map.txt'), `${word.japanese} => ${filename}\n`);
-            
-            // Generate audio for example sentences if they exist
-            if (word.examples && word.examples.length > 0) {
-              for (let j = 0; j < word.examples.length; j++) {
-                const example = word.examples[j];
-                const exampleHash = hashJapanese(example);
-                const exampleFilename = `${exampleHash}_example_${j + 1}.mp3`;
-                await generateAudioFile(example, exampleFilename);
-                fs.appendFileSync(path.join(audioDir, 'audio_map.txt'), `${example} => ${exampleFilename}\n`);
-              }
-            }
-          } catch (wordError) {
-            console.error(`Error processing word ${word.japanese}:`, wordError);
+            await generateAudioFile(text, filename);
+            fs.appendFileSync(path.join(audioDir, 'audio_map.txt'), `${text} => ${filename}\n`);
+          } catch (err) {
+            console.error(`Error processing text: ${text}`, err);
           }
         })
       );
-      
-      // Add a small delay between batches to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
       console.error('Error processing batch:', error);
@@ -102,7 +151,7 @@ async function generateAllAudioFiles() {
   console.log(`- Successfully generated: ${successCount} files`);
   console.log(`- Errors encountered: ${errorCount} files`);
   console.log(`- Skipped (already exist): ${skippedCount} files`);
-  console.log(`- Total words processed: ${commonWords.length}`);
+  console.log(`- Total unique items processed: ${uniqueTexts.length}`);
 }
 
 // Run the script

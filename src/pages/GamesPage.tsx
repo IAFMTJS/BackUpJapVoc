@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useWordLevel } from '../context/WordLevelContext';
 import { wordLevels } from '../data/wordLevels';
 import { JapaneseWord } from '../data/types';
+import { playAudio } from '../utils/audio';
 
 const GAME_TITLES = [
   'Flashcard Flip',
@@ -123,14 +124,12 @@ const GamesPage: React.FC = () => {
       const all = [...shuffled, word].sort(() => 0.5 - Math.random());
       return all;
     }, [qIndex, availableWords]);
-    const playAudio = (text: string) => {
-      const utter = new window.SpeechSynthesisUtterance(text);
-      utter.lang = 'ja-JP';
-      window.speechSynthesis.speak(utter);
+    const handlePlayAudio = (text: string) => {
+      playAudio(text);
     };
     return (
       <div className="flex flex-col items-center">
-        <button className="mb-4 text-2xl" onClick={() => playAudio(word.japanese)}>🔊 Play Audio</button>
+        <button className="mb-4 text-2xl" onClick={() => handlePlayAudio(word.japanese)}>🔊 Play Audio</button>
         <div className="flex flex-col gap-2">
           {options.map((opt, i) => (
             <button

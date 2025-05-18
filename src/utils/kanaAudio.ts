@@ -1,4 +1,5 @@
 import { playAudio, queueAudio } from './audio';
+import { getAudio, setAudio } from './AudioCache';
 
 // Define the base path for kana audio files
 const KANA_AUDIO_BASE_PATH = '/audio/kana/';
@@ -67,74 +68,37 @@ const audioCache: Record<string, HTMLAudioElement> = {};
  * @returns Promise that resolves when the audio finishes playing
  */
 export const playKanaAudio = async (romaji: string): Promise<void> => {
-  // Get the kana character from the romaji mapping
   const kana = romajiToKana[romaji];
   if (!kana) {
     console.warn(`No kana found for romaji: ${romaji}`);
     return;
   }
-
-  // Use the kana-specific path
-  const audioPath = `${KANA_AUDIO_BASE_PATH}${romaji}.mp3`;
-  
+  const filename = `${romaji}.mp3`;
+  const audioPath = `${KANA_AUDIO_BASE_PATH}${filename}`;
   try {
-    // Try to play from cache first
-    const cache = await caches.open('japvoc-audio-v1.0.0');
-    const cachedResponse = await cache.match(audioPath);
-    
-    if (cachedResponse) {
-      const blob = await cachedResponse.blob();
-      const url = URL.createObjectURL(blob);
-      
-      // Stop any currently playing audio
-      if (audioCache[romaji]) {
-        audioCache[romaji].pause();
-        URL.revokeObjectURL(audioCache[romaji].src);
+    // Try to play from IndexedDB cache first
+    let blob = await getAudio(filename);
+    if (!blob) {
+      // If not in cache, fetch and cache
+      const response = await fetch(audioPath);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch audio: ${response.status}`);
       }
-      
-      // Create and play new audio
-      const audio = new Audio(url);
-      audioCache[romaji] = audio;
-      
-      // Clean up when done
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        delete audioCache[romaji];
-      };
-      
-      await audio.play();
-      return;
+      blob = await response.blob();
+      await setAudio(filename, blob);
     }
-    
-    // If not in cache, try to fetch and cache
-    const response = await fetch(audioPath);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch audio: ${response.status}`);
-    }
-    
-    // Cache the response
-    await cache.put(audioPath, response.clone());
-    
-    // Play the audio
-    const blob = await response.blob();
+    // Play the audio from blob
     const url = URL.createObjectURL(blob);
-    
-    // Stop any currently playing audio
     if (audioCache[romaji]) {
       audioCache[romaji].pause();
       URL.revokeObjectURL(audioCache[romaji].src);
     }
-    
-    // Create and play new audio
     const audio = new Audio(url);
     audioCache[romaji] = audio;
-    
-    // Clean up when done
     audio.onended = () => {
       URL.revokeObjectURL(url);
       delete audioCache[romaji];
     };
-    
     await audio.play();
   } catch (error) {
     console.error(`Failed to play kana audio for ${romaji}:`, error);
@@ -144,14 +108,11 @@ export const playKanaAudio = async (romaji: string): Promise<void> => {
       utterance.lang = 'ja-JP';
       utterance.rate = 0.8;
       utterance.pitch = 1;
-      
-      // Try to find a Japanese voice
       const voices = window.speechSynthesis.getVoices();
       const japaneseVoice = voices.find(voice => voice.lang.includes('ja'));
       if (japaneseVoice) {
         utterance.voice = japaneseVoice;
       }
-      
       window.speechSynthesis.speak(utterance);
     }
   }
@@ -163,26 +124,25 @@ export const playKanaAudio = async (romaji: string): Promise<void> => {
  */
 export const preloadKanaAudio = async (): Promise<void> => {
   const kanaList = getAvailableKanaAudio();
-  const cache = await caches.open('japvoc-audio-v1.0.0');
   const preloadPromises = kanaList.map(async (kana) => {
     const romaji = Object.keys(romajiToKana).find(key => romajiToKana[key] === kana);
     if (!romaji) return;
-    const audioPath = `${KANA_AUDIO_BASE_PATH}${romaji}.mp3`;
-    // Try to fetch and cache, but do not play
+    const filename = `${romaji}.mp3`;
+    const audioPath = `${KANA_AUDIO_BASE_PATH}${filename}`;
     try {
-      // Check if already cached
-      const cachedResponse = await cache.match(audioPath);
-      if (!cachedResponse) {
+      // Check if already cached in IndexedDB
+      const alreadyCached = await getAudio(filename);
+      if (!alreadyCached) {
         const response = await fetch(audioPath);
         if (response.ok) {
-          await cache.put(audioPath, response.clone());
+          const blob = await response.blob();
+          await setAudio(filename, blob);
         }
       }
     } catch (error) {
       console.error(`Error preloading audio for ${kana}:`, error);
     }
   });
-
   try {
     await Promise.all(preloadPromises);
     console.log('All kana audio files preloaded successfully');
