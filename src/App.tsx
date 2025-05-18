@@ -9,6 +9,7 @@ import { SoundProvider } from './context/SoundContext';
 import { WordLevelProvider } from './context/WordLevelContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
 import { initializeSecurity } from './utils/security';
+import { initializeAudioCache } from './utils/audio';
 import Navigation from './components/Navigation';
 import Home from './pages/Home';
 import Section2 from './pages/Section2';
@@ -44,6 +45,11 @@ const App = () => {
   useEffect(() => {
     // Initialize security measures
     initializeSecurity();
+    
+    // Initialize audio cache
+    initializeAudioCache().catch(error => {
+      console.error('Failed to initialize audio cache:', error);
+    });
   }, []);
 
   // --- Virtual Teacher Panel global integration ---
