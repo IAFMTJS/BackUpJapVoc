@@ -3,6 +3,7 @@ import { playAudio } from '../utils/audio';
 import { romajiWords, romajiSentences, romajiStories } from '../data/romajiWords';
 import Confetti from 'react-confetti';
 import VirtualTeacherPanel from '../components/VirtualTeacherPanel';
+import { useProgress } from '../context/ProgressContext';
 
 const TABS = ['Words', 'Sentences', 'Stories', 'Practice', 'Games'] as const;
 
@@ -117,7 +118,6 @@ const RomajiSection: React.FC = () => {
   const [practiceIndex, setPracticeIndex] = useState(0);
   const [input, setInput] = useState('');
   const [result, setResult] = useState<null | boolean>(null);
-  const [progress, setProgress] = useState<{ [key: string]: boolean }>(getRomajiProgress);
   const [showRomaji, setShowRomaji] = useState(() => getRomajiSetting('romajiShowRomaji', true));
   const [showKanji, setShowKanji] = useState(() => getRomajiSetting('romajiShowKanji', true));
   const [showEnglish, setShowEnglish] = useState(() => getRomajiSetting('romajiShowEnglish', true));
@@ -153,10 +153,9 @@ const RomajiSection: React.FC = () => {
   const levelSentences = romajiSentences.filter(s => s.level === level);
   const levelStories = romajiStories.filter(s => s.level === level);
 
+  const { progress: globalProgress, updateProgress } = useProgress();
+
   // Persist progress and settings
-  React.useEffect(() => {
-    setRomajiProgress(progress);
-  }, [progress]);
   React.useEffect(() => {
     setRomajiSetting('romajiShowRomaji', showRomaji);
   }, [showRomaji]);
@@ -189,7 +188,7 @@ const RomajiSection: React.FC = () => {
     return item.japanese;
   };
   const items = getPracticeItems();
-  const masteredCount = items.filter(item => progress[getProgressKey(item)]).length;
+  const masteredCount = items.filter(item => globalProgress[getProgressKey(item)]).length;
   const allMastered = masteredCount === items.length && items.length > 0;
 
   // Confetti animation when all mastered
@@ -245,7 +244,7 @@ const RomajiSection: React.FC = () => {
   const allLevels = Array.from(new Set([...romajiWords, ...romajiSentences, ...romajiStories].map(x => x.level))).sort((a, b) => a - b);
 
   // Mastery calculation for current level
-  const masteredInLevel = levelWords.filter(word => progress[word.japanese]).length;
+  const masteredInLevel = levelWords.filter(word => globalProgress[word.japanese]).length;
   const masteryThreshold = Math.max(1, Math.floor(levelWords.length * 0.8)); // 80% or at least 1
   const levelMastered = masteredInLevel >= masteryThreshold && levelWords.length > 0;
   // Unlock next level if mastered
@@ -277,9 +276,9 @@ const RomajiSection: React.FC = () => {
   }
 
   // Calculate practiced sentences and listening count for quests
-  const practicedSentences = romajiSentences.filter(s => progress[s.japanese]).length;
+  const practicedSentences = romajiSentences.filter(s => globalProgress[s.japanese]).length;
   // For listening, you could track a key in progress or use a placeholder for now
-  const listeningCount = Object.keys(progress).filter(k => k.startsWith('listening-')).length;
+  const listeningCount = Object.keys(globalProgress).filter(k => k.startsWith('listening-')).length;
 
   // Dummy values for timedScore and reviewCount (replace with real tracking if available)
   // const timedScore = 0; // TODO: integrate with timed practice score
@@ -459,7 +458,7 @@ const RomajiSection: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold">{currentWord.japanese}</span>
                   <button onClick={() => playAudio(currentWord.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
-                  {progress[currentWord.japanese] && <span title="Mastered" className="text-green-500 text-xl">✔️</span>}
+                  {globalProgress[`romaji-${currentWord.japanese}`]?.correct > 0 && <span title="Mastered" className="text-green-500 text-xl">✔️</span>}
                   {/* Speech button */}
                   <SpeechButton
                     target={currentWord.romaji}
@@ -494,7 +493,7 @@ const RomajiSection: React.FC = () => {
                       onClick={() => {
                         const correct = input.trim().toLowerCase() === currentWord.romaji.toLowerCase();
                         setResult(correct);
-                        if (correct) setProgress(p => ({ ...p, [currentWord.japanese]: true }));
+                        if (correct) updateProgress('romaji', currentWord.japanese, true);
                       }}
                     >
                       Check
@@ -520,7 +519,7 @@ const RomajiSection: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="font-bold">{currentSentence.japanese}</span>
                   <button onClick={() => playAudio(currentSentence.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
-                  {progress[currentSentence.japanese] && <span title="Mastered" className="text-green-500 text-xl">✔️</span>}
+                  {globalProgress[`romaji-${currentSentence.japanese}`]?.correct > 0 && <span title="Mastered" className="text-green-500 text-xl">✔️</span>}
                   {/* Speech button */}
                   <SpeechButton
                     target={currentSentence.romaji}
@@ -555,7 +554,7 @@ const RomajiSection: React.FC = () => {
                       onClick={() => {
                         const correct = input.trim().toLowerCase() === currentSentence.romaji.toLowerCase();
                         setResult(correct);
-                        if (correct) setProgress(p => ({ ...p, [currentSentence.japanese]: true }));
+                        if (correct) updateProgress('romaji', currentSentence.japanese, true);
                       }}
                     >
                       Check
@@ -588,13 +587,13 @@ const RomajiSection: React.FC = () => {
                         setMatchSelected(i);
                         const correct = opt.romaji === matchOptions[0].romaji;
                         setMatchResult(correct);
-                        if (correct) setProgress(p => ({ ...p, [opt.japanese]: true }));
+                        if (correct) updateProgress('romaji', opt.japanese, true);
                       }}
                       disabled={matchSelected !== null}
                     >
                       <span>{opt.japanese}</span>
                       <span className="text-blue-700">{opt.romaji}</span>
-                      {progress[opt.japanese] && <span title="Mastered" className="text-green-500 text-xl ml-2">✔️</span>}
+                      {globalProgress[`romaji-${opt.japanese}`]?.correct > 0 && <span title="Mastered" className="text-green-500 text-xl ml-2">✔️</span>}
                     </button>
                   ))}
                 </div>
@@ -624,7 +623,7 @@ const RomajiSection: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold">{currentWord.japanese}</span>
                   <button onClick={() => playAudio(currentWord.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
-                  {progress[currentWord.japanese + '-eng'] && <span title="Mastered" className="text-green-500 text-xl">✔️</span>}
+                  {globalProgress[`romaji-${currentWord.japanese}-eng`]?.correct > 0 && <span title="Mastered" className="text-green-500 text-xl">✔️</span>}
                 </div>
                 <input
                   className="border px-4 py-2 rounded text-lg"
@@ -644,7 +643,7 @@ const RomajiSection: React.FC = () => {
                       onClick={() => {
                         const correct = input.trim().toLowerCase() === currentWord.english.toLowerCase();
                         setResult(correct);
-                        if (correct) setProgress(p => ({ ...p, [currentWord.japanese + '-eng']: true }));
+                        if (correct) updateProgress('romaji', currentWord.japanese + '-eng', true);
                       }}
                     >
                       Check

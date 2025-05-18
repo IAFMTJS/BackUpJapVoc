@@ -8,6 +8,7 @@ import { ProgressItem } from '../types';
 import { quizWords } from '../data/quizData';
 import { kanjiList } from '../data/kanjiData';
 import { beginnerPhrases } from './AnimeSection';
+import { romajiWords, romajiSentences, romajiStories } from '../data/romajiWords';
 
 type TabType = 'progress' | 'dictionary';
 
@@ -54,6 +55,13 @@ const sections = [
     icon: '🎬', 
     total: beginnerPhrases.length,
     description: 'Learn from anime and manga'
+  },
+  {
+    id: 'romaji',
+    name: 'Romaji Practice',
+    icon: '🔤',
+    total: romajiWords.length + romajiSentences.length + romajiStories.length,
+    description: 'Master Romaji words, sentences, and stories'
   },
 ];
 
