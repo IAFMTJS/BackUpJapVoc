@@ -179,4 +179,23 @@ export const hasAudio = async (text: string): Promise<boolean> => {
     console.error('Error checking audio availability:', error);
     return false;
   }
+};
+
+// Play dynamic audio for content without pre-generated files
+export const playDynamicAudio = async (text: string): Promise<void> => {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP';
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+    // Try to find a Japanese voice
+    const voices = window.speechSynthesis.getVoices();
+    const japaneseVoice = voices.find(voice => voice.lang.includes('ja'));
+    if (japaneseVoice) {
+      utterance.voice = japaneseVoice;
+    }
+    window.speechSynthesis.speak(utterance);
+  } else {
+    console.error('[playDynamicAudio] Web Speech API not supported');
+  }
 }; 
