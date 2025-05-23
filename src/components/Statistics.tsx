@@ -19,76 +19,39 @@ const Statistics: React.FC = () => {
   const getThemeClasses = () => {
     if (isDarkMode) {
       return {
-        container: 'bg-dark-card',
-        text: 'text-dark-text',
-        card: 'bg-dark-hover',
-        border: 'border-dark-border',
+        container: 'bg-charcoal-800',
+        text: 'text-ivory-100',
+        card: 'bg-charcoal-700 hover:bg-charcoal-600',
+        border: 'border-charcoal-600',
         chart: {
-          background: 'bg-dark-bg',
-          text: 'text-dark-text',
-          grid: 'border-dark-border',
+          background: 'bg-charcoal-800',
+          text: 'text-ivory-100',
+          grid: 'border-charcoal-600',
         },
         stat: {
-          label: 'text-gray-400',
-          value: 'text-gray-100',
-          highlight: 'text-blue-400'
+          label: 'text-ivory-300',
+          value: 'text-ivory-100',
+          highlight: 'text-sage-300'
         }
       };
     }
 
-    switch (theme) {
-      case 'blue':
-        return {
-          container: 'bg-blue-card',
-          text: 'text-blue-text',
-          card: 'bg-blue-hover',
-          border: 'border-blue-border',
-          chart: {
-            background: 'bg-white',
-            text: 'text-blue-text',
-            grid: 'border-blue-border',
-          },
-          stat: {
-            label: 'text-blue-600',
-            value: 'text-blue-900',
-            highlight: 'text-blue-600'
-          }
-        };
-      case 'green':
-        return {
-          container: 'bg-green-card',
-          text: 'text-green-text',
-          card: 'bg-green-hover',
-          border: 'border-green-border',
-          chart: {
-            background: 'bg-white',
-            text: 'text-green-text',
-            grid: 'border-green-border',
-          },
-          stat: {
-            label: 'text-green-600',
-            value: 'text-green-900',
-            highlight: 'text-green-600'
-          }
-        };
-      default:
-        return {
-          container: 'bg-white',
-          text: 'text-gray-800',
-          card: 'bg-gray-50',
-          border: 'border-gray-200',
-          chart: {
-            background: 'bg-white',
-            text: 'text-gray-800',
-            grid: 'border-gray-200',
-          },
-          stat: {
-            label: 'text-gray-600',
-            value: 'text-gray-900',
-            highlight: 'text-blue-600'
-          }
-        };
-    }
+    return {
+      container: 'bg-ivory-100',
+      text: 'text-charcoal-800',
+      card: 'bg-ivory-50 hover:bg-sage-50',
+      border: 'border-sage-200',
+      chart: {
+        background: 'bg-ivory-100',
+        text: 'text-charcoal-800',
+        grid: 'border-sage-200',
+      },
+      stat: {
+        label: 'text-charcoal-600',
+        value: 'text-charcoal-800',
+        highlight: 'text-sage-600'
+      }
+    };
   };
 
   const themeClasses = getThemeClasses();
@@ -108,8 +71,8 @@ const Statistics: React.FC = () => {
           calculateAccuracy(progress.sentencePractice),
           calculateAccuracy(progress.kanji),
         ],
-        backgroundColor: isDarkMode ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.1)',
-        borderColor: isDarkMode ? 'rgb(34, 197, 94)' : 'rgb(22, 163, 74)',
+        backgroundColor: isDarkMode ? 'rgba(107, 135, 96, 0.2)' : 'rgba(107, 135, 96, 0.1)',
+        borderColor: isDarkMode ? 'rgb(107, 135, 96)' : 'rgb(85, 109, 77)',
       },
     ],
   });
@@ -124,8 +87,8 @@ const Statistics: React.FC = () => {
           progress.sentencePractice.totalQuestions,
           progress.kanji.totalQuestions,
         ],
-        backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
-        borderColor: isDarkMode ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)',
+        backgroundColor: isDarkMode ? 'rgba(139, 115, 85, 0.2)' : 'rgba(139, 115, 85, 0.1)',
+        borderColor: isDarkMode ? 'rgb(139, 115, 85)' : 'rgb(196, 164, 132)',
       },
     ],
   });
@@ -159,10 +122,10 @@ const Statistics: React.FC = () => {
   );
 
   const renderSectionStats = (title: string, section: any, icon: string) => (
-    <div className={`p-4 rounded-lg border ${themeClasses.border} ${themeClasses.card}`}>
+    <div className={`p-6 rounded-xl border ${themeClasses.border} ${themeClasses.card} shadow-soft transition-all duration-300 hover:shadow-card`}>
       <div className="flex items-center space-x-3 mb-4">
         <span className="text-2xl">{icon}</span>
-        <h3 className="text-lg font-semibold">{title}</h3>
+        <h3 className={`text-lg font-serif font-medium ${themeClasses.text}`}>{title}</h3>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>

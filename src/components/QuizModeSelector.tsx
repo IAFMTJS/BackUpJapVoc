@@ -19,44 +19,23 @@ const QuizModeSelector: React.FC<QuizModeSelectorProps> = ({
   const getThemeClasses = () => {
     if (isDarkMode) {
       return {
-        container: 'bg-dark-card',
-        text: 'text-dark-text',
+        container: 'bg-charcoal-800',
+        text: 'text-ivory-100',
         button: {
-          active: 'bg-primary text-white',
-          inactive: 'bg-dark-hover text-dark-text hover:bg-dark-border',
+          active: 'bg-sage-600 text-ivory-100',
+          inactive: 'bg-charcoal-700 text-ivory-300 hover:bg-charcoal-600 hover:text-ivory-100',
         },
       };
     }
 
-    switch (theme) {
-      case 'blue':
-        return {
-          container: 'bg-blue-card',
-          text: 'text-blue-text',
-          button: {
-            active: 'bg-primary text-white',
-            inactive: 'bg-blue-hover text-blue-text hover:bg-blue-border',
-          },
-        };
-      case 'green':
-        return {
-          container: 'bg-green-card',
-          text: 'text-green-text',
-          button: {
-            active: 'bg-primary text-white',
-            inactive: 'bg-green-hover text-green-text hover:bg-green-border',
-          },
-        };
-      default:
-        return {
-          container: 'bg-white',
-          text: 'text-gray-800',
-          button: {
-            active: 'bg-primary text-white',
-            inactive: 'bg-gray-50 text-gray-800 hover:bg-gray-100',
-          },
-        };
-    }
+    return {
+      container: 'bg-ivory-100',
+      text: 'text-charcoal-800',
+      button: {
+        active: 'bg-sage-600 text-ivory-100',
+        inactive: 'bg-ivory-50 text-charcoal-600 hover:bg-sage-50 hover:text-sage-700',
+      },
+    };
   };
 
   const themeClasses = getThemeClasses();
@@ -75,25 +54,18 @@ const QuizModeSelector: React.FC<QuizModeSelectorProps> = ({
   };
 
   return (
-    <div className={`${themeClasses.container} p-4 rounded-lg shadow-md mb-6`}>
-      <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text}`}>
-        Select Practice Mode:
-      </h3>
-      <div className="flex flex-wrap gap-2">
-        {availableModes.map((mode) => (
-          <button
-            key={mode}
-            onClick={() => onModeSelect(mode)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedMode === mode
-                ? themeClasses.button.active
-                : themeClasses.button.inactive
-            }`}
-          >
-            {getModeLabel(mode)}
-          </button>
-        ))}
-      </div>
+    <div className={`flex flex-wrap gap-3 p-4 rounded-xl ${themeClasses.container} shadow-soft`}>
+      {availableModes.map((mode) => (
+        <button
+          key={mode}
+          onClick={() => onModeSelect(mode)}
+          className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+            selectedMode === mode ? themeClasses.button.active : themeClasses.button.inactive
+          }`}
+        >
+          {getModeLabel(mode)}
+        </button>
+      ))}
     </div>
   );
 };

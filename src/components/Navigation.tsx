@@ -42,37 +42,37 @@ const Navigation = () => {
   };
 
   const navClasses = isDarkMode 
-    ? 'bg-gray-800 text-gray-100 shadow-lg'
-    : 'bg-white text-gray-800 shadow-md';
+    ? 'bg-charcoal-800 text-ivory-100 shadow-soft'
+    : 'bg-ivory-100 text-charcoal-800 shadow-soft';
 
   const linkClasses = (isActive: boolean) => {
-    const baseClasses = 'px-3 py-1.5 text-sm rounded-lg transition-colors duration-200';
+    const baseClasses = 'px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200';
     if (isDarkMode) {
       return `${baseClasses} ${
         isActive 
-          ? 'bg-blue-900 text-blue-100' 
-          : 'text-gray-300 hover:bg-gray-700'
+          ? 'bg-sage-700 text-ivory-100' 
+          : 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100'
       }`;
     }
     return `${baseClasses} ${
       isActive 
-        ? 'bg-blue-100 text-blue-800' 
-        : 'text-gray-600 hover:bg-gray-50'
+        ? 'bg-sage-100 text-sage-800' 
+        : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
     }`;
   };
 
   return (
-    <nav className={`sticky top-0 z-50 ${navClasses}`}>
+    <nav className={`sticky top-0 z-50 ${navClasses} backdrop-blur-sm bg-opacity-95`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0">
-              <span className={`text-xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+              <span className={`text-2xl font-serif font-medium ${isDarkMode ? 'text-sage-300' : 'text-sage-600'}`}>
                 JapVoc
               </span>
             </Link>
             <div className="hidden md:block ml-10">
-              <div className="flex items-baseline space-x-2">
+              <div className="flex items-baseline space-x-3">
                 {mainLinks.map((section) => (
                   <Link
                     key={section.path}
@@ -104,18 +104,28 @@ const Navigation = () => {
                 <div className="relative">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className={`p-2 rounded-full ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                    className={`p-2 rounded-full transition-colors ${
+                      isDarkMode 
+                        ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
+                        : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+                    }`}
                   >
                     <span className="sr-only">Open user menu</span>
                     <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </button>
                   {isUserMenuOpen && (
-                    <div className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 ${isDarkMode ? 'bg-gray-700' : 'bg-white'} ring-1 ring-black ring-opacity-5`}>
+                    <div className={`absolute right-0 mt-2 w-48 rounded-xl shadow-card py-1 ${
+                      isDarkMode ? 'bg-charcoal-700' : 'bg-ivory-100'
+                    } ring-1 ring-black ring-opacity-5`}>
                       <Link
                         to="/settings"
-                        className={`block px-4 py-2 text-sm ${isDarkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-700 hover:bg-gray-100'}`}
+                        className={`block px-4 py-2 text-sm ${
+                          isDarkMode 
+                            ? 'text-ivory-300 hover:bg-charcoal-600 hover:text-ivory-100' 
+                            : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+                        }`}
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         Settings
@@ -125,7 +135,11 @@ const Navigation = () => {
                           handleLogout();
                           setIsUserMenuOpen(false);
                         }}
-                        className={`block w-full text-left px-4 py-2 text-sm ${isDarkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-700 hover:bg-gray-100'}`}
+                        className={`block w-full text-left px-4 py-2 text-sm ${
+                          isDarkMode 
+                            ? 'text-ivory-300 hover:bg-charcoal-600 hover:text-ivory-100' 
+                            : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+                        }`}
                       >
                         Sign out
                       </button>
@@ -133,25 +147,27 @@ const Navigation = () => {
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col items-start space-y-2">
-                  <div className="flex items-center space-x-4">
-                    <Link
-                      to="/login"
-                      className={`px-4 py-2 rounded-lg ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                      Sign in
-                    </Link>
-                    <Link
-                      to="/signup"
-                      className={`px-4 py-2 rounded-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-                    >
-                      Sign up
-                    </Link>
-                  </div>
-                  {/* Toggle bar under Sign up */}
-                  <div className="w-full flex justify-center mt-2 text-sm">
-                    <ThemeToggle />
-                  </div>
+                <div className="flex items-center space-x-4">
+                  <Link
+                    to="/login"
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isDarkMode 
+                        ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
+                        : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+                    }`}
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isDarkMode 
+                        ? 'bg-sage-600 hover:bg-sage-700 text-ivory-100' 
+                        : 'bg-sage-600 hover:bg-sage-700 text-ivory-100'
+                    }`}
+                  >
+                    Sign up
+                  </Link>
                 </div>
               )}
             </div>
@@ -161,11 +177,15 @@ const Navigation = () => {
           <div className="md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`p-2 rounded-md ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`}
+              className={`p-2 rounded-lg transition-colors ${
+                isDarkMode 
+                  ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
+                  : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+              }`}
             >
               <span className="sr-only">Open main menu</span>
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
           </div>
@@ -175,12 +195,14 @@ const Navigation = () => {
       {/* Mobile menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1">
+          <div className="px-4 pt-2 pb-3 space-y-1">
             {mainLinks.map((section) => (
               <Link
                 key={section.path}
                 to={section.path}
-                className={`block px-3 py-2 rounded-md text-base font-medium ${linkClasses(location.pathname === section.path)}`}
+                className={`block px-4 py-2 rounded-lg text-base font-medium ${
+                  linkClasses(location.pathname === section.path)
+                }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {section.name}
@@ -190,19 +212,23 @@ const Navigation = () => {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`block px-3 py-2 rounded-md text-base font-medium ${linkClasses(location.pathname === link.path)}`}
+                className={`block px-4 py-2 rounded-lg text-base font-medium ${
+                  linkClasses(location.pathname === link.path)
+                }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {link.name}
               </Link>
             ))}
-          </div>
-          <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
             {currentUser ? (
-              <div className="space-y-1">
+              <div className="pt-4 space-y-1 border-t border-charcoal-200 dark:border-charcoal-700">
                 <Link
                   to="/settings"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                  className={`block px-4 py-2 rounded-lg text-base font-medium ${
+                    isDarkMode 
+                      ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
+                      : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Settings
@@ -212,31 +238,39 @@ const Navigation = () => {
                     handleLogout();
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                  className={`block w-full text-left px-4 py-2 rounded-lg text-base font-medium ${
+                    isDarkMode 
+                      ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
+                      : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+                  }`}
                 >
                   Sign out
                 </button>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="pt-4 space-y-1 border-t border-charcoal-200 dark:border-charcoal-700">
                 <Link
                   to="/login"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                  className={`block px-4 py-2 rounded-lg text-base font-medium ${
+                    isDarkMode 
+                      ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
+                      : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/signup"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                  className={`block px-4 py-2 rounded-lg text-base font-medium ${
+                    isDarkMode 
+                      ? 'bg-sage-600 hover:bg-sage-700 text-ivory-100' 
+                      : 'bg-sage-600 hover:bg-sage-700 text-ivory-100'
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Sign up
                 </Link>
-                {/* Toggle bar under Sign up (mobile) */}
-                <div className="w-full flex justify-center mt-2 text-sm">
-                  <ThemeToggle />
-                </div>
               </div>
             )}
           </div>

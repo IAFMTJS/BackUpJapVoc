@@ -163,44 +163,23 @@ const Achievements: React.FC = () => {
   const getThemeClasses = () => {
     if (isDarkMode) {
       return {
-        container: 'bg-dark-card',
-        text: 'text-dark-text',
-        card: 'bg-dark-hover',
-        border: 'border-dark-border',
-        unlocked: 'bg-green-900/20 border-green-800/30',
-        locked: 'bg-gray-900/20 border-gray-800/30',
+        container: 'bg-charcoal-800',
+        text: 'text-ivory-100',
+        card: 'bg-charcoal-700 hover:bg-charcoal-600',
+        border: 'border-charcoal-600',
+        unlocked: 'bg-sage-700/20 border-sage-600/30',
+        locked: 'bg-charcoal-900/20 border-charcoal-800/30',
       };
     }
 
-    switch (theme) {
-      case 'blue':
-        return {
-          container: 'bg-blue-card',
-          text: 'text-blue-text',
-          card: 'bg-blue-hover',
-          border: 'border-blue-border',
-          unlocked: 'bg-green-50 border-green-200',
-          locked: 'bg-gray-50 border-gray-200',
-        };
-      case 'green':
-        return {
-          container: 'bg-green-card',
-          text: 'text-green-text',
-          card: 'bg-green-hover',
-          border: 'border-green-border',
-          unlocked: 'bg-green-50 border-green-200',
-          locked: 'bg-gray-50 border-gray-200',
-        };
-      default:
-        return {
-          container: 'bg-white',
-          text: 'text-gray-800',
-          card: 'bg-gray-50',
-          border: 'border-gray-200',
-          unlocked: 'bg-green-50 border-green-200',
-          locked: 'bg-gray-50 border-gray-200',
-        };
-    }
+    return {
+      container: 'bg-ivory-100',
+      text: 'text-charcoal-800',
+      card: 'bg-ivory-50 hover:bg-sage-50',
+      border: 'border-sage-200',
+      unlocked: 'bg-sage-100 border-sage-200',
+      locked: 'bg-charcoal-100/20 border-charcoal-200',
+    };
   };
 
   const themeClasses = getThemeClasses();
@@ -208,40 +187,55 @@ const Achievements: React.FC = () => {
   const unlockedAchievements = ACHIEVEMENTS.filter(achievement => achievement.condition(progress));
   const lockedAchievements = ACHIEVEMENTS.filter(achievement => !achievement.condition(progress));
 
-  const renderAchievementCard = (achievement: Achievement, isUnlocked: boolean) => (
-    <div
-      key={achievement.id}
-      className={`p-4 rounded-lg border ${
-        isUnlocked ? themeClasses.unlocked : themeClasses.locked
-      } transition-all duration-300`}
-    >
-      <div className="flex items-center space-x-4">
-        <div className="text-4xl">{achievement.icon}</div>
-        <div>
-          <h3 className="font-semibold">{achievement.title}</h3>
-          <p className="text-sm opacity-80">{achievement.description}</p>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className={`mb-8 ${themeClasses.container} rounded-lg shadow-md p-6`}>
-        <h2 className="text-2xl font-bold mb-6">Achievements</h2>
-        
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">Unlocked ({unlockedAchievements.length})</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {unlockedAchievements.map(achievement => renderAchievementCard(achievement, true))}
-          </div>
-        </div>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className={`${themeClasses.container} rounded-2xl shadow-soft p-8`}>
+        <h1 className={`text-3xl font-serif font-medium mb-8 ${themeClasses.text}`}>
+          Achievements
+        </h1>
 
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Locked ({lockedAchievements.length})</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {lockedAchievements.map(achievement => renderAchievementCard(achievement, false))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {unlockedAchievements.map((achievement) => (
+            <div
+              key={achievement.id}
+              className={`p-6 rounded-xl ${themeClasses.unlocked} shadow-card transition-all duration-300 hover:shadow-soft`}
+            >
+              <div className="flex items-start space-x-4">
+                <div className={`text-3xl ${isDarkMode ? 'text-sage-300' : 'text-sage-600'}`}>
+                  {achievement.icon}
+                </div>
+                <div>
+                  <h3 className={`text-xl font-serif font-medium mb-2 ${themeClasses.text}`}>
+                    {achievement.title}
+                  </h3>
+                  <p className={`text-sm ${isDarkMode ? 'text-ivory-300' : 'text-charcoal-600'}`}>
+                    {achievement.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {lockedAchievements.map((achievement) => (
+            <div
+              key={achievement.id}
+              className={`p-6 rounded-xl ${themeClasses.locked} shadow-card transition-all duration-300 hover:shadow-soft`}
+            >
+              <div className="flex items-start space-x-4">
+                <div className="text-3xl opacity-50">
+                  {achievement.icon}
+                </div>
+                <div>
+                  <h3 className={`text-xl font-serif font-medium mb-2 ${themeClasses.text} opacity-50`}>
+                    {achievement.title}
+                  </h3>
+                  <p className={`text-sm ${isDarkMode ? 'text-ivory-300' : 'text-charcoal-600'} opacity-50`}>
+                    {achievement.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

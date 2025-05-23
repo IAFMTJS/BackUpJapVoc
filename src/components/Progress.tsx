@@ -17,72 +17,37 @@ const Progress: React.FC<ProgressProps> = ({ detailed = false }) => {
   const getThemeClasses = () => {
     if (isDarkMode) {
       return {
-        container: 'bg-gray-800',
-        text: 'text-gray-100',
-        card: 'bg-gray-700',
-        border: 'border-gray-600',
+        container: 'bg-charcoal-800',
+        text: 'text-ivory-100',
+        card: 'bg-charcoal-700 hover:bg-charcoal-600',
+        border: 'border-charcoal-600',
         tab: {
-          active: 'bg-blue-600 text-white',
-          inactive: 'bg-gray-700 text-gray-300 hover:bg-gray-600',
+          active: 'bg-sage-600 text-ivory-100',
+          inactive: 'bg-charcoal-700 text-ivory-300 hover:bg-charcoal-600',
         },
         stat: {
-          label: 'text-gray-400',
-          value: 'text-gray-100',
-          highlight: 'text-blue-400'
+          label: 'text-ivory-300',
+          value: 'text-ivory-100',
+          highlight: 'text-sage-300'
         }
       };
     }
 
-    switch (theme) {
-      case 'blue':
-        return {
-          container: 'bg-blue-50',
-          text: 'text-blue-900',
-          card: 'bg-white',
-          border: 'border-blue-200',
-          tab: {
-            active: 'bg-blue-600 text-white',
-            inactive: 'bg-white text-blue-900 hover:bg-blue-50',
-          },
-          stat: {
-            label: 'text-blue-600',
-            value: 'text-blue-900',
-            highlight: 'text-blue-600'
-          }
-        };
-      case 'green':
-        return {
-          container: 'bg-green-50',
-          text: 'text-green-900',
-          card: 'bg-white',
-          border: 'border-green-200',
-          tab: {
-            active: 'bg-green-600 text-white',
-            inactive: 'bg-white text-green-900 hover:bg-green-50',
-          },
-          stat: {
-            label: 'text-green-600',
-            value: 'text-green-900',
-            highlight: 'text-green-600'
-          }
-        };
-      default:
-        return {
-          container: 'bg-white',
-          text: 'text-gray-900',
-          card: 'bg-gray-50',
-          border: 'border-gray-200',
-          tab: {
-            active: 'bg-blue-600 text-white',
-            inactive: 'bg-gray-50 text-gray-900 hover:bg-gray-100',
-          },
-          stat: {
-            label: 'text-gray-600',
-            value: 'text-gray-900',
-            highlight: 'text-blue-600'
-          }
-        };
-    }
+    return {
+      container: 'bg-ivory-100',
+      text: 'text-charcoal-800',
+      card: 'bg-ivory-50 hover:bg-sage-50',
+      border: 'border-sage-200',
+      tab: {
+        active: 'bg-sage-600 text-ivory-100',
+        inactive: 'bg-ivory-50 text-charcoal-600 hover:bg-sage-50',
+      },
+      stat: {
+        label: 'text-charcoal-600',
+        value: 'text-charcoal-800',
+        highlight: 'text-sage-600'
+      }
+    };
   };
 
   const themeClasses = getThemeClasses();
@@ -189,18 +154,20 @@ const Progress: React.FC<ProgressProps> = ({ detailed = false }) => {
 
   const renderOverview = () => {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="text-center">
-          <h2 className={`text-2xl sm:text-3xl font-bold mb-4 ${themeClasses.text}`}>Learning Progress</h2>
+          <h2 className={`text-2xl sm:text-3xl font-serif font-medium mb-4 ${themeClasses.text}`}>
+            Learning Progress
+          </h2>
           <div className="relative inline-block">
-            <div className={`text-3xl sm:text-4xl font-bold ${themeClasses.stat.highlight}`}>
+            <div className={`text-3xl sm:text-4xl font-serif font-medium ${themeClasses.stat.highlight}`}>
               {calculateTotalProgress()}%
             </div>
             <div className={`text-sm ${themeClasses.stat.label}`}>Overall Progress</div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {sections.map((section) => {
             const sectionProgress = progress[section.id] || { completed: 0, total: 0 };
             const percentage = sectionProgress.total > 0
@@ -208,19 +175,21 @@ const Progress: React.FC<ProgressProps> = ({ detailed = false }) => {
               : 0;
 
             return (
-              <div key={section.id} className={`p-3 sm:p-4 rounded-lg ${themeClasses.card} border ${themeClasses.border}`}>
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-xl sm:text-2xl">{section.icon}</span>
-                  <span className={`text-sm sm:text-base font-medium ${themeClasses.text}`}>{section.name}</span>
+              <div key={section.id} className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border} shadow-soft transition-all duration-300 hover:shadow-card`}>
+                <div className="flex items-center space-x-3 mb-4">
+                  <span className="text-2xl">{section.icon}</span>
+                  <span className={`text-base font-serif font-medium ${themeClasses.text}`}>
+                    {section.name}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mr-2">
+                  <div className="w-full bg-charcoal-200 dark:bg-charcoal-700 rounded-full h-2 mr-3">
                     <div
-                      className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                      className="bg-sage-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
-                  <span className={`text-xs sm:text-sm ${themeClasses.stat.label}`}>
+                  <span className={`text-sm ${themeClasses.stat.label}`}>
                     {percentage}%
                   </span>
                 </div>
@@ -327,14 +296,14 @@ const Progress: React.FC<ProgressProps> = ({ detailed = false }) => {
 
   return (
     <div className={`${detailed ? 'max-w-4xl mx-auto px-4 py-8' : ''}`}>
-      <div className={`${themeClasses.container} rounded-lg shadow-md p-6`}>
+      <div className={`${themeClasses.container} rounded-2xl shadow-soft p-8`}>
         {detailed && (
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-3 mb-8">
             {(['overview', 'achievements', 'statistics', 'calendar'] as Tab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-lg transition-colors capitalize ${
+                className={`px-4 py-2 rounded-lg transition-colors capitalize font-medium ${
                   activeTab === tab ? themeClasses.tab.active : themeClasses.tab.inactive
                 }`}
               >

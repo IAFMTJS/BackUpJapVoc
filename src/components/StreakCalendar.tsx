@@ -19,64 +19,33 @@ const StreakCalendar: React.FC = () => {
   const getThemeClasses = () => {
     if (isDarkMode) {
       return {
-        container: 'bg-dark-card',
-        text: 'text-dark-text',
-        card: 'bg-dark-hover',
-        border: 'border-dark-border',
+        container: 'bg-charcoal-800',
+        text: 'text-ivory-100',
+        card: 'bg-charcoal-700 hover:bg-charcoal-600',
+        border: 'border-charcoal-600',
         calendar: {
-          header: 'bg-dark-bg',
-          cell: 'bg-dark-hover',
-          today: 'bg-primary/20',
-          streak: 'bg-green-900/20',
-          empty: 'bg-gray-900/20',
+          header: 'bg-charcoal-800',
+          cell: 'bg-charcoal-700',
+          today: 'bg-sage-600/20',
+          streak: 'bg-sage-700/20',
+          empty: 'bg-charcoal-900/20',
         },
       };
     }
 
-    switch (theme) {
-      case 'blue':
-        return {
-          container: 'bg-blue-card',
-          text: 'text-blue-text',
-          card: 'bg-blue-hover',
-          border: 'border-blue-border',
-          calendar: {
-            header: 'bg-blue-bg',
-            cell: 'bg-blue-hover',
-            today: 'bg-primary/20',
-            streak: 'bg-green-50',
-            empty: 'bg-gray-50',
-          },
-        };
-      case 'green':
-        return {
-          container: 'bg-green-card',
-          text: 'text-green-text',
-          card: 'bg-green-hover',
-          border: 'border-green-border',
-          calendar: {
-            header: 'bg-green-bg',
-            cell: 'bg-green-hover',
-            today: 'bg-primary/20',
-            streak: 'bg-green-50',
-            empty: 'bg-gray-50',
-          },
-        };
-      default:
-        return {
-          container: 'bg-white',
-          text: 'text-gray-800',
-          card: 'bg-gray-50',
-          border: 'border-gray-200',
-          calendar: {
-            header: 'bg-gray-50',
-            cell: 'bg-white',
-            today: 'bg-primary/20',
-            streak: 'bg-green-50',
-            empty: 'bg-gray-50',
-          },
-        };
-    }
+    return {
+      container: 'bg-ivory-100',
+      text: 'text-charcoal-800',
+      card: 'bg-ivory-50 hover:bg-sage-50',
+      border: 'border-sage-200',
+      calendar: {
+        header: 'bg-ivory-100',
+        cell: 'bg-ivory-50',
+        today: 'bg-sage-500/20',
+        streak: 'bg-sage-100',
+        empty: 'bg-charcoal-100/20',
+      },
+    };
   };
 
   const themeClasses = getThemeClasses();
@@ -199,65 +168,61 @@ const StreakCalendar: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className={`mb-8 ${themeClasses.container} rounded-lg shadow-md p-6`}>
-        <div className="flex justify-between items-center mb-6">
+      <div className={`mb-8 ${themeClasses.container} rounded-2xl shadow-soft p-8`}>
+        <div className="flex justify-between items-center mb-8">
           <button
             onClick={() => changeMonth(-1)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-hover"
+            className={`p-2 rounded-lg transition-colors ${
+              isDarkMode 
+                ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
+                : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+            }`}
           >
             ←
           </button>
-          <h2 className="text-2xl font-bold">{getMonthName(currentMonth)}</h2>
+          <h2 className={`text-2xl font-serif font-medium ${themeClasses.text}`}>
+            {getMonthName(currentMonth)}
+          </h2>
           <button
             onClick={() => changeMonth(1)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-hover"
+            className={`p-2 rounded-lg transition-colors ${
+              isDarkMode 
+                ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
+                : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
+            }`}
           >
             →
           </button>
         </div>
 
         <div className="grid grid-cols-7 gap-2">
-          {Array.from({ length: 7 }, (_, i) => (
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
             <div
-              key={i}
-              className={`text-center font-semibold p-2 ${themeClasses.calendar.header}`}
+              key={day}
+              className={`text-center py-2 font-medium ${themeClasses.text} ${themeClasses.calendar.header}`}
             >
-              {getDayName(i)}
+              {day}
             </div>
           ))}
-
           {calendarData.map((day, index) => (
             <div
               key={index}
-              className={`p-2 rounded-lg border ${themeClasses.border} ${getCellClass(day)}`}
+              className={`p-2 rounded-lg text-center transition-colors ${
+                getCellClass(day)
+              } ${!isInCurrentMonth(day.date) ? 'opacity-50' : ''}`}
             >
-              <div className="text-sm">{day.date.getDate()}</div>
-              {isInCurrentMonth(day.date) && day.practiceCount > 0 && (
-                <div className="text-xs mt-1">
-                  <div className="flex items-center justify-between">
-                    <span>Hiragana: {day.hiraganaPractice ? '✓' : '✗'}</span>
-                    <span>Katakana: {day.katakanaPractice ? '✓' : '✗'}</span>
-                  </div>
-                  <div className="mt-1">Accuracy: {Math.round(day.accuracy)}%</div>
+              <div className={`text-sm ${themeClasses.text}`}>
+                {day.date.getDate()}
+              </div>
+              {day.practiceCount > 0 && (
+                <div className={`text-xs mt-1 ${
+                  isDarkMode ? 'text-sage-300' : 'text-sage-600'
+                }`}>
+                  {day.practiceCount} {day.practiceCount === 1 ? 'item' : 'items'}
                 </div>
               )}
             </div>
           ))}
-        </div>
-
-        <div className="mt-6 flex justify-center space-x-4">
-          <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-primary/20 mr-2" />
-            <span>Today</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-green-50 mr-2" />
-            <span>Practice Day</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-gray-50 mr-2" />
-            <span>No Practice</span>
-          </div>
         </div>
       </div>
     </div>

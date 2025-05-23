@@ -40,8 +40,114 @@ module.exports = {
           text: '#065F46', // green-800
           border: '#6EE7B7', // green-300
         },
+        // Japandi-inspired color palette
+        sage: {
+          50: '#F5F7F4',
+          100: '#E8EDE5',
+          200: '#D1DBCB',
+          300: '#B4C3A9',
+          400: '#8FA583',
+          500: '#6B8760', // Base sage green
+          600: '#556D4D',
+          700: '#42553B',
+          800: '#2F3C2A',
+          900: '#1C2419',
+        },
+        charcoal: {
+          50: '#F5F5F5',
+          100: '#E5E5E5',
+          200: '#CCCCCC',
+          300: '#B3B3B3',
+          400: '#808080',
+          500: '#4D4D4D', // Base charcoal
+          600: '#404040',
+          700: '#333333',
+          800: '#262626',
+          900: '#1A1A1A',
+        },
+        ivory: {
+          50: '#FDFDFC',
+          100: '#FBFBF9',
+          200: '#F7F7F3',
+          300: '#F3F3ED',
+          400: '#EFEFE7',
+          500: '#EBEBE1', // Base ivory
+          600: '#D4D4CB',
+          700: '#BDBDB4',
+          800: '#A6A69E',
+          900: '#8F8F87',
+        },
+        beige: {
+          50: '#FDFBF8',
+          100: '#FBF7F1',
+          200: '#F7EFE3',
+          300: '#F3E7D5',
+          400: '#EFDFC7',
+          500: '#EBD7B9', // Base beige
+          600: '#D4C2A7',
+          700: '#BDAD95',
+          800: '#A69883',
+          900: '#8F8371',
+        },
+        accent: {
+          wood: '#8B7355', // Washed wood tone
+          gold: '#C4A484', // Muted gold
+          rust: '#B85C38', // Rust red
+        },
+      },
+      fontFamily: {
+        // Modern serif for headings
+        serif: ['Noto Serif JP', 'serif'],
+        // Clean sans-serif for body
+        sans: ['Noto Sans JP', 'sans-serif'],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
+        '30': '7.5rem',
+      },
+      borderRadius: {
+        'xl': '1rem',
+        '2xl': '1.5rem',
+      },
+      boxShadow: {
+        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: '65ch',
+            color: 'inherit',
+            a: {
+              color: 'inherit',
+              textDecoration: 'none',
+              fontWeight: '500',
+            },
+            strong: {
+              color: 'inherit',
+            },
+            code: {
+              color: 'inherit',
+            },
+            h1: {
+              color: 'inherit',
+              fontFamily: 'Noto Serif JP',
+            },
+            h2: {
+              color: 'inherit',
+              fontFamily: 'Noto Serif JP',
+            },
+            h3: {
+              color: 'inherit',
+              fontFamily: 'Noto Serif JP',
+            },
+          },
+        },
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 } 

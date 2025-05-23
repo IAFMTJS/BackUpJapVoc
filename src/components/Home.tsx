@@ -3,86 +3,65 @@ import { useTheme } from '../context/ThemeContext';
 import { Link } from 'react-router-dom';
 
 const Home: React.FC = () => {
-  const { theme, isDarkMode } = useTheme();
+  const { isDarkMode } = useTheme();
 
   const getThemeClasses = () => {
     if (isDarkMode) {
       return {
-        container: 'bg-dark-card',
-        text: 'text-dark-text',
-        card: 'bg-dark-hover hover:bg-dark-border',
+        container: 'bg-charcoal-800',
+        text: 'text-ivory-100',
+        card: 'bg-charcoal-700 hover:bg-charcoal-600',
         button: {
-          primary: 'bg-primary hover:bg-primary-dark text-white',
-          secondary: 'bg-secondary hover:bg-secondary-dark text-white',
+          primary: 'bg-sage-600 hover:bg-sage-700 text-ivory-100',
+          secondary: 'bg-accent-wood hover:bg-accent-gold text-ivory-100',
         },
+        tag: 'bg-sage-700/20 text-sage-300',
       };
     }
 
-    switch (theme) {
-      case 'blue':
-        return {
-          container: 'bg-blue-card',
-          text: 'text-blue-text',
-          card: 'bg-blue-hover hover:bg-blue-border',
-          button: {
-            primary: 'bg-primary hover:bg-primary-dark text-white',
-            secondary: 'bg-secondary hover:bg-secondary-dark text-white',
-          },
-        };
-      case 'green':
-        return {
-          container: 'bg-green-card',
-          text: 'text-green-text',
-          card: 'bg-green-hover hover:bg-green-border',
-          button: {
-            primary: 'bg-primary hover:bg-primary-dark text-white',
-            secondary: 'bg-secondary hover:bg-secondary-dark text-white',
-          },
-        };
-      default:
-        return {
-          container: 'bg-white',
-          text: 'text-gray-800',
-          card: 'bg-gray-50 hover:bg-gray-100',
-          button: {
-            primary: 'bg-primary hover:bg-primary-dark text-white',
-            secondary: 'bg-secondary hover:bg-secondary-dark text-white',
-          },
-        };
-    }
+    return {
+      container: 'bg-ivory-100',
+      text: 'text-charcoal-800',
+      card: 'bg-ivory-50 hover:bg-sage-50',
+      button: {
+        primary: 'bg-sage-600 hover:bg-sage-700 text-ivory-100',
+        secondary: 'bg-accent-wood hover:bg-accent-gold text-ivory-100',
+      },
+      tag: 'bg-sage-100 text-sage-700',
+    };
   };
 
   const themeClasses = getThemeClasses();
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className={`${themeClasses.container} rounded-lg shadow-md p-8 mb-8`}>
-        <h1 className={`text-4xl font-bold mb-6 ${themeClasses.text}`}>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className={`${themeClasses.container} rounded-2xl shadow-soft p-8 mb-12`}>
+        <h1 className={`text-4xl font-serif font-medium mb-6 ${themeClasses.text}`}>
           Japanese Vocabulary Practice
         </h1>
-        <p className={`text-xl mb-8 ${themeClasses.text}`}>
-          Choose a practice mode to get started:
+        <p className={`text-xl mb-12 leading-relaxed ${themeClasses.text}`}>
+          Choose a practice mode to begin your journey in mastering Japanese vocabulary and language skills.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <Link
             to="/word-practice"
-            className={`${themeClasses.card} p-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105`}
+            className={`${themeClasses.card} p-8 rounded-xl shadow-card transition-all duration-300 transform hover:scale-[1.02] group`}
           >
-            <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text}`}>
+            <h2 className={`text-2xl font-serif font-medium mb-4 ${themeClasses.text}`}>
               Word Practice
             </h2>
-            <p className={`mb-4 ${themeClasses.text}`}>
+            <p className={`mb-6 leading-relaxed ${themeClasses.text}`}>
               Practice vocabulary words with multiple choice or writing exercises.
             </p>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Multiple Choice
               </span>
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Writing
               </span>
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Flashcards
               </span>
             </div>
@@ -90,22 +69,22 @@ const Home: React.FC = () => {
 
           <Link
             to="/sentence-practice"
-            className={`${themeClasses.card} p-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105`}
+            className={`${themeClasses.card} p-8 rounded-xl shadow-card transition-all duration-300 transform hover:scale-[1.02] group`}
           >
-            <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text}`}>
+            <h2 className={`text-2xl font-serif font-medium mb-4 ${themeClasses.text}`}>
               Sentence Practice
             </h2>
-            <p className={`mb-4 ${themeClasses.text}`}>
+            <p className={`mb-6 leading-relaxed ${themeClasses.text}`}>
               Practice grammar patterns and sentence construction.
             </p>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Translation
               </span>
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Fill in the Blank
               </span>
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Pattern Practice
               </span>
             </div>
@@ -113,22 +92,22 @@ const Home: React.FC = () => {
 
           <Link
             to="/kanji-practice"
-            className={`${themeClasses.card} p-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105`}
+            className={`${themeClasses.card} p-8 rounded-xl shadow-card transition-all duration-300 transform hover:scale-[1.02] group`}
           >
-            <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text}`}>
+            <h2 className={`text-2xl font-serif font-medium mb-4 ${themeClasses.text}`}>
               Kanji Practice
             </h2>
-            <p className={`mb-4 ${themeClasses.text}`}>
-              Learn and practice kanji characters.
+            <p className={`mb-6 leading-relaxed ${themeClasses.text}`}>
+              Learn and practice kanji characters with stroke order and readings.
             </p>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Flashcards
               </span>
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Writing
               </span>
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Reading
               </span>
             </div>
@@ -136,22 +115,22 @@ const Home: React.FC = () => {
 
           <Link
             to="/progress"
-            className={`${themeClasses.card} p-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105`}
+            className={`${themeClasses.card} p-8 rounded-xl shadow-card transition-all duration-300 transform hover:scale-[1.02] group`}
           >
-            <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text}`}>
+            <h2 className={`text-2xl font-serif font-medium mb-4 ${themeClasses.text}`}>
               Progress Tracking
             </h2>
-            <p className={`mb-4 ${themeClasses.text}`}>
-              View your learning progress and statistics.
+            <p className={`mb-6 leading-relaxed ${themeClasses.text}`}>
+              Monitor your learning journey with detailed statistics and achievements.
             </p>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Statistics
               </span>
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Streaks
               </span>
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+              <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${themeClasses.tag}`}>
                 Achievements
               </span>
             </div>

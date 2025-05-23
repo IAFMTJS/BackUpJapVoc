@@ -44,72 +44,37 @@ const WordLevelPractice: React.FC = () => {
   const getThemeClasses = () => {
     if (isDarkMode) {
       return {
-        container: 'bg-dark-card',
-        text: 'text-dark-text',
-        card: 'bg-dark-bg border-dark-border',
-        input: 'bg-dark-bg border-dark-border text-dark-text',
+        container: 'bg-charcoal-800',
+        text: 'text-ivory-100',
+        card: 'bg-charcoal-700 hover:bg-charcoal-600',
+        input: 'bg-charcoal-700 border-charcoal-600 text-ivory-100',
         button: {
-          primary: 'bg-primary hover:bg-primary-dark text-white',
-          secondary: 'bg-secondary hover:bg-secondary-dark text-white',
-          outline: 'border-2 border-primary text-primary hover:bg-primary/10',
+          primary: 'bg-sage-600 hover:bg-sage-700 text-ivory-100',
+          secondary: 'bg-charcoal-600 hover:bg-charcoal-500 text-ivory-100',
+          outline: 'border-2 border-sage-500 text-sage-300 hover:bg-sage-700/20',
         },
         progress: {
-          bg: 'bg-gray-700',
-          bar: 'bg-primary',
+          bg: 'bg-charcoal-600',
+          bar: 'bg-sage-500',
         },
       };
     }
 
-    switch (theme) {
-      case 'blue':
-        return {
-          container: 'bg-blue-card',
-          text: 'text-blue-text',
-          card: 'bg-white border-blue-border',
-          input: 'bg-white border-blue-border text-blue-text',
-          button: {
-            primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-            secondary: 'bg-blue-100 hover:bg-blue-200 text-blue-800',
-            outline: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50',
-          },
-          progress: {
-            bg: 'bg-blue-100',
-            bar: 'bg-blue-600',
-          },
-        };
-      case 'green':
-        return {
-          container: 'bg-green-card',
-          text: 'text-green-text',
-          card: 'bg-white border-green-border',
-          input: 'bg-white border-green-border text-green-text',
-          button: {
-            primary: 'bg-green-600 hover:bg-green-700 text-white',
-            secondary: 'bg-green-100 hover:bg-green-200 text-green-800',
-            outline: 'border-2 border-green-600 text-green-600 hover:bg-green-50',
-          },
-          progress: {
-            bg: 'bg-green-100',
-            bar: 'bg-green-600',
-          },
-        };
-      default:
-        return {
-          container: 'bg-white',
-          text: 'text-gray-800',
-          card: 'bg-gray-50 border-gray-200',
-          input: 'bg-white border-gray-200 text-gray-800',
-          button: {
-            primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-            secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-            outline: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50',
-          },
-          progress: {
-            bg: 'bg-gray-200',
-            bar: 'bg-blue-600',
-          },
-        };
-    }
+    return {
+      container: 'bg-ivory-100',
+      text: 'text-charcoal-800',
+      card: 'bg-ivory-50 hover:bg-sage-50',
+      input: 'bg-ivory-50 border-sage-200 text-charcoal-800',
+      button: {
+        primary: 'bg-sage-600 hover:bg-sage-700 text-ivory-100',
+        secondary: 'bg-charcoal-200 hover:bg-charcoal-300 text-charcoal-800',
+        outline: 'border-2 border-sage-500 text-sage-600 hover:bg-sage-50',
+      },
+      progress: {
+        bg: 'bg-charcoal-100',
+        bar: 'bg-sage-500',
+      },
+    };
   };
 
   const themeClasses = getThemeClasses();
@@ -201,103 +166,122 @@ const WordLevelPractice: React.FC = () => {
     const progress = ((practiceState.currentWordIndex + 1) / practiceState.words.length) * 100;
 
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <div className="mb-6">
-          <div className={`h-2 rounded-full ${themeClasses.progress.bg}`}>
-            <div
-              className={`h-2 rounded-full transition-all duration-300 ${themeClasses.progress.bar}`}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className={`mt-2 text-sm ${themeClasses.text}`}>
-            Word {practiceState.currentWordIndex + 1} of {practiceState.words.length}
-          </p>
-        </div>
-
-        <div className={`p-6 rounded-lg shadow-md ${themeClasses.card}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className={`text-2xl font-bold ${themeClasses.text}`}>
-              {practiceMode === 'japanese-to-english' ? currentWord.japanese :
-               practiceMode === 'english-to-japanese' ? currentWord.english :
-               currentWord.romaji}
-            </h2>
-            <button
-              onClick={() => handlePlayAudio(currentWord.japanese)}
-              className="ml-2 p-2 rounded-full hover:bg-opacity-10"
-              title="Play Audio"
-            >
-              🔊
-            </button>
-          </div>
-
-          {practiceState.showHint && (
-            <p className={`mb-4 text-sm ${themeClasses.text}`}>
-              Hint: {practiceMode === 'japanese-to-english' ? currentWord.romaji :
-                    practiceMode === 'english-to-japanese' ? currentWord.romaji :
-                    currentWord.japanese}
-            </p>
-          )}
-
-          <input
-            type="text"
-            value={practiceState.userInput}
-            onChange={handleInputChange}
-            onKeyPress={(e) => e.key === 'Enter' && checkAnswer()}
-            placeholder={
-              practiceMode === 'japanese-to-english' ? 'Enter English translation' :
-              practiceMode === 'english-to-japanese' ? 'Enter Japanese word' :
-              'Type the romaji'
-            }
-            className={`w-full px-4 py-2 mb-4 rounded-lg border ${themeClasses.input} ${
-              practiceState.isCorrect === false ? 'border-red-500' : ''
-            }`}
-          />
-
-          {practiceState.isCorrect === false && (
-            <p className="mb-4 text-sm text-red-600">
-              Correct answer: {
-                practiceMode === 'japanese-to-english' ? currentWord.english :
-                practiceMode === 'english-to-japanese' ? currentWord.japanese :
-                currentWord.romaji
-              }
-            </p>
-          )}
-
-          <div className="flex gap-2">
-            <button
-              onClick={checkAnswer}
-              disabled={!practiceState.userInput.trim()}
-              className={`px-4 py-2 rounded-lg ${themeClasses.button.primary} disabled:opacity-50`}
-            >
-              Check
-            </button>
-            <button
-              onClick={handleShowHint}
-              disabled={practiceState.showHint}
-              className={`px-4 py-2 rounded-lg ${themeClasses.button.secondary} disabled:opacity-50`}
-            >
-              Hint
-            </button>
-            {practiceState.isCorrect !== null && (
-              <button
-                onClick={handleNext}
-                className={`px-4 py-2 rounded-lg ${
-                  practiceState.isCorrect ? themeClasses.button.primary : themeClasses.button.secondary
-                }`}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className={`${themeClasses.container} rounded-2xl shadow-soft p-8`}>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div>
+              <h1 className={`text-3xl font-serif font-medium mb-2 ${themeClasses.text}`}>
+                Word Level Practice
+              </h1>
+              <p className={`text-lg ${themeClasses.text}`}>
+                Practice vocabulary words at your current level
+              </p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <select
+                value={currentLevel}
+                onChange={(e) => setCurrentLevel(Number(e.target.value))}
+                className={`px-4 py-2 rounded-lg ${themeClasses.input} focus:outline-none focus:ring-2 focus:ring-sage-500`}
               >
-                Next
-              </button>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    Level {i + 1}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-2">
+              <span className={`text-sm font-medium ${themeClasses.text}`}>
+                Level Progress
+              </span>
+              <span className={`text-sm ${themeClasses.text}`}>
+                {progress}%
+              </span>
+            </div>
+            <div className={`w-full h-2 rounded-full ${themeClasses.progress.bg}`}>
+              <div
+                className={`h-2 rounded-full transition-all duration-300 ${themeClasses.progress.bar}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {currentWord && (
+              <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h2 className={`text-2xl font-serif font-medium mb-2 ${themeClasses.text}`}>
+                      {currentWord.japanese}
+                    </h2>
+                    <p className={`text-lg ${themeClasses.text}`}>
+                      {currentWord.reading}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleShowHint}
+                    className={`px-4 py-2 rounded-lg font-medium ${themeClasses.button.outline}`}
+                  >
+                    Hint
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={practiceState.userInput}
+                    onChange={handleInputChange}
+                    placeholder="Type the meaning..."
+                    className={`w-full px-4 py-3 rounded-lg ${themeClasses.input} focus:outline-none focus:ring-2 focus:ring-sage-500`}
+                    onKeyPress={(e) => e.key === 'Enter' && checkAnswer()}
+                  />
+
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={handleNext}
+                      className={`px-6 py-2 rounded-lg font-medium ${themeClasses.button.secondary}`}
+                    >
+                      Skip
+                    </button>
+                    <button
+                      onClick={checkAnswer}
+                      className={`px-6 py-2 rounded-lg font-medium ${themeClasses.button.primary}`}
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+
+                {practiceState.showHint && (
+                  <div className={`mt-4 p-4 rounded-lg bg-sage-700/20 border border-sage-600/30 ${
+                    isDarkMode ? 'text-sage-300' : 'text-sage-700'
+                  }`}>
+                    {currentWord.hint}
+                  </div>
+                )}
+
+                {practiceState.isCorrect !== null && (
+                  <div className={`mt-4 p-4 rounded-lg ${
+                    practiceState.isCorrect
+                      ? 'bg-sage-700/20 border border-sage-600/30 text-sage-300'
+                      : 'bg-accent-rust/20 border border-accent-rust/30 text-accent-rust'
+                  }`}>
+                    <p className="font-medium mb-2">
+                      {practiceState.isCorrect ? 'Correct!' : 'Incorrect'}
+                    </p>
+                    <p>
+                      {practiceState.isCorrect
+                        ? 'Great job! Keep up the good work.'
+                        : `The correct answer was: ${currentWord.meaning}`}
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
-        </div>
-
-        <div className="flex justify-between items-center mt-4">
-          <p className={`${themeClasses.text}`}>
-            Score: {practiceState.score}
-          </p>
-          <p className="text-red-600">
-            Mistakes: {practiceState.mistakes}
-          </p>
         </div>
       </div>
     );

@@ -26,17 +26,34 @@ const SettingsPanel: React.FC = () => {
   };
 
   const getThemeClasses = () => {
-    const themeClasses = {
-      text: isDarkMode ? 'text-gray-100' : 'text-gray-900',
-      bg: isDarkMode ? 'bg-gray-800' : 'bg-white',
-      border: isDarkMode ? 'border-gray-700' : 'border-gray-200'
+    if (isDarkMode) {
+      return {
+        container: 'bg-charcoal-800',
+        text: 'text-ivory-100',
+        card: 'bg-charcoal-700 hover:bg-charcoal-600',
+        border: 'border-charcoal-600',
+        input: 'bg-charcoal-900 border-charcoal-700 text-ivory-100',
+        button: 'bg-sage-600 hover:bg-sage-500 text-ivory-100',
+        buttonSecondary: 'bg-charcoal-700 hover:bg-charcoal-600 text-ivory-100',
+      };
+    }
+
+    return {
+      container: 'bg-ivory-100',
+      text: 'text-charcoal-800',
+      card: 'bg-ivory-50 hover:bg-sage-50',
+      border: 'border-sage-200',
+      input: 'bg-white border-sage-200 text-charcoal-800',
+      button: 'bg-sage-600 hover:bg-sage-500 text-ivory-100',
+      buttonSecondary: 'bg-charcoal-200 hover:bg-charcoal-300 text-charcoal-800',
     };
-    return themeClasses;
   };
+
+  const themeClasses = getThemeClasses();
 
   const renderToggle = (settingKey: keyof Settings, label: string) => (
     <div className="flex items-center justify-between">
-      <span className={`text-sm ${getThemeClasses().text}`}>{label}</span>
+      <span className={`text-sm ${themeClasses.text}`}>{label}</span>
       <button
         onClick={() => updateSettings({ [settingKey]: !settings[settingKey] })}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -53,56 +70,116 @@ const SettingsPanel: React.FC = () => {
   );
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${getThemeClasses().bg}`}>
-      <h2 className={`text-xl font-semibold mb-6 ${getThemeClasses().text}`}>Settings</h2>
-      
-      <div className="space-y-6">
-        <div>
-          <h3 className={`font-medium mb-4 ${getThemeClasses().text}`}>General Settings</h3>
-          <div className="space-y-4">
-            {renderToggle('showRomaji', 'Show Romaji')}
-            {renderToggle('showHints', 'Show Hints')}
-            {renderToggle('autoPlay', 'Auto Play')}
-          </div>
-        </div>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className={`${themeClasses.container} rounded-2xl shadow-soft p-8`}>
+        <h1 className={`text-3xl font-serif font-medium mb-8 ${themeClasses.text}`}>
+          Settings
+        </h1>
 
-        <div>
-          <h3 className={`font-medium mb-4 ${getThemeClasses().text}`}>Section-Specific Settings</h3>
-          <div className="space-y-4">
-            <div>
-              <h4 className={`text-sm font-medium mb-2 ${getThemeClasses().text}`}>Vocabulary Builder</h4>
-              {renderToggle('showRomajiVocabulary', 'Show Romaji')}
-            </div>
-            <div>
-              <h4 className={`text-sm font-medium mb-2 ${getThemeClasses().text}`}>Reading Practice</h4>
-              {renderToggle('showRomajiReading', 'Show Romaji')}
-            </div>
-            <div>
-              <h4 className={`text-sm font-medium mb-2 ${getThemeClasses().text}`}>JLPT Preparation</h4>
-              {renderToggle('showRomajiJLPT', 'Show Romaji')}
-            </div>
-            <div>
-              <h4 className={`text-sm font-medium mb-2 ${getThemeClasses().text}`}>Games</h4>
-              {renderToggle('showKanjiGames', 'Show Kanji')}
-              {renderToggle('showRomajiGames', 'Show Romaji')}
-              {renderToggle('useHiraganaGames', 'Use Hiragana (instead of Katakana)')}
+        <div className="space-y-8">
+          {/* Profile Settings */}
+          <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
+            <h2 className={`text-xl font-serif font-medium mb-4 ${themeClasses.text}`}>
+              Profile Settings
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${themeClasses.text}`}>
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${themeClasses.text}`}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div>
-          <h3 className={`font-medium mb-4 ${getThemeClasses().text}`}>Audio Cache</h3>
-          <div className="space-y-2">
-            <div className={`text-sm ${getThemeClasses().text}`}>
-              Cached files: {cacheStats.fileCount}<br />
-              Total size: {(cacheStats.totalSize / (1024 * 1024)).toFixed(2)} MB
+          {/* Practice Settings */}
+          <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
+            <h2 className={`text-xl font-serif font-medium mb-4 ${themeClasses.text}`}>
+              Practice Settings
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${themeClasses.text}`}>
+                  Daily Goal (words)
+                </label>
+                <input
+                  type="number"
+                  value={dailyGoal}
+                  onChange={(e) => setDailyGoal(Number(e.target.value))}
+                  min="1"
+                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${themeClasses.text}`}>
+                  Practice Mode
+                </label>
+                <select
+                  value={practiceMode}
+                  onChange={(e) => setPracticeMode(e.target.value as 'word' | 'sentence')}
+                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                >
+                  <option value="word">Word Practice</option>
+                  <option value="sentence">Sentence Practice</option>
+                </select>
+              </div>
             </div>
+          </div>
+
+          {/* Notification Settings */}
+          <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
+            <h2 className={`text-xl font-serif font-medium mb-4 ${themeClasses.text}`}>
+              Notification Settings
+            </h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className={`text-sm font-medium ${themeClasses.text}`}>
+                  Daily Reminders
+                </label>
+                <button
+                  onClick={() => setDailyReminders(!dailyReminders)}
+                  className={`px-4 py-2 rounded-lg ${dailyReminders ? themeClasses.button : themeClasses.buttonSecondary}`}
+                >
+                  {dailyReminders ? 'Enabled' : 'Disabled'}
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className={`text-sm font-medium ${themeClasses.text}`}>
+                  Progress Updates
+                </label>
+                <button
+                  onClick={() => setProgressUpdates(!progressUpdates)}
+                  className={`px-4 py-2 rounded-lg ${progressUpdates ? themeClasses.button : themeClasses.buttonSecondary}`}
+                >
+                  {progressUpdates ? 'Enabled' : 'Disabled'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-end">
             <button
-              onClick={handleClearCache}
-              disabled={clearing}
-              className={`px-4 py-2 rounded ${clearing ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 text-white'}`}
+              onClick={handleSave}
+              className={`px-6 py-3 rounded-lg ${themeClasses.button} font-medium shadow-card hover:shadow-soft transition-all duration-300`}
             >
-              {clearing ? 'Clearing...' : 'Clear Audio Cache'}
+              Save Changes
             </button>
           </div>
         </div>
