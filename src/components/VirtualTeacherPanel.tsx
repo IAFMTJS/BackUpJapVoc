@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Confetti from 'react-confetti';
+import { useTheme } from '../context/ThemeContext';
 
 // Utility to get today's date as YYYY-MM-DD
 function getToday() {
@@ -111,6 +112,8 @@ const VirtualTeacherPanel: React.FC<{
   reviewCount?: number;
   onGoToSection?: (section: string) => void;
 }> = ({ masteredWords, practicedSentences, listeningCount, timedScore = 0, reviewCount = 0, onGoToSection }) => {
+  const { getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
   const [quest, setQuest] = useState<any>(null);
   const [progress, setProgress] = useState<any>(getQuestProgress);
   const [encouragement, setEncouragement] = useState('');
@@ -219,7 +222,7 @@ const VirtualTeacherPanel: React.FC<{
   if (minimized) {
     return (
       <button
-        className="fixed bottom-4 right-4 bg-blue-500 text-white rounded-full p-3 shadow-lg z-50"
+        className={`fixed bottom-4 right-4 ${themeClasses.button.primary} rounded-full p-3 shadow-lg z-50`}
         aria-label="Show Virtual Teacher Panel"
         onClick={() => { setMinimized(false); setPanelMinimized(false); }}
       >
@@ -232,61 +235,59 @@ const VirtualTeacherPanel: React.FC<{
     <div
       id="virtual-teacher-panel"
       tabIndex={0}
-      className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 shadow flex flex-col gap-2 max-w-md mx-auto relative"
+      className={`${themeClasses.card} rounded-lg p-4 mb-4 shadow flex flex-col gap-2 max-w-md mx-auto relative`}
       aria-label="Virtual Teacher Panel"
       style={{ minWidth: 280 }}
     >
       {showConfetti && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={300} />}
       <button
-        className="absolute top-2 right-2 text-blue-400 hover:text-blue-700 text-lg"
+        className={`absolute top-2 right-2 ${themeClasses.text.secondary} hover:${themeClasses.text.primary} text-lg`}
         aria-label="Minimize Virtual Teacher Panel"
         onClick={() => { setMinimized(true); setPanelMinimized(true); }}
       >
         –
       </button>
-      <div className="font-bold text-lg flex items-center gap-2">
+      <div className={`font-bold text-lg flex items-center gap-2 ${themeClasses.text.primary}`}>
         <span role="img" aria-label="teacher">👩‍🏫</span> Virtual Teacher
-        <span className="ml-2 bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Streak: {streak} days</span>
+        <span className={`ml-2 ${themeClasses.text.success} px-2 py-0.5 rounded text-xs`}>Streak: {streak} days</span>
       </div>
       <div>
         {questCompleted ? (
-          <span className="text-green-600 font-semibold">Quest complete! 🎉</span>
+          <span className={`${themeClasses.text.success} font-semibold`}>Quest complete! 🎉</span>
         ) : quest ? (
-          <span>Today's Quest: <b>{quest.description}</b></span>
+          <span className={themeClasses.text.primary}>Today's Quest: <b>{quest.description}</b></span>
         ) : (
-          <span>Loading quest...</span>
+          <span className={themeClasses.text.primary}>Loading quest...</span>
         )}
       </div>
-      <div className="flex items-center gap-2">
-        <div className="flex-1">
-          Progress:
-          <progress
-            className="w-full h-2 align-middle mx-2"
-            value={(() => {
-              if (!quest) return 0;
-              if (quest.type === 'words') return masteredWords;
-              if (quest.type === 'sentences') return practicedSentences;
-              if (quest.type === 'listening') return listeningCount;
-              if (quest.type === 'timed') return timedScore;
-              if (quest.type === 'review') return reviewCount;
-              if (quest.type === 'streak') return streak;
-              return 0;
-            })()}
-            max={quest?.target || 1}
-            aria-valuenow={(() => {
-              if (!quest) return 0;
-              if (quest.type === 'words') return masteredWords;
-              if (quest.type === 'sentences') return practicedSentences;
-              if (quest.type === 'listening') return listeningCount;
-              if (quest.type === 'timed') return timedScore;
-              if (quest.type === 'review') return reviewCount;
-              if (quest.type === 'streak') return streak;
-              return 0;
-            })()}
-            aria-valuemax={quest?.target || 1}
-          />
-        </div>
-        <span className="text-sm">{(() => {
+      <div className="flex-1">
+        <span className={themeClasses.text.primary}>Progress:</span>
+        <progress
+          className={`w-full h-2 align-middle mx-2 ${themeClasses.progress.bar}`}
+          value={(() => {
+            if (!quest) return 0;
+            if (quest.type === 'words') return masteredWords;
+            if (quest.type === 'sentences') return practicedSentences;
+            if (quest.type === 'listening') return listeningCount;
+            if (quest.type === 'timed') return timedScore;
+            if (quest.type === 'review') return reviewCount;
+            if (quest.type === 'streak') return streak;
+            return 0;
+          })()}
+          max={quest?.target || 1}
+          aria-valuenow={(() => {
+            if (!quest) return 0;
+            if (quest.type === 'words') return masteredWords;
+            if (quest.type === 'sentences') return practicedSentences;
+            if (quest.type === 'listening') return listeningCount;
+            if (quest.type === 'timed') return timedScore;
+            if (quest.type === 'review') return reviewCount;
+            if (quest.type === 'streak') return streak;
+            return 0;
+          })()}
+          aria-valuemax={quest?.target || 1}
+        />
+        <span className={`text-sm ${themeClasses.text.secondary}`}>{(() => {
           if (!quest) return null;
           if (quest.type === 'words') return `${masteredWords} / ${quest.target}`;
           if (quest.type === 'sentences') return `${practicedSentences} / ${quest.target}`;
@@ -300,25 +301,25 @@ const VirtualTeacherPanel: React.FC<{
       <div className="italic text-blue-700">{encouragement}</div>
       {onGoToSection && quest && (
         <button
-          className="mt-2 px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring"
+          className={`mt-2 px-3 py-1 rounded ${themeClasses.button.primary}`}
           onClick={() => onGoToSection(quest.section)}
         >
           Go to {quest.section}
         </button>
       )}
       <button
-        className="mt-2 text-blue-600 underline text-sm self-start"
+        className={`mt-2 ${themeClasses.text.secondary} underline text-sm self-start`}
         onClick={() => setShowHistory(h => !h)}
         aria-expanded={showHistory}
       >
         {showHistory ? 'Hide Quest History' : 'Show Quest History'}
       </button>
       {showHistory && (
-        <div className="mt-2 bg-white rounded p-2 border text-xs max-h-40 overflow-y-auto">
-          <div className="font-semibold mb-1">Last 7 Quests</div>
+        <div className={`mt-2 ${themeClasses.card} rounded p-2 border ${themeClasses.border} text-xs max-h-40 overflow-y-auto`}>
+          <div className={`font-semibold mb-1 ${themeClasses.text.primary}`}>Last 7 Quests</div>
           <ul>
             {questHistory.map((q, i) => (
-              <li key={i} className={q.completed ? 'text-green-700' : 'text-gray-700'}>
+              <li key={i} className={q.completed ? themeClasses.text.success : themeClasses.text.secondary}>
                 {q.date}: {q.quest} {q.completed ? '✓' : ''}
               </li>
             ))}

@@ -4,6 +4,8 @@ import { romajiWords, romajiSentences, romajiStories } from '../data/romajiWords
 import Confetti from 'react-confetti';
 import VirtualTeacherPanel from '../components/VirtualTeacherPanel';
 import { useProgress } from '../context/ProgressContext';
+import { useTheme } from '../context/ThemeContext';
+import { Link } from 'react-router-dom';
 
 const TABS = ['Words', 'Sentences', 'Stories', 'Practice', 'Games'] as const;
 
@@ -154,6 +156,8 @@ const RomajiSection: React.FC = () => {
   const levelStories = romajiStories.filter(s => s.level === level);
 
   const { progress: globalProgress, updateProgress } = useProgress();
+  const { getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
 
   // Persist progress and settings
   React.useEffect(() => {
@@ -378,14 +382,14 @@ const RomajiSection: React.FC = () => {
         {TABS.map(t => (
           <button
             key={t}
-            className={`px-4 py-2 rounded-lg border ${tab === t ? 'bg-blue-500 text-white' : 'bg-white border-gray-300 hover:bg-gray-100'}`}
+            className={`px-4 py-2 rounded-lg border ${tab === t ? 'bg-blue-500 text-white' : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'}`}
             onClick={() => setTab(t)}
           >
             {t}
           </button>
         ))}
       </div>
-      <div className="bg-white rounded-lg shadow-md p-6 min-h-[300px]">
+      <div className="bg-dark-lighter rounded-lg shadow-md p-6 min-h-[300px]">
         {tab === 'Words' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {levelWords.map((word, i) => (
@@ -438,7 +442,7 @@ const RomajiSection: React.FC = () => {
               {PRACTICE_TYPES.map(pt => (
                 <button
                   key={pt.key}
-                  className={`px-3 py-1 rounded ${practiceType === pt.key ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                  className={`px-3 py-1 rounded ${practiceType === pt.key ? 'bg-blue-500 text-white' : 'bg-dark-lighter text-text-primary'}`}
                   onClick={() => {
                     setPracticeType(pt.key);
                     setPracticeIndex(0);
@@ -582,7 +586,7 @@ const RomajiSection: React.FC = () => {
                   {matchOptions.map((opt, i) => (
                     <button
                       key={i}
-                      className={`px-4 py-2 rounded border text-lg flex justify-between items-center ${matchSelected === i ? (opt.romaji === matchOptions[0].romaji ? 'bg-green-200' : 'bg-red-200') : 'bg-white'}`}
+                      className={`px-4 py-2 rounded border ${selected === i ? (opt.romaji === matchOptions[0].romaji ? 'bg-green-200' : 'bg-red-200') : 'bg-dark-lighter'}`}
                       onClick={() => {
                         setMatchSelected(i);
                         const correct = opt.romaji === matchOptions[0].romaji;
@@ -796,12 +800,12 @@ const RomajiSection: React.FC = () => {
         {tab === 'Games' && (
           <div className="flex flex-col gap-8 items-center">
             {/* Memory Match Game */}
-            <div className="w-full max-w-md p-4 border rounded shadow bg-white">
+            <div className="w-full max-w-md p-4 border rounded shadow bg-dark-lighter">
               <h2 className="text-lg font-bold mb-2">Memory Match</h2>
               <MemoryMatchGame words={levelWords} />
             </div>
             {/* Multiple Choice Game */}
-            <div className="w-full max-w-md p-4 border rounded shadow bg-white">
+            <div className="w-full max-w-md p-4 border rounded shadow bg-dark-lighter">
               <h2 className="text-lg font-bold mb-2">Multiple Choice</h2>
               <MultipleChoiceGame words={levelWords} />
             </div>
@@ -894,7 +898,7 @@ function MultipleChoiceGame({ words }) {
         {options.map((opt, i) => (
           <button
             key={i}
-            className={`px-4 py-2 rounded border ${selected === i ? (opt.romaji === word.romaji ? 'bg-green-200' : 'bg-red-200') : 'bg-white'}`}
+            className={`px-4 py-2 rounded border ${selected === i ? (opt.romaji === word.romaji ? 'bg-green-200' : 'bg-red-200') : 'bg-dark-lighter'}`}
             onClick={() => setSelected(i)}
             disabled={selected !== null}
           >

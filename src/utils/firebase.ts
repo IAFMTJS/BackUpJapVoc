@@ -1,7 +1,53 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, enableIndexedDbPersistence } from 'firebase/firestore';
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { 
+  getAuth, 
+  connectAuthEmulator,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  sendPasswordResetEmail,
+  updatePassword,
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  type User as FirebaseUser,
+  type UserCredential,
+  type AuthError,
+  type Auth
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  connectFirestoreEmulator, 
+  enableIndexedDbPersistence,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+  Timestamp,
+  increment,
+  arrayUnion,
+  arrayRemove,
+  deleteDoc,
+  onSnapshot,
+  type DocumentReference,
+  type DocumentData,
+  type QueryDocumentSnapshot,
+  type Firestore
+} from 'firebase/firestore';
+import { 
+  getFunctions, 
+  connectFunctionsEmulator,
+  type Functions 
+} from 'firebase/functions';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -26,6 +72,7 @@ console.log('Starting Firebase initialization...', {
 let app;
 let auth;
 let db: ReturnType<typeof getFirestore>;
+let functions: ReturnType<typeof getFunctions>;
 
 try {
   // Initialize Firebase
@@ -41,7 +88,7 @@ try {
   db = getFirestore(app);
   console.log('Firestore initialized');
   
-  const functions = getFunctions(app);
+  functions = getFunctions(app);
   console.log('Firebase Functions initialized');
 
   // Enable persistence for offline support (modular API)
@@ -95,5 +142,52 @@ try {
   throw error;
 }
 
-export { auth, db };
+export { 
+  auth, 
+  db, 
+  functions,
+  // Auth exports
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  sendPasswordResetEmail,
+  updatePassword,
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  // Firestore exports
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+  Timestamp,
+  increment,
+  arrayUnion,
+  arrayRemove,
+  deleteDoc,
+  onSnapshot,
+};
+
+// Re-export types with type keyword
+export type {
+  FirebaseUser,
+  UserCredential,
+  AuthError,
+  Auth,
+  DocumentReference,
+  DocumentData,
+  QueryDocumentSnapshot,
+  Firestore,
+  Functions
+};
+
 export default app; 

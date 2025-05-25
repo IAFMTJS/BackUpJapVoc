@@ -202,18 +202,18 @@ const SentencePractice: React.FC = () => {
   const getThemeClasses = () => {
     if (isDarkMode) {
       return {
-        container: 'bg-dark-card',
-        text: 'text-dark-text',
-        input: 'bg-dark-bg border-dark-border text-dark-text',
+        container: 'bg-dark-lighter',
+        text: 'text-text-primary',
+        input: 'bg-dark-lighter border-dark-border text-text-primary',
         button: {
-          primary: 'bg-primary hover:bg-primary-dark text-white',
-          secondary: 'bg-secondary hover:bg-secondary-dark text-white',
-          hint: 'bg-yellow-500 hover:bg-yellow-600 text-white',
+          primary: 'bg-accent-red hover:bg-accent-red/90 text-white',
+          secondary: 'bg-dark hover:bg-dark-lightest text-text-primary',
+          hint: 'bg-accent-gold hover:bg-accent-gold/90 text-dark',
         },
-        hint: 'bg-yellow-900/20 border-yellow-800/30 text-yellow-200',
+        hint: 'bg-accent-gold/10 border-accent-gold/20 text-accent-gold',
         result: {
-          correct: 'bg-green-900/20 border-green-800/30 text-green-200',
-          incorrect: 'bg-red-900/20 border-red-800/30 text-red-200',
+          correct: 'bg-green-900/20 border-green-700/30 text-green-400',
+          incorrect: 'bg-red-900/20 border-red-700/30 text-red-400',
         },
       };
     }
@@ -253,18 +253,18 @@ const SentencePractice: React.FC = () => {
         };
       default:
         return {
-          container: 'bg-white',
-          text: 'text-gray-800',
-          input: 'bg-white border-gray-200 text-gray-800',
+          container: 'bg-dark-lighter',
+          text: 'text-text-primary',
+          input: 'bg-dark-lighter border-dark-border text-text-primary',
           button: {
-            primary: 'bg-primary hover:bg-primary-dark text-white',
-            secondary: 'bg-secondary hover:bg-secondary-dark text-white',
-            hint: 'bg-yellow-500 hover:bg-yellow-600 text-white',
+            primary: 'bg-accent-red hover:bg-accent-red/90 text-white',
+            secondary: 'bg-dark hover:bg-dark-lightest text-text-primary',
+            hint: 'bg-accent-gold hover:bg-accent-gold/90 text-dark',
           },
-          hint: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+          hint: 'bg-accent-gold/10 border-accent-gold/20 text-accent-gold',
           result: {
-            correct: 'bg-green-50 border-green-200 text-green-800',
-            incorrect: 'bg-red-50 border-red-200 text-red-800',
+            correct: 'bg-green-900/20 border-green-700/30 text-green-400',
+            incorrect: 'bg-red-900/20 border-red-700/30 text-red-400',
           },
         };
     }
@@ -273,8 +273,9 @@ const SentencePractice: React.FC = () => {
   const themeClasses = getThemeClasses();
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className={`mb-8 ${themeClasses.container} rounded-lg shadow-md p-6`}>
+    <div className="max-w-6xl mx-auto p-4" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Practice Controls */}
+      <div className="mb-6 p-4 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-lighter)' }}>
         <div className="flex flex-wrap gap-4 mb-6">
           <select
             value={selectedDifficulty}
@@ -341,125 +342,146 @@ const SentencePractice: React.FC = () => {
         </div>
       </div>
 
-      {currentExample && mode === 'fill-blank' && (
-        <div className={`${themeClasses.container} rounded-lg shadow-md p-6`}>
-          <div className={`text-3xl font-bold text-center mb-4 ${themeClasses.text}`}>
-            {getBlankedSentence(currentExample.japanese, 0)}
-          </div>
-          <button
-            onClick={() => handlePlayAudio(currentExample.japanese)}
-            className="ml-2 p-2 rounded-full hover:bg-opacity-10"
-            title="Play Audio"
-          >
-            🔊
-          </button>
-          <form onSubmit={handleBlankSubmit}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={userAnswer}
-              onChange={(e) => setUserAnswer(e.target.value)}
-              placeholder="Type the missing word"
-              className={`w-full p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
-              disabled={showResult}
-            />
-            {!showResult ? (
-              <button
-                type="submit"
-                className={`w-full ${themeClasses.button.primary} py-3 rounded-lg transition-colors`}
-              >
-                Check Answer
-              </button>
-            ) : (
-              <div className="space-y-4">
-                <div className={`text-center p-4 rounded-lg ${
-                  isCorrect ? themeClasses.result.correct : themeClasses.result.incorrect
-                }`}>
-                  {isCorrect ? 'Correct! 🎉' : `Incorrect. The answer is: ${currentExample.japanese.split(' ')[0]}`}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className={`w-full ${themeClasses.button.secondary} py-3 rounded-lg transition-colors`}
-                >
-                  Next Example
-                </button>
+      {/* Practice Area */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Sentence Card */}
+        <div className="p-6 rounded-lg shadow-md" style={{ backgroundColor: 'var(--background-lighter)' }}>
+          {currentExample && mode === 'fill-blank' && (
+            <div className={`${themeClasses.container} rounded-lg shadow-md p-6`}>
+              <div className={`text-3xl font-bold text-center mb-4 ${themeClasses.text}`}>
+                {getBlankedSentence(currentExample.japanese, 0)}
               </div>
-            )}
-          </form>
-        </div>
-      )}
-
-      {currentExample && mode === 'translate' && (
-        <div className={`${themeClasses.container} rounded-lg shadow-md p-6 transform transition-all duration-300 hover:shadow-lg`}>
-          <div className={`text-3xl font-bold text-center mb-4 ${themeClasses.text}`}>
-            {currentExample.japanese}
-          </div>
-          
-          <div className={`text-lg text-center mb-6 ${themeClasses.input} p-4 rounded-lg`}>
-            Pattern: {currentExample.pattern}
-          </div>
-
-          {!showHint && !showResult && (
-            <button
-              onClick={() => setShowHint(true)}
-              className={`w-full mb-6 ${themeClasses.button.hint} py-3 rounded-lg transition-colors`}
-            >
-              Show Hint
-            </button>
-          )}
-
-          {showHint && !showResult && (
-            <div className={`mb-6 p-4 rounded-lg ${themeClasses.hint}`}>
-              <p>{currentExample.hint}</p>
+              <button
+                onClick={() => handlePlayAudio(currentExample.japanese)}
+                className="ml-2 p-2 rounded-full hover:bg-opacity-10"
+                title="Play Audio"
+              >
+                🔊
+              </button>
+              <form onSubmit={handleBlankSubmit}>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder="Type the missing word"
+                  className={`w-full p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
+                  disabled={showResult}
+                />
+                {!showResult ? (
+                  <button
+                    type="submit"
+                    className={`w-full ${themeClasses.button.primary} py-3 rounded-lg transition-colors`}
+                  >
+                    Check Answer
+                  </button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className={`text-center p-4 rounded-lg ${
+                      isCorrect ? themeClasses.result.correct : themeClasses.result.incorrect
+                    }`}>
+                      {isCorrect ? 'Correct! 🎉' : `Incorrect. The answer is: ${currentExample.japanese.split(' ')[0]}`}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className={`w-full ${themeClasses.button.secondary} py-3 rounded-lg transition-colors`}
+                    >
+                      Next Example
+                    </button>
+                  </div>
+                )}
+              </form>
             </div>
           )}
 
-          <button
-            onClick={() => handlePlayAudio(currentExample.japanese)}
-            className="ml-2 p-2 rounded-full hover:bg-opacity-10"
-            title="Play Audio"
-          >
-            🔊
-          </button>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              ref={inputRef}
-              type="text"
-              value={userAnswer}
-              onChange={(e) => setUserAnswer(e.target.value)}
-              placeholder="Type the English translation"
-              className={`w-full p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
-              disabled={showResult}
-            />
-
-            {!showResult ? (
-              <button
-                type="submit"
-                className={`w-full ${themeClasses.button.primary} py-3 rounded-lg transition-colors`}
-              >
-                Check Answer
-              </button>
-            ) : (
-              <div className="space-y-4">
-                <div className={`text-center p-4 rounded-lg ${
-                  isCorrect ? themeClasses.result.correct : themeClasses.result.incorrect
-                }`}>
-                  {isCorrect ? 'Correct! 🎉' : `Incorrect. The answer is: ${currentExample.english}`}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className={`w-full ${themeClasses.button.secondary} py-3 rounded-lg transition-colors`}
-                >
-                  Next Example
-                </button>
+          {currentExample && mode === 'translate' && (
+            <div className={`${themeClasses.container} rounded-lg shadow-md p-6 transform transition-all duration-300 hover:shadow-lg`}>
+              <div className={`text-3xl font-bold text-center mb-4 ${themeClasses.text}`}>
+                {currentExample.japanese}
               </div>
-            )}
-          </form>
+              
+              <div className={`text-lg text-center mb-6 ${themeClasses.input} p-4 rounded-lg`}>
+                Pattern: {currentExample.pattern}
+              </div>
+
+              {!showHint && !showResult && (
+                <button
+                  onClick={() => setShowHint(true)}
+                  className={`w-full mb-6 ${themeClasses.button.hint} py-3 rounded-lg transition-colors`}
+                >
+                  Show Hint
+                </button>
+              )}
+
+              {showHint && !showResult && (
+                <div className={`mb-6 p-4 rounded-lg ${themeClasses.hint}`}>
+                  <p>{currentExample.hint}</p>
+                </div>
+              )}
+
+              <button
+                onClick={() => handlePlayAudio(currentExample.japanese)}
+                className="ml-2 p-2 rounded-full hover:bg-opacity-10"
+                title="Play Audio"
+              >
+                🔊
+              </button>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder="Type the English translation"
+                  className={`w-full p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
+                  disabled={showResult}
+                />
+
+                {!showResult ? (
+                  <button
+                    type="submit"
+                    className={`w-full ${themeClasses.button.primary} py-3 rounded-lg transition-colors`}
+                  >
+                    Check Answer
+                  </button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className={`text-center p-4 rounded-lg ${
+                      isCorrect ? themeClasses.result.correct : themeClasses.result.incorrect
+                    }`}>
+                      {isCorrect ? 'Correct! 🎉' : `Incorrect. The answer is: ${currentExample.english}`}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className={`w-full ${themeClasses.button.secondary} py-3 rounded-lg transition-colors`}
+                    >
+                      Next Example
+                    </button>
+                  </div>
+                )}
+              </form>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Input Card */}
+        <div className="p-6 rounded-lg shadow-md" style={{ backgroundColor: 'var(--background-lighter)' }}>
+          {/* Input card content */}
+        </div>
+      </div>
+
+      {/* Progress Section */}
+      <div className="mt-8 p-4 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-lighter)' }}>
+        {/* Progress section content */}
+      </div>
+
+      {/* Statistics Section */}
+      <div className="mt-8 p-4 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-lighter)' }}>
+        {/* Statistics section content */}
+      </div>
     </div>
   );
 };

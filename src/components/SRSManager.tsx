@@ -24,7 +24,7 @@ interface SRSManagerProps {
 }
 
 const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
-  const { isDarkMode } = useTheme();
+  const { isDarkMode, themeClasses } = useTheme();
   const { settings } = useApp();
   const { progress, updateProgress } = useProgress();
   const { currentLevel, userProgress } = useWordLevel();
@@ -350,7 +350,7 @@ const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
       )}
 
       <Box className="mt-8">
-        <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+        <Typography variant="h6" className={themeClasses.text.primary}>
           SRS Levels
         </Typography>
         <Stack spacing={1}>
@@ -358,8 +358,12 @@ const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
             <Chip
               key={interval}
               label={`Level ${index + 1}: ${interval}h`}
-              className={isDarkMode ? 'bg-gray-800 text-blue-200' : 'bg-gray-100 text-gray-900'}
-              sx={isDarkMode ? { border: '1px solid #333', color: '#90caf9', background: '#222' } : {}}
+              className={themeClasses.card}
+              sx={{
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                background: 'var(--background-lighter)'
+              }}
             />
           ))}
         </Stack>

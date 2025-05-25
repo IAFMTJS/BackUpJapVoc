@@ -8,98 +8,59 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Light theme colors
-        primary: {
-          light: '#3B82F6', // blue-500
-          DEFAULT: '#2563EB', // blue-600
-          dark: '#1D4ED8', // blue-700
-        },
-        secondary: {
-          light: '#10B981', // green-500
-          DEFAULT: '#059669', // green-600
-          dark: '#047857', // green-700
-        },
         // Dark theme colors
         dark: {
-          bg: '#1F2937', // gray-800
-          card: '#374151', // gray-700
-          text: '#F3F4F6', // gray-100
-          border: '#4B5563', // gray-600
+          DEFAULT: '#1e1e1e',  // Main background
+          lighter: '#2a2a2a',  // Card/button background
+          lightest: '#333333', // Hover states
+          border: '#404040',   // Borders
         },
-        // Blue theme colors
-        blue: {
-          bg: '#EFF6FF', // blue-50
-          card: '#DBEAFE', // blue-100
-          text: '#1E40AF', // blue-800
-          border: '#93C5FD', // blue-300
+        // Text colors
+        text: {
+          primary: '#f0f0f0',    // Headings
+          secondary: '#cccccc',  // Body text
+          muted: '#999999',      // Muted text
         },
-        // Green theme colors
-        green: {
-          bg: '#ECFDF5', // green-50
-          card: '#D1FAE5', // green-100
-          text: '#065F46', // green-800
-          border: '#6EE7B7', // green-300
-        },
-        // Japandi-inspired color palette
-        sage: {
-          50: '#F5F7F4',
-          100: '#E8EDE5',
-          200: '#D1DBCB',
-          300: '#B4C3A9',
-          400: '#8FA583',
-          500: '#6B8760', // Base sage green
-          600: '#556D4D',
-          700: '#42553B',
-          800: '#2F3C2A',
-          900: '#1C2419',
-        },
-        charcoal: {
-          50: '#F5F5F5',
-          100: '#E5E5E5',
-          200: '#CCCCCC',
-          300: '#B3B3B3',
-          400: '#808080',
-          500: '#4D4D4D', // Base charcoal
-          600: '#404040',
-          700: '#333333',
-          800: '#262626',
-          900: '#1A1A1A',
-        },
-        ivory: {
-          50: '#FDFDFC',
-          100: '#FBFBF9',
-          200: '#F7F7F3',
-          300: '#F3F3ED',
-          400: '#EFEFE7',
-          500: '#EBEBE1', // Base ivory
-          600: '#D4D4CB',
-          700: '#BDBDB4',
-          800: '#A6A69E',
-          900: '#8F8F87',
-        },
-        beige: {
-          50: '#FDFBF8',
-          100: '#FBF7F1',
-          200: '#F7EFE3',
-          300: '#F3E7D5',
-          400: '#EFDFC7',
-          500: '#EBD7B9', // Base beige
-          600: '#D4C2A7',
-          700: '#BDAD95',
-          800: '#A69883',
-          900: '#8F8371',
-        },
+        // Accent colors (for future use)
         accent: {
-          wood: '#8B7355', // Washed wood tone
-          gold: '#C4A484', // Muted gold
-          rust: '#B85C38', // Rust red
+          red: '#FF4B4B',      // Japanese red
+          gold: '#FFD700',     // Gold accents
+        },
+        // Base colors
+        primary: {
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#3B82F6', // Base blue
+          600: '#2563EB',
+          700: '#1D4ED8',
+          800: '#1E40AF',
+          900: '#1E3A8A',
+        },
+        gray: {
+          50: '#F9FAFB',
+          100: '#F3F4F6',
+          200: '#E5E7EB',
+          300: '#D1D5DB',
+          400: '#9CA3AF',
+          500: '#6B7280',
+          600: '#4B5563',
+          700: '#374151',
+          800: '#1F2937',
+          900: '#111827',
         },
       },
       fontFamily: {
-        // Modern serif for headings
-        serif: ['Noto Serif JP', 'serif'],
-        // Clean sans-serif for body
-        sans: ['Noto Sans JP', 'sans-serif'],
+        // Modern sans-serif fonts
+        sans: ['Inter', 'Roboto', 'system-ui', 'sans-serif'],
+        // Japanese fonts
+        jp: ['Noto Sans JP', 'Noto Serif JP', 'sans-serif'],
+      },
+      fontSize: {
+        'hero': ['2.5rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
+        'subhero': ['1.125rem', { lineHeight: '1.5', letterSpacing: '-0.01em' }],
       },
       spacing: {
         '18': '4.5rem',
@@ -111,8 +72,17 @@ module.exports = {
         '2xl': '1.5rem',
       },
       boxShadow: {
-        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1)',
+        'hover': '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
+      },
+      animation: {
+        'scale-up': 'scale-up 0.2s ease-in-out',
+      },
+      keyframes: {
+        'scale-up': {
+          '0%': { transform: 'scale(1)' },
+          '100%': { transform: 'scale(1.02)' },
+        },
       },
       typography: {
         DEFAULT: {
@@ -147,7 +117,5 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [],
 } 

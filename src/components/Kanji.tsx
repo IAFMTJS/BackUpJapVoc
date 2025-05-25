@@ -5,6 +5,7 @@ import { useProgress } from '../context/ProgressContext';
 import { useApp } from '../context/AppContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
 import { ProgressItem } from '../types';
+import { useAchievements } from '../context/AchievementsContext';
 
 type Mode = 'flashcards' | 'meaning-quiz' | 'reading-quiz' | 'writing-quiz';
 type QuizDifficulty = 'easy' | 'medium' | 'hard';
@@ -65,6 +66,7 @@ const KanjiPractice: React.FC = () => {
   const [romajiMap, setRomajiMap] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const { updateProgress, progress } = useProgress();
+  const { checkAchievements } = useAchievements();
 
   // Sound effects
   const correctSound = new Audio('/sounds/correct.mp3');
@@ -138,9 +140,9 @@ const KanjiPractice: React.FC = () => {
   const getThemeClasses = () => {
     if (isDarkMode) {
       return {
-        container: 'bg-dark-card',
-        text: 'text-dark-text',
-        input: 'bg-dark-bg border-dark-border text-dark-text',
+        container: 'bg-dark-lighter',
+        text: 'text-text-primary',
+        input: 'bg-dark-lighter border-dark-border text-text-primary',
         card: 'bg-dark-hover',
         border: 'border-dark-border',
       };
@@ -271,6 +273,12 @@ const KanjiPractice: React.FC = () => {
       bestStreak: Math.max(streak, streak + (isAnswerCorrect ? 1 : 0)),
       averageTime: ((averageTime * totalQuestions) + (30 - timeLeft)) / (totalQuestions + 1)
     });
+
+    // Check achievements for kanji progress
+    const masteredKanji = Object.values(progress)
+      .filter(p => p.section === 'kanji' && p.correct >= 3)
+      .length;
+    checkAchievements('kanji', masteredKanji);
 
     if (questionsRemaining <= 1) {
       setQuizComplete(true);

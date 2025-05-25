@@ -1,24 +1,30 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useWordLevel } from '../context/WordLevelContext';
 import { wordLevels } from '../data/wordLevels';
 import { JapaneseWord } from '../data/types';
 import { playAudio } from '../utils/audio';
+import { useTheme } from '../context/ThemeContext';
+import { useApp } from '../context/AppContext';
 
 const GAME_TITLES = [
-  'Flashcard Flip',
-  'Multiple Choice Quiz',
+  'Flashcards',
+  'Multiple Choice',
   'Typing Practice',
   'Audio Match',
   'Memory Match',
-  'Fill in the Blank',
+  'Fill in the Blank'
 ];
 
 const GamesPage: React.FC = () => {
   const { unlockedLevels } = useWordLevel();
   const [activeGame, setActiveGame] = useState(0);
+  const { getThemeClasses } = useTheme();
+  const { availableWords } = useApp();
+  const themeClasses = getThemeClasses();
 
   // Get all words from unlocked levels
-  const availableWords = useMemo(() => {
+  const availableWordsMemo = useMemo(() => {
     return wordLevels
       .filter(level => unlockedLevels.includes(level.level))
       .flatMap(level => level.words);
@@ -28,19 +34,19 @@ const GamesPage: React.FC = () => {
   const FlashcardFlip = () => {
     const [index, setIndex] = useState(0);
     const [flipped, setFlipped] = useState(false);
-    if (availableWords.length === 0) return <div>No words available.</div>;
-    const word = availableWords[index];
+    if (availableWordsMemo.length === 0) return <div>No words available.</div>;
+    const word = availableWordsMemo[index];
     return (
       <div className="flex flex-col items-center">
         <div
-          className={`w-64 h-40 flex items-center justify-center border rounded-lg shadow-lg text-2xl cursor-pointer bg-white ${flipped ? 'bg-blue-100' : ''}`}
+          className={`w-64 h-40 flex items-center justify-center border rounded-lg shadow-lg text-2xl cursor-pointer bg-dark-lighter ${flipped ? 'bg-dark-lightest' : ''}`}
           onClick={() => setFlipped(f => !f)}
         >
           {flipped ? word.english : word.japanese}
         </div>
         <div className="mt-4 flex gap-2">
-          <button onClick={() => { setIndex(i => (i - 1 + availableWords.length) % availableWords.length); setFlipped(false); }}>Prev</button>
-          <button onClick={() => { setIndex(i => (i + 1) % availableWords.length); setFlipped(false); }}>Next</button>
+          <button onClick={() => { setIndex(i => (i - 1 + availableWordsMemo.length) % availableWordsMemo.length); setFlipped(false); }}>Prev</button>
+          <button onClick={() => { setIndex(i => (i + 1) % availableWordsMemo.length); setFlipped(false); }}>Next</button>
         </div>
       </div>
     );
@@ -50,15 +56,15 @@ const GamesPage: React.FC = () => {
   const MultipleChoiceQuiz = () => {
     const [qIndex, setQIndex] = useState(0);
     const [selected, setSelected] = useState<number | null>(null);
-    if (availableWords.length < 4) return <div>Need at least 4 words.</div>;
-    const word = availableWords[qIndex % availableWords.length];
+    if (availableWordsMemo.length < 4) return <div>Need at least 4 words.</div>;
+    const word = availableWordsMemo[qIndex % availableWordsMemo.length];
     // Pick 3 random other words
     const options = useMemo(() => {
-      const others = availableWords.filter(w => w.japanese !== word.japanese);
+      const others = availableWordsMemo.filter(w => w.japanese !== word.japanese);
       const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 3);
       const all = [...shuffled, word].sort(() => 0.5 - Math.random());
       return all;
-    }, [qIndex, availableWords]);
+    }, [qIndex, availableWordsMemo]);
     return (
       <div className="flex flex-col items-center">
         <div className="text-2xl mb-4">What is the meaning of: <b>{word.japanese}</b>?</div>
@@ -66,7 +72,7 @@ const GamesPage: React.FC = () => {
           {options.map((opt, i) => (
             <button
               key={i}
-              className={`px-4 py-2 rounded border ${selected === i ? (opt.english === word.english ? 'bg-green-200' : 'bg-red-200') : 'bg-white'}`}
+              className={`px-4 py-2 rounded border ${selected === i ? (opt.english === word.english ? 'bg-green-200' : 'bg-red-200') : 'bg-dark-lighter'}`}
               onClick={() => setSelected(i)}
               disabled={selected !== null}
             >
@@ -86,8 +92,8 @@ const GamesPage: React.FC = () => {
     const [index, setIndex] = useState(0);
     const [input, setInput] = useState('');
     const [result, setResult] = useState<null | boolean>(null);
-    if (availableWords.length === 0) return <div>No words available.</div>;
-    const word = availableWords[index];
+    if (availableWordsMemo.length === 0) return <div>No words available.</div>;
+    const word = availableWordsMemo[index];
     return (
       <div className="flex flex-col items-center">
         <div className="text-2xl mb-4">Type the English for: <b>{word.japanese}</b></div>
@@ -104,7 +110,7 @@ const GamesPage: React.FC = () => {
           {result === null ? (
             <button onClick={() => setResult(input.trim().toLowerCase() === word.english.toLowerCase())}>Check</button>
           ) : (
-            <button onClick={() => { setIndex(i => (i + 1) % availableWords.length); setInput(''); setResult(null); }}>Next</button>
+            <button onClick={() => { setIndex(i => (i + 1) % availableWordsMemo.length); setInput(''); setResult(null); }}>Next</button>
           )}
         </div>
       </div>
@@ -115,15 +121,15 @@ const GamesPage: React.FC = () => {
   const AudioMatch = () => {
     const [qIndex, setQIndex] = useState(0);
     const [selected, setSelected] = useState<number | null>(null);
-    if (availableWords.length < 4) return <div>Need at least 4 words.</div>;
-    const word = availableWords[qIndex % availableWords.length];
+    if (availableWordsMemo.length < 4) return <div>Need at least 4 words.</div>;
+    const word = availableWordsMemo[qIndex % availableWordsMemo.length];
     // Pick 3 random other words
     const options = useMemo(() => {
-      const others = availableWords.filter(w => w.japanese !== word.japanese);
+      const others = availableWordsMemo.filter(w => w.japanese !== word.japanese);
       const shuffled = others.sort(() => 0.5 - Math.random()).slice(0, 3);
       const all = [...shuffled, word].sort(() => 0.5 - Math.random());
       return all;
-    }, [qIndex, availableWords]);
+    }, [qIndex, availableWordsMemo]);
     const handlePlayAudio = (text: string) => {
       playAudio(text);
     };
@@ -134,7 +140,7 @@ const GamesPage: React.FC = () => {
           {options.map((opt, i) => (
             <button
               key={i}
-              className={`px-4 py-2 rounded border ${selected === i ? (opt.japanese === word.japanese ? 'bg-green-200' : 'bg-red-200') : 'bg-white'}`}
+              className={`px-4 py-2 rounded border ${selected === i ? (opt.japanese === word.japanese ? 'bg-green-200' : 'bg-red-200') : 'bg-dark-lighter'}`}
               onClick={() => setSelected(i)}
               disabled={selected !== null}
             >
@@ -153,11 +159,11 @@ const GamesPage: React.FC = () => {
   const MemoryMatch = () => {
     // Prepare pairs: each word as Japanese and English
     const pairs = useMemo(() => {
-      return availableWords.slice(0, 8).flatMap(word => [
+      return availableWordsMemo.slice(0, 8).flatMap(word => [
         { id: word.japanese, value: word.japanese, match: word.english, type: 'japanese' },
         { id: word.english, value: word.english, match: word.japanese, type: 'english' },
       ]);
-    }, [availableWords]);
+    }, [availableWordsMemo]);
     const shuffled = useMemo(() => pairs.sort(() => 0.5 - Math.random()), [pairs]);
     const [cards, setCards] = useState(shuffled);
     const [flipped, setFlipped] = useState<number[]>([]);
@@ -225,9 +231,9 @@ const GamesPage: React.FC = () => {
     const [qIndex, setQIndex] = useState(0);
     const [input, setInput] = useState('');
     const [result, setResult] = useState<null | boolean>(null);
-    if (availableWords.length === 0) return <div>No words available.</div>;
+    if (availableWordsMemo.length === 0) return <div>No words available.</div>;
     // Pick a random word and template
-    const word = availableWords[qIndex % availableWords.length];
+    const word = availableWordsMemo[qIndex % availableWordsMemo.length];
     const template = templates[qIndex % templates.length];
     const sentence = template.replace('{word}', '____');
     return (
@@ -263,21 +269,40 @@ const GamesPage: React.FC = () => {
   ];
 
   return (
-    <div className="py-8 px-4 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">Interactive Games</h1>
-      <div className="flex justify-center gap-2 mb-8 flex-wrap">
-        {GAME_TITLES.map((title, i) => (
-          <button
-            key={title}
-            className={`px-4 py-2 rounded-lg border ${activeGame === i ? 'bg-blue-500 text-white' : 'bg-white border-gray-300 hover:bg-gray-100'}`}
-            onClick={() => setActiveGame(i)}
-          >
-            {title}
-          </button>
-        ))}
-      </div>
-      <div className="bg-white rounded-lg shadow-md p-6 min-h-[300px] flex flex-col items-center">
-        {gameComponents[activeGame]}
+    <div className={themeClasses.container}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
+              ← Back to Home
+            </Link>
+            <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
+              Interactive Games
+            </h1>
+          </div>
+        </div>
+
+        <div className="flex justify-center gap-2 mb-8 flex-wrap">
+          {GAME_TITLES.map((title, i) => (
+            <button
+              key={title}
+              onClick={() => setActiveGame(i)}
+              className={`px-4 py-2 rounded-lg ${
+                activeGame === i
+                  ? themeClasses.button.primary
+                  : themeClasses.button.secondary
+              }`}
+            >
+              {title}
+            </button>
+          ))}
+        </div>
+
+        <div className={themeClasses.card}>
+          <div className="min-h-[300px] flex flex-col items-center">
+            {gameComponents[activeGame]}
+          </div>
+        </div>
       </div>
     </div>
   );

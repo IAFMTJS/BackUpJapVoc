@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProgress } from '../context/ProgressContext';
 import { useApp } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
 import { AnimePhrase } from '../types/anime';
 import AnimeGridView from '../components/AnimeGridView';
@@ -93,6 +95,8 @@ const AnimeSection: React.FC = () => {
   const { currentUser } = useAuth();
   const { settings } = useApp();
   const { updateProgress } = useProgress();
+  const { getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
   const [showDashboard, setShowDashboard] = useState(false);
   const [selectedPhrase, setSelectedPhrase] = useState<AnimePhrase | null>(null);
   const [showRomaji, setShowRomaji] = useState(settings.showRomaji);
@@ -173,19 +177,27 @@ const AnimeSection: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Dashboard Toggle Button */}
-      <button
-        onClick={() => setShowDashboard(!showDashboard)}
-        className="fixed top-4 right-4 z-50 p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all"
-      >
-        <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+    <div className={themeClasses.container}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
+              ← Back to Home
+            </Link>
+            <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
+              Anime Section
+            </h1>
+          </div>
+          <button
+            onClick={() => setShowDashboard(!showDashboard)}
+            className={`${themeClasses.button.secondary} p-2 rounded-full`}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
 
-      {/* Main Content - Single Quote Display */}
-      <div className="container mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           {selectedPhrase && (
             <motion.div
@@ -195,7 +207,7 @@ const AnimeSection: React.FC = () => {
               exit={{ opacity: 0, y: -20 }}
               className="max-w-4xl mx-auto"
             >
-              <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
+              <div className={themeClasses.card}>
                 {/* Image */}
                 <div className="relative h-96">
                   <img
@@ -219,53 +231,51 @@ const AnimeSection: React.FC = () => {
                 {/* Quote Content */}
                 <div className="p-6">
                   <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                    <h2 className={`text-2xl font-bold ${themeClasses.text.primary}`}>
                       {selectedPhrase.japanese}
                     </h2>
                     <button
                       onClick={() => handlePlayAudio(selectedPhrase.japanese)}
-                      className="p-2 text-gray-600 hover:text-blue-600 dark:text-gray-300 
-                        dark:hover:text-blue-400 transform hover:scale-110 transition-all
-                        bg-gray-100 dark:bg-gray-700 rounded-full"
+                      className={`${themeClasses.button.secondary} p-2 rounded-full transform hover:scale-110 transition-all`}
                       title="Play Audio"
                     >
                       🔊
                     </button>
                   </div>
                   {showRomaji && (
-                    <p className="text-xl text-gray-600 dark:text-gray-300 mb-4">
+                    <p className={`text-xl ${themeClasses.text.secondary} mb-4`}>
                       {romajiMap[selectedPhrase.japanese.trim()] || selectedPhrase.romaji}
                     </p>
                   )}
-                  <p className="text-lg text-gray-700 dark:text-gray-200 mb-6">
+                  <p className={`text-lg ${themeClasses.text.primary} mb-6`}>
                     {selectedPhrase.english}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                  <p className={`text-sm ${themeClasses.text.muted} italic`}>
                     {selectedPhrase.context}
                   </p>
                 </div>
 
                 {/* Navigation Buttons */}
-                <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700">
+                <div className="flex items-center justify-between p-6 border-t border-dark-border">
                   <button
                     onClick={handlePreviousPhrase}
-                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    className={`${themeClasses.button.secondary} p-2 rounded-full`}
                   >
-                    <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
                   <button
                     onClick={handlePractice}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className={themeClasses.button.primary}
                   >
                     Practice
                   </button>
                   <button
                     onClick={handleNextPhrase}
-                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    className={`${themeClasses.button.secondary} p-2 rounded-full`}
                   >
-                    <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -282,20 +292,20 @@ const AnimeSection: React.FC = () => {
               initial={{ opacity: 0, x: 300 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 300 }}
-              className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-gray-800 shadow-xl p-6 overflow-y-auto"
+              className={`fixed top-0 right-0 h-full w-80 ${themeClasses.card} shadow-xl p-6 overflow-y-auto`}
             >
-              <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Dashboard</h2>
+              <h2 className={`text-xl font-bold mb-6 ${themeClasses.text.primary}`}>Dashboard</h2>
               
               {/* Category Filter */}
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">Categories</h3>
+                <h3 className={`text-lg font-semibold mb-3 ${themeClasses.text.primary}`}>Categories</h3>
                 <div className="space-y-2">
                   <button
                     onClick={() => setSelectedCategory('all')}
                     className={`w-full px-3 py-2 rounded-lg text-left transition-colors ${
                       selectedCategory === 'all'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                        ? themeClasses.button.primary
+                        : themeClasses.button.secondary
                     }`}
                   >
                     All
@@ -306,8 +316,8 @@ const AnimeSection: React.FC = () => {
                       onClick={() => setSelectedCategory(category as AnimePhrase['category'])}
                       className={`w-full px-3 py-2 rounded-lg text-left transition-colors capitalize ${
                         selectedCategory === category
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                          ? themeClasses.button.primary
+                          : themeClasses.button.secondary
                       }`}
                     >
                       {category}
@@ -318,15 +328,15 @@ const AnimeSection: React.FC = () => {
 
               {/* Settings */}
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">Settings</h3>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <h3 className={`text-lg font-semibold mb-3 ${themeClasses.text.primary}`}>Settings</h3>
+                <label className={`flex items-center gap-2 cursor-pointer ${themeClasses.text.secondary}`}>
                   <input
                     type="checkbox"
                     checked={showRomaji}
                     onChange={() => setShowRomaji(r => !r)}
-                    className="form-checkbox h-4 w-4 text-blue-600"
+                    className="form-checkbox h-4 w-4 text-accent-blue"
                   />
-                  <span className="text-gray-700 dark:text-gray-300">Show Romaji</span>
+                  <span>Show Romaji</span>
                 </label>
               </div>
             </motion.div>

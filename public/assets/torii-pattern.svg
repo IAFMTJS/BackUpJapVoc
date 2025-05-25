@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Torii gate pattern -->
+  <g id="torii" opacity="0.1">
+    <!-- Horizontal beam -->
+    <rect x="100" y="150" width="200" height="20" fill="#FF4B4B"/>
+    <!-- Vertical posts -->
+    <rect x="120" y="150" width="20" height="200" fill="#FF4B4B"/>
+    <rect x="260" y="150" width="20" height="200" fill="#FF4B4B"/>
+    <!-- Top beam -->
+    <rect x="80" y="130" width="240" height="20" fill="#FF4B4B"/>
+    <!-- Decorative elements -->
+    <rect x="180" y="130" width="40" height="40" fill="#FF4B4B"/>
+    <rect x="190" y="140" width="20" height="20" fill="#FF4B4B"/>
+  </g>
+  <!-- Additional torii gates for pattern -->
+  <g transform="translate(200, 0)">
+    <use href="#torii"/>
+  </g>
+  <g transform="translate(0, 200)">
+    <use href="#torii"/>
+  </g>
+  <g transform="translate(200, 200)">
+    <use href="#torii"/>
+  </g>
+</svg> 

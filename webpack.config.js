@@ -57,6 +57,13 @@ module.exports = (env, argv) => {
           test: /\.json$/,
           type: 'json',
         },
+        {
+          test: /\.svg$/,
+          type: 'asset/resource',
+          generator: {
+            filename: 'static/media/[name].[hash][ext]'
+          }
+        },
       ]
     },
     resolve: {
@@ -186,29 +193,16 @@ module.exports = (env, argv) => {
       static: {
         directory: path.join(__dirname, 'public'),
       },
-      historyApiFallback: true,
-      host: '0.0.0.0',
-      port: 3000,
+      compress: true,
+      port: 3001,
       hot: true,
-      open: true,
-      allowedHosts: 'all',
-      client: {
-        overlay: true,
-        webSocketURL: {
-          hostname: 'localhost',
-          pathname: '/ws',
-          port: 3000
-        }
-      },
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-        'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
-      },
-      webSocketServer: 'ws',
+      historyApiFallback: true,
       proxy: [{
         context: ['/api'],
-        target: 'http://localhost:3000'
+        target: 'http://localhost:3001',
+        secure: false,
+        changeOrigin: true,
+        ws: true
       }]
     },
     devtool: isProduction ? false : 'source-map',

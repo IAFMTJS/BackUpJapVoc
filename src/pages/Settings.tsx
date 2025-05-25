@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
+import { useSettings } from '../context/SettingsContext';
 import type { Settings } from '../context/AppContext';
 import { useProgress } from '../context/ProgressContext';
 import { downloadOfflineData } from '../utils/offlineData';
@@ -9,74 +10,69 @@ import AudioManager from '../components/AudioManager';
 import { useAccessibility } from '../context/AccessibilityContext';
 
 const SettingsPage: React.FC = () => {
-  const { theme, isDarkMode, setTheme, toggleDarkMode } = useTheme();
-  const { settings, updateSettings } = useApp();
+  const { getThemeClasses } = useTheme();
+  const { settings: appSettings, updateSettings: updateAppSettings } = useApp();
+  const { settings: globalSettings, updateSettings: updateGlobalSettings } = useSettings();
   const { progress: progressData, resetProgress } = useProgress();
   const { settings: accessibilitySettings, updateSettings: updateAccessibilitySettings } = useAccessibility();
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
   const [downloadSuccess, setDownloadSuccess] = React.useState(false);
 
-  const getThemeClasses = () => {
-    const baseClasses = {
-      container: isDarkMode ? 'bg-gray-800' : 'bg-white',
-      text: isDarkMode ? 'text-gray-100' : 'text-gray-900',
-      subtext: isDarkMode ? 'text-gray-300' : 'text-gray-600',
-      border: isDarkMode ? 'border-gray-700' : 'border-gray-200',
-      hover: isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50',
-      input: isDarkMode 
-        ? 'bg-gray-700 border-gray-600 text-gray-100' 
-        : 'bg-white border-gray-300 text-gray-900',
-      select: isDarkMode 
-        ? 'bg-gray-700 border-gray-600 text-gray-100' 
-        : 'bg-white border-gray-300 text-gray-900',
-      card: isDarkMode ? 'bg-gray-700' : 'bg-gray-50',
-    };
-    return baseClasses;
-  };
-
   const themeClasses = getThemeClasses();
 
-  const renderToggle = (settingKey: keyof Settings, label: string, description?: string) => (
-    <div className="flex items-center justify-between py-3">
-      <div>
-        <span className={`text-sm font-medium ${themeClasses.text}`}>{label}</span>
+  const renderToggle = (key: keyof Settings, label: string, description?: string) => (
+    <div className="flex items-center justify-between">
+      <div className="flex-grow">
+        <label htmlFor={key} className={`text-sm font-medium ${themeClasses.text.primary}`}>
+          {label}
+        </label>
         {description && (
-          <p className={`text-xs mt-1 ${themeClasses.subtext}`}>{description}</p>
+          <p className={`mt-1 text-xs ${themeClasses.text.muted}`}>{description}</p>
         )}
       </div>
       <button
-        onClick={() => updateSettings({ [settingKey]: !settings[settingKey] })}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-          settings[settingKey] ? 'bg-blue-600' : isDarkMode ? 'bg-gray-600' : 'bg-gray-200'
+        type="button"
+        role="switch"
+        aria-checked={globalSettings[key as keyof typeof globalSettings]}
+        onClick={() => {
+          const newValue = !globalSettings[key as keyof typeof globalSettings];
+          updateGlobalSettings({ [key]: newValue });
+        }}
+        className={`${
+          globalSettings[key as keyof typeof globalSettings] ? themeClasses.toggle.active : themeClasses.toggle.default
+        } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          themeClasses.focus.ring
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            settings[settingKey] ? 'translate-x-6' : 'translate-x-1'
-          }`}
+          aria-hidden="true"
+          className={`${
+            globalSettings[key as keyof typeof globalSettings] ? 'translate-x-5' : 'translate-x-0'
+          } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
         />
       </button>
     </div>
   );
 
   const renderSelect = (
-    settingKey: keyof Settings,
+    key: keyof Settings,
     label: string,
     options: { value: string; label: string }[],
     description?: string
   ) => (
-    <div className="py-3">
-      <div className="mb-2">
-        <label className={`text-sm font-medium ${themeClasses.text}`}>{label}</label>
-        {description && (
-          <p className={`text-xs mt-1 ${themeClasses.subtext}`}>{description}</p>
-        )}
-      </div>
+    <div>
+      <label htmlFor={key} className={`block text-sm font-medium ${themeClasses.text.primary}`}>
+        {label}
+      </label>
+      {description && (
+        <p className={`mt-1 text-xs ${themeClasses.text.muted}`}>{description}</p>
+      )}
       <select
-        value={settings[settingKey] as string}
-        onChange={(e) => updateSettings({ [settingKey]: e.target.value })}
-        className={`w-full p-2 rounded-lg border ${themeClasses.select}`}
+        id={key}
+        value={globalSettings[key] as string}
+        onChange={(e) => updateGlobalSettings({ [key]: e.target.value })}
+        className={`mt-1 block w-full rounded-lg ${themeClasses.select} text-sm`}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -103,11 +99,11 @@ const SettingsPage: React.FC = () => {
 
   const renderAccessibilitySettings = () => (
     <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
-      <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>Accessibility Settings</h2>
+      <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text.primary}`}>Accessibility Settings</h2>
       
       <div className="space-y-4">
         <div>
-          <label className={`block mb-2 ${themeClasses.text}`}>Font Size</label>
+          <label className={`block mb-2 ${themeClasses.text.primary}`}>Font Size</label>
           <select
             value={accessibilitySettings.fontSize}
             onChange={(e) => updateAccessibilitySettings({ fontSize: e.target.value as 'small' | 'medium' | 'large' })}
@@ -125,9 +121,9 @@ const SettingsPage: React.FC = () => {
             id="highContrast"
             checked={accessibilitySettings.highContrast}
             onChange={(e) => updateAccessibilitySettings({ highContrast: e.target.checked })}
-            className="form-checkbox h-5 w-5 text-blue-600"
+            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
           />
-          <label htmlFor="highContrast" className={themeClasses.text}>
+          <label htmlFor="highContrast" className={themeClasses.text.primary}>
             High Contrast Mode
           </label>
         </div>
@@ -138,9 +134,9 @@ const SettingsPage: React.FC = () => {
             id="reducedMotion"
             checked={accessibilitySettings.reducedMotion}
             onChange={(e) => updateAccessibilitySettings({ reducedMotion: e.target.checked })}
-            className="form-checkbox h-5 w-5 text-blue-600"
+            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
           />
-          <label htmlFor="reducedMotion" className={themeClasses.text}>
+          <label htmlFor="reducedMotion" className={themeClasses.text.primary}>
             Reduced Motion
           </label>
         </div>
@@ -151,9 +147,9 @@ const SettingsPage: React.FC = () => {
             id="screenReader"
             checked={accessibilitySettings.screenReader}
             onChange={(e) => updateAccessibilitySettings({ screenReader: e.target.checked })}
-            className="form-checkbox h-5 w-5 text-blue-600"
+            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
           />
-          <label htmlFor="screenReader" className={themeClasses.text}>
+          <label htmlFor="screenReader" className={themeClasses.text.primary}>
             Screen Reader Optimizations
           </label>
         </div>
@@ -164,9 +160,9 @@ const SettingsPage: React.FC = () => {
             id="keyboardNavigation"
             checked={accessibilitySettings.keyboardNavigation}
             onChange={(e) => updateAccessibilitySettings({ keyboardNavigation: e.target.checked })}
-            className="form-checkbox h-5 w-5 text-blue-600"
+            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
           />
-          <label htmlFor="keyboardNavigation" className={themeClasses.text}>
+          <label htmlFor="keyboardNavigation" className={themeClasses.text.primary}>
             Enhanced Keyboard Navigation
           </label>
         </div>
@@ -177,9 +173,9 @@ const SettingsPage: React.FC = () => {
             id="focusHighlight"
             checked={accessibilitySettings.focusHighlight}
             onChange={(e) => updateAccessibilitySettings({ focusHighlight: e.target.checked })}
-            className="form-checkbox h-5 w-5 text-blue-600"
+            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
           />
-          <label htmlFor="focusHighlight" className={themeClasses.text}>
+          <label htmlFor="focusHighlight" className={themeClasses.text.primary}>
             Focus Highlight
           </label>
         </div>
@@ -195,63 +191,43 @@ const SettingsPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className={themeClasses.container}>
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
-            <Link to="/" className={`${isDarkMode ? 'text-blue-400' : 'text-blue-600'} hover:underline mr-4`}>
+            <Link to="/" className={`${themeClasses.text.secondary} hover:text-text-primary transition-colors duration-200 mr-4`}>
               ← Back to Home
             </Link>
-            <h1 className={`text-3xl font-bold ${themeClasses.text}`}>Settings</h1>
+            <h1 className={`text-2xl font-bold ${themeClasses.text.primary}`}>Settings</h1>
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Theme Settings */}
-          <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
-            <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>Appearance</h2>
-            
+          <div className={themeClasses.card}>
+            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Appearance</h2>
             <div className="space-y-4">
-              <div className="py-3">
-                <label className={`text-sm font-medium ${themeClasses.text}`}>Theme</label>
+              <div className="py-2">
+                <label className={`text-sm font-medium ${themeClasses.text.primary}`}>Theme</label>
                 <select
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value as 'light' | 'blue' | 'green')}
-                  className={`w-full mt-2 p-2 rounded-lg border ${themeClasses.select}`}
+                  className={themeClasses.input}
+                  defaultValue="dark"
+                  disabled
                 >
-                  <option value="light">Light Theme</option>
-                  <option value="blue">Blue Theme</option>
-                  <option value="green">Green Theme</option>
+                  <option value="dark">Dark Theme</option>
+                  <option value="light" disabled>Light Theme (Coming Soon)</option>
+                  <option value="neon" disabled>Neon Theme (Coming Soon)</option>
                 </select>
-              </div>
-
-              <div className="flex items-center justify-between py-3">
-                <div>
-                  <span className={`text-sm font-medium ${themeClasses.text}`}>Dark Mode</span>
-                  <p className={`text-xs mt-1 ${themeClasses.subtext}`}>
-                    Switch between light and dark color schemes
-                  </p>
-                </div>
-                <button
-                  onClick={toggleDarkMode}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                    isDarkMode ? 'bg-blue-600' : isDarkMode ? 'bg-gray-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      isDarkMode ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+                <p className={`text-sm mt-1 ${themeClasses.text.muted}`}>
+                  More themes will be available in future updates
+                </p>
               </div>
             </div>
           </div>
 
           {/* General Settings */}
-          <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
-            <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>General Settings</h2>
-            
+          <div className={themeClasses.card}>
+            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>General Settings</h2>
             <div className="space-y-4">
               {renderToggle('showRomaji', 'Show Romaji', 'Display romaji for Japanese text')}
               {renderToggle('showHints', 'Show Hints', 'Display hints during exercises')}
@@ -267,48 +243,35 @@ const SettingsPage: React.FC = () => {
                 ],
                 'Set the default difficulty level for exercises'
               )}
-              {/* Download Offline Data Button */}
-              <div className="flex items-center gap-4 mt-2">
-                <button
-                  onClick={handleDownloadOfflineData}
-                  disabled={isDownloading}
-                  className={`px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors ${isDownloading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                >
-                  {isDownloading ? 'Downloading...' : 'Download Offline Data'}
-                </button>
-                {downloadSuccess && <span className="text-green-600 font-semibold">Offline data opgeslagen!</span>}
-                {downloadError && <span className="text-red-600 font-semibold">{downloadError}</span>}
-              </div>
             </div>
           </div>
 
           {/* Audio Settings */}
-          <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
-            <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>Audio Settings</h2>
-            <div className="space-y-4">
+          <div className={themeClasses.card}>
+            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Audio Settings</h2>
+            <div className="space-y-3">
               {renderToggle('autoPlay', 'Auto Play', 'Automatically play audio for new words')}
-              <div className="mt-6">
+              <div className="mt-4">
                 <AudioManager />
               </div>
             </div>
           </div>
 
           {/* Vocabulary Settings */}
-          <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
-            <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>Vocabulary Settings</h2>
+          <div className={themeClasses.card}>
+            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Vocabulary Settings</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               {renderToggle('showRomajiVocabulary', 'Show Romaji in Vocabulary', 'Display romaji in vocabulary exercises')}
               {renderToggle('showRomajiReading', 'Show Romaji in Reading', 'Display romaji in reading exercises')}
-              {renderToggle('showRomajiJLPT', 'Show Romaji in JLPT', 'Display romaji in JLPT preparation')}
             </div>
           </div>
 
           {/* Game Settings */}
-          <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
-            <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>Game Settings</h2>
+          <div className={themeClasses.card}>
+            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Game Settings</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               {renderToggle('showKanjiGames', 'Show Kanji in Games', 'Display kanji in game exercises')}
               {renderToggle('showRomajiGames', 'Show Romaji in Games', 'Display romaji in game exercises')}
               {renderToggle('useHiraganaGames', 'Use Hiragana in Games', 'Use hiragana instead of katakana in games')}
@@ -316,33 +279,49 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {/* Accessibility Settings */}
-          {renderAccessibilitySettings()}
+          <div className={`rounded-lg shadow-md p-4 ${themeClasses.container} lg:col-span-2`}>
+            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Accessibility Settings</h2>
+            {renderAccessibilitySettings()}
+          </div>
 
           {/* Progress Section */}
-          <div className={`rounded-lg shadow-md p-6 ${themeClasses.container} md:col-span-2`}>
-            <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text}`}>Progress</h2>
-            <div className="space-y-4">
+          <div className={`rounded-lg shadow-md p-4 ${themeClasses.container} lg:col-span-2`}>
+            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Progress</h2>
+            <div className="space-y-3">
               {Object.entries(progressData).map(([section, stats]) => (
                 <div key={section} className="border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0">
                   <div className="flex items-center justify-between">
-                    <span className={`font-medium ${themeClasses.text}`}>{section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
-                    <span className={`text-xs ${themeClasses.subtext}`}>Last Attempt: {stats.lastAttempt ? new Date(stats.lastAttempt).toLocaleString() : 'Never'}</span>
+                    <span className={`text-sm font-medium ${themeClasses.text.primary}`}>{section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                    <span className={`text-xs ${themeClasses.text.muted}`}>Last: {stats.lastAttempt ? new Date(stats.lastAttempt).toLocaleDateString() : 'Never'}</span>
                   </div>
-                  <div className="flex flex-wrap gap-4 mt-1 text-sm">
-                    <span>Total Questions: {stats.totalQuestions}</span>
+                  <div className="flex flex-wrap gap-2 mt-1 text-xs">
+                    <span>Total: {stats.totalQuestions}</span>
                     <span>Correct: {stats.correctAnswers}</span>
-                    <span>Best Streak: {stats.bestStreak}</span>
-                    <span>Avg. Time: {stats.averageTime ? stats.averageTime.toFixed(2) : 0}s</span>
+                    <span>Streak: {stats.bestStreak}</span>
+                    <span>Avg: {stats.averageTime ? stats.averageTime.toFixed(1) : 0}s</span>
                   </div>
                 </div>
               ))}
             </div>
-            <button
-              onClick={resetProgress}
-              className="mt-6 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
-            >
-              Reset All Progress
-            </button>
+            <div className="mt-4 flex justify-between items-center">
+              <button
+                onClick={handleDownloadOfflineData}
+                disabled={isDownloading}
+                className={`px-3 py-1.5 rounded-lg ${themeClasses.button.success} text-sm ${isDownloading ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                {isDownloading ? 'Downloading...' : 'Download Offline Data'}
+              </button>
+              <button
+                onClick={resetProgress}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${
+                  themeClasses.button
+                }`}
+              >
+                Reset All Progress
+              </button>
+            </div>
+            {downloadSuccess && <span className={`text-sm font-semibold mt-2 block ${themeClasses.text.success}`}>Offline data opgeslagen!</span>}
+            {downloadError && <span className={`text-sm font-semibold mt-2 block ${themeClasses.text.error}`}>{downloadError}</span>}
           </div>
         </div>
       </div>

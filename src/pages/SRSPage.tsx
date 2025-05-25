@@ -1,50 +1,78 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import SRSManager from '../components/SRSManager';
-import { Box, Typography, Paper } from '@mui/material';
 
 const SRSPage: React.FC = () => {
-  const { isDarkMode } = useTheme();
+  const { getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
+  const [showInfo, setShowInfo] = useState(true);
+
+  const renderInfo = () => (
+    <div className={themeClasses.card}>
+      <h2 className={`text-xl font-semibold mb-4 ${themeClasses.text.secondary}`}>
+        What is SRS?
+      </h2>
+      <p className={themeClasses.text.primary}>
+        Spaced Repetition System (SRS) is a learning technique that incorporates increasing intervals of time between subsequent review of previously learned material to exploit the psychological spacing effect.
+      </p>
+
+      <h2 className={`text-xl font-semibold mt-8 mb-4 ${themeClasses.text.secondary}`}>
+        How it works:
+      </h2>
+      <ul className={`list-disc pl-6 space-y-2 ${themeClasses.text.primary}`}>
+        <li>Review words at optimal intervals</li>
+        <li>Focus on difficult items more frequently</li>
+        <li>Review mastered items less often</li>
+        <li>Track your progress and retention</li>
+      </ul>
+
+      <div className="mt-8">
+        <p className={themeClasses.text.primary}>
+          Start using SRS to optimize your Japanese learning journey!
+        </p>
+        <div className="mt-6 flex gap-4">
+          <button 
+            className={themeClasses.button.primary}
+            onClick={() => setShowInfo(false)}
+          >
+            Start Learning
+          </button>
+          <button 
+            className={themeClasses.button.secondary}
+            onClick={() => window.open('https://en.wikipedia.org/wiki/Spaced_repetition', '_blank')}
+          >
+            Learn More
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="py-8">
-      <div className="flex items-center mb-8">
-        <Link to="/" className="text-blue-600 hover:text-blue-800 mr-4">
-          ← Back to Home
-        </Link>
-        <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          Spaced Repetition Learning
-        </h1>
+    <div className={themeClasses.container}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
+              ← Back to Home
+            </Link>
+            <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
+              Spaced Repetition System
+            </h1>
+          </div>
+          {!showInfo && (
+            <button 
+              className={themeClasses.button.secondary}
+              onClick={() => setShowInfo(true)}
+            >
+              View Info
+            </button>
+          )}
+        </div>
+
+        {showInfo ? renderInfo() : <SRSManager onComplete={() => setShowInfo(true)} />}
       </div>
-
-      <Paper className={`p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-        <Box className="mb-6">
-          <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            About Spaced Repetition
-          </Typography>
-          <Typography variant="body1" className={isDarkMode ? 'text-gray-400' : 'text-gray-700'}>
-            Spaced repetition is a learning technique that incorporates increasing intervals of time between 
-            subsequent review of previously learned material to exploit the psychological spacing effect. 
-            This method helps you remember vocabulary more effectively by reviewing words at optimal intervals.
-          </Typography>
-        </Box>
-
-        <Box className="mb-6">
-          <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            How it Works
-          </Typography>
-          <ul className={`list-disc pl-6 space-y-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-700'}`}>
-            <li>Review words at increasing intervals (1h, 6h, 1d, 3d, 1w, 2w)</li>
-            <li>Mark words as correct or incorrect to adjust their review schedule</li>
-            <li>Words you know well will appear less frequently</li>
-            <li>Words you struggle with will appear more often</li>
-            <li>Track your progress with each word's mastery level</li>
-          </ul>
-        </Box>
-
-        <SRSManager />
-      </Paper>
     </div>
   );
 };

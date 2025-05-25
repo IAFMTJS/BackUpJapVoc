@@ -1,6 +1,9 @@
 import { JapaneseWord, ExampleSentence } from './types';
 import processedWords from './processed_words.json';
 
+console.log('Loading processed words...');
+console.log('Number of processed words:', processedWords?.length || 0);
+
 // Helper to convert JLPT level string to number and difficulty
 function parseLevel(level: string | number | undefined | null, category?: string): { level: number; difficulty: 'beginner' | 'intermediate' | 'advanced'; jlptLevel?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' } {
   // If level is a number, handle it directly
@@ -124,6 +127,7 @@ function processExamples(word: any): ExampleSentence[] {
 }
 
 // Map processedWords to JapaneseWord[]
+console.log('Mapping processed words to JapaneseWord[]...');
 export const allWords: JapaneseWord[] = (processedWords as any[]).map((w, idx) => {
   const { level, difficulty, jlptLevel } = parseLevel(w.level, w.category);
   
@@ -144,6 +148,7 @@ export const allWords: JapaneseWord[] = (processedWords as any[]).map((w, idx) =
     isKatakana: /^[\u30A0-\u30FF]+$/.test(w.kana)
   };
 });
+console.log('Finished mapping words. Total words:', allWords.length);
 
 // Group by level
 export const wordsByLevel: Record<number, JapaneseWord[]> = {};

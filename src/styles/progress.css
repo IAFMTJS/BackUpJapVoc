@@ -1,0 +1,256 @@
+/* Progress Visualization Styles */
+
+/* Heatmap styles */
+.calendar-heatmap {
+  font-family: var(--font-family);
+}
+
+.calendar-heatmap rect {
+  rx: 2;
+  ry: 2;
+  transition: all 0.2s ease;
+}
+
+.calendar-heatmap rect:hover {
+  stroke: var(--primary-color);
+  stroke-width: 1px;
+}
+
+.color-empty {
+  fill: var(--background-lighter);
+}
+
+.color-scale-0 {
+  fill: var(--primary-color-light);
+}
+
+.color-scale-1 {
+  fill: var(--primary-color);
+  opacity: 0.3;
+}
+
+.color-scale-2 {
+  fill: var(--primary-color);
+  opacity: 0.5;
+}
+
+.color-scale-3 {
+  fill: var(--primary-color);
+  opacity: 0.7;
+}
+
+.color-scale-4 {
+  fill: var(--primary-color);
+  opacity: 0.9;
+}
+
+/* Badge and Trophy animations */
+@keyframes badgeUnlock {
+  0% {
+    transform: scale(0) rotate(-180deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes trophyUnlock {
+  0% {
+    transform: translateY(50px) scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.badge-unlock {
+  animation: badgeUnlock 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.trophy-unlock {
+  animation: trophyUnlock 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Progress card hover effects */
+.progress-card {
+  transition: all 0.3s ease;
+}
+
+.progress-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.progress-card:hover .progress-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Timeline styles */
+.timeline-item {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--primary-color);
+  opacity: 0.2;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  transition: all 0.3s ease;
+}
+
+.timeline-item:hover .timeline-dot {
+  transform: scale(1.5);
+  box-shadow: 0 0 0 4px var(--primary-color-light);
+}
+
+/* Graph styles */
+.graph-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.graph-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    45deg,
+    var(--primary-color-light) 0%,
+    transparent 100%
+  );
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.graph-tooltip {
+  background: var(--background-lighter);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  font-size: 0.875rem;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Avatar styles */
+.avatar-container {
+  position: relative;
+}
+
+.avatar-container::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  opacity: 0.5;
+  z-index: -1;
+  animation: avatarGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes avatarGlow {
+  0% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+.avatar-level {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-color);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .calendar-heatmap {
+    font-size: 0.75rem;
+  }
+
+  .timeline-item {
+    padding-left: 1.5rem;
+  }
+
+  .graph-container {
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-heatmap {
+    font-size: 0.625rem;
+  }
+
+  .timeline-item {
+    padding-left: 1rem;
+  }
+
+  .graph-container {
+    height: 200px;
+  }
+
+  .avatar-container {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .calendar-heatmap rect {
+  stroke: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .color-empty {
+  fill: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .graph-tooltip {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+[data-theme="dark"] .timeline-item::before {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .timeline-dot {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+} 

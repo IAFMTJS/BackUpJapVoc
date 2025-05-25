@@ -14,30 +14,7 @@ const QuizModeSelector: React.FC<QuizModeSelectorProps> = ({
   onModeSelect,
   availableModes = ['multiple-choice', 'writing', 'flashcards'],
 }) => {
-  const { theme, isDarkMode } = useTheme();
-
-  const getThemeClasses = () => {
-    if (isDarkMode) {
-      return {
-        container: 'bg-charcoal-800',
-        text: 'text-ivory-100',
-        button: {
-          active: 'bg-sage-600 text-ivory-100',
-          inactive: 'bg-charcoal-700 text-ivory-300 hover:bg-charcoal-600 hover:text-ivory-100',
-        },
-      };
-    }
-
-    return {
-      container: 'bg-ivory-100',
-      text: 'text-charcoal-800',
-      button: {
-        active: 'bg-sage-600 text-ivory-100',
-        inactive: 'bg-ivory-50 text-charcoal-600 hover:bg-sage-50 hover:text-sage-700',
-      },
-    };
-  };
-
+  const { isDarkMode, getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
 
   const getModeLabel = (mode: QuizMode): string => {
@@ -54,13 +31,19 @@ const QuizModeSelector: React.FC<QuizModeSelectorProps> = ({
   };
 
   return (
-    <div className={`flex flex-wrap gap-3 p-4 rounded-xl ${themeClasses.container} shadow-soft`}>
+    <div className={`flex flex-wrap gap-3 p-4 rounded-xl ${themeClasses.card} border ${themeClasses.border} ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
       {availableModes.map((mode) => (
         <button
           key={mode}
           onClick={() => onModeSelect(mode)}
-          className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
-            selectedMode === mode ? themeClasses.button.active : themeClasses.button.inactive
+          className={`px-4 py-2 rounded-lg transition-all duration-300 font-medium ${
+            selectedMode === mode
+              ? isDarkMode
+                ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(0,149,255,0.4)]'
+                : themeClasses.button.primary
+              : isDarkMode
+                ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20 hover:shadow-[0_0_10px_rgba(0,149,255,0.2)]'
+                : themeClasses.button.secondary
           }`}
         >
           {getModeLabel(mode)}

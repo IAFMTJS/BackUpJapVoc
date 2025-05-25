@@ -21,6 +21,33 @@ import {
   createBackup,
   restoreBackup
 } from '../utils/indexedDB';
+import { useAuth } from './AuthContext';
+import { 
+  db,
+  auth,
+  functions,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+  Timestamp,
+  increment,
+  arrayUnion,
+  arrayRemove,
+  deleteDoc,
+  onSnapshot,
+  type DocumentReference,
+  type DocumentData,
+  type QueryDocumentSnapshot,
+  type Firestore
+} from '../utils/firebase';
 
 // Progress tracking types
 export interface ProgressItem {
@@ -73,6 +100,11 @@ interface ProgressContextType {
   isOnline: boolean;
   isSyncing: boolean;
   lastSyncTime: number | null;
+  
+  // Streak tracking
+  currentStreak: number;
+  bestStreak: number;
+  lastStudyDate: Date | null;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -80,7 +112,7 @@ const ProgressContext = createContext<ProgressContextType | undefined>(undefined
 const DEFAULT_USER_ID = 'default';
 
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Progress state
+  const { user } = useAuth();
   const [progress, setProgress] = useState<Record<string, ProgressItem>>({});
   const [pendingProgress, setPendingProgress] = useState<PendingProgressItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,6 +127,11 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+  
+  // Streak tracking
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [lastStudyDate, setLastStudyDate] = useState<Date | null>(null);
   
   // Load initial data
   useEffect(() => {
@@ -123,6 +160,19 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (userSettings) {
           setLastSyncTime(userSettings.lastSync);
         }
+        
+        // Load streak data
+        if (user) {
+          const userProgressRef = doc(db, 'users', user.uid, 'progress', 'data');
+          const docSnap = await getDoc(userProgressRef);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setCurrentStreak(data.currentStreak || 0);
+            setBestStreak(data.bestStreak || 0);
+            setLastStudyDate(data.lastStudyDate?.toDate() || null);
+          }
+        }
       } catch (err) {
         console.error('[ProgressContext] Failed to load initial data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load progress data');
@@ -133,7 +183,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
     
     loadInitialData();
-  }, []);
+  }, [user]);
   
   // Handle online/offline status
   useEffect(() => {
@@ -159,6 +209,40 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+  
+  // Update streak when progress is made
+  const updateStreak = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!lastStudyDate) {
+      // First study session
+      setCurrentStreak(1);
+      setBestStreak(1);
+      setLastStudyDate(today);
+      return;
+    }
+
+    const lastDate = new Date(lastStudyDate);
+    lastDate.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      // Already studied today, streak remains the same
+      return;
+    } else if (diffDays === 1) {
+      // Studied yesterday, increment streak
+      const newStreak = currentStreak + 1;
+      setCurrentStreak(newStreak);
+      setBestStreak(Math.max(bestStreak, newStreak));
+      setLastStudyDate(today);
+    } else {
+      // Streak broken
+      setCurrentStreak(1);
+      setLastStudyDate(today);
+    }
+  };
   
   // Update progress with offline support
   const updateProgress = useCallback(async (section: string, itemId: string, correct: boolean) => {
@@ -216,6 +300,9 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         await savePendingProgress(pendingItem);
         setPendingProgress(prev => [...prev, pendingItem]);
       }
+      
+      // Update streak
+      updateStreak();
     } catch (err) {
       console.error('[ProgressContext] Failed to update progress:', err);
       setError(err instanceof Error ? err.message : 'Failed to update progress');
@@ -478,7 +565,12 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Status
     isOnline,
     isSyncing,
-    lastSyncTime
+    lastSyncTime,
+    
+    // Streak tracking
+    currentStreak,
+    bestStreak,
+    lastStudyDate
   };
   
   return (

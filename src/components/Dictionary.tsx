@@ -1,17 +1,150 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress, ProgressItem } from '../context/ProgressContext';
 import { useWordLevel } from '../context/WordLevelContext';
-import { allWords } from '../data/japaneseWords';
-import { Kanji, kanjiList } from '../data/kanjiData';
 import { useSound } from '../context/SoundContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
 import { romajiCache } from '../utils/romajiCache';
 import { v4 as uuidv4 } from 'uuid';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, Stack, Chip, Button, Alert } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, Stack, Chip, Button, Alert, IconButton, Tabs, Tab, CircularProgress } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import InfoIcon from '@mui/icons-material/Info';
+import ListIcon from '@mui/icons-material/List';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import EditIcon from '@mui/icons-material/Edit';
+import CloudIcon from '@mui/icons-material/Cloud';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import ShareIcon from '@mui/icons-material/Share';
+import SyncIcon from '@mui/icons-material/Sync';
+import { DictionaryItem, DictionarySearchOptions, DictionaryStats, DictionaryProgress, DictionarySettings, DictionaryState } from '../types/dictionary';
+import { initDictionaryDB, saveWord, getWord, searchWords, saveWordRelationships, getWordRelationships, generateWordCloud, createLearningPath, updateLearningPathProgress, getLearningPaths } from '../utils/dictionaryOfflineSupport';
+import { WordRelationshipsVisualization } from '../utils/wordRelationshipsVisualization';
+import { WordCloudVisualization } from '../utils/wordCloudVisualization';
+import { LearningPathVisualization } from '../utils/learningPathVisualization';
+import { useCache, useDebounce, useThrottle, useMemoization } from '../utils/performanceOptimization';
 import { wordLevels } from '../data/wordLevels';
-import { playAudio, playDynamicAudio } from '../utils/audio';
+import WordCloud from './WordCloud';
+import { allWords } from '../data/japaneseWords';
+
+// Enhanced types for dictionary features
+type JLPTLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
+type WordDifficulty = 'beginner' | 'intermediate' | 'advanced';
+type WordFrequency = 'very_common' | 'common' | 'uncommon' | 'rare';
+type WordRelationship = 'synonym' | 'antonym' | 'related' | 'compound';
+type WordCategory = 'noun' | 'verb' | 'adjective' | 'adverb' | 'particle' | 'expression';
+type WordFormality = 'formal' | 'informal' | 'both';
+type WordContext = 'casual' | 'business' | 'academic' | 'literary';
+
+interface ExampleSentence {
+  japanese: string;
+  english: string;
+  romaji: string;
+  context: WordContext;
+  formality: WordFormality;
+  notes?: string;
+  grammarPoints?: string[];
+}
+
+interface WordUsage {
+  category: WordCategory;
+  formality: WordFormality;
+  contexts: WordContext[];
+  grammarPoints: string[];
+  notes: string;
+  commonCollocations: string[];
+}
+
+interface WordRelationshipData {
+  type: WordRelationship;
+  words: string[];
+  notes?: string;
+}
+
+interface WordEtymology {
+  origin: string;
+  components: string[];
+  historicalNotes?: string;
+  relatedKanji?: string[];
+}
+
+interface WordFrequencyData {
+  level: WordFrequency;
+  jlptLevel?: JLPTLevel;
+  frequencyRank?: number;
+  usageNotes?: string;
+}
+
+interface WordMastery {
+  level: 'beginner' | 'intermediate' | 'advanced' | 'master';
+  progress: number;
+  lastPracticed: Date;
+  practiceHistory: {
+    date: Date;
+    score: number;
+    mistakes: string[];
+  }[];
+}
+
+interface CustomWordList {
+  id: string;
+  name: string;
+  description: string;
+  words: string[];
+  createdAt: Date;
+  lastModified: Date;
+  tags: string[];
+  isPublic: boolean;
+}
+
+interface WordNote {
+  id: string;
+  wordId: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  tags: string[];
+}
+
+interface WordChallenge {
+  id: string;
+  type: 'daily' | 'weekly' | 'custom';
+  words: string[];
+  difficulty: WordDifficulty;
+  timeLimit?: number;
+  bonusPoints: number;
+  completed: boolean;
+  score: number;
+  startDate: Date;
+  endDate: Date;
+}
+
+interface WordProgress {
+  mastery: WordMastery;
+  practiceCount: number;
+  correctCount: number;
+  incorrectCount: number;
+  averageScore: number;
+  lastPracticed: Date;
+  notes: WordNote[];
+  challenges: WordChallenge[];
+}
+
+// Extend existing DictionaryItem type
+interface EnhancedDictionaryItem extends DictionaryItem {
+  examples: ExampleSentence[];
+  usage: WordUsage;
+  relationships: WordRelationshipData[];
+  etymology: WordEtymology;
+  frequency: WordFrequencyData;
+  mastery: WordMastery;
+  notes: WordNote[];
+  progress: WordProgress;
+  isFavorite: boolean;
+  recentlyViewed: Date[];
+  similarWords: string[];
+}
 
 type DictionaryItem = QuizWord | Kanji;
 type FilterType = 'all' | 'unmarked' | 'marked' | 'mastered';
@@ -38,7 +171,8 @@ interface LevelStats {
 }
 
 const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
-  const { isDarkMode } = useTheme();
+  const { isDarkMode, getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
   const { progress, updateProgress, setTotalItems } = useProgress();
   const { playSound } = useSound();
   const { currentLevel, unlockedLevels, getWordMasteryForLevel } = useWordLevel();
@@ -56,49 +190,225 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
   const [levelFilter, setLevelFilter] = useState<number | 'all'>('all');
   const [levelStats, setLevelStats] = useState<LevelStats[]>([]);
 
+  // New state for enhanced features
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [customWordLists, setCustomWordLists] = useState<CustomWordList[]>([]);
+  const [wordNotes, setWordNotes] = useState<Record<string, WordNote[]>>({});
+  const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
+  const [wordChallenges, setWordChallenges] = useState<WordChallenge[]>([]);
+  const [wordOfTheDay, setWordOfTheDay] = useState<EnhancedDictionaryItem | null>(null);
+  const [showWordCloud, setShowWordCloud] = useState(false);
+  const [showLearningPath, setShowLearningPath] = useState(false);
+  const [selectedWordList, setSelectedWordList] = useState<string | null>(null);
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [wordRelationships, setWordRelationships] = useState<Record<string, WordRelationshipData[]>>({});
+  const [wordEtymology, setWordEtymology] = useState<Record<string, WordEtymology>>({});
+  const [wordFrequency, setWordFrequency] = useState<Record<string, WordFrequencyData>>({});
+  const [wordMastery, setWordMastery] = useState<Record<string, WordMastery>>({});
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
+  const [showRelationships, setShowRelationships] = useState(false);
+  const [visualizationData, setVisualizationData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchOptions, setSearchOptions] = useState<DictionarySearchOptions>({
+    query: '',
+    searchFields: ['japanese', 'english', 'romaji'],
+    filters: {},
+    sortBy: 'frequency',
+    limit: 50,
+    offset: 0
+  });
+
+  // Refs for visualizations
+  const relationshipsRef = useRef<HTMLDivElement>(null);
+  const wordCloudRef = useRef<HTMLDivElement>(null);
+  const learningPathRef = useRef<HTMLDivElement>(null);
+
+  // Performance optimization hooks
+  const debouncedSearch = useDebounce((query: string) => {
+    setSearchOptions(prev => ({ ...prev, query }));
+  }, 300);
+
+  const memoizedSearch = useMemoization(searchWords, {
+    maxSize: 100,
+    ttl: 5 * 60 * 1000 // 5 minutes
+  });
+
+  // Initialize offline database
+  useEffect(() => {
+    const initDB = async () => {
+      try {
+        await initDictionaryDB();
+        console.log('Dictionary database initialized');
+      } catch (error) {
+        console.error('Failed to initialize dictionary database:', error);
+        setSyncError('Failed to initialize offline database');
+      }
+    };
+    initDB();
+  }, []);
+
+  // Handle online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Load dictionary items with offline support
+  useEffect(() => {
+    const loadItems = async () => {
+      setIsLoading(true);
+      try {
+        let loadedItems: DictionaryItem[] = [];
+        console.log('Starting to load dictionary items...');
+        console.log('Is offline:', isOffline);
+        console.log('Search options:', searchOptions);
+        console.log('allWords available:', allWords?.length || 0);
+
+        if (isOffline) {
+          // Load from IndexedDB
+          console.log('Loading from IndexedDB...');
+          loadedItems = await memoizedSearch(searchOptions);
+          console.log('Loaded from IndexedDB:', loadedItems.length);
+        } else {
+          // Use allWords directly instead of API
+          console.log('Loading from allWords...');
+          if (!allWords || allWords.length === 0) {
+            console.error('allWords is empty or undefined');
+            throw new Error('Dictionary data not available');
+          }
+          
+          loadedItems = allWords.filter(word => {
+            const searchLower = searchOptions.query.toLowerCase().trim();
+            if (!searchLower) return true;
+
+            // Search in Japanese text
+            if (word.japanese.toLowerCase().includes(searchLower)) return true;
+
+            // Search in English text
+            if (word.english.toLowerCase().includes(searchLower)) return true;
+
+            // Search in romaji
+            if (word.romaji?.toLowerCase().includes(searchLower)) return true;
+
+            return false;
+          });
+          console.log('Filtered items:', loadedItems.length);
+
+          // Apply filters from searchOptions
+          if (searchOptions.filters.category) {
+            loadedItems = loadedItems.filter(word => word.category === searchOptions.filters.category);
+            console.log('After category filter:', loadedItems.length);
+          }
+          if (searchOptions.filters.level) {
+            loadedItems = loadedItems.filter(word => word.level === searchOptions.filters.level);
+            console.log('After level filter:', loadedItems.length);
+          }
+          if (searchOptions.filters.difficulty) {
+            loadedItems = loadedItems.filter(word => word.difficulty === searchOptions.filters.difficulty);
+            console.log('After difficulty filter:', loadedItems.length);
+          }
+
+          // Apply sorting
+          loadedItems.sort((a, b) => {
+            switch (searchOptions.sortBy) {
+              case 'japanese':
+                return a.japanese.localeCompare(b.japanese, 'ja');
+              case 'english':
+                return a.english.localeCompare(b.english);
+              case 'frequency':
+                // For now, just sort by level as a proxy for frequency
+                return a.level - b.level;
+              default:
+                return 0;
+            }
+          });
+          console.log('After sorting:', loadedItems.length);
+
+          // Apply limit and offset
+          loadedItems = loadedItems.slice(
+            searchOptions.offset,
+            searchOptions.offset + searchOptions.limit
+          );
+          console.log('After pagination:', loadedItems.length);
+          
+          // Cache items for offline use
+          console.log('Caching items for offline use...');
+          await Promise.all(loadedItems.map(item => saveWord(item)));
+          console.log('Caching complete');
+        }
+
+        console.log('Setting items in state:', loadedItems.length);
+        setItems(loadedItems);
+        setFilteredItems(loadedItems);
+        setTotalItems(mode, loadedItems.length);
+      } catch (error) {
+        console.error('Error loading dictionary items:', error);
+        setSyncError('Failed to load dictionary items');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadItems();
+  }, [mode, searchOptions, isOffline]);
+
+  // Handle word relationships visualization
+  const handleShowRelationships = async (wordId: string) => {
+    try {
+      const relationships = await getWordRelationships(wordId);
+      setVisualizationData(relationships);
+      setShowRelationships(true);
+    } catch (error) {
+      console.error('Error loading word relationships:', error);
+      setSyncError('Failed to load word relationships');
+    }
+  };
+
+  // Handle word cloud visualization
+  const handleShowWordCloud = async () => {
+    try {
+      const cloudData = await generateWordCloud(items);
+      setVisualizationData(cloudData);
+      setShowWordCloud(true);
+    } catch (error) {
+      console.error('Error generating word cloud:', error);
+      setSyncError('Failed to generate word cloud');
+    }
+  };
+
+  // Handle learning path visualization
+  const handleShowLearningPath = async () => {
+    try {
+      const paths = await getLearningPaths();
+      setVisualizationData(paths);
+      setShowLearningPath(true);
+    } catch (error) {
+      console.error('Error loading learning paths:', error);
+      setSyncError('Failed to load learning paths');
+    }
+  };
+
+  // Enhanced search with advanced options
+  const handleSearch = useCallback(async (query: string) => {
+    debouncedSearch(query);
+  }, [debouncedSearch]);
+
   // Sync local progress with context progress
   useEffect(() => {
     console.log('Progress context updated:', progress);
     setLocalProgress(progress);
   }, [progress]);
-
-  // Load dictionary items based on mode and current level
-  useEffect(() => {
-    const loadItems = async () => {
-      let loadedItems: DictionaryItem[] = [];
-      let hiraganaFiltered: DictionaryItem[] = [];
-      let katakanaFiltered: DictionaryItem[] = [];
-
-      // Get all words up to the current level
-      const availableWords = allWords.filter(word => {
-        const wordLevel = wordLevels.find(level => 
-          level.words.some(w => w.japanese === word.japanese)
-        );
-        return wordLevel && unlockedLevels.includes(wordLevel.level);
-      });
-
-      switch (mode) {
-        case 'all':
-          loadedItems = availableWords;
-          break;
-        case 'hiragana':
-          hiraganaFiltered = availableWords.filter(item => /[\u3040-\u309F]/.test(item.japanese));
-          loadedItems = hiraganaFiltered;
-          break;
-        case 'katakana':
-          katakanaFiltered = availableWords.filter(item => /[\u30A0-\u30FF]/.test(item.japanese));
-          loadedItems = katakanaFiltered;
-          break;
-        case 'kanji':
-          // For kanji, we'll show all kanji but mark which ones are locked
-          loadedItems = kanjiList;
-          break;
-      }
-      setItems(loadedItems);
-      setTotalItems(mode, loadedItems.length);
-    };
-    loadItems();
-  }, [mode, currentLevel, unlockedLevels, setTotalItems]);
 
   // Initialize romaji conversion for all items with improved caching
   const initializeRomaji = useCallback(async (itemsToConvert: DictionaryItem[]) => {
@@ -281,6 +591,190 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     setTimeout(() => toast.remove(), 2000);
   };
 
+  // Utility functions for enhanced features
+  const toggleFavorite = (wordId: string) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(wordId)) {
+        newFavorites.delete(wordId);
+      } else {
+        newFavorites.add(wordId);
+      }
+      // Save to localStorage
+      localStorage.setItem('dictionary_favorites', JSON.stringify([...newFavorites]));
+      return newFavorites;
+    });
+  };
+
+  const addWordNote = (wordId: string, content: string, tags: string[] = []) => {
+    const newNote: WordNote = {
+      id: uuidv4(),
+      wordId,
+      content,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      tags
+    };
+    setWordNotes(prev => ({
+      ...prev,
+      [wordId]: [...(prev[wordId] || []), newNote]
+    }));
+    // Save to localStorage
+    localStorage.setItem('dictionary_notes', JSON.stringify(wordNotes));
+  };
+
+  const createCustomWordList = (name: string, description: string, words: string[], tags: string[] = [], isPublic: boolean = false) => {
+    const newList: CustomWordList = {
+      id: uuidv4(),
+      name,
+      description,
+      words,
+      createdAt: new Date(),
+      lastModified: new Date(),
+      tags,
+      isPublic
+    };
+    setCustomWordLists(prev => [...prev, newList]);
+    // Save to localStorage
+    localStorage.setItem('dictionary_word_lists', JSON.stringify([...customWordLists, newList]));
+  };
+
+  const updateRecentlyViewed = (wordId: string) => {
+    setRecentlyViewed(prev => {
+      const newList = [wordId, ...prev.filter(id => id !== wordId)].slice(0, 10);
+      // Save to localStorage
+      localStorage.setItem('dictionary_recently_viewed', JSON.stringify(newList));
+      return newList;
+    });
+  };
+
+  const generateWordOfTheDay = useCallback(() => {
+    const availableWords = items.filter(word => {
+      const wordId = 'japanese' in word ? word.japanese : word.character;
+      return !favorites.has(wordId) && !recentlyViewed.includes(wordId);
+    });
+    
+    if (availableWords.length > 0) {
+      const randomWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+      setWordOfTheDay(randomWord as EnhancedDictionaryItem);
+      // Save to localStorage with date
+      localStorage.setItem('dictionary_word_of_day', JSON.stringify({
+        word: randomWord,
+        date: new Date().toISOString()
+      }));
+    }
+  }, [items, favorites, recentlyViewed]);
+
+  const createWordChallenge = (type: 'daily' | 'weekly' | 'custom', words: string[], difficulty: WordDifficulty, timeLimit?: number) => {
+    const newChallenge: WordChallenge = {
+      id: uuidv4(),
+      type,
+      words,
+      difficulty,
+      timeLimit,
+      bonusPoints: type === 'daily' ? 50 : type === 'weekly' ? 100 : 25,
+      completed: false,
+      score: 0,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + (type === 'daily' ? 86400000 : type === 'weekly' ? 604800000 : 3600000))
+    };
+    setWordChallenges(prev => [...prev, newChallenge]);
+    // Save to localStorage
+    localStorage.setItem('dictionary_challenges', JSON.stringify([...wordChallenges, newChallenge]));
+  };
+
+  const updateWordMastery = (wordId: string, score: number, mistakes: string[] = []) => {
+    setWordMastery(prev => {
+      const currentMastery = prev[wordId] || {
+        level: 'beginner',
+        progress: 0,
+        lastPracticed: new Date(),
+        practiceHistory: []
+      };
+
+      const newHistory = [...currentMastery.practiceHistory, {
+        date: new Date(),
+        score,
+        mistakes
+      }];
+
+      // Calculate new mastery level based on history
+      const recentHistory = newHistory.slice(-5);
+      const averageScore = recentHistory.reduce((sum, h) => sum + h.score, 0) / recentHistory.length;
+      const newLevel = averageScore >= 0.9 ? 'master' :
+                      averageScore >= 0.8 ? 'advanced' :
+                      averageScore >= 0.6 ? 'intermediate' : 'beginner';
+
+      const updatedMastery: WordMastery = {
+        level: newLevel,
+        progress: averageScore,
+        lastPracticed: new Date(),
+        practiceHistory: newHistory
+      };
+
+      // Save to localStorage
+      localStorage.setItem('dictionary_mastery', JSON.stringify({
+        ...prev,
+        [wordId]: updatedMastery
+      }));
+
+      return {
+        ...prev,
+        [wordId]: updatedMastery
+      };
+    });
+  };
+
+  // Load saved data from localStorage on component mount
+  useEffect(() => {
+    const loadSavedData = () => {
+      const savedFavorites = localStorage.getItem('dictionary_favorites');
+      if (savedFavorites) {
+        setFavorites(new Set(JSON.parse(savedFavorites)));
+      }
+
+      const savedNotes = localStorage.getItem('dictionary_notes');
+      if (savedNotes) {
+        setWordNotes(JSON.parse(savedNotes));
+      }
+
+      const savedWordLists = localStorage.getItem('dictionary_word_lists');
+      if (savedWordLists) {
+        setCustomWordLists(JSON.parse(savedWordLists));
+      }
+
+      const savedRecentlyViewed = localStorage.getItem('dictionary_recently_viewed');
+      if (savedRecentlyViewed) {
+        setRecentlyViewed(JSON.parse(savedRecentlyViewed));
+      }
+
+      const savedWordOfDay = localStorage.getItem('dictionary_word_of_day');
+      if (savedWordOfDay) {
+        const { word, date } = JSON.parse(savedWordOfDay);
+        // Only set if it's from today
+        if (new Date(date).toDateString() === new Date().toDateString()) {
+          setWordOfTheDay(word);
+        } else {
+          generateWordOfTheDay();
+        }
+      } else {
+        generateWordOfTheDay();
+      }
+
+      const savedChallenges = localStorage.getItem('dictionary_challenges');
+      if (savedChallenges) {
+        setWordChallenges(JSON.parse(savedChallenges));
+      }
+
+      const savedMastery = localStorage.getItem('dictionary_mastery');
+      if (savedMastery) {
+        setWordMastery(JSON.parse(savedMastery));
+      }
+    };
+
+    loadSavedData();
+  }, []);
+
   // Add function to calculate level statistics
   const calculateLevelStats = useCallback(() => {
     const stats: LevelStats[] = [];
@@ -289,8 +783,8 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     const levels = wordLevels.filter(level => unlockedLevels.includes(level.level));
     
     levels.forEach(level => {
-      const levelWords = allWords.filter(word => 
-        level.words.some(w => w.japanese === word.japanese)
+      const levelWords = items.filter(word => 
+        'japanese' in word && level.words.some(w => w.japanese === word.japanese)
       );
       
       const levelStat: LevelStats = {
@@ -314,7 +808,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     });
     
     setLevelStats(stats);
-  }, [mode, progress, unlockedLevels]);
+  }, [mode, progress, unlockedLevels, items]);
 
   // Update level stats when progress or unlocked levels change
   useEffect(() => {
@@ -498,22 +992,29 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
       onClose={() => setShowLockedAlert(false)}
       maxWidth="sm"
       fullWidth
+      PaperProps={{
+        sx: {
+          bgcolor: 'var(--background-lighter)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border-color)'
+        }
+      }}
     >
       <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'var(--text-primary)' }}>
           <LockIcon color="warning" />
-          <Typography>Word Locked</Typography>
+          <Typography color="inherit">Word Locked</Typography>
         </Box>
       </DialogTitle>
-      <DialogContent>
-        <Alert severity="info" sx={{ mt: 2 }}>
+      <DialogContent sx={{ bgcolor: 'var(--background-lighter)', color: 'var(--text-primary)' }}>
+        <Alert severity="info" sx={{ mt: 2, bgcolor: 'var(--background-lightest)', color: 'var(--text-primary)' }}>
           This word is not yet available at your current level. Continue practicing to unlock more words!
         </Alert>
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="body1" gutterBottom>
+        <Box sx={{ mt: 2, color: 'var(--text-primary)' }}>
+          <Typography variant="body1" gutterBottom color="inherit">
             To unlock more words:
           </Typography>
-          <ul className="list-disc pl-5">
+          <ul className="list-disc pl-5 text-text-primary">
             <li>Complete quizzes for your current level</li>
             <li>Master the required number of words</li>
             <li>Practice reading materials</li>
@@ -521,8 +1022,18 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
           </ul>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setShowLockedAlert(false)}>Close</Button>
+      <DialogActions sx={{ bgcolor: 'var(--background-lighter)', borderTop: '1px solid var(--border-color)' }}>
+        <Button 
+          onClick={() => setShowLockedAlert(false)}
+          sx={{
+            color: 'var(--text-primary)',
+            '&:hover': {
+              bgcolor: 'var(--background-lightest)'
+            }
+          }}
+        >
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   );
@@ -646,7 +1157,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
           <DialogContent>
             <Stack spacing={2}>
               {/* Basic Information */}
-              <Box>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  className: themeClasses.card
+                }}
+              >
                 <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                   Basic Information
                 </Typography>
@@ -670,7 +1189,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
               {/* Example Words */}
               {item.examples && item.examples.length > 0 && (
-                <Box>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    className: themeClasses.card
+                  }}
+                >
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Example Words
                   </Typography>
@@ -680,11 +1207,11 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
                         key={index}
                         sx={{
                           p: 2,
-                          bgcolor: 'background.paper',
                           borderRadius: 1,
                           border: '1px solid',
                           borderColor: 'divider'
                         }}
+                        className={themeClasses.card}
                       >
                         <Typography variant="body1" gutterBottom>
                           {example.japanese}
@@ -712,7 +1239,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
               {/* Notes */}
               {item.notes && (
-                <Box>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    className: themeClasses.card
+                  }}
+                >
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Additional Notes
                   </Typography>
@@ -724,7 +1259,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
               {/* Progress */}
               {localProgress[`${mode}-${item.character}`] && (
-                <Box>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    className: themeClasses.card
+                  }}
+                >
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Learning Progress
                   </Typography>
@@ -796,7 +1339,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
           <DialogContent>
             <Stack spacing={2}>
               {/* Basic Information */}
-              <Box>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  className: themeClasses.card
+                }}
+              >
                 <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                   Basic Information
                 </Typography>
@@ -817,7 +1368,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
               {/* Example Sentences */}
               {item.examples && item.examples.length > 0 && (
-                <Box>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    className: themeClasses.card
+                  }}
+                >
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Example Sentences
                   </Typography>
@@ -827,11 +1386,11 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
                         key={index}
                         sx={{
                           p: 2,
-                          bgcolor: 'background.paper',
                           borderRadius: 1,
                           border: '1px solid',
                           borderColor: 'divider'
                         }}
+                        className={themeClasses.card}
                       >
                         <Typography variant="body1" gutterBottom>
                           {example.japanese}
@@ -859,7 +1418,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
               {/* Notes */}
               {item.notes && (
-                <Box>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    className: themeClasses.card
+                  }}
+                >
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Additional Notes
                   </Typography>
@@ -871,7 +1438,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
               {/* Progress */}
               {localProgress[`${mode}-${item.japanese}`] && (
-                <Box>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    className: themeClasses.card
+                  }}
+                >
                   <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                     Learning Progress
                   </Typography>
@@ -906,7 +1481,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
   // Add level statistics section to the UI
   const renderLevelStats = () => (
-    <Box sx={{ mb: 4, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+    <Box sx={{ mb: 4, p: 2, borderRadius: 1, bgcolor: 'var(--background-lighter)' }}>
       <Typography variant="h6" gutterBottom>
         Level Statistics
       </Typography>
@@ -919,12 +1494,12 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
               border: 1,
               borderColor: 'divider',
               borderRadius: 1,
-              bgcolor: levelFilter === stats.level ? 'action.selected' : 'background.paper',
               cursor: 'pointer',
               '&:hover': {
-                bgcolor: 'action.hover'
+                opacity: 0.9
               }
             }}
+            className={`${themeClasses.card} ${levelFilter === stats.level ? 'ring-2 ring-accent-red' : ''}`}
             onClick={() => setLevelFilter(levelFilter === stats.level ? 'all' : stats.level)}
           >
             <Typography variant="subtitle1" gutterBottom>
@@ -966,7 +1541,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
   // Add level filter to the filters section
   const renderFilters = () => (
-    <div className="mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+    <div className="mb-6 rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--background-lighter)' }}>
       <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">Filters</h2>
       <div className="flex flex-wrap gap-4">
         <div className="flex-1 min-w-[200px]">
@@ -1066,63 +1641,740 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <div className="max-w-6xl mx-auto p-4">
-      {/* Download Button */}
-      <div className="mb-4 flex justify-end">
-        <button
-          onClick={handleDownloadDictionary}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors"
+  // New UI components for enhanced features
+  const WordOfTheDayCard = () => {
+    if (!wordOfTheDay) return null;
+
+    return (
+      <Box
+        sx={{
+          p: 3,
+          mb: 4,
+          borderRadius: 2,
+          border: '1px solid var(--border-color)',
+          bgcolor: 'var(--background-lighter)',
+          boxShadow: 3,
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '150px',
+            height: '150px',
+            background: `linear-gradient(45deg, ${isDarkMode ? '#1a237e' : '#e3f2fd'}, transparent)`,
+            opacity: 0.1,
+            transform: 'translate(30%, -30%) rotate(45deg)'
+          }}
+        />
+        <Typography variant="h6" gutterBottom color={isDarkMode ? 'neon-blue' : 'primary'}>
+          Word of the Day
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Typography variant="h4" component="div" sx={{ fontFamily: 'Noto Sans JP, sans-serif' }}>
+            {wordOfTheDay.japanese}
+          </Typography>
+          <button
+            onClick={() => handlePlayAudio(wordOfTheDay.japanese)}
+            className="text-2xl hover:opacity-80 transition-opacity"
+            aria-label="Play pronunciation"
+          >
+            🔊
+          </button>
+          <Chip
+            label={wordOfTheDay.frequency?.level || 'common'}
+            color="primary"
+            size="small"
+            sx={{ ml: 'auto' }}
+          />
+        </Box>
+        <Typography variant="body1" gutterBottom>
+          {wordOfTheDay.english}
+        </Typography>
+        {wordOfTheDay.romaji && (
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            {wordOfTheDay.romaji}
+          </Typography>
+        )}
+        {wordOfTheDay.examples && wordOfTheDay.examples.length > 0 && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'var(--background-lightest)' }}>
+            <Typography variant="subtitle2" gutterBottom color="primary">
+              Example Usage:
+            </Typography>
+            <Typography variant="body2" sx={{ fontFamily: 'Noto Sans JP, sans-serif' }}>
+              {wordOfTheDay.examples[0].japanese}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {wordOfTheDay.examples[0].english}
+            </Typography>
+          </Box>
+        )}
+        <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={favorites.has(wordOfTheDay.japanese) ? <StarIcon /> : <StarBorderIcon />}
+            onClick={() => toggleFavorite(wordOfTheDay.japanese)}
+            color={favorites.has(wordOfTheDay.japanese) ? 'warning' : 'primary'}
+          >
+            {favorites.has(wordOfTheDay.japanese) ? 'Remove from Favorites' : 'Add to Favorites'}
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<InfoIcon />}
+            onClick={() => setSelectedItem(wordOfTheDay)}
+          >
+            View Details
+          </Button>
+        </Box>
+      </Box>
+    );
+  };
+
+  const FavoritesSection = () => {
+    const favoriteItems = items.filter(item => 
+      favorites.has('japanese' in item ? item.japanese : item.character)
+    );
+
+    if (favoriteItems.length === 0) return null;
+
+    return (
+      <Box sx={{ mb: 4, bgcolor: 'var(--background)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" color={isDarkMode ? 'neon-blue' : 'primary'}>
+            Favorites
+          </Typography>
+          <Chip
+            label={`${favoriteItems.length} items`}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+        </Box>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { 
+            xs: '1fr', 
+            sm: 'repeat(2, 1fr)', 
+            md: 'repeat(3, 1fr)',
+            lg: 'repeat(4, 1fr)'
+          }, 
+          gap: 2 
+        }}>
+          {favoriteItems.map(item => (
+            <Box
+              key={'japanese' in item ? item.japanese : item.character}
+              sx={{
+                p: 2,
+                borderRadius: 1,
+                border: '1px solid var(--border-color)',
+                bgcolor: 'var(--background-lighter)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 2,
+                  bgcolor: 'var(--background-lightest)'
+                }
+              }}
+              onClick={() => {
+                setSelectedItem(item);
+                updateRecentlyViewed('japanese' in item ? item.japanese : item.character);
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Typography variant="h6" sx={{ fontFamily: 'Noto Sans JP, sans-serif' }}>
+                  {'japanese' in item ? item.japanese : item.character}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite('japanese' in item ? item.japanese : item.character);
+                  }}
+                  color="warning"
+                >
+                  <StarIcon />
+                </IconButton>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                {'english' in item ? item.english : item.meaning}
+              </Typography>
+              {('romaji' in item && item.romaji) && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  {item.romaji}
+                </Typography>
+              )}
+              <Box sx={{ mt: 1, display: 'flex', gap: 0.5 }}>
+                {('jlptLevel' in item && item.jlptLevel) && (
+                  <Chip
+                    label={item.jlptLevel}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                )}
+                {('difficulty' in item && item.difficulty) && (
+                  <Chip
+                    label={item.difficulty}
+                    size="small"
+                    color={
+                      item.difficulty === 'beginner' ? 'success' :
+                      item.difficulty === 'intermediate' ? 'warning' :
+                      'error'
+                    }
+                    variant="outlined"
+                  />
+                )}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    );
+  };
+
+  const CustomWordListsSection = () => {
+    if (customWordLists.length === 0) return null;
+
+    return (
+      <Box sx={{ mb: 4, bgcolor: 'var(--background)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" color={isDarkMode ? 'neon-blue' : 'primary'}>
+            Custom Word Lists
+          </Typography>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={() => {/* Open create list dialog */}}
+          >
+            Create New List
+          </Button>
+        </Box>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { 
+            xs: '1fr', 
+            sm: 'repeat(2, 1fr)',
+            lg: 'repeat(3, 1fr)'
+          }, 
+          gap: 2 
+        }}>
+          {customWordLists.map(list => (
+            <Box
+              key={list.id}
+              sx={{
+                p: 2,
+                borderRadius: 1,
+                border: '1px solid var(--border-color)',
+                bgcolor: 'var(--background-lighter)',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 2,
+                  bgcolor: 'var(--background-lightest)'
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  {list.name}
+                </Typography>
+                {list.isPublic && (
+                  <Chip
+                    label="Public"
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                  />
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {list.description}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
+                {list.tags.map(tag => (
+                  <Chip
+                    key={tag}
+                    label={tag}
+                    size="small"
+                    variant="outlined"
+                    sx={{ fontSize: '0.75rem' }}
+                  />
+                ))}
+              </Box>
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="caption" color="text.secondary">
+                  {list.words.length} words • Updated {new Date(list.lastModified).toLocaleDateString()}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <IconButton
+                    size="small"
+                    onClick={() => setSelectedWordList(list.id)}
+                    title="View Words"
+                  >
+                    <ListIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => {/* Open practice mode */}}
+                    title="Practice"
+                  >
+                    <PlayArrowIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => {/* Open edit dialog */}}
+                    title="Edit List"
+                  >
+                    <EditIcon />
+                  </IconButton>
+                </Box>
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    );
+  };
+
+  const WordChallengesSection = () => {
+    const activeChallenges = wordChallenges.filter(challenge => 
+      !challenge.completed && new Date(challenge.endDate) > new Date()
+    );
+
+    if (activeChallenges.length === 0) return null;
+
+    return (
+      <Box sx={{ mb: 4, bgcolor: 'var(--background)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" color={isDarkMode ? 'neon-blue' : 'primary'}>
+            Active Challenges
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={() => {/* Open create challenge dialog */}}
+          >
+            Create Challenge
+          </Button>
+        </Box>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { 
+            xs: '1fr', 
+            sm: 'repeat(2, 1fr)',
+            lg: 'repeat(3, 1fr)'
+          }, 
+          gap: 2 
+        }}>
+          {activeChallenges.map(challenge => (
+            <Box
+              key={challenge.id}
+              sx={{
+                p: 2,
+                borderRadius: 1,
+                border: '1px solid var(--border-color)',
+                bgcolor: 'var(--background-lighter)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '100px',
+                  height: '100px',
+                  background: `linear-gradient(45deg, ${
+                    challenge.difficulty === 'beginner' ? '#4caf50' :
+                    challenge.difficulty === 'intermediate' ? '#ff9800' :
+                    '#f44336'
+                  }, transparent)`,
+                  opacity: 0.1,
+                  transform: 'translate(30%, -30%) rotate(45deg)'
+                }}
+              />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  {challenge.type.charAt(0).toUpperCase() + challenge.type.slice(1)} Challenge
+                </Typography>
+                <Chip
+                  label={challenge.difficulty}
+                  color={
+                    challenge.difficulty === 'beginner' ? 'success' :
+                    challenge.difficulty === 'intermediate' ? 'warning' :
+                    'error'
+                  }
+                  size="small"
+                />
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  {challenge.words.length} words to master
+                </Typography>
+                {challenge.timeLimit && (
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Time limit: {Math.floor(challenge.timeLimit / 60)} minutes
+                  </Typography>
+                )}
+                <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
+                  Bonus points: {challenge.bonusPoints}
+                </Typography>
+              </Box>
+              <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  fullWidth
+                  startIcon={<PlayArrowIcon />}
+                  onClick={() => {/* Start challenge */}}
+                >
+                  Start Challenge
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<InfoIcon />}
+                  onClick={() => {/* View details */}}
+                >
+                  Details
+                </Button>
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    );
+  };
+
+  const RecentlyViewedSection = () => {
+    if (recentlyViewed.length === 0) return null;
+
+    const recentlyViewedItems = items.filter(item => 
+      recentlyViewed.includes('japanese' in item ? item.japanese : item.character)
+    );
+
+    return (
+      <Box sx={{ mb: 4, bgcolor: 'var(--background)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" color={isDarkMode ? 'neon-blue' : 'primary'}>
+            Recently Viewed
+          </Typography>
+          <Chip
+            label={`${recentlyViewedItems.length} items`}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+        </Box>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { 
+            xs: '1fr', 
+            sm: 'repeat(2, 1fr)', 
+            md: 'repeat(3, 1fr)',
+            lg: 'repeat(4, 1fr)'
+          }, 
+          gap: 2 
+        }}>
+          {recentlyViewedItems.map(item => (
+            <Box
+              key={'japanese' in item ? item.japanese : item.character}
+              sx={{
+                p: 2,
+                borderRadius: 1,
+                border: '1px solid var(--border-color)',
+                bgcolor: 'var(--background-lighter)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 2,
+                  bgcolor: 'var(--background-lightest)'
+                }
+              }}
+              onClick={() => {
+                setSelectedItem(item);
+                updateRecentlyViewed('japanese' in item ? item.japanese : item.character);
+              }}
+            >
+              <Typography variant="h6" sx={{ fontFamily: 'Noto Sans JP, sans-serif' }}>
+                {'japanese' in item ? item.japanese : item.character}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {'english' in item ? item.english : item.meaning}
+              </Typography>
+              {('romaji' in item && item.romaji) && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  {item.romaji}
+                </Typography>
+              )}
+              <Box sx={{ mt: 1, display: 'flex', gap: 0.5 }}>
+                {('jlptLevel' in item && item.jlptLevel) && (
+                  <Chip
+                    label={item.jlptLevel}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                )}
+                {('difficulty' in item && item.difficulty) && (
+                  <Chip
+                    label={item.difficulty}
+                    size="small"
+                    color={
+                      item.difficulty === 'beginner' ? 'success' :
+                      item.difficulty === 'intermediate' ? 'warning' :
+                      'error'
+                    }
+                    variant="outlined"
+                  />
+                )}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    );
+  };
+
+  // New render functions for enhanced features
+  const renderVisualizations = () => (
+    <Box sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={2}>
+        <Button
+          variant="outlined"
+          startIcon={<TimelineIcon />}
+          onClick={() => handleShowRelationships(selectedItem?.id || '')}
+          disabled={!selectedItem}
         >
-          Download Dictionary Data
-        </button>
-      </div>
-      {/* Stats section */}
-      <div className="mb-6 flex flex-wrap gap-4 text-sm">
-        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-          Total Items: {items.length}
-        </span>
-        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-          Started: {items.filter(item => 
-            getMasteryLevel('japanese' in item ? item.japanese : item.character) > 0
-          ).length}
-        </span>
-        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-          Almost Mastered: {items.filter(item => {
-            const itemId = 'japanese' in item ? item.japanese : item.character;
-            return getMasteryLevel(itemId) === 2;
-          }).length}
-        </span>
-        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-          Mastered: {items.filter(item => {
-            const itemId = 'japanese' in item ? item.japanese : item.character;
-            return getMasteryLevel(itemId) === 3;
-          }).length}
-        </span>
-        {isRomajiLoading && (
-          <span className="text-blue-500">
-            Loading romaji... {Object.keys(romajiMap).length}/{items.length} cached
-            {Object.keys(romajiMap).length > 0 && ` (${Math.round((Object.keys(romajiMap).length / items.length) * 100)}%)`}
-          </span>
-        )}
-        {romajiError && (
-          <span className="text-red-500">
-            {romajiError}
-          </span>
-        )}
-      </div>
+          Show Relationships
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<CloudIcon />}
+          onClick={handleShowWordCloud}
+        >
+          Show Word Cloud
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<ShareIcon />}
+          onClick={handleShowLearningPath}
+        >
+          Show Learning Path
+        </Button>
+      </Stack>
 
-      {/* Level Statistics */}
-      {renderLevelStats()}
+      {/* Visualization containers */}
+      {showRelationships && (
+        <Box ref={relationshipsRef} sx={{ mt: 2, height: 400, border: '1px solid var(--border-color)' }}>
+          <WordRelationshipsVisualization
+            data={visualizationData}
+            container={relationshipsRef.current}
+          />
+        </Box>
+      )}
 
-      {/* Filters */}
-      {renderFilters()}
+      {showWordCloud && (
+        <Box sx={{ mt: 2, height: 400, border: '1px solid var(--border-color)' }}>
+          <WordCloud
+            data={items}
+            options={{
+              colors: {
+                background: isDarkMode ? '#1a1a1a' : '#ffffff',
+                text: isDarkMode 
+                  ? ['#64B5F6', '#81C784', '#FFB74D', '#E57373', '#BA68C8']
+                  : ['#1976D2', '#388E3C', '#F57C00', '#D32F2F', '#7B1FA2'],
+                highlight: isDarkMode ? '#FF4081' : '#D500F9'
+              }
+            }}
+            height={400}
+          />
+        </Box>
+      )}
 
-      {/* Word list */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredItems.map((item) => renderItem(item))}
-      </div>
-    </div>
+      {showLearningPath && (
+        <Box ref={learningPathRef} sx={{ mt: 2, height: 400, border: '1px solid var(--border-color)' }}>
+          <LearningPathVisualization
+            data={visualizationData}
+            container={learningPathRef.current}
+          />
+        </Box>
+      )}
+    </Box>
+  );
+
+  const renderOfflineStatus = () => (
+    <Alert
+      severity={isOffline ? 'warning' : 'success'}
+      sx={{ mb: 2 }}
+      action={
+        <Button
+          color="inherit"
+          size="small"
+          startIcon={<SyncIcon />}
+          onClick={() => setIsSyncing(true)}
+          disabled={isSyncing}
+        >
+          {isSyncing ? 'Syncing...' : 'Sync Now'}
+        </Button>
+      }
+    >
+      {isOffline ? 'Working in offline mode' : 'Online mode'}
+    </Alert>
+  );
+
+  const renderAdvancedSearch = () => (
+    <Box sx={{ mb: 2 }}>
+      <Typography variant="subtitle1" gutterBottom>
+        Advanced Search
+      </Typography>
+      <Stack spacing={2}>
+        <Box>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Search Fields
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            {['japanese', 'english', 'romaji'].map(field => (
+              <Chip
+                key={field}
+                label={field}
+                onClick={() => {
+                  setSearchOptions(prev => ({
+                    ...prev,
+                    searchFields: prev.searchFields?.includes(field as any)
+                      ? prev.searchFields.filter(f => f !== field)
+                      : [...(prev.searchFields || []), field as any]
+                  }));
+                }}
+                color={searchOptions.searchFields?.includes(field as any) ? 'primary' : 'default'}
+                variant={searchOptions.searchFields?.includes(field as any) ? 'filled' : 'outlined'}
+              />
+            ))}
+          </Stack>
+        </Box>
+
+        <Box>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Filters
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {Object.entries(searchOptions.filters || {}).map(([key, value]) => (
+              <Chip
+                key={key}
+                label={`${key}: ${value}`}
+                onDelete={() => {
+                  setSearchOptions(prev => ({
+                    ...prev,
+                    filters: { ...prev.filters, [key]: undefined }
+                  }));
+                }}
+              />
+            ))}
+          </Stack>
+        </Box>
+
+        <Box>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Sort By
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            {['frequency', 'mastery', 'lastViewed', 'level'].map(sort => (
+              <Chip
+                key={sort}
+                label={sort}
+                onClick={() => {
+                  setSearchOptions(prev => ({
+                    ...prev,
+                    sortBy: sort as any
+                  }));
+                }}
+                color={searchOptions.sortBy === sort ? 'primary' : 'default'}
+                variant={searchOptions.sortBy === sort ? 'filled' : 'outlined'}
+              />
+            ))}
+          </Stack>
+        </Box>
+      </Stack>
+    </Box>
+  );
+
+  return (
+    <Box sx={{ p: 2 }}>
+      {renderOfflineStatus()}
+      
+      <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
+        <Tab label="Dictionary" />
+        <Tab label="Advanced Search" />
+        <Tab label="Visualizations" />
+      </Tabs>
+
+      {activeTab === 0 && (
+        <>
+          {renderFilters()}
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box sx={{ mt: 2 }}>
+              {filteredItems.map(item => renderItem(item))}
+            </Box>
+          )}
+        </>
+      )}
+
+      {activeTab === 1 && renderAdvancedSearch()}
+
+      {activeTab === 2 && renderVisualizations()}
+
+      {selectedItem && (
+        <Dialog
+          open={!!selectedItem}
+          onClose={() => setSelectedItem(null)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                {selectedItem.japanese}
+              </Typography>
+              <IconButton onClick={() => handlePlayAudio(selectedItem.japanese)}>
+                🔊
+              </IconButton>
+              <IconButton
+                onClick={() => toggleFavorite(selectedItem.id)}
+                color={favorites.has(selectedItem.id) ? 'warning' : 'default'}
+              >
+                {favorites.has(selectedItem.id) ? <StarIcon /> : <StarBorderIcon />}
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={2}>
+              {/* ... existing dialog content ... */}
+              {renderVisualizations()}
+            </Stack>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {syncError && (
+        <Alert severity="error" onClose={() => setSyncError(null)} sx={{ mt: 2 }}>
+          {syncError}
+        </Alert>
+      )}
+    </Box>
   );
 };
 

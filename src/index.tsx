@@ -14,22 +14,9 @@ root.render(
 );
 
 // Register service worker
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {  // Only register in production
   window.addEventListener('load', async () => {
     try {
-      // In development, we want to test the service worker
-      // In production, we want to ensure proper caching
-      const isDev = process.env.NODE_ENV === 'development';
-      
-      if (isDev) {
-        // In development, unregister any existing service workers
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const registration of registrations) {
-          await registration.unregister();
-          console.log('Unregistered service worker in development mode:', registration.scope);
-        }
-      }
-
       // Register new service worker
       const registration = await navigator.serviceWorker.register('/service-worker.js', {
         scope: '/',
@@ -51,12 +38,7 @@ if ('serviceWorker' in navigator) {
         newWorker.addEventListener('statechange', () => {
           console.log('Service worker state:', newWorker.state);
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // In development, we want to activate immediately
-            if (isDev) {
-              newWorker.postMessage({ type: 'SKIP_WAITING' });
-            } else {
-              console.log('New service worker installed, waiting for activation...');
-            }
+            console.log('New service worker installed, waiting for activation...');
           }
         });
       });
@@ -64,14 +46,24 @@ if ('serviceWorker' in navigator) {
       // Handle controller change
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         console.log('New service worker activated!');
-        // Only reload in production to avoid development refresh loops
-        if (!isDev) {
-          window.location.reload();
-        }
+        window.location.reload();
       });
 
     } catch (error) {
       console.error('ServiceWorker registration failed:', error);
+    }
+  });
+} else if ('serviceWorker' in navigator && process.env.NODE_ENV === 'development') {
+  // In development mode, ensure service workers are unregistered
+  window.addEventListener('load', async () => {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
+        console.log('Unregistered service worker in development mode:', registration.scope);
+      }
+    } catch (error) {
+      console.error('Failed to unregister service worker:', error);
     }
   });
 }

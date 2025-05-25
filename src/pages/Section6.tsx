@@ -124,7 +124,7 @@ const Section6 = () => {
   };
 
   const renderReadingMaterial = (material: ReadingMaterial) => (
-    <div className="bg-gray-50 p-6 rounded-lg">
+    <div className="bg-dark-lighter rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold">{material.title}</h3>
         {!completedMaterials.has(`${material.level}-${material.title}`) && (
@@ -206,8 +206,8 @@ const Section6 = () => {
               onClick={() => setSelectedType('hiragana')}
               className={`px-4 py-2 rounded-lg border ${
                 selectedType === 'hiragana'
-                  ? 'bg-blue-100 border-blue-500'
-                  : 'bg-white border-gray-300 hover:bg-gray-50'
+                  ? 'bg-dark-lighter border-dark-border'
+                  : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'
               }`}
             >
               Hiragana
@@ -216,8 +216,8 @@ const Section6 = () => {
               onClick={() => setSelectedType('katakana')}
               className={`px-4 py-2 rounded-lg border ${
                 selectedType === 'katakana'
-                  ? 'bg-blue-100 border-blue-500'
-                  : 'bg-white border-gray-300 hover:bg-gray-50'
+                  ? 'bg-dark-lighter border-dark-border'
+                  : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'
               }`}
             >
               Katakana
@@ -229,8 +229,8 @@ const Section6 = () => {
               onClick={() => setSelectedLevel('beginner')}
               className={`px-4 py-2 rounded-lg border ${
                 selectedLevel === 'beginner'
-                  ? 'bg-blue-100 border-blue-500'
-                  : 'bg-white border-gray-300 hover:bg-gray-50'
+                  ? 'bg-dark-lighter border-dark-border'
+                  : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'
               }`}
             >
               Beginner
@@ -239,8 +239,8 @@ const Section6 = () => {
               onClick={() => setSelectedLevel('intermediate')}
               className={`px-4 py-2 rounded-lg border ${
                 selectedLevel === 'intermediate'
-                  ? 'bg-blue-100 border-blue-500'
-                  : 'bg-white border-gray-300 hover:bg-gray-50'
+                  ? 'bg-dark-lighter border-dark-border'
+                  : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'
               }`}
             >
               Intermediate

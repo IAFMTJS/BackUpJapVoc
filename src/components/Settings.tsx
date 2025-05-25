@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
+import { useSettings } from '../context/SettingsContext';
 import type { Settings } from '../context/AppContext';
 import { getCacheStats, clearCache } from '../utils/AudioCache';
 
@@ -8,7 +9,16 @@ type SettingsKey = keyof Settings;
 
 const SettingsPanel: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
-  const { settings, updateSettings } = useApp();
+  const { settings: appSettings, updateSettings: updateAppSettings } = useApp();
+  const { settings: globalSettings, updateSettings: updateGlobalSettings } = useSettings();
+
+  // Form state for user-specific settings
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [dailyGoal, setDailyGoal] = useState(10);
+  const [practiceMode, setPracticeMode] = useState<'word' | 'sentence'>('word');
+  const [dailyReminders, setDailyReminders] = useState(false);
+  const [progressUpdates, setProgressUpdates] = useState(false);
 
   // Audio cache state
   const [cacheStats, setCacheStats] = useState<{ fileCount: number; totalSize: number }>({ fileCount: 0, totalSize: 0 });
@@ -18,11 +28,48 @@ const SettingsPanel: React.FC = () => {
     getCacheStats().then(setCacheStats);
   }, [clearing]);
 
+  useEffect(() => {
+    // Load saved user settings from localStorage
+    const savedSettings = localStorage.getItem('userSettings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      setDisplayName(parsedSettings.displayName || '');
+      setEmail(parsedSettings.email || '');
+      setDailyGoal(parsedSettings.dailyGoal || 10);
+      setPracticeMode(parsedSettings.practiceMode || 'word');
+      setDailyReminders(parsedSettings.dailyReminders || false);
+      setProgressUpdates(parsedSettings.progressUpdates || false);
+    }
+  }, []);
+
   const handleClearCache = async () => {
     setClearing(true);
     await clearCache();
     setClearing(false);
     setCacheStats({ fileCount: 0, totalSize: 0 });
+  };
+
+  const handleSave = () => {
+    // Save user-specific settings to localStorage
+    const userSettings = {
+      displayName,
+      email,
+      dailyGoal,
+      practiceMode,
+      dailyReminders,
+      progressUpdates
+    };
+    localStorage.setItem('userSettings', JSON.stringify(userSettings));
+
+    // Update global settings
+    updateGlobalSettings({
+      useTimer: globalSettings.useTimer,
+      timeLimit: globalSettings.timeLimit,
+      showRomaji: globalSettings.showRomaji,
+      showHints: globalSettings.showHints,
+      soundEnabled: globalSettings.soundEnabled,
+      darkMode: isDarkMode
+    });
   };
 
   const getThemeClasses = () => {
@@ -55,14 +102,17 @@ const SettingsPanel: React.FC = () => {
     <div className="flex items-center justify-between">
       <span className={`text-sm ${themeClasses.text}`}>{label}</span>
       <button
-        onClick={() => updateSettings({ [settingKey]: !settings[settingKey] })}
+        onClick={() => {
+          const newValue = !globalSettings[settingKey as keyof typeof globalSettings];
+          updateGlobalSettings({ [settingKey]: newValue });
+        }}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-          settings[settingKey] ? 'bg-blue-600' : 'bg-gray-200'
+          globalSettings[settingKey as keyof typeof globalSettings] ? 'bg-blue-600' : 'bg-gray-200'
         }`}
       >
         <span
           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            settings[settingKey] ? 'translate-x-6' : 'translate-x-1'
+            globalSettings[settingKey as keyof typeof globalSettings] ? 'translate-x-6' : 'translate-x-1'
           }`}
         />
       </button>

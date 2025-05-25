@@ -1,18 +1,27 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { 
-  onAuthStateChanged, 
+  auth, 
+  db, 
+  functions,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signOut,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  updateProfile,
   sendPasswordResetEmail,
+  updateEmail,
   updatePassword,
-  sendEmailVerification,
-  type User,
-  type AuthError,
-  type UserCredential
-} from 'firebase/auth';
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  User as FirebaseUser,
+  UserCredential,
+  Auth,
+  Firestore,
+  Functions
+} from '../utils/firebase';
+import type { AuthError } from '../utils/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../utils/firebase';
 import type { AuthContextType, AuthErrorResponse } from '../types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,7 +44,7 @@ const LoadingScreen = () => (
 );
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<AuthErrorResponse | null>(null);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -145,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       clearError();
-      await signOut(auth);
+      await firebaseSignOut(auth);
     } catch (error: unknown) {
       handleError(error);
     }

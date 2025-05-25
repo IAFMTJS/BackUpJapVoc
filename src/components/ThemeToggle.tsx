@@ -2,26 +2,31 @@ import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 const ThemeToggle: React.FC = () => {
-  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { theme, setTheme } = useTheme();
+
+  const themes = [
+    { id: 'dark', label: 'Dark', icon: '🌙' },
+    { id: 'light', label: 'Light', icon: '☀️' },
+    { id: 'neon', label: 'Neon', icon: '✨' },
+  ] as const;
 
   return (
-    <div className="flex items-center space-x-4">
-      <button
-        onClick={toggleDarkMode}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-sage-500 focus:ring-offset-2 ${
-          isDarkMode ? 'bg-sage-600' : 'bg-charcoal-200'
-        }`}
-        aria-label="Toggle dark mode"
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-ivory-100 transition-transform ${
-            isDarkMode ? 'translate-x-6' : 'translate-x-1'
+    <div className="flex items-center space-x-2">
+      {themes.map(({ id, label, icon }) => (
+        <button
+          key={id}
+          onClick={() => setTheme(id)}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+            theme === id
+              ? 'bg-dark-lighter text-text-primary'
+              : 'text-text-secondary hover:bg-dark-lighter/50'
           }`}
-        />
-      </button>
-      <span className={`text-sm font-medium ${isDarkMode ? 'text-ivory-300' : 'text-charcoal-600'}`}>
-        {isDarkMode ? 'Dark Mode' : 'Light Mode'}
-      </span>
+          aria-label={`Switch to ${label} theme`}
+        >
+          <span className="mr-1.5">{icon}</span>
+          {label}
+        </button>
+      ))}
     </div>
   );
 };

@@ -4,8 +4,10 @@ import { JapaneseWord } from '../data/types';
 import { useTheme } from '../context/ThemeContext';
 import { playAudio, playDynamicAudio } from '../utils/audio';
 import { QuizWord } from '../data/quizData';
+import { useSound } from '../context/SoundContext';
+import { useProgress } from '../context/ProgressContext';
 
-type PracticeMode = 'japanese-to-english' | 'english-to-japanese' | 'typing';
+type PracticeMode = 'japanese-to-english' | 'english-to-japanese' | 'typing' | 'listening';
 
 interface PracticeState {
   currentWordIndex: number;
@@ -16,16 +18,23 @@ interface PracticeState {
   score: number;
   mistakes: number;
   completed: boolean;
+  streak: number;
 }
 
-const WordLevelPractice: React.FC = () => {
+interface WordLevelPracticeProps {
+  level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
+}
+
+const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
   const {
     currentLevel,
     getWordsForCurrentLevel,
     updateWordProgress,
     settings
   } = useWordLevel();
-  const { theme, isDarkMode } = useTheme();
+  const { theme, isDarkMode, getThemeClasses } = useTheme();
+  const { playSound } = useSound();
+  const { updateProgress } = useProgress();
 
   const [practiceMode, setPracticeMode] = useState<PracticeMode>('japanese-to-english');
   const [practiceState, setPracticeState] = useState<PracticeState>({
@@ -36,48 +45,16 @@ const WordLevelPractice: React.FC = () => {
     showHint: false,
     score: 0,
     mistakes: 0,
-    completed: false
+    completed: false,
+    streak: 0
   });
 
   const [showResults, setShowResults] = useState(false);
 
-  const getThemeClasses = () => {
-    if (isDarkMode) {
-      return {
-        container: 'bg-charcoal-800',
-        text: 'text-ivory-100',
-        card: 'bg-charcoal-700 hover:bg-charcoal-600',
-        input: 'bg-charcoal-700 border-charcoal-600 text-ivory-100',
-        button: {
-          primary: 'bg-sage-600 hover:bg-sage-700 text-ivory-100',
-          secondary: 'bg-charcoal-600 hover:bg-charcoal-500 text-ivory-100',
-          outline: 'border-2 border-sage-500 text-sage-300 hover:bg-sage-700/20',
-        },
-        progress: {
-          bg: 'bg-charcoal-600',
-          bar: 'bg-sage-500',
-        },
-      };
-    }
-
-    return {
-      container: 'bg-ivory-100',
-      text: 'text-charcoal-800',
-      card: 'bg-ivory-50 hover:bg-sage-50',
-      input: 'bg-ivory-50 border-sage-200 text-charcoal-800',
-      button: {
-        primary: 'bg-sage-600 hover:bg-sage-700 text-ivory-100',
-        secondary: 'bg-charcoal-200 hover:bg-charcoal-300 text-charcoal-800',
-        outline: 'border-2 border-sage-500 text-sage-600 hover:bg-sage-50',
-      },
-      progress: {
-        bg: 'bg-charcoal-100',
-        bar: 'bg-sage-500',
-      },
-    };
-  };
-
   const themeClasses = getThemeClasses();
+
+  // Add a comment to trigger re-lint
+  // Component updated to use neon Tokyo theme with proper button styles
 
   useEffect(() => {
     initializePractice();
@@ -94,7 +71,8 @@ const WordLevelPractice: React.FC = () => {
       showHint: false,
       score: 0,
       mistakes: 0,
-      completed: false
+      completed: false,
+      streak: 0
     });
   };
 
@@ -125,13 +103,17 @@ const WordLevelPractice: React.FC = () => {
       case 'typing':
         isCorrect = currentWord.romaji.toLowerCase() === userAnswer;
         break;
+      case 'listening':
+        // Implementation for listening practice
+        break;
     }
 
     setPracticeState(prev => ({
       ...prev,
       isCorrect,
       score: isCorrect ? prev.score + 1 : prev.score,
-      mistakes: isCorrect ? prev.mistakes : prev.mistakes + 1
+      mistakes: isCorrect ? prev.mistakes : prev.mistakes + 1,
+      streak: isCorrect ? prev.streak + 1 : 0
     }));
 
     updateWordProgress(currentWord.id, isCorrect);
@@ -163,126 +145,94 @@ const WordLevelPractice: React.FC = () => {
   const renderPracticeContent = () => {
     if (!currentWord) return null;
 
-    const progress = ((practiceState.currentWordIndex + 1) / practiceState.words.length) * 100;
-
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className={`${themeClasses.container} rounded-2xl shadow-soft p-8`}>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-            <div>
-              <h1 className={`text-3xl font-serif font-medium mb-2 ${themeClasses.text}`}>
-                Word Level Practice
-              </h1>
-              <p className={`text-lg ${themeClasses.text}`}>
-                Practice vocabulary words at your current level
-              </p>
+      <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
+        <div className="mb-6">
+          <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+            {currentWord.japanese}
+          </h2>
+          {currentWord.hiragana && (
+            <p className={`text-lg ${themeClasses.text} opacity-75`}>
+              {currentWord.hiragana}
+            </p>
+          )}
+        </div>
+
+        <div className="mb-6">
+          <input
+            type="text"
+            value={practiceState.userInput}
+            onChange={(e) => setPracticeState(prev => ({ ...prev, userInput: e.target.value }))}
+            placeholder={
+              practiceMode === 'japanese-to-english' ? 'Enter English translation...' :
+              practiceMode === 'english-to-japanese' ? 'Enter Japanese translation...' :
+              'Enter what you hear...'
+            }
+            className={`w-full p-4 rounded-lg ${themeClasses.input}`}
+            disabled={practiceState.isCorrect !== null}
+          />
+        </div>
+
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={checkAnswer}
+            className={`px-6 py-3 rounded-lg font-medium ${themeClasses.button.primary}`}
+          >
+            Check Answer
+          </button>
+          <button
+            onClick={handleNext}
+            className={`px-6 py-3 rounded-lg font-medium ${themeClasses.button.secondary}`}
+          >
+            Next
+          </button>
+          <button
+            onClick={() => setPracticeState(prev => ({ ...prev, showHint: !prev.showHint }))}
+            className={`px-6 py-3 rounded-lg font-medium ${themeClasses.button.secondary}`}
+          >
+            {practiceState.showHint ? 'Hide Hint' : 'Show Hint'}
+          </button>
+        </div>
+
+        {practiceState.isCorrect !== null && (
+          <div className={`mt-6 p-4 rounded-lg ${
+            practiceState.isCorrect 
+              ? isDarkMode 
+                ? 'bg-neon-blue/20 border-neon-blue/30' 
+                : 'bg-green-100 border-green-200'
+              : isDarkMode 
+                ? 'bg-neon-pink/20 border-neon-pink/30' 
+                : 'bg-red-100 border-red-200'
+          } border`}>
+            <div className={`text-lg font-medium mb-2 ${
+              practiceState.isCorrect 
+                ? isDarkMode 
+                  ? 'text-neon-blue' 
+                  : 'text-green-800'
+                : isDarkMode 
+                  ? 'text-neon-pink' 
+                  : 'text-red-800'
+            }`}>
+              {practiceState.isCorrect ? 'Correct!' : 'Incorrect!'}
             </div>
-            <div className="mt-4 md:mt-0">
-              <select
-                value={currentLevel}
-                onChange={(e) => setCurrentLevel(Number(e.target.value))}
-                className={`px-4 py-2 rounded-lg ${themeClasses.input} focus:outline-none focus:ring-2 focus:ring-sage-500`}
-              >
-                {Array.from({ length: 5 }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    Level {i + 1}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-2">
-              <span className={`text-sm font-medium ${themeClasses.text}`}>
-                Level Progress
-              </span>
-              <span className={`text-sm ${themeClasses.text}`}>
-                {progress}%
-              </span>
-            </div>
-            <div className={`w-full h-2 rounded-full ${themeClasses.progress.bg}`}>
-              <div
-                className={`h-2 rounded-full transition-all duration-300 ${themeClasses.progress.bar}`}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            {currentWord && (
-              <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h2 className={`text-2xl font-serif font-medium mb-2 ${themeClasses.text}`}>
-                      {currentWord.japanese}
-                    </h2>
-                    <p className={`text-lg ${themeClasses.text}`}>
-                      {currentWord.reading}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleShowHint}
-                    className={`px-4 py-2 rounded-lg font-medium ${themeClasses.button.outline}`}
-                  >
-                    Hint
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    value={practiceState.userInput}
-                    onChange={handleInputChange}
-                    placeholder="Type the meaning..."
-                    className={`w-full px-4 py-3 rounded-lg ${themeClasses.input} focus:outline-none focus:ring-2 focus:ring-sage-500`}
-                    onKeyPress={(e) => e.key === 'Enter' && checkAnswer()}
-                  />
-
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      onClick={handleNext}
-                      className={`px-6 py-2 rounded-lg font-medium ${themeClasses.button.secondary}`}
-                    >
-                      Skip
-                    </button>
-                    <button
-                      onClick={checkAnswer}
-                      className={`px-6 py-2 rounded-lg font-medium ${themeClasses.button.primary}`}
-                    >
-                      Submit
-                    </button>
-                  </div>
-                </div>
-
-                {practiceState.showHint && (
-                  <div className={`mt-4 p-4 rounded-lg bg-sage-700/20 border border-sage-600/30 ${
-                    isDarkMode ? 'text-sage-300' : 'text-sage-700'
-                  }`}>
-                    {currentWord.hint}
-                  </div>
-                )}
-
-                {practiceState.isCorrect !== null && (
-                  <div className={`mt-4 p-4 rounded-lg ${
-                    practiceState.isCorrect
-                      ? 'bg-sage-700/20 border border-sage-600/30 text-sage-300'
-                      : 'bg-accent-rust/20 border border-accent-rust/30 text-accent-rust'
-                  }`}>
-                    <p className="font-medium mb-2">
-                      {practiceState.isCorrect ? 'Correct!' : 'Incorrect'}
-                    </p>
-                    <p>
-                      {practiceState.isCorrect
-                        ? 'Great job! Keep up the good work.'
-                        : `The correct answer was: ${currentWord.meaning}`}
-                    </p>
-                  </div>
-                )}
+            {!practiceState.isCorrect && currentWord && (
+              <div className={`${themeClasses.text} mb-2`}>
+                Correct Answer: {currentWord.english}
               </div>
             )}
           </div>
-        </div>
+        )}
+
+        {practiceState.showHint && currentWord && (
+          <div className={`mt-6 p-4 rounded-lg ${themeClasses.card} border ${themeClasses.border}`}>
+            <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+              Hint
+            </h3>
+            <p className={themeClasses.text}>
+              {currentWord.notes || 'Try to remember the context where this word is commonly used.'}
+            </p>
+          </div>
+        )}
       </div>
     );
   };
@@ -315,7 +265,7 @@ const WordLevelPractice: React.FC = () => {
                 className={`px-3 py-1 rounded-full ${
                   practiceMode === 'japanese-to-english'
                     ? themeClasses.button.primary
-                    : themeClasses.button.outline
+                    : themeClasses.button.secondary
                 }`}
               >
                 Japanese to English
@@ -325,7 +275,7 @@ const WordLevelPractice: React.FC = () => {
                 className={`px-3 py-1 rounded-full ${
                   practiceMode === 'english-to-japanese'
                     ? themeClasses.button.primary
-                    : themeClasses.button.outline
+                    : themeClasses.button.secondary
                 }`}
               >
                 English to Japanese
@@ -335,7 +285,7 @@ const WordLevelPractice: React.FC = () => {
                 className={`px-3 py-1 rounded-full ${
                   practiceMode === 'typing'
                     ? themeClasses.button.primary
-                    : themeClasses.button.outline
+                    : themeClasses.button.secondary
                 }`}
               >
                 Typing Practice
@@ -347,7 +297,7 @@ const WordLevelPractice: React.FC = () => {
         <div className="flex justify-end gap-2 mt-6">
           <button
             onClick={() => setShowResults(false)}
-            className={`px-4 py-2 rounded-lg ${themeClasses.button.outline}`}
+            className={`px-4 py-2 rounded-lg ${themeClasses.button.secondary}`}
           >
             Close
           </button>
@@ -366,38 +316,69 @@ const WordLevelPractice: React.FC = () => {
   );
 
   return (
-    <div>
-      <div className="flex justify-center gap-2 mb-6">
-        <button
-          onClick={() => setPracticeMode('japanese-to-english')}
-          className={`px-4 py-2 rounded-lg ${
-            practiceMode === 'japanese-to-english'
-              ? themeClasses.button.primary
-              : themeClasses.button.outline
-          }`}
-        >
-          Japanese → English
-        </button>
-        <button
-          onClick={() => setPracticeMode('english-to-japanese')}
-          className={`px-4 py-2 rounded-lg ${
-            practiceMode === 'english-to-japanese'
-              ? themeClasses.button.primary
-              : themeClasses.button.outline
-          }`}
-        >
-          English → Japanese
-        </button>
-        <button
-          onClick={() => setPracticeMode('typing')}
-          className={`px-4 py-2 rounded-lg ${
-            practiceMode === 'typing'
-              ? themeClasses.button.primary
-              : themeClasses.button.outline
-          }`}
-        >
-          Typing Practice
-        </button>
+    <div className={`max-w-4xl mx-auto p-4 ${themeClasses.container}`}>
+      <div className={`mb-6 ${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
+        <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+          JLPT {level} Word Practice
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
+            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+              Practice Mode
+            </h3>
+            <div className="space-y-3">
+              {['japanese-to-english', 'english-to-japanese', 'listening'].map((mode) => (
+                <label key={mode} className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    value={mode}
+                    checked={practiceMode === mode}
+                    onChange={(e) => setPracticeMode(e.target.value as PracticeMode)}
+                    className={`form-radio h-5 w-5 ${isDarkMode ? 'text-neon-blue' : 'text-blue-500'}`}
+                  />
+                  <span className={themeClasses.text}>
+                    {mode === 'japanese-to-english' && 'Japanese → English'}
+                    {mode === 'english-to-japanese' && 'English → Japanese'}
+                    {mode === 'listening' && 'Listening Practice'}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
+            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+              Progress
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className={`text-sm ${themeClasses.text} opacity-75`}>Score</div>
+                <div className={`text-xl font-bold ${themeClasses.text}`}>{practiceState.score}</div>
+              </div>
+              <div>
+                <div className={`text-sm ${themeClasses.text} opacity-75`}>Attempts</div>
+                <div className={`text-xl font-bold ${themeClasses.text}`}>{practiceState.mistakes + practiceState.score}</div>
+              </div>
+              <div>
+                <div className={`text-sm ${themeClasses.text} opacity-75`}>Streak</div>
+                <div className={`text-xl font-bold ${themeClasses.text}`}>
+                  {practiceState.streak > 0 && (
+                    <span className={isDarkMode ? 'text-neon-pink' : 'text-red-500'}>
+                      🔥 {practiceState.streak}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className={`text-sm ${themeClasses.text} opacity-75`}>Accuracy</div>
+                <div className={`text-xl font-bold ${themeClasses.text}`}>
+                  {practiceState.mistakes + practiceState.score > 0 ? Math.round((practiceState.score / (practiceState.mistakes + practiceState.score)) * 100) : 0}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {renderPracticeContent()}

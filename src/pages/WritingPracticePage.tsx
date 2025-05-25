@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import WritingPractice from '../components/WritingPractice';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 
 type WritingMode = 'hiragana' | 'katakana' | 'kanji';
 
 const WritingPracticePage: React.FC = () => {
   const navigate = useNavigate();
+  const { getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
   const [selectedMode, setSelectedMode] = useState<WritingMode>('hiragana');
 
   const handleComplete = () => {
@@ -14,44 +17,29 @@ const WritingPracticePage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Writing Practice</h1>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => setSelectedMode('hiragana')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedMode === 'hiragana'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Hiragana
-          </button>
-          <button
-            onClick={() => setSelectedMode('katakana')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedMode === 'katakana'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Katakana
-          </button>
-          <button
-            onClick={() => setSelectedMode('kanji')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedMode === 'kanji'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Kanji
-          </button>
+    <div className={themeClasses.container}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className={`text-3xl font-bold mb-4 ${themeClasses.text.primary}`}>Writing Practice</h1>
+          <div className="flex space-x-4">
+            {(['hiragana', 'katakana', 'kanji'] as WritingMode[]).map(mode => (
+              <button
+                key={mode}
+                onClick={() => setSelectedMode(mode)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  selectedMode === mode
+                    ? themeClasses.button.primary
+                    : themeClasses.button.secondary
+                }`}
+              >
+                {mode.charAt(0).toUpperCase() + mode.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <WritingPractice mode={selectedMode} onComplete={handleComplete} />
+        <WritingPractice mode={selectedMode} onComplete={handleComplete} />
+      </div>
     </div>
   );
 };

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="200" cy="200" r="180" fill="#FFD700" fill-opacity="0.1"/>
+  <circle cx="200" cy="200" r="160" stroke="#FFD700" stroke-width="2" stroke-opacity="0.2"/>
+  <circle cx="200" cy="200" r="140" stroke="#FFD700" stroke-width="1" stroke-opacity="0.3"/>
+  <circle cx="200" cy="200" r="120" stroke="#FFD700" stroke-width="1" stroke-opacity="0.4"/>
+  <circle cx="200" cy="200" r="100" stroke="#FFD700" stroke-width="1" stroke-opacity="0.5"/>
+  <circle cx="200" cy="200" r="80" stroke="#FFD700" stroke-width="1" stroke-opacity="0.6"/>
+  <circle cx="200" cy="200" r="60" stroke="#FFD700" stroke-width="1" stroke-opacity="0.7"/>
+  <circle cx="200" cy="200" r="40" stroke="#FFD700" stroke-width="1" stroke-opacity="0.8"/>
+  <circle cx="200" cy="200" r="20" stroke="#FFD700" stroke-width="1" stroke-opacity="0.9"/>
+</svg> 

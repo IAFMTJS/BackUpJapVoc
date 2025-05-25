@@ -152,13 +152,44 @@ export const clearAudioQueue = () => {
 // Initialize cache
 export const initializeAudioCache = async () => {
   try {
+    // Only open the cache, don't preload everything
     const cache = await caches.open('japvoc-audio-v1.0.0');
-    await loadAudioMap(); // Load audio map during initialization
-    console.log('Audio cache initialized successfully');
+    
+    // Load only the audio map initially
+    const success = await loadAudioMap();
+    if (!success) {
+      console.warn('Failed to load audio map, will use Web Speech API fallback');
+    }
+    
+    // Don't preload all audio files, let them load on demand
+    console.log('Audio cache initialized successfully (lazy loading enabled)');
     return true;
   } catch (error) {
     console.error('Failed to initialize audio cache:', error);
     return false;
+  }
+};
+
+// Add a function to load audio files on demand
+export const loadAudioFile = async (filename: string): Promise<Blob | null> => {
+  try {
+    const cache = await caches.open('japvoc-audio-v1.0.0');
+    const cachedResponse = await cache.match(`/audio/${filename}`);
+    
+    if (cachedResponse) {
+      return await cachedResponse.blob();
+    }
+    
+    // If not in cache, fetch and cache it
+    const response = await fetch(`/audio/${filename}`);
+    if (!response.ok) throw new Error(`Failed to fetch audio: ${response.status}`);
+    
+    const blob = await response.blob();
+    await cache.put(`/audio/${filename}`, new Response(blob));
+    return blob;
+  } catch (error) {
+    console.error(`Failed to load audio file ${filename}:`, error);
+    return null;
   }
 };
 
