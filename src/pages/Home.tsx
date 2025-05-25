@@ -5,9 +5,10 @@ import ThemeToggle from '../components/ThemeToggle';
 import ToriiGate from '../components/ToriiGate';
 import { useProgress } from '../context/ProgressContext';
 import { useWordLevel } from '../context/WordLevelContext';
+import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
 
 const Home: React.FC = () => {
-  const { getThemeClasses } = useTheme();
+  const { getThemeClasses, isDarkMode } = useTheme();
   const navigate = useNavigate();
   const themeClasses = getThemeClasses();
   const { progress, isLoading: isProgressLoading } = useProgress();
@@ -188,27 +189,18 @@ const Home: React.FC = () => {
 
   return (
     <div className={`${themeClasses.container} relative min-h-screen overflow-hidden`}>
-      {/* Decorative torii gates */}
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <ToriiGate 
-          className="absolute top-1/4 -left-16 transform -rotate-12" 
-          size="large" 
-          opacity={0.15} 
-        />
-        <ToriiGate 
-          className="absolute bottom-1/4 -right-16 transform rotate-12" 
-          size="large" 
-          opacity={0.15} 
-        />
-        <ToriiGate 
-          className="absolute top-1/2 right-1/4 transform rotate-45" 
-          size="small" 
-          opacity={0.12} 
-        />
-        <ToriiGate 
-          className="absolute bottom-1/3 left-1/4 transform -rotate-45" 
-          size="small" 
-          opacity={0.12} 
+      {/* Decorative cityscape background */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-20">
+        <JapaneseCityscape 
+          width={1200}
+          height={600}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            filter: isDarkMode ? 'brightness(0.7)' : 'brightness(1)'
+          }}
         />
       </div>
 

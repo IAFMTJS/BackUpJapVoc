@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress } from '../context/ProgressContext';
-import { useAchievements } from '../context/AchievementsContext';
+import { useAchievements } from '../context/AchievementContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Box, 
@@ -224,12 +224,13 @@ const ProgressVisuals: React.FC = () => {
         description: `Completed ${p.correct} correct and ${p.incorrect} incorrect answers`
       })),
       ...unlockedAchievements.map(a => ({
-        date: a.unlockedAt,
+        date: new Date(a.unlockedAt),
         type: 'achievement',
         title: `Unlocked: ${a.title}`,
         description: a.description
       }))
-    ].sort((a, b) => b.date.getTime() - a.date.getTime());
+    ].filter(event => !isNaN(event.date.getTime()))
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
 
     return timelineEvents;
   };

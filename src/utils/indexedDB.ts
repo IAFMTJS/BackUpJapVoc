@@ -29,6 +29,16 @@ const DB_CONFIG = {
       indexes: [
         { name: 'lastSync', keyPath: 'lastSync', unique: false }
       ]
+    },
+    srsItems: {
+      name: 'srsItems',
+      keyPath: 'id',
+      indexes: [
+        { name: 'wordId', keyPath: 'word.japanese', unique: true },
+        { name: 'level', keyPath: 'level', unique: false },
+        { name: 'nextReview', keyPath: 'nextReview', unique: false },
+        { name: 'lastReview', keyPath: 'lastReview', unique: false }
+      ]
     }
   }
 } as const;
@@ -44,52 +54,93 @@ const migrations: Migration[] = [
   {
     version: 1,
     upgrade: async (db: IDBDatabase, transaction: IDBTransaction) => {
-      // Create progress store
-      const progressStore = db.createObjectStore(DB_CONFIG.stores.progress.name, {
-        keyPath: DB_CONFIG.stores.progress.keyPath
-      });
-      DB_CONFIG.stores.progress.indexes.forEach(index => {
-        progressStore.createIndex(index.name, index.keyPath, { unique: index.unique });
-      });
+      console.log('[IndexedDB] Starting migration to version 1...');
+      try {
+        // Create progress store
+        console.log('[IndexedDB] Creating progress store...');
+        const progressStore = db.createObjectStore(DB_CONFIG.stores.progress.name, {
+          keyPath: DB_CONFIG.stores.progress.keyPath
+        });
+        console.log('[IndexedDB] Creating progress store indexes...');
+        DB_CONFIG.stores.progress.indexes.forEach(index => {
+          progressStore.createIndex(index.name, index.keyPath, { unique: index.unique });
+        });
+        console.log('[IndexedDB] Progress store created successfully');
 
-      // Create pending store
-      const pendingStore = db.createObjectStore(DB_CONFIG.stores.pending.name, {
-        keyPath: DB_CONFIG.stores.pending.keyPath
-      });
-      DB_CONFIG.stores.pending.indexes.forEach(index => {
-        pendingStore.createIndex(index.name, index.keyPath, { unique: index.unique });
-      });
+        // Create pending store
+        console.log('[IndexedDB] Creating pending store...');
+        const pendingStore = db.createObjectStore(DB_CONFIG.stores.pending.name, {
+          keyPath: DB_CONFIG.stores.pending.keyPath
+        });
+        console.log('[IndexedDB] Creating pending store indexes...');
+        DB_CONFIG.stores.pending.indexes.forEach(index => {
+          pendingStore.createIndex(index.name, index.keyPath, { unique: index.unique });
+        });
+        console.log('[IndexedDB] Pending store created successfully');
 
-      // Create settings store
-      const settingsStore = db.createObjectStore(DB_CONFIG.stores.settings.name, {
-        keyPath: DB_CONFIG.stores.settings.keyPath
-      });
-      DB_CONFIG.stores.settings.indexes.forEach(index => {
-        settingsStore.createIndex(index.name, index.keyPath, { unique: index.unique });
-      });
+        // Create settings store
+        console.log('[IndexedDB] Creating settings store...');
+        const settingsStore = db.createObjectStore(DB_CONFIG.stores.settings.name, {
+          keyPath: DB_CONFIG.stores.settings.keyPath
+        });
+        console.log('[IndexedDB] Creating settings store indexes...');
+        DB_CONFIG.stores.settings.indexes.forEach(index => {
+          settingsStore.createIndex(index.name, index.keyPath, { unique: index.unique });
+        });
+        console.log('[IndexedDB] Settings store created successfully');
 
-      // Initialize default settings
-      const defaultSettings: Settings = {
-        userId: 'default',
-        lastSync: Date.now(),
-        offlineMode: false,
-        notifications: true,
-        theme: 'light',
-        fontSize: 'medium',
-        quizSettings: {
-          showRomaji: true,
-          showHiragana: true,
-          showKatakana: true,
-          showKanji: true,
-          randomize: true,
-          timeLimit: 30
-        }
-      };
-      await new Promise<void>((resolve, reject) => {
-        const request = transaction.objectStore(DB_CONFIG.stores.settings.name).add(defaultSettings);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-      });
+        // Create SRS items store
+        console.log('[IndexedDB] Creating SRS items store...');
+        const srsStore = db.createObjectStore(DB_CONFIG.stores.srsItems.name, {
+          keyPath: DB_CONFIG.stores.srsItems.keyPath
+        });
+        console.log('[IndexedDB] Creating SRS items store indexes...');
+        DB_CONFIG.stores.srsItems.indexes.forEach(index => {
+          srsStore.createIndex(index.name, index.keyPath, { unique: index.unique });
+        });
+        console.log('[IndexedDB] SRS items store created successfully');
+
+        // Initialize default settings
+        console.log('[IndexedDB] Initializing default settings...');
+        const defaultSettings: Settings = {
+          userId: 'default',
+          lastSync: Date.now(),
+          offlineMode: false,
+          notifications: true,
+          theme: 'light',
+          fontSize: 'medium',
+          quizSettings: {
+            showRomaji: true,
+            showHiragana: true,
+            showKatakana: true,
+            showKanji: true,
+            randomize: true,
+            timeLimit: 30
+          }
+        };
+
+        await new Promise<void>((resolve, reject) => {
+          try {
+            const request = transaction.objectStore(DB_CONFIG.stores.settings.name).add(defaultSettings);
+            request.onsuccess = () => {
+              console.log('[IndexedDB] Default settings initialized successfully');
+              resolve();
+            };
+            request.onerror = () => {
+              console.error('[IndexedDB] Failed to initialize default settings:', request.error);
+              reject(request.error);
+            };
+          } catch (error) {
+            console.error('[IndexedDB] Error during default settings initialization:', error);
+            reject(error);
+          }
+        });
+
+        console.log('[IndexedDB] Migration to version 1 completed successfully');
+      } catch (error) {
+        console.error('[IndexedDB] Migration to version 1 failed:', error);
+        throw error;
+      }
     }
   }
 ];
@@ -97,66 +148,350 @@ const migrations: Migration[] = [
 // Database connection management
 let dbConnection: IDBDatabase | null = null;
 let connectionPromise: Promise<IDBDatabase> | null = null;
+let isInitializing = false;
+let connectionTimeout: NodeJS.Timeout | null = null;
+const INIT_TIMEOUT = 60000; // 60 seconds
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 2000;
 
-// Open database with migration support
-export async function openDB(): Promise<IDBDatabase> {
+// Helper function to cleanup connection state
+function cleanupConnectionState() {
+  if (connectionTimeout) {
+    clearTimeout(connectionTimeout);
+    connectionTimeout = null;
+  }
+  connectionPromise = null;
+  isInitializing = false;
+}
+
+// Helper function to delete the database
+async function deleteDatabase(): Promise<void> {
+  console.log('[IndexedDB] Starting database deletion...', {
+    timestamp: new Date().toISOString()
+  });
+
+  // Close any existing connection first
   if (dbConnection) {
-    return dbConnection;
+    try {
+      dbConnection.close();
+    } catch (error) {
+      console.error('[IndexedDB] Error closing connection before deletion:', error);
+    }
+    dbConnection = null;
   }
 
-  if (connectionPromise) {
-    return connectionPromise;
-  }
-
-  connectionPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
-
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(DB_CONFIG.name);
+    
     request.onerror = () => {
-      console.error('[IndexedDB] Failed to open database:', request.error);
-      connectionPromise = null;
-      reject(request.error);
+      const error = request.error;
+      console.error('[IndexedDB] Failed to delete database:', {
+        error,
+        message: error?.message || 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+      reject(error);
     };
 
     request.onsuccess = () => {
-      console.log('[IndexedDB] Database opened successfully');
-      dbConnection = request.result;
-      resolve(dbConnection);
-    };
-
-    request.onupgradeneeded = async (event: IDBVersionChangeEvent) => {
-      console.log('[IndexedDB] Database upgrade needed:', event.oldVersion, '->', event.newVersion);
-      const db = request.result;
-      const transaction = (event.target as IDBOpenDBRequest).transaction;
-      
-      if (!transaction) {
-        throw new Error('Transaction is null during database upgrade');
-      }
-
-      try {
-        // Run all migrations from current version to target version
-        const newVersion = event.newVersion ?? DB_CONFIG.version;
-        for (let version = event.oldVersion + 1; version <= newVersion; version++) {
-          const migration = migrations.find(m => m.version === version);
-          if (migration) {
-            await migration.upgrade(db, transaction);
-          }
-        }
-      } catch (error) {
-        console.error('[IndexedDB] Migration failed:', error);
-        reject(error);
-      }
+      console.log('[IndexedDB] Database deleted successfully', {
+        timestamp: new Date().toISOString()
+      });
+      // Wait a bit before resolving to ensure cleanup is complete
+      setTimeout(resolve, 1000);
     };
   });
-
-  return connectionPromise;
 }
+
+// Helper function to wait
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Open database with migration support and retry logic
+export const openDB = async (retryCount = 0): Promise<IDBDatabase> => {
+  console.log(`[IndexedDB] Starting main database initialization (attempt ${retryCount + 1}/${MAX_RETRIES + 1})...`, {
+    timestamp: new Date().toISOString()
+  });
+  
+  // If we already have a connection, return it
+  if (dbConnection) {
+    console.log('[IndexedDB] Using existing database connection', {
+      timestamp: new Date().toISOString()
+    });
+    return dbConnection;
+  }
+
+  // If we have a pending connection, wait for it
+  if (connectionPromise) {
+    console.log('[IndexedDB] Waiting for existing connection promise', {
+      timestamp: new Date().toISOString()
+    });
+    return connectionPromise;
+  }
+
+  // If another initialization is in progress, wait
+  if (isInitializing) {
+    console.log('[IndexedDB] Another initialization in progress, waiting...', {
+      timestamp: new Date().toISOString()
+    });
+    return new Promise((resolve, reject) => {
+      const checkInterval = setInterval(() => {
+        if (dbConnection) {
+          clearInterval(checkInterval);
+          resolve(dbConnection);
+        }
+      }, 100);
+      
+      // Add timeout
+      connectionTimeout = setTimeout(() => {
+        clearInterval(checkInterval);
+        cleanupConnectionState();
+        reject(new Error('Database initialization timeout while waiting for existing connection'));
+      }, INIT_TIMEOUT);
+    });
+  }
+
+  try {
+    console.log('[IndexedDB] Opening new database connection...', {
+      timestamp: new Date().toISOString()
+    });
+    isInitializing = true;
+    
+    connectionPromise = new Promise<IDBDatabase>((resolve, reject) => {
+      connectionTimeout = setTimeout(() => {
+        console.error('[IndexedDB] Database connection timeout reached', {
+          timestamp: new Date().toISOString()
+        });
+        cleanupConnectionState();
+        reject(new Error('Database connection timeout'));
+      }, INIT_TIMEOUT);
+
+      const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
+      
+      request.onerror = async (event) => {
+        cleanupConnectionState();
+        console.error('[IndexedDB] Database opening error:', {
+          error: request.error,
+          event: event,
+          timestamp: new Date().toISOString()
+        });
+
+        // If we have retries left, try to recover
+        if (retryCount < MAX_RETRIES) {
+          console.log(`[IndexedDB] Attempting recovery (${retryCount + 1}/${MAX_RETRIES})...`, {
+            timestamp: new Date().toISOString()
+          });
+          
+          try {
+            // Try to delete the database if it's corrupted
+            await deleteDatabase();
+            await wait(RETRY_DELAY);
+            // Retry the connection
+            const db = await openDB(retryCount + 1);
+            resolve(db);
+          } catch (retryError) {
+            console.error('[IndexedDB] Recovery attempt failed:', retryError);
+            reject(retryError);
+          }
+        } else {
+          reject(request.error);
+        }
+      };
+
+      request.onsuccess = (event) => {
+        if (connectionTimeout) {
+          clearTimeout(connectionTimeout);
+          connectionTimeout = null;
+        }
+        console.log('[IndexedDB] Database opened successfully', {
+          timestamp: new Date().toISOString()
+        });
+        dbConnection = request.result;
+        
+        dbConnection.onerror = (event) => {
+          console.error('[IndexedDB] Database error:', {
+            error: event.target?.error,
+            event: event,
+            timestamp: new Date().toISOString()
+          });
+        };
+
+        dbConnection.onversionchange = async (event) => {
+          console.log('[IndexedDB] Database version change detected:', {
+            oldVersion: event.oldVersion,
+            newVersion: event.newVersion,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Close the connection and try to reopen
+          if (dbConnection) {
+            try {
+              dbConnection.close();
+            } catch (error) {
+              console.error('[IndexedDB] Error closing database during version change:', error);
+            }
+            dbConnection = null;
+          }
+          
+          cleanupConnectionState();
+          
+          // Try to reopen the database
+          try {
+            const newDb = await openDB(0);
+            resolve(newDb);
+          } catch (error) {
+            console.error('[IndexedDB] Failed to reopen database after version change:', error);
+            reject(error);
+          }
+        };
+
+        dbConnection.onclose = () => {
+          console.log('[IndexedDB] Database connection closed', {
+            timestamp: new Date().toISOString()
+          });
+          dbConnection = null;
+          cleanupConnectionState();
+        };
+
+        resolve(dbConnection);
+      };
+
+      request.onupgradeneeded = async (event) => {
+        console.log('[IndexedDB] Database upgrade needed:', {
+          oldVersion: event.oldVersion,
+          newVersion: event.newVersion,
+          timestamp: new Date().toISOString()
+        });
+        
+        const db = request.result;
+        const transaction = event.target.transaction;
+
+        if (!transaction) {
+          const error = new Error('Transaction is null during database upgrade');
+          console.error('[IndexedDB] Upgrade error:', error);
+          clearTimeout(connectionTimeout);
+          reject(error);
+          return;
+        }
+
+        try {
+          // Run migrations with timeout
+          const migrationsToRun = migrations.filter(
+            migration => migration.version > event.oldVersion && migration.version <= event.newVersion
+          );
+
+          console.log(`[IndexedDB] Running ${migrationsToRun.length} migrations...`);
+          
+          for (const migration of migrationsToRun) {
+            console.log(`[IndexedDB] Running migration to version ${migration.version}...`);
+            try {
+              await Promise.race([
+                migration.upgrade(db, transaction),
+                new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error('Migration timeout')), INIT_TIMEOUT)
+                )
+              ]);
+              console.log(`[IndexedDB] Migration to version ${migration.version} completed successfully`);
+            } catch (migrationError) {
+              console.error(`[IndexedDB] Migration to version ${migration.version} failed:`, migrationError);
+              // If we have retries left, try to recover
+              if (retryCount < MAX_RETRIES) {
+                console.log(`[IndexedDB] Attempting recovery after migration failure (${retryCount + 1}/${MAX_RETRIES})...`);
+                await deleteDatabase();
+                await wait(RETRY_DELAY);
+                const newDb = await openDB(retryCount + 1);
+                resolve(newDb);
+                return;
+              }
+              throw migrationError;
+            }
+          }
+        } catch (error) {
+          console.error('[IndexedDB] Migration failed:', error);
+          clearTimeout(connectionTimeout);
+          reject(error);
+        }
+      };
+
+      request.onblocked = async (event) => {
+        console.warn('[IndexedDB] Database blocked:', {
+          event: event,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Try to close any existing connections
+        if (dbConnection) {
+          try {
+            dbConnection.close();
+          } catch (error) {
+            console.error('[IndexedDB] Error closing blocked database:', error);
+          }
+          dbConnection = null;
+        }
+        
+        // If we have retries left, try to recover
+        if (retryCount < MAX_RETRIES) {
+          console.log(`[IndexedDB] Attempting recovery after block (${retryCount + 1}/${MAX_RETRIES})...`);
+          try {
+            await deleteDatabase();
+            await wait(RETRY_DELAY);
+            const newDb = await openDB(retryCount + 1);
+            resolve(newDb);
+          } catch (error) {
+            console.error('[IndexedDB] Recovery after block failed:', error);
+            reject(error);
+          }
+        }
+      };
+    });
+
+    const db = await connectionPromise;
+    console.log('[IndexedDB] Main database initialization completed successfully', {
+      timestamp: new Date().toISOString()
+    });
+    cleanupConnectionState();
+    return db;
+  } catch (error) {
+    console.error('[IndexedDB] Failed to initialize main database:', {
+      error: error,
+      timestamp: new Date().toISOString()
+    });
+    cleanupConnectionState();
+    
+    // If we have retries left, try one more time
+    if (retryCount < MAX_RETRIES) {
+      console.log(`[IndexedDB] Attempting final recovery (${retryCount + 1}/${MAX_RETRIES})...`, {
+        timestamp: new Date().toISOString()
+      });
+      try {
+        await deleteDatabase();
+        await wait(RETRY_DELAY);
+        return openDB(retryCount + 1);
+      } catch (retryError) {
+        console.error('[IndexedDB] Final recovery attempt failed:', retryError);
+        throw retryError;
+      }
+    }
+    
+    throw error;
+  }
+};
 
 // Close database connection
 export async function closeDB(): Promise<void> {
+  console.log('[IndexedDB] Closing database connection...', {
+    timestamp: new Date().toISOString()
+  });
+  
+  cleanupConnectionState();
+  
   if (dbConnection) {
-    dbConnection.close();
-    dbConnection = null;
-    connectionPromise = null;
+    try {
+      dbConnection.close();
+    } catch (error) {
+      console.error('[IndexedDB] Error closing database:', error);
+    } finally {
+      dbConnection = null;
+    }
   }
 }
 

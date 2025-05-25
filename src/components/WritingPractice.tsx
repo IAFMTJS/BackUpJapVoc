@@ -258,13 +258,6 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     showComparison: false
   });
 
-  // Initialize database
-  useEffect(() => {
-    measureAsync('initDatabase', async () => {
-      await initDatabase();
-    });
-  }, []);
-
   // Memoized functions for performance
   const getFilteredWords = memoize(() => {
     return measureSync('getFilteredWords', () => {

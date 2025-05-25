@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Link } from 'react-router-dom';
 import Dictionary from '../components/Dictionary';
@@ -10,9 +10,23 @@ import { quizWords } from '../data/quizData';
 import { kanjiList } from '../data/kanjiData';
 import { beginnerPhrases } from './AnimeSection';
 import { romajiWords, romajiSentences, romajiStories } from '../data/romajiWords';
-import { Box, Container, Typography, Paper } from '@mui/material';
-import ProgressVisuals from '../components/ProgressVisuals';
+import { Box, Container, Typography, Paper, Button } from '@mui/material';
 import { motion } from 'framer-motion';
+import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
+
+// Lazy load heavy components
+const LazyDictionary = lazy(() => import('../components/Dictionary'));
+const LazyLearningProgress = lazy(() => import('../components/LearningProgress'));
+const LazyProgressVisuals = lazy(() => import('../components/ProgressVisuals'));
+
+// Loading fallback component for lazy-loaded components
+const ComponentLoadingFallback = () => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+    <Typography variant="body1" color="text.secondary">
+      Loading component...
+    </Typography>
+  </Box>
+);
 
 type TabType = 'progress' | 'dictionary';
 
@@ -92,20 +106,71 @@ type SectionStats = DictionaryStats | OtherSectionStats;
 
 const ProgressPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('progress');
-  const { getThemeClasses } = useTheme();
+  const { getThemeClasses, theme } = useTheme();
   const themeClasses = getThemeClasses();
-  const { progress } = useProgress();
+  const { progress, isLoading, error } = useProgress();
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
   };
 
+  if (isLoading) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+          <Typography variant="h6" color="text.secondary">
+            Loading your progress...
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ py: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '50vh' }}>
+          <Typography variant="h6" color="error" gutterBottom>
+            Error loading progress
+          </Typography>
+          <Typography color="text.secondary">
+            {error}
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={() => window.location.reload()}
+            sx={{ mt: 2 }}
+          >
+            Retry
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="lg">
+      {/* Decorative cityscape background */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-10">
+        <JapaneseCityscape 
+          width={1000}
+          height={500}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            right: 0,
+            transform: 'scaleX(-1)',
+            filter: theme === 'dark' ? 'brightness(0.6)' : 'brightness(0.9)'
+          }}
+        />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        className="relative z-10"
       >
         <Box sx={{ py: 4 }}>
           <Typography 
@@ -154,8 +219,26 @@ const ProgressPage: React.FC = () => {
                 : 'rgba(0, 0, 0, 0.1)'}`
             }}
           >
-            <ProgressVisuals />
+            <Suspense fallback={<ComponentLoadingFallback />}>
+              <LazyProgressVisuals />
+            </Suspense>
           </Paper>
+
+          {activeTab === 'dictionary' && (
+            <Box sx={{ mt: 4 }}>
+              <Suspense fallback={<ComponentLoadingFallback />}>
+                <LazyDictionary />
+              </Suspense>
+            </Box>
+          )}
+
+          {activeTab === 'progress' && (
+            <Box sx={{ mt: 4 }}>
+              <Suspense fallback={<ComponentLoadingFallback />}>
+                <LazyLearningProgress />
+              </Suspense>
+            </Box>
+          )}
         </Box>
       </motion.div>
     </Container>

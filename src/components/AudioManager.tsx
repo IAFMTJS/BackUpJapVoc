@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { wordsByLevel } from '../data/japaneseWords';
+import { openDB } from '../utils/indexedDB';
 
 interface AudioCache {
   id: string;
@@ -21,31 +22,17 @@ const AudioManager: React.FC = () => {
   const [currentAudio, setCurrentAudio] = useState<{ url: string; text: string } | null>(null);
   const [db, setDb] = useState<IDBDatabase | null>(null);
 
-  // Initialize IndexedDB
+  // Get database instance from App component
   useEffect(() => {
-    const request = indexedDB.open('JapaneseAudioDB', 1);
-
-    request.onerror = (event) => {
-      console.error('Error opening IndexedDB:', event);
-    };
-
-    request.onsuccess = (event) => {
-      const database = (event.target as IDBOpenDBRequest).result;
-      setDb(database);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const database = (event.target as IDBOpenDBRequest).result;
-      if (!database.objectStoreNames.contains('audioFiles')) {
-        database.createObjectStore('audioFiles', { keyPath: 'id' });
+    const getDB = async () => {
+      try {
+        const database = await openDB();
+        setDb(database);
+      } catch (error) {
+        console.error('Failed to get database instance:', error);
       }
     };
-
-    return () => {
-      if (db) {
-        db.close();
-      }
-    };
+    getDB();
   }, []);
 
   const cacheAudioFiles = async (level: number) => {

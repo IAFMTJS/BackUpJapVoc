@@ -48,7 +48,7 @@ interface JapVocDB extends DBSchema {
 
 // Database configuration
 const DB_CONFIG = {
-  name: 'JapVocDB',
+  name: 'JapVocOfflineDB',
   version: 1,
   stores: {
     practiceSessions: {

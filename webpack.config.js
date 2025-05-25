@@ -7,9 +7,14 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
+const BrotliPlugin = require('brotli-webpack-plugin');
+const { SubresourceIntegrityPlugin } = require('webpack-subresource-integrity');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
+  const analyzeBundle = env.analyze === 'true';
 
   return {
     mode: isProduction ? 'production' : 'development',
@@ -19,7 +24,8 @@ module.exports = (env, argv) => {
       filename: isProduction ? 'static/js/[name].[contenthash:8].js' : 'static/js/[name].js',
       chunkFilename: isProduction ? 'static/js/[name].[contenthash:8].chunk.js' : 'static/js/[name].chunk.js',
       publicPath: '/',
-      clean: true
+      clean: true,
+      crossOriginLoading: 'anonymous'
     },
     module: {
       rules: [
@@ -51,7 +57,31 @@ module.exports = (env, argv) => {
           type: 'asset/resource',
           generator: {
             filename: 'static/media/[name].[hash][ext]'
-          }
+          },
+          use: [
+            {
+              loader: 'image-webpack-loader',
+              options: {
+                mozjpeg: {
+                  progressive: true,
+                  quality: 65
+                },
+                optipng: {
+                  enabled: true
+                },
+                pngquant: {
+                  quality: [0.65, 0.90],
+                  speed: 4
+                },
+                gifsicle: {
+                  interlaced: false
+                },
+                webp: {
+                  quality: 75
+                }
+              }
+            }
+          ]
         },
         {
           test: /\.json$/,
@@ -152,7 +182,25 @@ module.exports = (env, argv) => {
           minifyJS: true,
           minifyCSS: true,
           minifyURLs: true,
-        } : false
+        } : false,
+        preload: [
+          {
+            rel: 'preload',
+            as: 'script',
+            href: '/static/js/vendor.kuromoji.js'
+          }
+        ],
+        csp: isProduction ? {
+          'default-src': "'self'",
+          'script-src': "'self' 'unsafe-inline' 'unsafe-eval'",
+          'style-src': "'self' 'unsafe-inline'",
+          'img-src': "'self' data: https:",
+          'connect-src': "'self' https:",
+          'font-src': "'self'",
+          'object-src': "'none'",
+          'media-src': "'self'",
+          'frame-src': "'none'"
+        } : undefined
       }),
       new CopyWebpackPlugin({
         patterns: [
@@ -186,6 +234,35 @@ module.exports = (env, argv) => {
         new MiniCssExtractPlugin({
           filename: 'static/css/[name].[contenthash:8].css',
           chunkFilename: 'static/css/[name].[contenthash:8].chunk.css'
+        }),
+        new BrotliPlugin({
+          asset: '[path].br[query]',
+          test: /\.(js|css|html|svg)$/,
+          threshold: 10240,
+          minRatio: 0.8
+        }),
+        new SubresourceIntegrityPlugin({
+          hashFuncNames: ['sha384']
+        }),
+        new WebpackObfuscator({
+          rotateStringArray: true,
+          stringArray: true,
+          stringArrayEncoding: ['base64'],
+          stringArrayThreshold: 0.75
+        }),
+        ...(analyzeBundle ? [new BundleAnalyzerPlugin()] : []),
+        new ImageMinimizerPlugin({
+          minimizer: {
+            implementation: ImageMinimizerPlugin.imageminMinify,
+            options: {
+              plugins: [
+                ['imagemin-mozjpeg', { quality: 65 }],
+                ['imagemin-pngquant', { quality: [0.65, 0.90] }],
+                ['imagemin-gifsicle', { interlaced: false }],
+                ['imagemin-webp', { quality: 75 }]
+              ]
+            }
+          }
         })
       ] : [])
     ],
@@ -199,13 +276,39 @@ module.exports = (env, argv) => {
       historyApiFallback: true,
       proxy: [{
         context: ['/api'],
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         secure: false,
         changeOrigin: true,
-        ws: true
-      }]
+        ws: true,
+        onError: (err, req, res) => {
+          console.error('Proxy error:', err);
+          res.writeHead(500, {
+            'Content-Type': 'text/plain',
+          });
+          res.end('Proxy error occurred. Please check the server logs.');
+        },
+        onProxyReq: (proxyReq, req, res) => {
+          // Add request timeout
+          proxyReq.setTimeout(5000);
+        }
+      }],
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+      },
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false
+        },
+        logging: 'error',
+        progress: true
+      }
     },
-    devtool: isProduction ? false : 'source-map',
+    devtool: isProduction ? false : 'eval-source-map',
     performance: {
       hints: isProduction ? 'warning' : false,
       maxEntrypointSize: 512000,

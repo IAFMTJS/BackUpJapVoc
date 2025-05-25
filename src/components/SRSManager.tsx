@@ -7,6 +7,7 @@ import { Box, Typography, Button, Card, CardContent, LinearProgress, Chip, Stack
 import { JapaneseWord } from '../types';
 import { useSound } from '../context/SoundContext';
 import { allWords } from '../data/japaneseWords';
+import { openDB } from '../utils/indexedDB';
 
 interface SRSItem {
   word: JapaneseWord;
@@ -49,53 +50,53 @@ const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
     return nextReview;
   };
 
-  // Initialize IndexedDB
+  // Get database instance from App component
   useEffect(() => {
-    const request = indexedDB.open('japvoc-srs', 1);
-    
-    request.onerror = (event) => {
-      console.error('Failed to open IndexedDB:', event);
-    };
-    
-    request.onsuccess = (event) => {
-      const database = (event.target as IDBOpenDBRequest).result;
-      setDb(database);
-    };
-    
-    request.onupgradeneeded = (event) => {
-      const database = (event.target as IDBOpenDBRequest).result;
-      if (!database.objectStoreNames.contains('srsItems')) {
-        const store = database.createObjectStore('srsItems', { keyPath: 'word.japanese' });
-        store.createIndex('nextReview', 'nextReview', { unique: false });
-        store.createIndex('level', 'level', { unique: false });
+    const getDB = async () => {
+      try {
+        const database = await openDB();
+        setDb(database);
+      } catch (error) {
+        console.error('Failed to get database instance:', error);
       }
     };
+    getDB();
   }, []);
 
   // Load review queue from IndexedDB
   const loadReviewQueue = useCallback(async () => {
     if (!db) return;
     
-    const transaction = db.transaction(['srsItems'], 'readonly');
-    const store = transaction.objectStore('srsItems');
-    const index = store.index('nextReview');
-    const now = new Date();
-    
-    const request = index.openCursor(IDBKeyRange.upperBound(now));
-    const items: SRSItem[] = [];
-    
-    request.onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest).result;
-      if (cursor) {
-        const item = cursor.value as SRSItem;
-        if (item.word.level <= currentLevel) {
-          items.push(item);
+    try {
+      const transaction = db.transaction(['srsItems'], 'readonly');
+      const store = transaction.objectStore('srsItems');
+      const index = store.index('nextReview');
+      const now = new Date();
+      
+      const request = index.openCursor(IDBKeyRange.upperBound(now));
+      const items: SRSItem[] = [];
+      
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest).result;
+        if (cursor) {
+          const item = cursor.value as SRSItem;
+          if (item.word.level <= currentLevel) {
+            items.push(item);
+          }
+          cursor.continue();
+        } else {
+          setReviewQueue(items);
         }
-        cursor.continue();
-      } else {
-        setReviewQueue(items);
-      }
-    };
+      };
+
+      request.onerror = (event) => {
+        console.error('Error loading review queue:', event);
+        // Handle error appropriately
+      };
+    } catch (error) {
+      console.error('Failed to load review queue:', error);
+      // Handle error appropriately
+    }
   }, [db, currentLevel]);
 
   useEffect(() => {
@@ -105,32 +106,53 @@ const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
   // Add mastered words to SRS if not present
   useEffect(() => {
     if (!db || !userProgress) return;
-    const transaction = db.transaction(['srsItems'], 'readwrite');
-    const store = transaction.objectStore('srsItems');
-    allWords.forEach(async (word) => {
-      const progress = userProgress.wordProgress[word.japanese];
-      if (progress?.mastered) {
-        // Check if already in SRS
-        const getRequest = store.get(word.japanese);
-        getRequest.onsuccess = () => {
-          if (!getRequest.result) {
-            // Not in SRS, add as mastered
-            const now = new Date();
-            const srsItem = {
-              word,
-              level: 5,
-              nextReview: now,
-              lastReview: now,
-              correctCount: progress.correctAttempts,
-              incorrectCount: progress.incorrectAttempts,
-              lastAnswer: '',
-              notes: ''
-            };
-            store.put(srsItem);
+
+    const addMasteredWords = async () => {
+      try {
+        const transaction = db.transaction(['srsItems'], 'readwrite');
+        const store = transaction.objectStore('srsItems');
+        const index = store.index('wordId');
+
+        for (const word of allWords) {
+          const progress = userProgress.wordProgress[word.japanese];
+          if (progress?.mastered) {
+            try {
+              // Check if already in SRS
+              const existingItem = await new Promise<SRSItem | undefined>((resolve, reject) => {
+                const request = index.get(word.japanese);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              });
+
+              if (!existingItem) {
+                // Not in SRS, add as mastered
+                const now = new Date();
+                const srsItem: SRSItem = {
+                  id: `${word.japanese}-${Date.now()}`,
+                  word,
+                  level: 5,
+                  nextReview: now,
+                  lastReview: now,
+                  correctCount: progress.correctAttempts,
+                  incorrectCount: progress.incorrectAttempts,
+                  lastAnswer: '',
+                  notes: ''
+                };
+                await store.put(srsItem);
+              }
+            } catch (error) {
+              console.error(`Error processing word ${word.japanese}:`, error);
+              // Continue with next word even if this one fails
+            }
           }
-        };
+        }
+      } catch (error) {
+        console.error('Failed to add mastered words to SRS:', error);
+        // Handle error appropriately
       }
-    });
+    };
+
+    addMasteredWords();
   }, [db, userProgress]);
 
   const handleStartReview = () => {
@@ -165,45 +187,50 @@ const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
   const handleAnswer = async (isCorrect: boolean) => {
     if (!currentItem || !db) return;
 
-    const newLevel = isCorrect 
-      ? Math.min(currentItem.level + 1, 5)
-      : Math.max(currentItem.level - 1, 0);
+    try {
+      const newLevel = isCorrect 
+        ? Math.min(currentItem.level + 1, 5)
+        : Math.max(currentItem.level - 1, 0);
 
-    const updatedItem: SRSItem = {
-      ...currentItem,
-      level: newLevel,
-      lastReview: new Date(),
-      nextReview: calculateNextReview(newLevel, new Date()),
-      correctCount: currentItem.correctCount + (isCorrect ? 1 : 0),
-      incorrectCount: currentItem.incorrectCount + (isCorrect ? 0 : 1),
-      lastAnswer: userAnswer,
-      notes: notes
-    };
+      const updatedItem: SRSItem = {
+        ...currentItem,
+        level: newLevel,
+        lastReview: new Date(),
+        nextReview: calculateNextReview(newLevel, new Date()),
+        correctCount: currentItem.correctCount + (isCorrect ? 1 : 0),
+        incorrectCount: currentItem.incorrectCount + (isCorrect ? 0 : 1),
+        lastAnswer: userAnswer,
+        notes: notes
+      };
 
-    // Update IndexedDB
-    const transaction = db.transaction(['srsItems'], 'readwrite');
-    const store = transaction.objectStore('srsItems');
-    await store.put(updatedItem);
+      // Update IndexedDB
+      const transaction = db.transaction(['srsItems'], 'readwrite');
+      const store = transaction.objectStore('srsItems');
+      await store.put(updatedItem);
 
-    // Update progress
-    updateProgress('srs', currentItem.word.japanese, isCorrect);
-    playSound(isCorrect ? 'correct' : 'incorrect');
+      // Update progress
+      updateProgress('srs', currentItem.word.japanese, isCorrect);
+      playSound(isCorrect ? 'correct' : 'incorrect');
 
-    // Move to next item or complete review
-    const remainingItems = reviewQueue.slice(1);
-    setReviewQueue(remainingItems);
-    
-    if (remainingItems.length > 0) {
-      setCurrentItem(remainingItems[0]);
-      setShowAnswer(false);
-      setUserAnswer('');
-      setInputError(null);
-      setNotes('');
-    } else {
-      setIsReviewing(false);
-      setCurrentItem(null);
-      playSound('complete');
-      if (onComplete) onComplete();
+      // Move to next item or complete review
+      const remainingItems = reviewQueue.slice(1);
+      setReviewQueue(remainingItems);
+      
+      if (remainingItems.length > 0) {
+        setCurrentItem(remainingItems[0]);
+        setShowAnswer(false);
+        setUserAnswer('');
+        setInputError(null);
+        setNotes('');
+      } else {
+        setIsReviewing(false);
+        setCurrentItem(null);
+        playSound('complete');
+        if (onComplete) onComplete();
+      }
+    } catch (error) {
+      console.error('Failed to update SRS item:', error);
+      // Handle error appropriately
     }
   };
 

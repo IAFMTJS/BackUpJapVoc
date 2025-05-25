@@ -67,6 +67,7 @@ const KanjiPractice: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { updateProgress, progress } = useProgress();
   const { checkAchievements } = useAchievements();
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Sound effects
   const correctSound = new Audio('/sounds/correct.mp3');
@@ -107,7 +108,7 @@ const KanjiPractice: React.FC = () => {
 
   useEffect(() => {
     filterKanji();
-  }, [selectedDifficulty, selectedCategory]);
+  }, [searchTerm, selectedDifficulty, selectedCategory]);
 
   useEffect(() => {
     if (timerActive && timeLeft > 0) {
@@ -124,12 +125,42 @@ const KanjiPractice: React.FC = () => {
 
   const filterKanji = () => {
     let filtered = kanjiList;
+
+    // Apply difficulty filter only if explicitly set
     if (selectedDifficulty !== 'all') {
       filtered = filtered.filter(kanji => kanji.difficulty === selectedDifficulty);
     }
+
+    // Apply category filter only if explicitly set
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(kanji => kanji.category === selectedCategory);
     }
+
+    // Apply search filter if search term exists
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(kanji => {
+        // Search in character
+        if (kanji.character.toLowerCase().includes(searchLower)) return true;
+
+        // Search in meaning
+        if (kanji.meaning.toLowerCase().includes(searchLower)) return true;
+
+        // Search in readings
+        if (kanji.onyomi.some(reading => reading.toLowerCase().includes(searchLower))) return true;
+        if (kanji.kunyomi.some(reading => reading.toLowerCase().includes(searchLower))) return true;
+
+        // Search in examples
+        if (kanji.examples.some(example => 
+          example.word.toLowerCase().includes(searchLower) ||
+          example.reading.toLowerCase().includes(searchLower) ||
+          example.meaning.toLowerCase().includes(searchLower)
+        )) return true;
+
+        return false;
+      });
+    }
+
     setFilteredKanji(filtered);
     setCurrentIndex(0);
     setShowMeaning(false);

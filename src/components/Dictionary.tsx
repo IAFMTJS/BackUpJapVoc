@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress, ProgressItem } from '../context/ProgressContext';
 import { useWordLevel } from '../context/WordLevelContext';
@@ -6,7 +6,7 @@ import { useSound } from '../context/SoundContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
 import { romajiCache } from '../utils/romajiCache';
 import { v4 as uuidv4 } from 'uuid';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, Stack, Chip, Button, Alert, IconButton, Tabs, Tab, CircularProgress } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, Stack, Chip, Button, Alert, IconButton, Tabs, Tab, CircularProgress, TextField, InputAdornment, Tooltip, Menu, MenuItem, Divider } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
@@ -27,6 +27,19 @@ import { useCache, useDebounce, useThrottle, useMemoization } from '../utils/per
 import { wordLevels } from '../data/wordLevels';
 import WordCloud from './WordCloud';
 import { allWords } from '../data/japaneseWords';
+import Fuse from 'fuse.js';
+import { useSettings } from '../context/SettingsContext';
+import { useHotkeys } from 'react-hotkeys-hook';  // Changed from useKeyboardShortcut to useHotkeys
+import { motion, AnimatePresence } from 'framer-motion';
+import { LearningPath } from './visualizations/LearningPath';
+import { KanjiStrokeOrder } from './KanjiStrokeOrder';
+import { SpacedRepetition } from './SpacedRepetition';
+import { DifficultyPredictor } from './DifficultyPredictor';
+import { ExampleGenerator } from './ExampleGenerator';
+import { ShareDialog } from './ShareDialog';
+import { KeyboardShortcuts } from './KeyboardShortcuts';
+import { SavedSearches } from './SavedSearches';
+import { RadicalSearch } from './RadicalSearch';
 
 // Enhanced types for dictionary features
 type JLPTLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
@@ -170,6 +183,20 @@ interface LevelStats {
   notStartedWords: number;
 }
 
+interface SearchOptions {
+  term: string;
+  filters: {
+    jlptLevel: string[];
+    wordType: string[];
+    difficulty: string[];
+    frequency: string[];
+    radicals: string[];
+  };
+  sortBy: 'frequency' | 'mastery' | 'lastViewed' | 'level';
+  viewMode: 'grid' | 'list';
+  advancedSearch: boolean;
+}
+
 const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
   const { isDarkMode, getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
@@ -212,43 +239,132 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
   const [showRelationships, setShowRelationships] = useState(false);
   const [visualizationData, setVisualizationData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchOptions, setSearchOptions] = useState<DictionarySearchOptions>({
-    query: '',
-    searchFields: ['japanese', 'english', 'romaji'],
-    filters: {},
+  const [searchOptions, setSearchOptions] = useState<SearchOptions>({
+    term: '',
+    filters: {
+      jlptLevel: [],
+      wordType: [],
+      difficulty: [],
+      frequency: [],
+      radicals: []
+    },
     sortBy: 'frequency',
-    limit: 50,
-    offset: 0
+    viewMode: 'grid',
+    advancedSearch: false
+  });
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showSavedSearches, setShowSavedSearches] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);  // Add this line
+  const [showRadicalSearch, setShowRadicalSearch] = useState(false);
+  const [selectedRadicals, setSelectedRadicals] = useState<string[]>([]);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [showSpacedRepetition, setShowSpacedRepetition] = useState(false);
+  const [showDifficultyPredictor, setShowDifficultyPredictor] = useState(false);
+  const [showExampleGenerator, setShowExampleGenerator] = useState(false);
+  const [showStrokeOrder, setShowStrokeOrder] = useState(false);
+  const [selectedKanji, setSelectedKanji] = useState<string | null>(null);
+
+  // Initialize Fuse.js for fuzzy search
+  const fuse = useMemo(() => new Fuse(items, {
+    keys: ['japanese', 'english', 'romaji', 'meaning', 'reading'],
+    threshold: 0.3,
+    distance: 100,
+    includeScore: true
+  }), [items]);
+
+  // Add memoized search function
+  const memoizedSearch = useMemoization(async (options: DictionarySearchOptions) => {
+    try {
+      return await searchWords(options.query, {
+        searchFields: options.searchFields,
+        filters: options.filters,
+        sortBy: options.sortBy,
+        limit: options.limit
+      });
+    } catch (error) {
+      console.error('Error in memoized search:', error);
+      throw error;
+    }
+  }, [searchWords]);
+
+  // Keyboard shortcuts
+  useHotkeys('ctrl+k', () => {
+    setShowKeyboardShortcuts(true);
+  });
+  useHotkeys('ctrl+f', (e) => {
+    e.preventDefault();
+    setShowSearch(true);
+  });
+  useHotkeys('ctrl+g', () => {
+    setSearchOptions(prev => ({
+      ...prev,
+      viewMode: prev.viewMode === 'grid' ? 'list' : 'grid'
+    }));
+  });
+  useHotkeys('esc', () => {
+    setShowSearch(false);
+    setShowKeyboardShortcuts(false);
+    setShowShareDialog(false);
+    setShowSavedSearches(false);
+  });
+  useHotkeys('ctrl+s', (e) => {
+    e.preventDefault();
+    setShowSavedSearches(true);
   });
 
-  // Refs for visualizations
-  const relationshipsRef = useRef<HTMLDivElement>(null);
-  const wordCloudRef = useRef<HTMLDivElement>(null);
-  const learningPathRef = useRef<HTMLDivElement>(null);
+  // Enhanced search function
+  const performSearch = (term: string, filters: SearchOptions['filters']) => {
+    let results = items;
 
-  // Performance optimization hooks
-  const debouncedSearch = useDebounce((query: string) => {
-    setSearchOptions(prev => ({ ...prev, query }));
-  }, 300);
+    // Apply fuzzy search if term exists
+    if (term) {
+      const fuseResults = fuse.search(term);
+      results = fuseResults.map(result => result.item);
+    }
 
-  const memoizedSearch = useMemoization(searchWords, {
-    maxSize: 100,
-    ttl: 5 * 60 * 1000 // 5 minutes
-  });
+    // Apply filters
+    if (filters.jlptLevel.length > 0) {
+      results = results.filter(item => 
+        'jlptLevel' in item && filters.jlptLevel.includes(item.jlptLevel)
+      );
+    }
+    if (filters.wordType.length > 0) {
+      results = results.filter(item => 
+        'wordType' in item && filters.wordType.includes(item.wordType)
+      );
+    }
+    if (filters.difficulty.length > 0) {
+      results = results.filter(item => 
+        'difficulty' in item && filters.difficulty.includes(item.difficulty)
+      );
+    }
+    if (filters.frequency.length > 0) {
+      results = results.filter(item => 
+        'frequency' in item && filters.frequency.includes(item.frequency)
+      );
+    }
+    if (filters.radicals.length > 0) {
+      results = results.filter(item => 
+        'radicals' in item && 
+        filters.radicals.every(radical => 
+          (item as KanjiItem).radicals.includes(radical)
+        )
+      );
+    }
 
-  // Initialize offline database
-  useEffect(() => {
-    const initDB = async () => {
-      try {
-        await initDictionaryDB();
-        console.log('Dictionary database initialized');
-      } catch (error) {
-        console.error('Failed to initialize dictionary database:', error);
-        setSyncError('Failed to initialize offline database');
-      }
-    };
-    initDB();
-  }, []);
+    // Update search history
+    if (term) {
+      setSearchHistory(prev => {
+        const newHistory = [term, ...prev.filter(t => t !== term)].slice(0, 10);
+        localStorage.setItem('dictionarySearchHistory', JSON.stringify(newHistory));
+        return newHistory;
+      });
+    }
+
+    return results;
+  };
 
   // Handle online/offline status
   useEffect(() => {
@@ -270,16 +386,20 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
       setIsLoading(true);
       try {
         let loadedItems: DictionaryItem[] = [];
+        console.log('=== Dictionary Loading Debug ===');
         console.log('Starting to load dictionary items...');
+        console.log('Mode:', mode);
         console.log('Is offline:', isOffline);
-        console.log('Search options:', searchOptions);
+        console.log('Search options:', JSON.stringify(searchOptions, null, 2));
         console.log('allWords available:', allWords?.length || 0);
+        console.log('allWords sample:', allWords?.slice(0, 3));
 
         if (isOffline) {
           // Load from IndexedDB
           console.log('Loading from IndexedDB...');
           loadedItems = await memoizedSearch(searchOptions);
           console.log('Loaded from IndexedDB:', loadedItems.length);
+          console.log('IndexedDB sample:', loadedItems.slice(0, 3));
         } else {
           // Use allWords directly instead of API
           console.log('Loading from allWords...');
@@ -288,7 +408,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
             throw new Error('Dictionary data not available');
           }
           
+          console.log('Initial allWords length:', allWords.length);
           loadedItems = allWords.filter(word => {
+            // First apply mode-based filtering
+            if (mode !== 'all') {
+              if (mode === 'hiragana' && !word.isHiragana) return false;
+              if (mode === 'katakana' && !word.isKatakana) return false;
+              if (mode === 'kanji' && !word.kanji) return false;
+            }
+
             const searchLower = searchOptions.query.toLowerCase().trim();
             if (!searchLower) return true;
 
@@ -303,20 +431,24 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
             return false;
           });
-          console.log('Filtered items:', loadedItems.length);
+          console.log('After mode and search filter:', loadedItems.length);
+          console.log('Mode and search filter sample:', loadedItems.slice(0, 3));
 
           // Apply filters from searchOptions
           if (searchOptions.filters.category) {
             loadedItems = loadedItems.filter(word => word.category === searchOptions.filters.category);
             console.log('After category filter:', loadedItems.length);
+            console.log('Category filter sample:', loadedItems.slice(0, 3));
           }
           if (searchOptions.filters.level) {
             loadedItems = loadedItems.filter(word => word.level === searchOptions.filters.level);
             console.log('After level filter:', loadedItems.length);
+            console.log('Level filter sample:', loadedItems.slice(0, 3));
           }
-          if (searchOptions.filters.difficulty) {
-            loadedItems = loadedItems.filter(word => word.difficulty === searchOptions.filters.difficulty);
-            console.log('After difficulty filter:', loadedItems.length);
+          if (searchOptions.filters.jlptLevel) {
+            loadedItems = loadedItems.filter(word => word.jlptLevel === searchOptions.filters.jlptLevel);
+            console.log('After JLPT filter:', loadedItems.length);
+            console.log('JLPT filter sample:', loadedItems.slice(0, 3));
           }
 
           // Apply sorting
@@ -326,21 +458,22 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
                 return a.japanese.localeCompare(b.japanese, 'ja');
               case 'english':
                 return a.english.localeCompare(b.english);
-              case 'frequency':
-                // For now, just sort by level as a proxy for frequency
+              case 'level':
                 return a.level - b.level;
               default:
                 return 0;
             }
           });
           console.log('After sorting:', loadedItems.length);
+          console.log('Sorting sample:', loadedItems.slice(0, 3));
 
           // Apply limit and offset
           loadedItems = loadedItems.slice(
-            searchOptions.offset,
-            searchOptions.offset + searchOptions.limit
+            searchOptions.offset || 0,
+            (searchOptions.offset || 0) + (searchOptions.limit || 50)
           );
           console.log('After pagination:', loadedItems.length);
+          console.log('Pagination sample:', loadedItems.slice(0, 3));
           
           // Cache items for offline use
           console.log('Caching items for offline use...');
@@ -348,7 +481,10 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
           console.log('Caching complete');
         }
 
-        console.log('Setting items in state:', loadedItems.length);
+        console.log('Final items count:', loadedItems.length);
+        console.log('Final items sample:', loadedItems.slice(0, 3));
+        console.log('=== End Dictionary Loading Debug ===');
+
         setItems(loadedItems);
         setFilteredItems(loadedItems);
         setTotalItems(mode, loadedItems.length);
@@ -361,7 +497,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     };
 
     loadItems();
-  }, [mode, searchOptions, isOffline]);
+  }, [isOffline, searchOptions, mode, memoizedSearch, setTotalItems]);
 
   // Handle word relationships visualization
   const handleShowRelationships = async (wordId: string) => {
@@ -398,11 +534,6 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
       setSyncError('Failed to load learning paths');
     }
   };
-
-  // Enhanced search with advanced options
-  const handleSearch = useCallback(async (query: string) => {
-    debouncedSearch(query);
-  }, [debouncedSearch]);
 
   // Sync local progress with context progress
   useEffect(() => {
@@ -817,89 +948,141 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
   // Modify the filtering logic to include level filter
   useEffect(() => {
-    let filtered = items.filter(item => {
-      const searchLower = searchTerm.toLowerCase().trim();
-      if (!searchLower) return true;
+    console.log('=== Dictionary Filtering Debug ===');
+    console.log('Starting filtering...');
+    console.log('Initial items count:', items.length);
+    console.log('Initial items sample:', items.slice(0, 3));
+    console.log('Current mode:', mode);
+    
+    let filtered = items;
 
-      // Search in Japanese text
-      const japaneseText = 'japanese' in item ? item.japanese : item.character;
-      if (japaneseText.toLowerCase().includes(searchLower)) return true;
-
-      // Search in English text
-      if ('english' in item && item.english.toLowerCase().includes(searchLower)) return true;
-
-      // Search in romaji
-      if ('romaji' in item && item.romaji?.toLowerCase().includes(searchLower)) return true;
-
-      // Search in meanings for kanji
-      if ('meanings' in item && Array.isArray(item.meanings) && 
-          item.meanings.some((meaning: string) => meaning.toLowerCase().includes(searchLower))) {
+    // Apply mode-based filtering first
+    if (mode !== 'all') {
+      console.log('Applying mode filter:', mode);
+      filtered = filtered.filter(item => {
+        if (mode === 'hiragana' && !('isHiragana' in item ? item.isHiragana : false)) return false;
+        if (mode === 'katakana' && !('isKatakana' in item ? item.isKatakana : false)) return false;
+        if (mode === 'kanji' && !('kanji' in item ? item.kanji : false)) return false;
         return true;
-      }
+      });
+      console.log('After mode filter:', filtered.length);
+      console.log('Mode filter sample:', filtered.slice(0, 3));
+    }
 
-      // Search in readings for kanji
-      if ('readings' in item && Array.isArray(item.readings) && 
-          item.readings.some((reading: string) => reading.toLowerCase().includes(searchLower))) {
-        return true;
-      }
+    // Apply search filter
+    if (searchTerm.trim()) {
+      console.log('Applying search filter for:', searchTerm);
+      filtered = filtered.filter(item => {
+        const searchLower = searchTerm.toLowerCase().trim();
 
-      return false;
-    });
+        // Search in Japanese text
+        const japaneseText = 'japanese' in item ? item.japanese : item.character;
+        if (japaneseText.toLowerCase().includes(searchLower)) {
+          console.log('Match found in Japanese:', japaneseText);
+          return true;
+        }
 
-    // Apply level filter
+        // Search in English text
+        if ('english' in item && item.english.toLowerCase().includes(searchLower)) {
+          console.log('Match found in English:', item.english);
+          return true;
+        }
+
+        // Search in romaji
+        if ('romaji' in item && item.romaji?.toLowerCase().includes(searchLower)) {
+          console.log('Match found in romaji:', item.romaji);
+          return true;
+        }
+
+        // Search in meanings for kanji
+        if ('meanings' in item && Array.isArray(item.meanings) && 
+            item.meanings.some((meaning: string) => meaning.toLowerCase().includes(searchLower))) {
+          console.log('Match found in meanings:', item.meanings);
+          return true;
+        }
+
+        // Search in readings for kanji
+        if ('readings' in item && Array.isArray(item.readings) && 
+            item.readings.some((reading: string) => reading.toLowerCase().includes(searchLower))) {
+          console.log('Match found in readings:', item.readings);
+          return true;
+        }
+
+        return false;
+      });
+      console.log('After search filter:', filtered.length);
+      console.log('Search filter sample:', filtered.slice(0, 3));
+    }
+
+    // Apply level filter only if explicitly set
     if (levelFilter !== 'all') {
+      console.log('Applying level filter for level:', levelFilter);
       filtered = filtered.filter(item => {
         const wordLevel = wordLevels.find(level => 
           level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
         );
-        return wordLevel?.level === levelFilter;
+        const matches = wordLevel?.level === levelFilter;
+        if (matches) {
+          console.log('Match found for level:', item.japanese);
+        }
+        return matches;
       });
+      console.log('After level filter:', filtered.length);
+      console.log('Level filter sample:', filtered.slice(0, 3));
     }
 
-    // Apply filter after search
-    filtered = filtered.filter(item => {
-      const itemId = 'japanese' in item ? item.japanese : item.character;
-      const marked = isItemMarked(itemId);
+    // Apply status filter
+    if (filter !== 'all') {
+      console.log('Applying status filter:', filter);
+      filtered = filtered.filter(item => {
+        const key = `${mode}-${'japanese' in item ? item.japanese : item.character}`;
+        const itemProgress = localProgress[key];
+        
+        switch (filter) {
+          case 'unmarked':
+            return !itemProgress || itemProgress.correct === 0;
+          case 'marked':
+            return itemProgress && itemProgress.correct > 0 && itemProgress.correct < 3;
+          case 'mastered':
+            return itemProgress && itemProgress.correct >= 3;
+          default:
+            return true;
+        }
+      });
+      console.log('After status filter:', filtered.length);
+      console.log('Status filter sample:', filtered.slice(0, 3));
+    }
 
-      switch (filter) {
-        case 'unmarked':
-          return !marked;
-        case 'marked':
-          return marked;
-        case 'mastered':
-          const key = `${mode}-${itemId}`;
-          const itemProgress = localProgress[key];
-          return marked && itemProgress?.correct >= 3; // Consider mastered after 3 correct attempts
-        default:
-          return true;
-      }
-    });
-
-    // Sort items
+    // Sort the filtered items
+    console.log('Applying sort:', sortBy);
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'japanese':
-          const aText = 'japanese' in a ? a.japanese : a.character;
-          const bText = 'japanese' in b ? b.japanese : b.character;
-          return aText.localeCompare(bText, 'ja');
+          return ('japanese' in a ? a.japanese : a.character).localeCompare(
+            'japanese' in b ? b.japanese : b.character,
+            'ja'
+          );
         case 'english':
-          const aEng = 'english' in a ? a.english : '';
-          const bEng = 'english' in b ? b.english : '';
-          return aEng.localeCompare(bEng);
+          return ('english' in a ? a.english : a.meaning).localeCompare(
+            'english' in b ? b.english : b.meaning
+          );
         case 'progress':
-          const aId = 'japanese' in a ? a.japanese : a.character;
-          const bId = 'japanese' in b ? b.japanese : b.character;
-          const aProgress = localProgress[`${mode}-${aId}`]?.correct || 0;
-          const bProgress = localProgress[`${mode}-${bId}`]?.correct || 0;
-          return bProgress - aProgress;
+          const progressA = localProgress[`${mode}-${'japanese' in a ? a.japanese : a.character}`]?.correct || 0;
+          const progressB = localProgress[`${mode}-${'japanese' in b ? b.japanese : b.character}`]?.correct || 0;
+          return progressB - progressA;
         default:
           return 0;
       }
     });
+    console.log('After sorting:', filtered.length);
+    console.log('Sorting sample:', filtered.slice(0, 3));
+
+    console.log('Final filtered count:', filtered.length);
+    console.log('Final filtered sample:', filtered.slice(0, 3));
+    console.log('=== End Dictionary Filtering Debug ===');
 
     setFilteredItems(filtered);
-    console.log('Filtered items (first 5):', filtered.slice(0, 5));
-  }, [items, searchTerm, filter, sortBy, localProgress, mode, levelFilter]);
+  }, [items, searchTerm, levelFilter, filter, sortBy, mode, localProgress, wordLevels]);
 
   // Add motivation messages
   const showMotivation = (type: 'positive' | 'encouragement') => {
@@ -969,14 +1152,16 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
   }, [isDarkMode, mode, getMasteryLevel, incrementMastery, resetProgress]);
 
   const handleItemClick = (item: DictionaryItem) => {
-    // Check if the word is available at the current level
-    const wordLevel = wordLevels.find(level => 
-      level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
-    );
+    // Only check level restrictions for practice/quizzes, not for dictionary browsing
+    if (mode === 'practice' || mode === 'quiz') {
+      const wordLevel = wordLevels.find(level => 
+        level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
+      );
 
-    if (wordLevel && !unlockedLevels.includes(wordLevel.level)) {
-      setShowLockedAlert(true);
-      return;
+      if (wordLevel && !unlockedLevels.includes(wordLevel.level)) {
+        setShowLockedAlert(true);
+        return;
+      }
     }
 
     setSelectedItem(item);
@@ -2186,8 +2371,8 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
       {showWordCloud && (
         <Box sx={{ mt: 2, height: 400, border: '1px solid var(--border-color)' }}>
-          <WordCloud
-            data={items}
+          <WordCloudVisualization
+            data={visualizationData || items}
             options={{
               colors: {
                 background: isDarkMode ? '#1a1a1a' : '#ffffff',

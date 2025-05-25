@@ -26,6 +26,12 @@ module.exports = {
           red: '#FF4B4B',      // Japanese red
           gold: '#FFD700',     // Gold accents
         },
+        // Neon theme colors
+        'neon-pink': '#ff00c8',
+        'neon-cyan': '#00f7ff',
+        'electric-purple': '#9c00ff',
+        'neon-orange': '#ff9900',
+        'midnight': '#0d0d1a',
         // Base colors
         primary: {
           50: '#EFF6FF',
@@ -57,6 +63,8 @@ module.exports = {
         sans: ['Inter', 'Roboto', 'system-ui', 'sans-serif'],
         // Japanese fonts
         jp: ['Noto Sans JP', 'Noto Serif JP', 'sans-serif'],
+        // Techno font for neon theme
+        techno: ['Orbitron', 'Rajdhani', 'Audiowide', 'sans-serif'],
       },
       fontSize: {
         'hero': ['2.5rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
@@ -74,15 +82,28 @@ module.exports = {
       boxShadow: {
         'card': '0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1)',
         'hover': '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
+        'neon-pink': '0 0 8px #ff00c8, 0 0 24px #ff00c8',
+        'neon-cyan': '0 0 8px #00f7ff, 0 0 24px #00f7ff',
+        'electric-purple': '0 0 8px #9c00ff, 0 0 24px #9c00ff',
       },
-      animation: {
-        'scale-up': 'scale-up 0.2s ease-in-out',
+      backgroundImage: {
+        'tokyo-noise': "url('/assets/noise.png')",
+        'tokyo-city': "url('/assets/cityscape.svg')",
+        'tokyo-torii': "url('/assets/torii.svg')",
       },
       keyframes: {
+        'neon-pulse': {
+          '0%, 100%': { filter: 'brightness(1)' },
+          '50%': { filter: 'brightness(1.3)' },
+        },
         'scale-up': {
           '0%': { transform: 'scale(1)' },
           '100%': { transform: 'scale(1.02)' },
         },
+      },
+      animation: {
+        'neon-pulse': 'neon-pulse 2s infinite',
+        'scale-up': 'scale-up 0.2s ease-in-out',
       },
       typography: {
         DEFAULT: {

@@ -163,13 +163,150 @@ const SYNC_CONFIG = {
   }
 };
 
-// Install event - cache initial assets and data
+// Resources to cache immediately
+const STATIC_RESOURCES = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/offline.html',
+  '/romaji-data.json',
+  '/dict/base.dat.gz',
+  '/dict/cc.dat.gz',
+  '/dict/check.dat.gz',
+  '/dict/tid.dat.gz',
+  '/dict/tid_map.dat.gz',
+  '/dict/tid_pos.dat.gz',
+  '/dict/unk.dat.gz',
+  '/dict/unk_char.dat.gz',
+  '/dict/unk_compat.dat.gz',
+  '/dict/unk_inv.dat.gz',
+  '/dict/unk_map.dat.gz',
+  '/dict/unk_pos.dat.gz'
+];
+
+// Push notification configuration
+const PUSH_CONFIG = {
+  defaultTitle: 'Japanese Vocabulary Quiz',
+  defaultOptions: {
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/badge-96x96.png',
+    vibrate: [100, 50, 100],
+    data: {
+      dateOfArrival: Date.now(),
+      primaryKey: 1
+    },
+    actions: [
+      {
+        action: 'study',
+        title: 'Start Studying',
+        icon: '/icons/study-96x96.png'
+      },
+      {
+        action: 'later',
+        title: 'Remind Me Later',
+        icon: '/icons/later-96x96.png'
+      }
+    ]
+  }
+};
+
+// Track connected clients
+const connectedClients = new Map();
+
+// Handle client connection
+self.addEventListener('connect', (event) => {
+  const port = event.ports[0];
+  port.start();
+  
+  port.addEventListener('message', (event) => {
+    if (event.data?.type === 'CLIENT_CONNECTED') {
+      connectedClients.set(event.data.clientId, port);
+    }
+  });
+});
+
+// Handle client disconnection
+self.addEventListener('message', (event) => {
+  try {
+    if (!event.data) return;
+
+    switch (event.data.type) {
+      case 'CLIENT_UNLOADING':
+        // Remove the client from our tracking
+        if (event.data.clientId) {
+          connectedClients.delete(event.data.clientId);
+        }
+        break;
+      case 'SKIP_WAITING':
+        self.skipWaiting();
+        break;
+      case 'CACHE_UPDATED':
+        // Notify all connected clients about cache update
+        const message = {
+          type: 'CACHE_UPDATED',
+          payload: event.data.payload
+        };
+        
+        // Send to all connected clients
+        connectedClients.forEach((port, clientId) => {
+          try {
+            port.postMessage(message);
+          } catch (error) {
+            console.warn(`Failed to send message to client ${clientId}:`, error);
+            // Remove disconnected client
+            if (error.name === 'InvalidStateError') {
+              connectedClients.delete(clientId);
+              // Try to notify the client to reload
+              try {
+                event.source.postMessage({ type: 'PORT_CLOSED' });
+              } catch (e) {
+                console.warn('Failed to notify client about port closure:', e);
+              }
+            }
+          }
+        });
+        break;
+      default:
+        console.log('Unknown message type:', event.data.type);
+    }
+  } catch (error) {
+    console.error('Error handling message:', error);
+    // Try to notify the client about the error
+    if (event.source) {
+      try {
+        event.source.postMessage({
+          type: 'ERROR',
+          error: error.message
+        });
+      } catch (e) {
+        console.error('Failed to send error message to client:', e);
+      }
+    }
+  }
+});
+
+// Clean up disconnected clients periodically
+setInterval(() => {
+  connectedClients.forEach((port, clientId) => {
+    try {
+      // Try to send a ping message
+      port.postMessage({ type: 'PING' });
+    } catch (error) {
+      // If the port is closed, remove the client
+      if (error.name === 'InvalidStateError') {
+        console.log('Removing disconnected client:', clientId);
+        connectedClients.delete(clientId);
+      }
+    }
+  });
+}, 30000); // Check every 30 seconds
+
+// Install event - cache static resources
 self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing version:', APP_VERSION);
   
   event.waitUntil(
     Promise.all([
-      // Cache static assets
       caches.open(CACHE_CONFIG.assets.name).then(async cache => {
         console.log('[Service Worker] Caching static assets...');
         const urls = CACHE_CONFIG.assets.urls;
@@ -272,145 +409,130 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Enhanced fetch handler with better caching strategies
+// Fetch event - handle requests
 self.addEventListener('fetch', (event) => {
-  // Don't intercept requests for the service worker itself
-  if (event.request.url.endsWith('service-worker.js')) {
-    return;
-  }
-  // Skip cross-origin requests
-  if (!event.request.url.startsWith(self.location.origin)) {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  // Skip non-GET requests and non-HTTP(S) requests
+  if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
     return;
   }
 
-  // Skip requests in development mode
-  if (self.location.hostname === 'localhost') {
+  // Add timeout to fetch requests
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout')), 5000);
+  });
+
+  // Handle API requests with timeout
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      Promise.race([
+        networkFirst(request),
+        timeoutPromise
+      ]).catch(error => {
+        console.error('Fetch error:', error);
+        return caches.match('/offline.html');
+      })
+    );
     return;
   }
 
-  // Handle different types of requests
-  if (event.request.url.includes(ROMAJI_DATA_URL)) {
-    event.respondWith(handleRomajiDataRequest(event.request));
-  } else if (event.request.url.includes('/api/')) {
-    event.respondWith(handleApiRequest(event.request));
-  } else {
-    event.respondWith(handleAssetRequest(event.request));
+  // Handle static resources
+  if (STATIC_RESOURCES.some(resource => url.pathname.endsWith(resource))) {
+    event.respondWith(cacheFirst(request, CACHE_CONFIG.assets.name));
+    return;
   }
+
+  // Handle other requests with timeout
+  event.respondWith(
+    Promise.race([
+      cacheFirst(request, CACHE_CONFIG.assets.name),
+      timeoutPromise
+    ]).catch(error => {
+      console.error('Fetch error:', error);
+      if (request.headers.get('accept').includes('text/html')) {
+        return caches.match('/offline.html');
+      }
+      throw error;
+    })
+  );
 });
 
-// Handle romaji data requests with stale-while-revalidate strategy
-async function handleRomajiDataRequest(request) {
-  const cache = await caches.open(CACHE_CONFIG.data.name);
+// Cache-first strategy
+async function cacheFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
   
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
   try {
-    // Try to serve from cache first
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) {
-      console.log('[Service Worker] Serving romaji data from cache');
-      
-      // Update cache in background
-      fetch(request).then(async response => {
-        if (response.ok) {
-          await cache.put(request, response.clone());
-          console.log('[Service Worker] Updated romaji data cache');
-        }
-      }).catch(error => {
-        console.error('[Service Worker] Failed to update romaji data cache:', error);
-      });
-      
-      return cachedResponse;
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      cache.put(request, networkResponse.clone());
     }
-    
-    // If not in cache, fetch from network
-    console.log('[Service Worker] Fetching romaji data from network');
-    const response = await fetch(request);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch romaji data: ${response.status}`);
-    }
-    
-    // Cache the response
-    await cache.put(request, response.clone());
-    return response;
+    return networkResponse;
   } catch (error) {
-    console.error('[Service Worker] Error handling romaji data request:', error);
+    // If offline and no cache, return offline page for HTML requests
+    if (request.headers.get('accept').includes('text/html')) {
+      return caches.match('/offline.html');
+    }
     throw error;
   }
 }
 
-// Handle API requests with network-first strategy
-async function handleApiRequest(request) {
+// Network-first strategy
+async function networkFirst(request) {
   try {
-    // Try network first
-    const response = await fetch(request);
-    if (response.ok) {
-      return response;
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(CACHE_CONFIG.assets.name);
+      cache.put(request, networkResponse.clone());
     }
-    throw new Error(`API request failed: ${response.status}`);
+    return networkResponse;
   } catch (error) {
-    console.error('[Service Worker] API request failed:', error);
-    
-    // If offline, try to serve from cache
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       return cachedResponse;
     }
     
-    // If no cache, return offline response
-    return new Response(
-      JSON.stringify({ error: 'You are offline and no cached data is available' }),
-      {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    // If offline and no cache, return offline page for HTML requests
+    if (request.headers.get('accept').includes('text/html')) {
+      return caches.match('/offline.html');
+    }
+    throw error;
   }
 }
 
-// Handle asset requests with network-first strategy in development
-async function handleAssetRequest(request) {
-  // Special handling for audio files
-  if (request.url.includes('/audio/')) {
-    return handleAudioRequest(request);
+// Background sync for failed requests
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-vocabulary') {
+    event.waitUntil(syncVocabulary());
   }
+});
 
-  try {
-    // Try network first
-    const response = await fetch(request);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch asset: ${response.status}`);
-    }
-
-    // Cache successful responses
-    const cache = await caches.open(CACHE_CONFIG.assets.name);
-    await cache.put(request, response.clone());
-    
-    return response;
-  } catch (error) {
-    console.log('[Service Worker] Network request failed, trying cache:', request.url);
-    
-    // If network fails, try cache
-    const cache = await caches.open(CACHE_CONFIG.assets.name);
-    const cachedResponse = await cache.match(request);
-    
-    if (cachedResponse) {
-      console.log('[Service Worker] Serving from cache:', request.url);
-      return cachedResponse;
-    }
-
-    // For HTML requests, return offline page
-    if (request.headers.get('accept')?.includes('text/html')) {
-      const offlinePage = await cache.match('/offline.html');
-      if (offlinePage) {
-        return offlinePage;
-      } else {
-        return new Response('<h1>Offline</h1><p>The application is offline and no offline page is available.</p>', {
-          status: 503,
-          headers: { 'Content-Type': 'text/html' }
-        });
+async function syncVocabulary() {
+  const db = await openDB();
+  const pendingItems = await db.getAll('pendingVocabulary');
+  
+  for (const item of pendingItems) {
+    try {
+      const response = await fetch('/api/vocabulary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(item.data)
+      });
+      
+      if (response.ok) {
+        await db.delete('pendingVocabulary', item.id);
       }
+    } catch (error) {
+      console.error('Sync failed:', error);
     }
-
-    throw error;
   }
 }
 
@@ -566,4 +688,250 @@ async function syncWithRetry(syncFunction, attempt = 1) {
     console.error('[Service Worker] Sync attempt failed:', error);
     // Optionally add retry logic here
   }
+}
+
+// Handle push notifications
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const options = {
+      ...PUSH_CONFIG.defaultOptions,
+      ...data.options,
+      body: data.body || 'Time to study Japanese vocabulary!',
+      tag: data.tag || 'study-reminder',
+      renotify: data.renotify || false,
+      requireInteraction: data.requireInteraction || true
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(
+        data.title || PUSH_CONFIG.defaultTitle,
+        options
+      )
+    );
+  } catch (error) {
+    console.error('Error handling push notification:', error);
+    // Show a default notification if parsing fails
+    event.waitUntil(
+      self.registration.showNotification(
+        PUSH_CONFIG.defaultTitle,
+        {
+          ...PUSH_CONFIG.defaultOptions,
+          body: 'Time to study Japanese vocabulary!'
+        }
+      )
+    );
+  }
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'study') {
+    // Open the quiz page
+    event.waitUntil(
+      clients.openWindow('/quiz')
+    );
+  } else if (event.action === 'later') {
+    // Schedule a new notification for later
+    event.waitUntil(
+      scheduleNotification({
+        title: 'Study Reminder',
+        body: 'Ready to continue your Japanese studies?',
+        delay: 3600000 // 1 hour
+      })
+    );
+  } else {
+    // Default action: open the app
+    event.waitUntil(
+      clients.openWindow('/')
+    );
+  }
+});
+
+// Schedule a notification
+async function scheduleNotification(data) {
+  const registration = await self.registration;
+  const options = {
+    ...PUSH_CONFIG.defaultOptions,
+    ...data.options,
+    tag: data.tag || 'study-reminder',
+    showTrigger: new TimestampTrigger(Date.now() + (data.delay || 3600000))
+  };
+
+  return registration.showNotification(
+    data.title || PUSH_CONFIG.defaultTitle,
+    options
+  );
+}
+
+// Enhanced background sync
+const SYNC_TYPES = {
+  VOCABULARY: 'sync-vocabulary',
+  PROGRESS: 'sync-progress',
+  SETTINGS: 'sync-settings'
+};
+
+// Handle background sync
+self.addEventListener('sync', (event) => {
+  switch (event.tag) {
+    case SYNC_TYPES.VOCABULARY:
+      event.waitUntil(syncWithRetry(syncVocabulary));
+      break;
+    case SYNC_TYPES.PROGRESS:
+      event.waitUntil(syncWithRetry(syncProgress));
+      break;
+    case SYNC_TYPES.SETTINGS:
+      event.waitUntil(syncWithRetry(syncSettings));
+      break;
+  }
+});
+
+// Sync progress data
+async function syncProgress() {
+  const db = await openDB();
+  const pendingProgress = await db.getAll('pendingProgress');
+  
+  for (const item of pendingProgress) {
+    try {
+      const response = await fetch('/api/progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(item.data)
+      });
+      
+      if (response.ok) {
+        await db.delete('pendingProgress', item.id);
+        // Notify the client of successful sync
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'SYNC_COMPLETE',
+              payload: { type: 'progress', id: item.id }
+            });
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Progress sync failed:', error);
+      throw error; // Let the retry mechanism handle it
+    }
+  }
+}
+
+// Sync settings
+async function syncSettings() {
+  const db = await openDB();
+  const pendingSettings = await db.getAll('pendingSettings');
+  
+  for (const item of pendingSettings) {
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(item.data)
+      });
+      
+      if (response.ok) {
+        await db.delete('pendingSettings', item.id);
+        // Update local settings cache
+        const cache = await caches.open(CACHE_CONFIG.data.name);
+        await cache.put('/settings.json', response.clone());
+      }
+    } catch (error) {
+      console.error('Settings sync failed:', error);
+      throw error;
+    }
+  }
+}
+
+// Periodic sync for background updates
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'update-vocabulary') {
+    event.waitUntil(updateVocabularyCache());
+  }
+});
+
+// Update vocabulary cache periodically
+async function updateVocabularyCache() {
+  try {
+    const response = await fetch('/api/vocabulary/updates');
+    if (!response.ok) throw new Error('Failed to fetch vocabulary updates');
+    
+    const updates = await response.json();
+    const cache = await caches.open(CACHE_CONFIG.data.name);
+    
+    // Update cache with new vocabulary
+    for (const item of updates) {
+      await cache.put(`/vocabulary/${item.id}.json`, new Response(JSON.stringify(item)));
+    }
+    
+    // Notify clients of the update
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'VOCABULARY_UPDATED',
+          payload: { count: updates.length }
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Failed to update vocabulary cache:', error);
+  }
+}
+
+// Add message port error handling
+self.addEventListener('message', (event) => {
+  try {
+    if (!event.data) return;
+
+    // Handle client messages
+    switch (event.data.type) {
+      case 'SKIP_WAITING':
+        self.skipWaiting();
+        break;
+      case 'CACHE_UPDATED':
+        // Notify all clients about cache update
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            try {
+              client.postMessage({
+                type: 'CACHE_UPDATED',
+                payload: event.data.payload
+              });
+            } catch (error) {
+              console.warn('Failed to send message to client:', error);
+              // If message port is closed, notify the client to reload
+              if (error.name === 'InvalidStateError') {
+                client.postMessage({ type: 'PORT_CLOSED' });
+              }
+            }
+          });
+        });
+        break;
+      default:
+        console.log('Unknown message type:', event.data.type);
+    }
+  } catch (error) {
+    console.error('Error handling message:', error);
+    // Try to notify the client about the error
+    if (event.source) {
+      try {
+        event.source.postMessage({
+          type: 'ERROR',
+          error: error.message
+        });
+      } catch (e) {
+        console.error('Failed to send error message to client:', e);
+      }
+    }
+  }
+});
 }

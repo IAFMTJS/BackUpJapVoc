@@ -74,23 +74,47 @@ const initKuroshiro = async () => {
     initPromise = (async () => {
       if (!initialized) {
         try {
-          // Always initialize the analyzer first
-          console.log('[Kuroshiro] Initializing KuromojiAnalyzer...');
-          const analyzer = new KuromojiAnalyzer({
-            dictPath: '/dict'
-          });
-          await kuroshiro.init(analyzer);
-          console.log('[Kuroshiro] Kuroshiro initialization successful');
+          // Try to load pre-cached data first while analyzer initializes
+          const preloadPromise = loadPrecachedData();
+          
+          // Initialize analyzer with timeout
+          const analyzerPromise = Promise.race([
+            (async () => {
+              console.log('[Kuroshiro] Initializing KuromojiAnalyzer...');
+              const analyzer = new KuromojiAnalyzer({
+                dictPath: '/dict',
+                // Add cache options
+                cache: true,
+                // Add timeout
+                timeout: 10000
+              });
+              await kuroshiro.init(analyzer);
+              console.log('[Kuroshiro] Kuroshiro initialization successful');
+              return analyzer;
+            })(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('KuromojiAnalyzer initialization timeout')), 15000)
+            )
+          ]);
 
-          // Then try to load pre-cached data
-          await loadPrecachedData();
+          // Wait for both operations
+          const [analyzer] = await Promise.all([analyzerPromise, preloadPromise]);
           
           initialized = true;
+          console.log('[Kuroshiro] Full initialization complete');
         } catch (error) {
           console.error('[Kuroshiro] Initialization failed:', error);
           // Reset initialization state on failure
           initialized = false;
           initPromise = null;
+          
+          // If pre-cached data loaded but analyzer failed, we can still function
+          if (preloadedData && Object.keys(preloadedData).length > 0) {
+            console.log('[Kuroshiro] Continuing with pre-cached data only');
+            initialized = true;
+            return;
+          }
+          
           throw error;
         }
       } else {
@@ -106,14 +130,20 @@ const initKuroshiro = async () => {
     console.log('[Kuroshiro] Initialization promise resolved successfully');
   } catch (error) {
     console.error('[Kuroshiro] Initialization promise failed:', error);
+    // If we have pre-cached data, we can still function
+    if (preloadedData && Object.keys(preloadedData).length > 0) {
+      console.log('[Kuroshiro] Continuing with pre-cached data only');
+      initialized = true;
+      return;
+    }
     throw error;
   }
   
   return initPromise;
 };
 
-// Convert multiple texts to romaji in batches
-export const convertBatchToRomaji = async (texts: string[], batchSize: number = 20): Promise<Record<string, string>> => {
+// Optimize batch conversion with better caching and error handling
+export const convertBatchToRomaji = async (texts: string[], batchSize: number = 10): Promise<Record<string, string>> => {
   console.log('convertBatchToRomaji called with', texts.length, 'texts');
   
   // Initialize if needed
@@ -143,44 +173,45 @@ export const convertBatchToRomaji = async (texts: string[], batchSize: number = 
     return results;
   }
 
-  // Process remaining texts in batches
-  for (let i = 0; i < textsToConvert.length; i += batchSize) {
-    const batch = textsToConvert.slice(i, i + batchSize);
-    console.log('Processing batch', i / batchSize + 1, 'of', Math.ceil(textsToConvert.length / batchSize));
-    
+  // Process in smaller batches with retry logic
+  const processBatch = async (batch: string[], retryCount = 0): Promise<Record<string, string>> => {
     try {
-      // Process batch in parallel with a concurrency limit
       const batchResults = await Promise.all(
         batch.map(async (text) => {
           try {
             const romaji = await kuroshiro.convert(text, { to: 'romaji', mode: 'spaced' });
             romajiCache[text] = romaji;
-            return [text, romaji] as [string, string];
+            return [text, romaji];
           } catch (error) {
-            console.error('Error converting text to romaji:', text, error);
-            romajiCache[text] = text;
-            return [text, text] as [string, string];
+            console.warn(`Failed to convert "${text}":`, error);
+            return [text, text]; // Fallback to original text
           }
         })
       );
-
-      // Update results with batch conversions
-      batchResults.forEach(([text, romaji]) => {
-        results[text] = romaji;
-      });
+      
+      return Object.fromEntries(batchResults);
     } catch (error) {
-      console.error('Error processing batch:', error);
+      if (retryCount < 2) {
+        console.log(`Retrying batch (attempt ${retryCount + 1})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return processBatch(batch, retryCount + 1);
+      }
+      throw error;
+    }
+  };
+
+  // Process all batches
+  for (let i = 0; i < textsToConvert.length; i += batchSize) {
+    const batch = textsToConvert.slice(i, i + batchSize);
+    try {
+      const batchResults = await processBatch(batch);
+      Object.assign(results, batchResults);
+    } catch (error) {
+      console.error('Batch processing failed:', error);
+      // Continue with next batch even if this one failed
     }
   }
 
-  // Add cached results
-  texts.forEach(text => {
-    if (romajiCache[text]) {
-      results[text] = romajiCache[text];
-    }
-  });
-
-  console.log('Batch conversion complete, returning', Object.keys(results).length, 'results');
   return results;
 };
 

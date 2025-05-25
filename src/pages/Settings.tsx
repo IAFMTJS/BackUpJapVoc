@@ -8,9 +8,10 @@ import { useProgress } from '../context/ProgressContext';
 import { downloadOfflineData } from '../utils/offlineData';
 import AudioManager from '../components/AudioManager';
 import { useAccessibility } from '../context/AccessibilityContext';
+import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
 
 const SettingsPage: React.FC = () => {
-  const { getThemeClasses } = useTheme();
+  const { getThemeClasses, theme } = useTheme();
   const { settings: appSettings, updateSettings: updateAppSettings } = useApp();
   const { settings: globalSettings, updateSettings: updateGlobalSettings } = useSettings();
   const { progress: progressData, resetProgress } = useProgress();
@@ -191,8 +192,25 @@ const SettingsPage: React.FC = () => {
   );
 
   return (
-    <div className={themeClasses.container}>
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className={`${themeClasses.container} relative min-h-screen`}>
+      {/* Theme-specific cityscape background */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-15">
+        <JapaneseCityscape 
+          width={800}
+          height={400}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            filter: theme === 'dark' 
+              ? 'brightness(0.5) saturate(0.8)' 
+              : 'brightness(1.1) saturate(1.2)'
+          }}
+        />
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <Link to="/" className={`${themeClasses.text.secondary} hover:text-text-primary transition-colors duration-200 mr-4`}>

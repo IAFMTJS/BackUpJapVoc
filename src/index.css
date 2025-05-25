@@ -10,4 +10,18 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
   }
+}
+
+body.theme-neon {
+  background: #0d0d1a;
+  color: #fff;
+  font-family: 'Orbitron', 'Rajdhani', 'Audiowide', sans-serif;
+  background-image: url('/assets/noise.png'), url('/assets/cityscape.svg');
+  background-size: cover, contain;
+  background-repeat: repeat, no-repeat;
+  background-position: center, bottom;
+}
+.theme-neon ::selection {
+  background: #ff00c8;
+  color: #00f7ff;
 } 

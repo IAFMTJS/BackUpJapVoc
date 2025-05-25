@@ -3,7 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { useProgress } from '../context/ProgressContext';
 import { useSound } from '../context/SoundContext';
-import { useAchievements } from '../context/AchievementsContext';
+import { useAchievements } from '../context/AchievementContext';
 import { Kanji, kanjiList } from '../data/kanjiData';
 import { playAudio, playDynamicAudio } from '../utils/audio';
 import { analyzeStroke, validateStroke, calculateStrokeOrderScore } from '../utils/strokeValidation';
@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Brush, School, Translate, Info, Help, Check, Close, Replay, Timer, EmojiEvents } from '@mui/icons-material';
 
 type QuizMode = 'stroke' | 'compound' | 'meaning' | 'reading';
-type QuizDifficulty = 'easy' | 'medium' | 'hard';
+type QuizDifficulty = 'easy' | 'medium' | 'hard' | 'all';
 
 interface QuizState {
   mode: 'setup' | 'quiz' | 'result' | 'review';
@@ -86,6 +86,15 @@ const QUIZ_SETTINGS: Record<QuizDifficulty, QuizSettings> = {
     timeLimit: 20,
     showHints: false,
     requireStrokeOrder: true
+  },
+  all: {
+    mode: 'all',
+    difficulty: 'all',
+    questionCount: 0,
+    useTimer: false,
+    timeLimit: 0,
+    showHints: false,
+    requireStrokeOrder: false
   }
 };
 
@@ -260,23 +269,29 @@ const KanjiQuiz: React.FC = () => {
 
   // Load question
   const loadQuestion = (index: number) => {
-    // Filter kanji based on difficulty
-    const availableKanji = kanjiList.filter(k => {
-      const progress = getKanjiProgress(k.character);
-      return progress.masteryLevel >= quizSettings.difficulty === 'easy' ? 0 : 
-             quizSettings.difficulty === 'medium' ? 1 : 2;
-    });
+    // Get all available kanji
+    let availableKanji = kanjiList;
 
+    // Apply difficulty filter only if explicitly set
+    if (quizSettings.difficulty !== 'all') {
+      availableKanji = availableKanji.filter(k => {
+        const progress = getKanjiProgress(k.character);
+        const requiredLevel = quizSettings.difficulty === 'easy' ? 0 :
+                             quizSettings.difficulty === 'medium' ? 1 : 2;
+        return progress.masteryLevel >= requiredLevel;
+      });
+    }
+
+    // If no kanji available after filtering, show all kanji
     if (availableKanji.length === 0) {
-      setQuizState(prev => ({ ...prev, mode: 'result' }));
-      return;
+      availableKanji = kanjiList;
     }
 
     const kanji = availableKanji[index % availableKanji.length];
     setCurrentKanji({
       character: kanji.character,
-      strokes: kanji.strokeOrder,
-      compoundWords: kanji.examples.map(e => ({
+      strokes: [], // We'll need to implement stroke order data separately
+      compoundWords: kanji.examples?.map(e => ({
         word: e.word,
         reading: e.reading,
         meaning: e.meaning,
@@ -284,10 +299,10 @@ const KanjiQuiz: React.FC = () => {
         difficulty: calculateWordDifficulty(e),
         examples: [],
         relatedWords: []
-      })),
+      })) || [],
       difficulty: calculateKanjiDifficulty(kanji),
       radicals: kanji.radicals,
-      meanings: [kanji.meaning],
+      meanings: [kanji.english], // Using english instead of meaning
       readings: {
         onyomi: kanji.onyomi,
         kunyomi: kanji.kunyomi
@@ -299,8 +314,8 @@ const KanjiQuiz: React.FC = () => {
       const words = generatePracticeSets(
         [{
           character: kanji.character,
-          strokes: kanji.strokeOrder,
-          compoundWords: kanji.examples.map(e => ({
+          strokes: [], // We'll need to implement stroke order data separately
+          compoundWords: kanji.examples?.map(e => ({
             word: e.word,
             reading: e.reading,
             meaning: e.meaning,
@@ -308,10 +323,10 @@ const KanjiQuiz: React.FC = () => {
             difficulty: calculateWordDifficulty(e),
             examples: [],
             relatedWords: []
-          })),
+          })) || [],
           difficulty: calculateKanjiDifficulty(kanji),
           radicals: kanji.radicals,
-          meanings: [kanji.meaning],
+          meanings: [kanji.english], // Using english instead of meaning
           readings: {
             onyomi: kanji.onyomi,
             kunyomi: kanji.kunyomi
@@ -974,12 +989,33 @@ const calculateWordDifficulty = (example: { word: string; reading: string; meani
 
 const getKanjiProgress = (character: string) => {
   const key = `kanji-${character}`;
+  const progressData = progress[key];
+  
+  if (!progressData) {
+    return {
+      masteryLevel: 0,
+      lastPracticed: 0,
+      practiceHistory: [],
+      compoundWordProgress: {},
+      strokeOrderProgress: {
+        correctStrokes: 0,
+        totalStrokes: 0,
+        lastScore: 0
+      }
+    };
+  }
+
+  // Calculate mastery level based on correct answers and streak
+  const masteryLevel = progressData.correct >= 5 ? 2 :
+                      progressData.correct >= 3 ? 1 :
+                      progressData.correct >= 1 ? 0.5 : 0;
+
   return {
-    masteryLevel: 0,
-    lastPracticed: 0,
-    practiceHistory: [],
-    compoundWordProgress: {},
-    strokeOrderProgress: {
+    masteryLevel,
+    lastPracticed: progressData.lastAttempted || 0,
+    practiceHistory: progressData.history || [],
+    compoundWordProgress: progressData.compoundWordProgress || {},
+    strokeOrderProgress: progressData.strokeOrderProgress || {
       correctStrokes: 0,
       totalStrokes: 0,
       lastScore: 0
