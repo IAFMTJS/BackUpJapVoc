@@ -56,7 +56,7 @@
   box-shadow: 0 0 32px rgba(0,247,255,0.15), 0 0 64px rgba(0,247,255,0.1);
   color: #fff;
   font-family: 'Orbitron', 'Rajdhani', 'Audiowide', sans-serif;
-  background-image: url('@assets/noise.svg'), url('@assets/cityscape.svg'), url('@assets/torii.svg');
+  background-image: url('../assets/noise.svg'), url('../assets/cityscape.svg'), url('../assets/torii.svg');
   background-size: 200px 200px, cover, 120px 120px;
   background-repeat: repeat, no-repeat, no-repeat;
   background-position: center, bottom, 80% 20%;
