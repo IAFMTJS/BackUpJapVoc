@@ -29,7 +29,7 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({
   difficulty: initialDifficulty = 'easy',
   onComplete 
 }) => {
-  const { isDarkMode, getThemeClasses } = useTheme();
+  const { theme, getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
   const { playSound } = useSound();
   const { updateProgress } = useProgress();
@@ -147,186 +147,151 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({
   };
 
   return (
-    <div className={`max-w-4xl mx-auto p-4 ${themeClasses.container}`}>
-      <div className={`mb-6 ${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
-        <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-          Kana Practice
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
-            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-              Practice Mode
-            </h3>
-            <div className="space-y-3">
-              {['recognition', 'writing', 'listening', 'matching'].map((practiceMode) => (
-                <label key={practiceMode} className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    value={practiceMode}
-                    checked={mode === practiceMode}
-                    onChange={(e) => setMode(e.target.value as PracticeMode)}
-                    className={`form-radio h-5 w-5 ${isDarkMode ? 'text-neon-blue' : 'text-blue-500'}`}
-                  />
-                  <span className={themeClasses.text}>
-                    {practiceMode === 'recognition' && 'Recognition (Kana → Romaji)'}
-                    {practiceMode === 'writing' && 'Writing (Romaji → Kana)'}
-                    {practiceMode === 'listening' && 'Listening (Audio → Kana)'}
-                    {practiceMode === 'matching' && 'Matching (Romaji ↔ Kana)'}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
-            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-              Difficulty
-            </h3>
-            <div className="space-y-3">
-              {['easy', 'medium', 'hard'].map((diff) => (
-                <label key={diff} className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    value={diff}
-                    checked={difficulty === diff}
-                    onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-                    className={`form-radio h-5 w-5 ${isDarkMode ? 'text-neon-blue' : 'text-blue-500'}`}
-                  />
-                  <span className={themeClasses.text}>
-                    {diff === 'easy' && 'Easy (Basic Characters)'}
-                    {diff === 'medium' && 'Medium (Common Words)'}
-                    {diff === 'hard' && 'Hard (Sentences)'}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
-        <div className="mb-6">
-          <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-            {currentKana}
+    <div className={`min-h-screen ${themeClasses.container}`}>
+      <div className="container mx-auto px-4 py-8">
+        <div className={`max-w-2xl mx-auto ${themeClasses.card}`}>
+          <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text.primary}`}>
+            {mode === 'hiragana' ? 'Hiragana' : 'Katakana'} Practice
           </h2>
-          {mode === 'listening' && (
-            <button
-              onClick={() => playAudio(currentKana)}
-              className={`p-3 rounded-lg transition-all duration-300 ${
-                isDarkMode 
-                  ? 'bg-neon-blue hover:bg-neon-blue/90 text-white shadow-[0_0_10px_rgba(0,149,255,0.4)] hover:shadow-[0_0_20px_rgba(0,149,255,0.6)]' 
-                  : themeClasses.button.secondary
-              }`}
-            >
-              🔊 Play Audio
-            </button>
-          )}
-        </div>
 
-        <div className="mb-6">
-          <input
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder={
-              mode === 'recognition' ? 'Enter romaji...' :
-              mode === 'writing' ? 'Enter kana...' :
-              mode === 'listening' ? 'Enter kana or romaji...' :
-              'Enter matching kana...'
-            }
-            className={`w-full p-4 rounded-lg ${themeClasses.input}`}
-            disabled={isCorrect !== null}
-          />
-        </div>
-
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={checkAnswer}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-              isDarkMode 
-                ? 'bg-neon-pink hover:bg-neon-pink/90 text-white shadow-[0_0_10px_rgba(255,0,128,0.4)] hover:shadow-[0_0_20px_rgba(255,0,128,0.6)]' 
-                : themeClasses.button.primary
-            }`}
-          >
-            Check Answer
-          </button>
-          <button
-            onClick={nextKana}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-              isDarkMode 
-                ? 'bg-neon-blue hover:bg-neon-blue/90 text-white shadow-[0_0_10px_rgba(0,149,255,0.4)] hover:shadow-[0_0_20px_rgba(0,149,255,0.6)]' 
-                : themeClasses.button.secondary
-            }`}
-          >
-            Next
-          </button>
-          <button
-            onClick={() => setShowHint(!showHint)}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-              isDarkMode 
-                ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20 hover:shadow-[0_0_10px_rgba(0,149,255,0.2)]' 
-                : themeClasses.button.secondary
-            }`}
-          >
-            {showHint ? 'Hide Hint' : 'Show Hint'}
-          </button>
-        </div>
-
-        {isCorrect !== null && (
-          <div className={`mt-6 p-4 rounded-lg ${
-            isCorrect 
-              ? isDarkMode 
-                ? 'bg-neon-blue/20 border-neon-blue/30' 
-                : 'bg-green-100 border-green-200'
-              : isDarkMode 
-                ? 'bg-neon-pink/20 border-neon-pink/30' 
-                : 'bg-red-100 border-red-200'
-          } border`}>
-            <div className={`text-lg font-medium mb-2 ${
-              isCorrect 
-                ? isDarkMode 
-                  ? 'text-neon-blue' 
-                  : 'text-green-800'
-                : isDarkMode 
-                  ? 'text-neon-pink' 
-                  : 'text-red-800'
-            }`}>
-              {isCorrect ? 'Correct!' : 'Incorrect!'}
-            </div>
-            {!isCorrect && (
-              <div className={`${themeClasses.text} mb-2`}>
-                Correct Answer: {getCorrectAnswer(currentKana)}
-              </div>
-            )}
-          </div>
-        )}
-
-        {showHint && (
-          <div className={`mt-6 p-4 rounded-lg ${themeClasses.card} border ${themeClasses.border}`}>
-            <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-              Hint
-            </h3>
-            <p className={themeClasses.text}>
-              {getHint(currentKana)}
-            </p>
-          </div>
-        )}
-
-        <div className={`mt-6 p-4 rounded-lg ${themeClasses.card} border ${themeClasses.border}`}>
-          <div className="space-y-4">
-            <div>
-              <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-                Progress
+          <div className="space-y-6">
+            <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl`}>
+              <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>
+                Practice Mode
               </h3>
-              <div className={`grid grid-cols-2 gap-4 ${themeClasses.text}`}>
-                <div>
-                  <div className="text-sm opacity-75">Score</div>
-                  <div className="text-xl font-bold">{score}</div>
+              <div className="space-y-3">
+                {['recognition', 'writing', 'listening', 'matching'].map((practiceMode) => (
+                  <label key={practiceMode} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      value={practiceMode}
+                      checked={mode === practiceMode}
+                      onChange={(e) => setMode(e.target.value as PracticeMode)}
+                      className={`form-radio h-5 w-5 ${theme === 'dark' ? 'text-neon-blue' : 'text-blue-500'}`}
+                    />
+                    <span className={themeClasses.text.primary}>
+                      {practiceMode === 'recognition' && 'Recognition (Kana → Romaji)'}
+                      {practiceMode === 'writing' && 'Writing (Romaji → Kana)'}
+                      {practiceMode === 'listening' && 'Listening (Audio → Kana)'}
+                      {practiceMode === 'matching' && 'Matching (Romaji ↔ Kana)'}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl`}>
+              <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>
+                Difficulty
+              </h3>
+              <div className="space-y-3">
+                {['easy', 'medium', 'hard'].map((diff) => (
+                  <label key={diff} className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      value={diff}
+                      checked={difficulty === diff}
+                      onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+                      className={`form-radio h-5 w-5 ${theme === 'dark' ? 'text-neon-blue' : 'text-blue-500'}`}
+                    />
+                    <span className={themeClasses.text.primary}>
+                      {diff === 'easy' && 'Easy (Basic Characters)'}
+                      {diff === 'medium' && 'Medium (Common Words)'}
+                      {diff === 'hard' && 'Hard (Sentences)'}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl`}>
+              <div className="mb-6">
+                <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text.primary}`}>
+                  {currentKana?.kana || ''}
+                </h2>
+                <div className="flex items-center justify-center space-x-4">
+                  <button
+                    onClick={() => handlePlayAudio(currentKana?.kana || '')}
+                    className={`p-3 rounded-lg ${themeClasses.button.secondary} transition-all duration-300 ${
+                      theme === 'dark' ? 'hover:shadow-[0_0_10px_rgba(0,149,255,0.4)]' : ''
+                    }`}
+                  >
+                    🔊 Play
+                  </button>
                 </div>
+              </div>
+
+              <div className="flex flex-wrap gap-4 justify-center">
+                <button
+                  onClick={handleCheck}
+                  className={themeClasses.button.primary}
+                  disabled={!userInput.trim()}
+                >
+                  Check Answer
+                </button>
+                <button
+                  onClick={() => setShowHint(!showHint)}
+                  className={themeClasses.button.secondary}
+                >
+                  {showHint ? 'Hide Hint' : 'Show Hint'}
+                </button>
+              </div>
+
+              {showResult && (
+                <div className={`mt-6 p-4 rounded-lg ${
+                  isCorrect 
+                    ? theme === 'dark' 
+                      ? 'bg-neon-blue/20 border-neon-blue/30' 
+                      : 'bg-green-100 border-green-200'
+                    : theme === 'dark' 
+                      ? 'bg-neon-pink/20 border-neon-pink/30' 
+                      : 'bg-red-100 border-red-200'
+                } border`}>
+                  <div className={`text-lg font-medium mb-2 ${
+                    isCorrect 
+                      ? theme === 'dark' 
+                        ? 'text-neon-blue' 
+                        : 'text-green-800'
+                      : theme === 'dark' 
+                        ? 'text-neon-pink' 
+                        : 'text-red-800'
+                  }`}>
+                    {isCorrect ? 'Correct!' : 'Incorrect!'}
+                  </div>
+                  {!isCorrect && (
+                    <div className={`${themeClasses.text.secondary} mb-2`}>
+                      Correct Answer: {getCorrectAnswer(currentKana)}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {showHint && (
+                <div className={`mt-6 p-4 rounded-lg ${themeClasses.card}`}>
+                  <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text.primary}`}>
+                    Hint
+                  </h3>
+                  <p className={themeClasses.text.secondary}>
+                    {getHint(currentKana)}
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-4">
                 <div>
-                  <div className="text-sm opacity-75">Attempts</div>
-                  <div className="text-xl font-bold">{attempts}</div>
+                  <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text.primary}`}>
+                    Progress
+                  </h3>
+                  <div className={`grid grid-cols-2 gap-4 ${themeClasses.text.secondary}`}>
+                    <div>
+                      <div className="text-sm opacity-75">Score</div>
+                      <div className="text-xl font-bold">{score}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm opacity-75">Attempts</div>
+                      <div className="text-xl font-bold">{attempts}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

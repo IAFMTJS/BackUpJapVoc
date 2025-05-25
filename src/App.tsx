@@ -46,6 +46,7 @@ import './styles/progress.css';
 import { pwaUtils } from './utils/pwa';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { clearAllDatabases } from './utils/clearDatabases';
+import NeonBackground from './components/visualizations/NeonBackground';
 
 // Lazy load heavy components
 const LazyProgress = lazy(() => import('./pages/ProgressPage'));
@@ -93,6 +94,8 @@ const App = () => {
     error?: string;
   }[]>([]);
   const initRef = useRef<boolean>(false);
+  const { theme, getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -382,142 +385,147 @@ const App = () => {
   // --- end Virtual Teacher Panel wrapper ---
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppProvider>
-          <WordLevelProvider>
-            <ProgressProvider>
-              <SettingsProvider>
-                <SoundProvider>
-                  <AccessibilityProvider>
-                    <MuiThemeWrapper>
-                      <Router>
-                        <div className="min-h-screen bg-dark">
-                          <GuestBanner />
-                          <Navigation />
-                          <main className="flex-1 container mx-auto px-4 py-6">
-                            <div className="max-w-7xl mx-auto">
-                              <EmailVerification />
-                              <AchievementProvider>
-                                <AchievementTracker />
-                                <Routes>
-                                  <Route path="/login" element={<Login />} />
-                                  <Route path="/signup" element={<Signup />} />
-                                  <Route path="/reset-password" element={<ResetPassword />} />
-                                  <Route path="/update-password" element={<UpdatePassword />} />
-                                  <Route path="/" element={<Home />} />
-                                  <Route 
-                                    path="/vocabulary" 
-                                    element={
-                                      <ProtectedRoute>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <LazyVocabulary />
-                                        </Suspense>
-                                      </ProtectedRoute>
-                                    } 
-                                  />
-                                  <Route 
-                                    path="/dictionary" 
-                                    element={
-                                      <ProtectedRoute>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <LazyDictionary />
-                                        </Suspense>
-                                      </ProtectedRoute>
-                                    } 
-                                  />
-                                  <Route 
-                                    path="/writing" 
-                                    element={
-                                      <ProtectedRoute>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <LazyWriting />
-                                        </Suspense>
-                                      </ProtectedRoute>
-                                    } 
-                                  />
-                                  <Route 
-                                    path="/kanji" 
-                                    element={
-                                      <ProtectedRoute>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <LazyKanji />
-                                        </Suspense>
-                                      </ProtectedRoute>
-                                    } 
-                                  />
-                                  <Route 
-                                    path="/settings" 
-                                    element={
-                                      <ProtectedRoute>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <LazySettings />
-                                        </Suspense>
-                                      </ProtectedRoute>
-                                    } 
-                                  />
-                                  <Route 
-                                    path="/progress" 
-                                    element={
-                                      <ProtectedRoute>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <LazyProgress />
-                                        </Suspense>
-                                      </ProtectedRoute>
-                                    } 
-                                  />
-                                  <Route 
-                                    path="/games" 
-                                    element={
-                                      <ProtectedRoute>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <LazyGames />
-                                        </Suspense>
-                                      </ProtectedRoute>
-                                    } 
-                                  />
-                                  <Route 
-                                    path="/romaji" 
-                                    element={
-                                      <ProtectedRoute>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <LazyRomaji />
-                                        </Suspense>
-                                      </ProtectedRoute>
-                                    } 
-                                  />
-                                  <Route path="/how-to-use" element={<HowToUse />} />
-                                  <Route 
-                                    path="/srs" 
-                                    element={
-                                      <ProtectedRoute>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <LazySRSPage />
-                                        </Suspense>
-                                      </ProtectedRoute>
-                                    } 
-                                  />
-                                  <Route path="/anime" element={<ProtectedRoute><AnimeSection /></ProtectedRoute>} />
-                                  <Route path="/word-levels" element={<ProtectedRoute><WordLevelsPage /></ProtectedRoute>} />
-                                  <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
-                                </Routes>
-                              </AchievementProvider>
-                            </div>
-                          </main>
-                          <SessionWarning />
-                          <VirtualTeacherPanelWrapper />
-                        </div>
-                      </Router>
-                    </MuiThemeWrapper>
-                  </AccessibilityProvider>
-                </SoundProvider>
-              </SettingsProvider>
-            </ProgressProvider>
-          </WordLevelProvider>
-        </AppProvider>
-      </AuthProvider>
+    <>
+      {theme === 'neon' && (
+        <NeonBackground style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }} />
+      )}
+      <ThemeProvider>
+        <AuthProvider>
+          <AppProvider>
+            <WordLevelProvider>
+              <ProgressProvider>
+                <SettingsProvider>
+                  <SoundProvider>
+                    <AccessibilityProvider>
+                      <MuiThemeWrapper>
+                        <Router>
+                          <div className={`min-h-screen ${themeClasses.container}`}>
+                            <GuestBanner />
+                            <Navigation />
+                            <main className="flex-1 container mx-auto px-4 py-6">
+                              <div className="max-w-7xl mx-auto">
+                                <EmailVerification />
+                                <AchievementProvider>
+                                  <AchievementTracker />
+                                  <Routes>
+                                    <Route path="/login" element={<Login />} />
+                                    <Route path="/signup" element={<Signup />} />
+                                    <Route path="/reset-password" element={<ResetPassword />} />
+                                    <Route path="/update-password" element={<UpdatePassword />} />
+                                    <Route path="/" element={<Home />} />
+                                    <Route 
+                                      path="/vocabulary" 
+                                      element={
+                                        <ProtectedRoute>
+                                          <Suspense fallback={<LoadingFallback />}>
+                                            <LazyVocabulary />
+                                          </Suspense>
+                                        </ProtectedRoute>
+                                      } 
+                                    />
+                                    <Route 
+                                      path="/dictionary" 
+                                      element={
+                                        <ProtectedRoute>
+                                          <Suspense fallback={<LoadingFallback />}>
+                                            <LazyDictionary />
+                                          </Suspense>
+                                        </ProtectedRoute>
+                                      } 
+                                    />
+                                    <Route 
+                                      path="/writing" 
+                                      element={
+                                        <ProtectedRoute>
+                                          <Suspense fallback={<LoadingFallback />}>
+                                            <LazyWriting />
+                                          </Suspense>
+                                        </ProtectedRoute>
+                                      } 
+                                    />
+                                    <Route 
+                                      path="/kanji" 
+                                      element={
+                                        <ProtectedRoute>
+                                          <Suspense fallback={<LoadingFallback />}>
+                                            <LazyKanji />
+                                          </Suspense>
+                                        </ProtectedRoute>
+                                      } 
+                                    />
+                                    <Route 
+                                      path="/settings" 
+                                      element={
+                                        <ProtectedRoute>
+                                          <Suspense fallback={<LoadingFallback />}>
+                                            <LazySettings />
+                                          </Suspense>
+                                        </ProtectedRoute>
+                                      } 
+                                    />
+                                    <Route 
+                                      path="/progress" 
+                                      element={
+                                        <ProtectedRoute>
+                                          <Suspense fallback={<LoadingFallback />}>
+                                            <LazyProgress />
+                                          </Suspense>
+                                        </ProtectedRoute>
+                                      } 
+                                    />
+                                    <Route 
+                                      path="/games" 
+                                      element={
+                                        <ProtectedRoute>
+                                          <Suspense fallback={<LoadingFallback />}>
+                                            <LazyGames />
+                                          </Suspense>
+                                        </ProtectedRoute>
+                                      } 
+                                    />
+                                    <Route 
+                                      path="/romaji" 
+                                      element={
+                                        <ProtectedRoute>
+                                          <Suspense fallback={<LoadingFallback />}>
+                                            <LazyRomaji />
+                                          </Suspense>
+                                        </ProtectedRoute>
+                                      } 
+                                    />
+                                    <Route path="/how-to-use" element={<HowToUse />} />
+                                    <Route 
+                                      path="/srs" 
+                                      element={
+                                        <ProtectedRoute>
+                                          <Suspense fallback={<LoadingFallback />}>
+                                            <LazySRSPage />
+                                          </Suspense>
+                                        </ProtectedRoute>
+                                      } 
+                                    />
+                                    <Route path="/anime" element={<ProtectedRoute><AnimeSection /></ProtectedRoute>} />
+                                    <Route path="/word-levels" element={<ProtectedRoute><WordLevelsPage /></ProtectedRoute>} />
+                                    <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
+                                  </Routes>
+                                </AchievementProvider>
+                              </div>
+                            </main>
+                            <SessionWarning />
+                            <VirtualTeacherPanelWrapper />
+                          </div>
+                        </Router>
+                      </MuiThemeWrapper>
+                    </AccessibilityProvider>
+                  </SoundProvider>
+                </SettingsProvider>
+              </ProgressProvider>
+            </WordLevelProvider>
+          </AppProvider>
+        </AuthProvider>
+      </ThemeProvider>
       <PWAInstallPrompt />
-    </ThemeProvider>
+    </>
   );
 };
 

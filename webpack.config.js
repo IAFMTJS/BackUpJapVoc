@@ -48,51 +48,50 @@ module.exports = (env, argv) => {
           test: /\.css$/,
           use: [
             isProduction ? MiniCssExtractPlugin.loader : 'style-loader',
-            'css-loader',
-            'postcss-loader'
-          ]
-        },
-        {
-          test: /\.(png|svg|jpg|jpeg|gif)$/i,
-          type: 'asset/resource',
-          generator: {
-            filename: 'static/media/[name].[hash][ext]'
-          },
-          use: [
             {
-              loader: 'image-webpack-loader',
+              loader: 'css-loader',
               options: {
-                mozjpeg: {
-                  progressive: true,
-                  quality: 65
-                },
-                optipng: {
-                  enabled: true
-                },
-                pngquant: {
-                  quality: [0.65, 0.90],
-                  speed: 4
-                },
-                gifsicle: {
-                  interlaced: false
-                },
-                webp: {
-                  quality: 75
+                importLoaders: 1,
+                modules: false,
+                url: {
+                  filter: (url, resourcePath) => {
+                    // Allow webpack aliases in CSS
+                    if (url.startsWith('@') || url.startsWith('/')) {
+                      return true;
+                    }
+                    return false;
+                  }
+                }
+              }
+            },
+            {
+              loader: 'postcss-loader',
+              options: {
+                postcssOptions: {
+                  plugins: [
+                    require('tailwindcss'),
+                    require('autoprefixer')
+                  ]
                 }
               }
             }
           ]
         },
         {
-          test: /\.json$/,
-          type: 'json',
-        },
-        {
-          test: /\.svg$/,
-          type: 'asset/resource',
+          test: /\.(png|svg|jpg|jpeg|gif)$/i,
+          type: 'asset',
+          parser: {
+            dataUrlCondition: {
+              maxSize: 8 * 1024 // 8kb
+            }
+          },
           generator: {
             filename: 'static/media/[name].[hash][ext]'
           }
+        },
+        {
+          test: /\.json$/,
+          type: 'json',
         },
       ]
     },
@@ -100,7 +99,9 @@ module.exports = (env, argv) => {
       extensions: ['.tsx', '.ts', '.js', '.jsx'],
       alias: {
         '@': path.resolve(__dirname, 'src'),
-        'process': 'process/browser.js'
+        '~public': path.resolve(__dirname, 'public'),
+        'process': 'process/browser.js',
+        '@assets': path.resolve(__dirname, 'assets')
       },
       fallback: {
         "path": require.resolve("path-browserify"),
@@ -168,6 +169,44 @@ module.exports = (env, argv) => {
         process: 'process/browser.js',
         Buffer: ['buffer', 'Buffer']
       }),
+      new CopyPlugin({
+        patterns: [
+          {
+            from: 'src/assets',
+            to: 'static/media',
+            noErrorOnMissing: true,
+            globOptions: {
+              ignore: ['**/.DS_Store']
+            }
+          },
+          {
+            from: 'public/assets',
+            to: 'static/media',
+            noErrorOnMissing: true,
+            globOptions: {
+              ignore: ['**/.DS_Store']
+            }
+          },
+          {
+            from: 'public/dict',
+            to: 'dict',
+            noErrorOnMissing: true
+          },
+          {
+            from: 'node_modules/kuromoji/dict',
+            to: 'dict',
+            noErrorOnMissing: true
+          },
+          {
+            from: 'public',
+            to: '.',
+            globOptions: {
+              ignore: ['**/index.html', '**/.DS_Store', '**/dict/**', '**/assets/**']
+            }
+          },
+          { from: 'src/data/romaji-data.json', to: 'romaji-data.json' }
+        ]
+      }),
       new HtmlWebpackPlugin({
         template: 'public/index.html',
         inject: 'body',
@@ -201,28 +240,6 @@ module.exports = (env, argv) => {
           'media-src': "'self'",
           'frame-src': "'none'"
         } : undefined
-      }),
-      new CopyWebpackPlugin({
-        patterns: [
-          {
-            from: 'public/dict',
-            to: 'dict',
-            noErrorOnMissing: true
-          },
-          {
-            from: 'node_modules/kuromoji/dict',
-            to: 'dict',
-            noErrorOnMissing: true
-          },
-          {
-            from: 'public',
-            to: '.',
-            globOptions: {
-              ignore: ['**/index.html', '**/.DS_Store', '**/dict/**']
-            }
-          },
-          { from: 'src/data/romaji-data.json', to: 'romaji-data.json' }
-        ]
       }),
       ...(isProduction ? [
         new CompressionPlugin({

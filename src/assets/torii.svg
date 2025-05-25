@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Torii Gate -->
+  <g fill="#FF4B4B">
+    <!-- Top beam -->
+    <path d="M20 30 L80 30 L80 35 L20 35 Z"/>
+    <!-- Bottom beam -->
+    <path d="M25 40 L75 40 L75 45 L25 45 Z"/>
+    <!-- Left pillar -->
+    <path d="M30 45 L35 45 L35 80 L30 80 Z"/>
+    <!-- Right pillar -->
+    <path d="M65 45 L70 45 L70 80 L65 80 Z"/>
+  </g>
+</svg> 

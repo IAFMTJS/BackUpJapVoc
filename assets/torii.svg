@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <g filter="url(#neon-glow)" fill="#00f7ff" opacity="0.8">
+    <!-- Top beam -->
+    <path d="M10,30 L110,30 L110,40 L10,40 Z"/>
+    <!-- Bottom beam -->
+    <path d="M20,50 L100,50 L100,60 L20,60 Z"/>
+    <!-- Left pillar -->
+    <path d="M30,40 L40,40 L40,100 L30,100 Z"/>
+    <!-- Right pillar -->
+    <path d="M80,40 L90,40 L90,100 L80,100 Z"/>
+    <!-- Roof decoration -->
+    <path d="M50,20 L70,20 L70,30 L50,30 Z"/>
+    <path d="M45,25 L75,25 L75,35 L45,35 Z"/>
+  </g>
+</svg> 

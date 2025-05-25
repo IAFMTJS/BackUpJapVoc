@@ -87,9 +87,9 @@ module.exports = {
         'electric-purple': '0 0 8px #9c00ff, 0 0 24px #9c00ff',
       },
       backgroundImage: {
-        'tokyo-noise': "url('/assets/noise.png')",
-        'tokyo-city': "url('/assets/cityscape.svg')",
-        'tokyo-torii': "url('/assets/torii.svg')",
+        'tokyo-noise': "url(static/media/noise.svg)",
+        'tokyo-city': "url(static/media/cityscape.svg)",
+        'tokyo-torii': "url(static/media/torii-pattern.svg)",
       },
       keyframes: {
         'neon-pulse': {

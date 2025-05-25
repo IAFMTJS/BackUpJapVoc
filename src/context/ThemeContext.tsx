@@ -36,6 +36,9 @@ interface ThemeContextType {
     focus: {
       ring: string;
     };
+    selection: string;
+    title: string;
+    subtitle: string;
   };
   toggleTheme: () => void;
 }
@@ -59,8 +62,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('theme', theme);
-      document.body.classList.remove('theme-dark', 'theme-light', 'theme-neon');
-      document.body.classList.add(`theme-${theme}`);
+      // Remove theme class management from body
     }
   }, [theme]);
 
@@ -74,7 +76,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const getThemeClasses = () => {
     if (theme === 'neon') {
       return {
-        container: 'bg-midnight bg-tokyo-noise min-h-screen font-techno text-white',
+        container: 'min-h-screen font-techno text-white bg-gradient-to-b from-[rgba(13,13,26,0.95)] to-[rgba(13,13,26,0.98)] shadow-[0_0_32px_rgba(0,247,255,0.15),0_0_64px_rgba(0,247,255,0.1)] bg-[url("@assets/noise.svg")] bg-[url("@assets/cityscape.svg")] bg-[url("@assets/torii.svg")] bg-[length:200px_200px,cover,120px_120px] bg-[position:center,bottom,80%_20%] bg-no-repeat bg-[repeat,no-repeat,no-repeat]',
         text: {
           primary: 'text-white drop-shadow-[0_0_8px_#00f7ff]',
           secondary: 'text-neon-cyan',
@@ -104,6 +106,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         focus: {
           ring: 'focus:ring-neon-cyan/40',
         },
+        selection: 'selection:bg-[#ff00c8] selection:text-[#00f7ff]',
+        title: 'text-[#00f7ff] drop-shadow-[0_0_16px_#00f7ff,0_0_32px_#00f7ff44]',
+        subtitle: 'text-[#00f7ff] drop-shadow-[0_0_8px_#00f7ff,0_0_16px_#00f7ff44]',
       };
     }
     // ... existing code for dark and light ...
@@ -150,6 +155,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       focus: {
         ring: theme === 'dark' ? 'focus:ring-accent-red/20' : 'focus:ring-blue-500/20',
       },
+      selection: theme === 'dark' 
+        ? 'selection:bg-accent-red/20 selection:text-text-primary' 
+        : 'selection:bg-blue-500/20 selection:text-gray-900',
+      title: theme === 'dark' 
+        ? 'text-text-primary' 
+        : 'text-gray-900',
+      subtitle: theme === 'dark' 
+        ? 'text-text-secondary' 
+        : 'text-gray-600',
     };
   };
 

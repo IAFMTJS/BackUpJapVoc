@@ -12,16 +12,53 @@
   }
 }
 
-body.theme-neon {
-  background: #0d0d1a;
+@keyframes neon-pulse {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff44;
+  }
+  50% {
+    opacity: 0.8;
+    text-shadow: 0 0 24px #00f7ff, 0 0 48px #00f7ff66;
+  }
+}
+
+@keyframes grid-move {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(50px);
+  }
+}
+
+@keyframes neon-glow {
+  0%, 100% {
+    box-shadow: 0 0 16px currentColor, 0 0 32px currentColor44;
+  }
+  50% {
+    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor66;
+  }
+}
+
+/* Add these utility classes */
+.animate-neon-pulse {
+  animation: neon-pulse 2s infinite;
+}
+
+.animate-neon-glow {
+  animation: neon-glow 2s infinite;
+}
+
+/* Theme-specific styles will be moved to ThemeContext */
+.theme-neon {
+  background: linear-gradient(180deg, rgba(13,13,26,0.95) 0%, rgba(13,13,26,0.98) 100%);
+  box-shadow: 0 0 32px rgba(0,247,255,0.15), 0 0 64px rgba(0,247,255,0.1);
   color: #fff;
   font-family: 'Orbitron', 'Rajdhani', 'Audiowide', sans-serif;
-  background-image: url('/assets/noise.png'), url('/assets/cityscape.svg');
-  background-size: cover, contain;
-  background-repeat: repeat, no-repeat;
-  background-position: center, bottom;
-}
-.theme-neon ::selection {
-  background: #ff00c8;
-  color: #00f7ff;
+  background-image: url('@assets/noise.svg'), url('@assets/cityscape.svg'), url('@assets/torii.svg');
+  background-size: 200px 200px, cover, 120px 120px;
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-position: center, bottom, 80% 20%;
+  min-height: 100vh;
 } 

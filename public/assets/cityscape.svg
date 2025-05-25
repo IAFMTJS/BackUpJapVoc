@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sky gradient -->
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="buildingGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#34495e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="url(#skyGradient)"/>
+
+  <!-- Mountains -->
+  <path d="M0,200 L100,150 L200,180 L300,120 L400,160 L500,140 L600,170 L700,130 L800,200 Z" 
+        fill="#1a1a2e" opacity="0.8"/>
+
+  <!-- Buildings -->
+  <g fill="url(#buildingGradient)">
+    <!-- Left side buildings -->
+    <rect x="50" y="200" width="60" height="150" opacity="0.9"/>
+    <rect x="120" y="180" width="40" height="170" opacity="0.8"/>
+    <rect x="170" y="220" width="50" height="130" opacity="0.85"/>
+    
+    <!-- Center buildings -->
+    <rect x="250" y="160" width="70" height="190" opacity="0.95"/>
+    <rect x="330" y="190" width="45" height="160" opacity="0.85"/>
+    <rect x="385" y="170" width="55" height="180" opacity="0.9"/>
+    
+    <!-- Right side buildings -->
+    <rect x="470" y="200" width="65" height="150" opacity="0.85"/>
+    <rect x="545" y="180" width="50" height="170" opacity="0.8"/>
+    <rect x="605" y="210" width="40" height="140" opacity="0.9"/>
+    <rect x="655" y="190" width="45" height="160" opacity="0.85"/>
+  </g>
+
+  <!-- Building windows -->
+  <g fill="#f1c40f" opacity="0.6">
+    <!-- Left buildings windows -->
+    <rect x="65" y="220" width="10" height="10"/>
+    <rect x="85" y="220" width="10" height="10"/>
+    <rect x="65" y="240" width="10" height="10"/>
+    <rect x="85" y="240" width="10" height="10"/>
+    
+    <!-- Center buildings windows -->
+    <rect x="270" y="180" width="12" height="12"/>
+    <rect x="292" y="180" width="12" height="12"/>
+    <rect x="314" y="180" width="12" height="12"/>
+    <rect x="270" y="202" width="12" height="12"/>
+    <rect x="292" y="202" width="12" height="12"/>
+    <rect x="314" y="202" width="12" height="12"/>
+    
+    <!-- Right buildings windows -->
+    <rect x="485" y="220" width="10" height="10"/>
+    <rect x="505" y="220" width="10" height="10"/>
+    <rect x="525" y="220" width="10" height="10"/>
+    <rect x="485" y="240" width="10" height="10"/>
+    <rect x="505" y="240" width="10" height="10"/>
+    <rect x="525" y="240" width="10" height="10"/>
+  </g>
+
+  <!-- Torii gate -->
+  <g transform="translate(400, 200)">
+    <path d="M-40,0 L40,0 L35,-80 L-35,-80 Z" fill="#8B4513"/>
+    <path d="M-30,-10 L30,-10 L25,-70 L-25,-70 Z" fill="#A0522D"/>
+    <rect x="-5" y="-80" width="10" height="80" fill="#8B4513"/>
+    <rect x="-3" y="-70" width="6" height="70" fill="#A0522D"/>
+  </g>
+
+  <!-- Cherry blossoms -->
+  <g fill="#ff69b4" opacity="0.6">
+    <circle cx="100" cy="100" r="3"/>
+    <circle cx="150" cy="80" r="2"/>
+    <circle cx="200" cy="120" r="3"/>
+    <circle cx="250" cy="90" r="2"/>
+    <circle cx="300" cy="110" r="3"/>
+    <circle cx="350" cy="85" r="2"/>
+    <circle cx="400" cy="105" r="3"/>
+    <circle cx="450" cy="95" r="2"/>
+    <circle cx="500" cy="115" r="3"/>
+    <circle cx="550" cy="85" r="2"/>
+    <circle cx="600" cy="100" r="3"/>
+    <circle cx="650" cy="90" r="2"/>
+    <circle cx="700" cy="110" r="3"/>
+  </g>
+</svg> 

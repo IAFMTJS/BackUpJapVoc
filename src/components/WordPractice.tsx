@@ -35,7 +35,7 @@ interface QuizWord {
 }
 
 const WordPractice: React.FC = () => {
-  const { isDarkMode, getThemeClasses } = useTheme();
+  const { theme, getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
   const { playSound } = useSound();
   const { updateProgress } = useProgress();
@@ -244,211 +244,196 @@ const WordPractice: React.FC = () => {
   }, [timeLeft, selectedDifficulty]);
 
   return (
-    <div className={`max-w-4xl mx-auto p-4 ${themeClasses.container}`}>
-      <div className={`mb-6 ${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
-        <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-          Word Practice
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
-            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-              Practice Mode
-            </h3>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  value="japanese-to-english"
-                  checked={quizMode === 'japanese-to-english'}
-                  onChange={(e) => setQuizMode('japanese-to-english')}
-                  className={`form-radio h-5 w-5 ${themeClasses.radio}`}
-                />
-                <span className={themeClasses.text}>Japanese → English</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  value="english-to-japanese"
-                  checked={quizMode === 'english-to-japanese'}
-                  onChange={(e) => setQuizMode('english-to-japanese')}
-                  className={`form-radio h-5 w-5 ${themeClasses.radio}`}
-                />
-                <span className={themeClasses.text}>English → Japanese</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  value="listening"
-                  checked={quizMode === 'listening'}
-                  onChange={(e) => setQuizMode('listening')}
-                  className={`form-radio h-5 w-5 ${themeClasses.radio}`}
-                />
-                <span className={themeClasses.text}>Listening Practice</span>
-              </label>
-            </div>
-          </div>
-
-          <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
-            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-              Difficulty
-            </h3>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  value="easy"
-                  checked={selectedDifficulty === 'easy'}
-                  onChange={(e) => setSelectedDifficulty('easy')}
-                  className={`form-radio h-5 w-5 ${themeClasses.radio}`}
-                />
-                <span className={themeClasses.text}>Easy (Basic Words)</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  value="medium"
-                  checked={selectedDifficulty === 'medium'}
-                  onChange={(e) => setSelectedDifficulty('medium')}
-                  className={`form-radio h-5 w-5 ${themeClasses.radio}`}
-                />
-                <span className={themeClasses.text}>Medium (Common Phrases)</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  value="hard"
-                  checked={selectedDifficulty === 'hard'}
-                  onChange={(e) => setSelectedDifficulty('hard')}
-                  className={`form-radio h-5 w-5 ${themeClasses.radio}`}
-                />
-                <span className={themeClasses.text}>Hard (Sentences)</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
-        <div className="mb-6">
-          <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-            {currentWord?.japanese || ''}
+    <div className={`min-h-screen ${themeClasses.container}`}>
+      <div className="container mx-auto px-4 py-8">
+        <div className={`max-w-2xl mx-auto ${themeClasses.card}`}>
+          <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? 'neon-glow' : ''}`}>
+            Word Practice
           </h2>
-          {quizMode === 'listening' && (
-            <button
-              onClick={() => handlePlayAudio(currentWord?.japanese || '')}
-              className={`p-3 rounded-lg ${themeClasses.button.secondary} transition-all duration-300 ${
-                isDarkMode ? 'hover:shadow-[0_0_10px_rgba(0,149,255,0.4)]' : ''
-              }`}
-            >
-              🔊 Play Audio
-            </button>
-          )}
-        </div>
 
-        <div className="mb-6">
-          <input
-            ref={inputRef}
-            type={quizMode === 'japanese-to-english' ? 'text' : quizMode === 'english-to-japanese' ? 'text' : 'text'}
-            value={userAnswer}
-            onChange={(e) => setUserAnswer(e.target.value)}
-            placeholder={
-              quizMode === 'japanese-to-english' ? 'Enter English translation...' :
-              quizMode === 'english-to-japanese' ? 'Enter Japanese translation...' :
-              'Enter what you hear...'
-            }
-            className={`w-full p-4 rounded-lg ${themeClasses.input}`}
-            disabled={showResult}
-          />
-        </div>
-
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={handleAnswer}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-              isDarkMode 
-                ? 'bg-neon-pink hover:bg-neon-pink/90 text-white shadow-[0_0_10px_rgba(255,0,128,0.4)] hover:shadow-[0_0_20px_rgba(255,0,128,0.6)]' 
-                : themeClasses.button.primary
-            }`}
-          >
-            Check Answer
-          </button>
-          <button
-            onClick={handleNext}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-              isDarkMode 
-                ? 'bg-neon-blue hover:bg-neon-blue/90 text-white shadow-[0_0_10px_rgba(0,149,255,0.4)] hover:shadow-[0_0_20px_rgba(0,149,255,0.6)]' 
-                : themeClasses.button.secondary
-            }`}
-          >
-            Next
-          </button>
-          <button
-            onClick={() => setShowHint(!showHint)}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-              isDarkMode 
-                ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20 hover:shadow-[0_0_10px_rgba(0,149,255,0.2)]' 
-                : themeClasses.button.secondary
-            }`}
-          >
-            {showHint ? 'Hide Hint' : 'Show Hint'}
-          </button>
-        </div>
-
-        {showResult && (
-          <div className={`mt-6 p-4 rounded-lg ${
-            isCorrect 
-              ? isDarkMode 
-                ? 'bg-neon-blue/20 border-neon-blue/30' 
-                : 'bg-green-100 border-green-200'
-              : isDarkMode 
-                ? 'bg-neon-pink/20 border-neon-pink/30' 
-                : 'bg-red-100 border-red-200'
-          } border`}>
-            <div className={`text-lg font-medium mb-2 ${
-              isCorrect 
-                ? isDarkMode 
-                  ? 'text-neon-blue' 
-                  : 'text-green-800'
-                : isDarkMode 
-                  ? 'text-neon-pink' 
-                  : 'text-red-800'
-            }`}>
-              {isCorrect ? 'Correct!' : 'Incorrect!'}
-            </div>
-            {!isCorrect && currentWord && (
-              <div className={`${themeClasses.text} mb-2`}>
-                Correct Answer: {currentWord.english}
-              </div>
-            )}
-          </div>
-        )}
-
-        {showHint && currentWord && (
-          <div className={`mt-6 p-4 rounded-lg ${themeClasses.card} border ${themeClasses.border}`}>
-            <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-              Hint
-            </h3>
-            <p className={themeClasses.text}>
-              {currentWord.hint || 'Try to remember the context where this word is commonly used.'}
-            </p>
-          </div>
-        )}
-
-        <div className={`mt-6 p-4 rounded-lg ${themeClasses.card} border ${themeClasses.border}`}>
-          <div className="space-y-4">
-            <div>
-              <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
-                Progress
-              </h3>
-              <div className={`grid grid-cols-2 gap-4 ${themeClasses.text}`}>
-                <div>
-                  <div className="text-sm opacity-75">Score</div>
-                  <div className="text-xl font-bold">{score}</div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
+                <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? 'neon-glow' : ''}`}>
+                  Practice Mode
+                </h3>
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="japanese-to-english"
+                      checked={quizMode === 'japanese-to-english'}
+                      onChange={(e) => setQuizMode('japanese-to-english')}
+                      className={`form-radio h-5 w-5 ${themeClasses.radio}`}
+                    />
+                    <span className={themeClasses.text.primary}>Japanese → English</span>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="english-to-japanese"
+                      checked={quizMode === 'english-to-japanese'}
+                      onChange={(e) => setQuizMode('english-to-japanese')}
+                      className={`form-radio h-5 w-5 ${themeClasses.radio}`}
+                    />
+                    <span className={themeClasses.text.primary}>English → Japanese</span>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="listening"
+                      checked={quizMode === 'listening'}
+                      onChange={(e) => setQuizMode('listening')}
+                      className={`form-radio h-5 w-5 ${themeClasses.radio}`}
+                    />
+                    <span className={themeClasses.text.primary}>Listening Practice</span>
+                  </label>
                 </div>
+              </div>
+
+              <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
+                <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? 'neon-glow' : ''}`}>
+                  Difficulty
+                </h3>
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="easy"
+                      checked={selectedDifficulty === 'easy'}
+                      onChange={(e) => setSelectedDifficulty('easy')}
+                      className={`form-radio h-5 w-5 ${themeClasses.radio}`}
+                    />
+                    <span className={themeClasses.text.primary}>Easy (Basic Words)</span>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="medium"
+                      checked={selectedDifficulty === 'medium'}
+                      onChange={(e) => setSelectedDifficulty('medium')}
+                      className={`form-radio h-5 w-5 ${themeClasses.radio}`}
+                    />
+                    <span className={themeClasses.text.primary}>Medium (Common Phrases)</span>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="hard"
+                      checked={selectedDifficulty === 'hard'}
+                      onChange={(e) => setSelectedDifficulty('hard')}
+                      className={`form-radio h-5 w-5 ${themeClasses.radio}`}
+                    />
+                    <span className={themeClasses.text.primary}>Hard (Sentences)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${theme === 'dark' ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
+              <div className="mb-6">
+                <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? 'neon-glow' : ''}`}>
+                  {currentWord?.japanese || ''}
+                </h2>
+                {quizMode === 'listening' && (
+                  <button
+                    onClick={() => handlePlayAudio(currentWord?.japanese || '')}
+                    className={`p-3 rounded-lg ${themeClasses.button.secondary} transition-all duration-300 ${
+                      theme === 'dark' ? 'hover:shadow-[0_0_10px_rgba(0,149,255,0.4)]' : ''
+                    }`}
+                  >
+                    🔊 Play Audio
+                  </button>
+                )}
+              </div>
+
+              <div className="mb-6">
+                <input
+                  ref={inputRef}
+                  type={quizMode === 'japanese-to-english' ? 'text' : quizMode === 'english-to-japanese' ? 'text' : 'text'}
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder={
+                    quizMode === 'japanese-to-english' ? 'Enter English translation...' :
+                    quizMode === 'english-to-japanese' ? 'Enter Japanese translation...' :
+                    'Enter what you hear...'
+                  }
+                  className={`w-full p-4 rounded-lg ${themeClasses.input}`}
+                  disabled={showResult}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-4 justify-center">
+                <button
+                  onClick={handleAnswer}
+                  className={themeClasses.button.primary}
+                  disabled={!userAnswer.trim()}
+                >
+                  Check Answer
+                </button>
+                <button
+                  onClick={() => setShowHint(!showHint)}
+                  className={themeClasses.button.secondary}
+                >
+                  {showHint ? 'Hide Hint' : 'Show Hint'}
+                </button>
+              </div>
+
+              {showResult && (
+                <div className={`mt-6 p-4 rounded-lg ${
+                  isCorrect 
+                    ? theme === 'dark' 
+                      ? 'bg-neon-blue/20 border-neon-blue/30' 
+                      : 'bg-green-100 border-green-200'
+                    : theme === 'dark' 
+                      ? 'bg-neon-pink/20 border-neon-pink/30' 
+                      : 'bg-red-100 border-red-200'
+                } border`}>
+                  <div className={`text-lg font-medium mb-2 ${
+                    isCorrect 
+                      ? theme === 'dark' 
+                        ? 'text-neon-blue' 
+                        : 'text-green-800'
+                      : theme === 'dark' 
+                        ? 'text-neon-pink' 
+                        : 'text-red-800'
+                  }`}>
+                    {isCorrect ? 'Correct!' : 'Incorrect!'}
+                  </div>
+                  {!isCorrect && currentWord && (
+                    <div className={`${themeClasses.text.secondary} mb-2`}>
+                      Correct Answer: {currentWord.english}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {showHint && currentWord && (
+                <div className={`mt-6 p-4 rounded-lg ${themeClasses.card}`}>
+                  <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text.primary}`}>
+                    Hint
+                  </h3>
+                  <p className={themeClasses.text.secondary}>
+                    {currentWord.hint || 'Try to remember the context where this word is commonly used.'}
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-4">
                 <div>
-                  <div className="text-sm opacity-75">Attempts</div>
-                  <div className="text-xl font-bold">{totalQuestions}</div>
+                  <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text.primary}`}>
+                    Progress
+                  </h3>
+                  <div className={`grid grid-cols-2 gap-4 ${themeClasses.text.secondary}`}>
+                    <div>
+                      <div className="text-sm opacity-75">Score</div>
+                      <div className="text-xl font-bold">{score}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm opacity-75">Attempts</div>
+                      <div className="text-xl font-bold">{totalQuestions}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
