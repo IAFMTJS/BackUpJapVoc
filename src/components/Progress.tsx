@@ -554,6 +554,54 @@ const Progress: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isContextReady, setIsContextReady] = useState(false);
+
+  // Check if all required contexts are ready
+  useEffect(() => {
+    const checkContexts = () => {
+      try {
+        // Verify that all required context values are available
+        if (contextProgress !== undefined && currentLevel !== undefined && unlockedLevels !== undefined) {
+          setIsContextReady(true);
+        }
+      } catch (err) {
+        console.error('Error checking contexts:', err);
+        setError('Failed to initialize required data. Please try refreshing the page.');
+      }
+    };
+
+    checkContexts();
+  }, [contextProgress, currentLevel, unlockedLevels]);
+
+  // Show loading state while contexts are initializing
+  if (!isContextReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600 dark:text-gray-300">Loading progress data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Error</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Custom hooks for different features
   const { isOnline } = useOffline();

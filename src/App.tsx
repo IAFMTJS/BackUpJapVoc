@@ -186,34 +186,109 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Loading state for context initialization
+  const [isContextsReady, setIsContextsReady] = useState(false);
+
+  // Check if all contexts are ready
+  useEffect(() => {
+    const checkContextsReady = () => {
+      // Add a small delay to ensure all contexts are properly initialized
+      setTimeout(() => {
+        setIsContextsReady(true);
+      }, 100);
+    };
+
+    checkContextsReady();
+  }, []);
+
+  if (!isContextsReady) {
+    return <LoadingFallback />;
+  }
+
   return (
     <Router>
       <ErrorBoundary>
         <DatabaseProvider>
-          <div className="min-h-screen">
-            <Navigation />
-            <main className="pt-16">
-              <Suspense fallback={<LoadingFallback />}>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/vocabulary" element={<Vocabulary />} />
-                  <Route path="/dictionary" element={<Dictionary />} />
-                  <Route path="/writing" element={<Writing />} />
-                  <Route path="/kanji" element={<Kanji />} />
-                  <Route path="/romaji" element={<Romaji />} />
-                  <Route path="/srs" element={<SRS />} />
-                  <Route path="/games" element={<GamesPage />} />
-                  <Route path="/anime" element={<Anime />} />
-                  <Route path="/progress" element={<Progress />} />
-                  <Route path="/achievements" element={<Achievements />} />
-                  <Route path="/word-levels" element={<WordLevels />} />
-                </Routes>
-              </Suspense>
-            </main>
-            <OfflineStatus />
-            <PushNotifications />
-          </div>
+          <ErrorBoundary>
+            <div className="min-h-screen">
+              <Navigation />
+              <main className="pt-16">
+                <ErrorBoundary>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Routes>
+                      <Route path="/" element={
+                        <ErrorBoundary>
+                          <Home />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/settings" element={
+                        <ErrorBoundary>
+                          <Settings />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/vocabulary" element={
+                        <ErrorBoundary>
+                          <Vocabulary />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/dictionary" element={
+                        <ErrorBoundary>
+                          <Dictionary />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/writing" element={
+                        <ErrorBoundary>
+                          <Writing />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/kanji" element={
+                        <ErrorBoundary>
+                          <Kanji />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/romaji" element={
+                        <ErrorBoundary>
+                          <Romaji />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/srs" element={
+                        <ErrorBoundary>
+                          <SRS />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/games" element={
+                        <ErrorBoundary>
+                          <GamesPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/anime" element={
+                        <ErrorBoundary>
+                          <Anime />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/progress" element={
+                        <ErrorBoundary>
+                          <Progress />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/achievements" element={
+                        <ErrorBoundary>
+                          <Achievements />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/word-levels" element={
+                        <ErrorBoundary>
+                          <WordLevels />
+                        </ErrorBoundary>
+                      } />
+                    </Routes>
+                  </Suspense>
+                </ErrorBoundary>
+              </main>
+              <OfflineStatus />
+              <PushNotifications />
+            </div>
+          </ErrorBoundary>
         </DatabaseProvider>
       </ErrorBoundary>
     </Router>
