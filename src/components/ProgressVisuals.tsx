@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme as useCustomTheme } from '../context/ThemeContext';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { useProgress } from '../context/ProgressContext';
-import { useAchievements } from '../context/AchievementContext';
+import { useAchievements } from '../context/AchievementsContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Box, 
@@ -55,94 +56,92 @@ import styled from '@emotion/styled';
 import CalendarHeatmap from './CalendarHeatmap';
 
 // Styled components
-const VisualCard = styled(Card)`
-  background: ${props => props.theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white'};
-  backdrop-filter: blur(10px);
-  border: 1px solid ${props => props.theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+const VisualCard = styled(Card)(({ theme }) => ({
+  background: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
+  backdropFilter: 'blur(10px)',
+  border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-5px)',
+    boxShadow: theme.palette.mode === 'dark' 
+      ? '0 8px 16px rgba(0, 247, 255, 0.2), 0 0 32px rgba(0, 247, 255, 0.1)' 
+      : '0 8px 16px rgba(0, 0, 0, 0.1)'
   }
-`;
+}));
 
-const ProgressBadge = styled(motion.div)`
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${props => props.theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'};
-  border: 2px solid ${props => props.theme.palette.primary.main};
-  
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, ${props => props.theme.palette.primary.main}, ${props => props.theme.palette.secondary.main});
-    opacity: 0.5;
-    z-index: -1;
+const ProgressBadge = styled(motion.div)(({ theme }) => ({
+  position: 'relative',
+  width: '80px',
+  height: '80px',
+  borderRadius: '50%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+  border: `2px solid ${theme.palette.primary.main}`,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: '-4px',
+    borderRadius: '50%',
+    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+    opacity: 0.5,
+    zIndex: -1
   }
-`;
+}));
 
-const TrophyContainer = styled(motion.div)`
-  position: relative;
-  width: 120px;
-  height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    width: 100%;
-    height: 20px;
-    background: radial-gradient(ellipse at center, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 80%);
-    filter: blur(5px);
+const TrophyContainer = styled(motion.div)({
+  position: 'relative',
+  width: '120px',
+  height: '120px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    bottom: '-10px',
+    width: '100%',
+    height: '20px',
+    background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 80%)',
+    filter: 'blur(5px)'
   }
-`;
+});
 
-const HeatmapContainer = styled.div`
-  width: 100%;
-  height: 200px;
-  overflow-x: auto;
-  padding: 1rem;
-`;
+const HeatmapContainer = styled('div')({
+  width: '100%',
+  height: '200px',
+  overflowX: 'auto',
+  padding: '1rem'
+});
 
-const TimelineContainer = styled.div`
-  width: 100%;
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 1rem;
-`;
+const TimelineContainer = styled('div')({
+  width: '100%',
+  maxHeight: '400px',
+  overflowY: 'auto',
+  padding: '1rem'
+});
 
-const GraphContainer = styled.div`
-  width: 100%;
-  height: 300px;
-  padding: 1rem;
-`;
+const GraphContainer = styled('div')({
+  width: '100%',
+  height: '300px',
+  padding: '1rem'
+});
 
-const AvatarContainer = styled(motion.div)`
-  position: relative;
-  width: 120px;
-  height: 120px;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, ${props => props.theme.palette.primary.main}, ${props => props.theme.palette.secondary.main});
-    opacity: 0.5;
-    z-index: -1;
+const AvatarContainer = styled(motion.div)(({ theme }) => ({
+  position: 'relative',
+  width: '120px',
+  height: '120px',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: '-4px',
+    borderRadius: '50%',
+    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+    opacity: 0.5,
+    zIndex: -1
   }
-`;
+}));
 
 // Animation variants
 const badgeVariants = {
@@ -189,11 +188,13 @@ const trophyVariants = {
 };
 
 const ProgressVisuals: React.FC = () => {
-  const { isDarkMode, getThemeClasses } = useTheme();
+  const { isDarkMode, getThemeClasses } = useCustomTheme();
+  const muiTheme = useMuiTheme();
   const { progress, currentStreak, bestStreak } = useProgress();
   const { achievements, unlockedAchievements } = useAchievements();
   const [activeTab, setActiveTab] = useState(0);
   const isMobile = useMediaQuery('(max-width:600px)');
+  const isNeonMode = muiTheme.palette.mode === 'dark' && muiTheme.palette.primary.main === '#00f7ff';
 
   // Generate heatmap data
   const generateHeatmapData = () => {
@@ -275,7 +276,20 @@ const ProgressVisuals: React.FC = () => {
         onChange={(_, newValue) => setActiveTab(newValue)}
         variant={isMobile ? "scrollable" : "fullWidth"}
         scrollButtons={isMobile ? "auto" : false}
-        sx={{ mb: 3 }}
+        sx={{ 
+          mb: 3,
+          '& .MuiTab-root': {
+            color: isNeonMode ? 'rgba(0, 247, 255, 0.7)' : undefined,
+            '&.Mui-selected': {
+              color: isNeonMode ? '#00f7ff' : undefined,
+              textShadow: isNeonMode ? '0 0 8px #00f7ff' : undefined
+            }
+          },
+          '& .MuiTabs-indicator': {
+            backgroundColor: isNeonMode ? '#00f7ff' : undefined,
+            boxShadow: isNeonMode ? '0 0 8px #00f7ff' : undefined
+          }
+        }}
       >
         <Tab icon={<BadgeIcon />} label="Badges" />
         <Tab icon={<TrophyIcon />} label="Trophies" />
@@ -427,20 +441,56 @@ const ProgressVisuals: React.FC = () => {
               <Grid item xs={12} md={6}>
                 <VisualCard>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom>
+                    <Typography 
+                      variant="h6" 
+                      gutterBottom
+                      sx={{
+                        color: isNeonMode ? '#00f7ff' : undefined,
+                        textShadow: isNeonMode ? '0 0 8px #00f7ff' : undefined
+                      }}
+                    >
                       Daily Progress (Last 30 Days)
                     </Typography>
                     <GraphContainer>
                       <ResponsiveContainer>
                         <LineChart data={graphData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <RechartsTooltip />
+                          <CartesianGrid 
+                            strokeDasharray="3 3" 
+                            stroke={isNeonMode ? 'rgba(0, 247, 255, 0.2)' : undefined}
+                          />
+                          <XAxis 
+                            dataKey="date" 
+                            stroke={isNeonMode ? '#00f7ff' : undefined}
+                          />
+                          <YAxis 
+                            stroke={isNeonMode ? '#00f7ff' : undefined}
+                          />
+                          <RechartsTooltip 
+                            contentStyle={isNeonMode ? {
+                              backgroundColor: 'rgba(10, 10, 35, 0.9)',
+                              border: '1px solid #00f7ff',
+                              boxShadow: '0 0 16px rgba(0, 247, 255, 0.2)'
+                            } : undefined}
+                          />
                           <Legend />
-                          <Line type="monotone" dataKey="vocabulary" stroke="#8884d8" />
-                          <Line type="monotone" dataKey="kanji" stroke="#82ca9d" />
-                          <Line type="monotone" dataKey="grammar" stroke="#ffc658" />
+                          <Line 
+                            type="monotone" 
+                            dataKey="vocabulary" 
+                            stroke={isNeonMode ? '#00f7ff' : '#8884d8'}
+                            strokeWidth={isNeonMode ? 2 : 1}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="kanji" 
+                            stroke={isNeonMode ? '#ff3afc' : '#82ca9d'}
+                            strokeWidth={isNeonMode ? 2 : 1}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="grammar" 
+                            stroke={isNeonMode ? '#9c00ff' : '#ffc658'}
+                            strokeWidth={isNeonMode ? 2 : 1}
+                          />
                         </LineChart>
                       </ResponsiveContainer>
                     </GraphContainer>

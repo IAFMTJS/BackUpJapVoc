@@ -5,11 +5,286 @@ const APP_VERSION = '1.0.0';
 const CACHE_NAME = `japvoc-cache-v${APP_VERSION}`;
 const DATA_CACHE_NAME = `japvoc-data-v${APP_VERSION}`;
 const AUDIO_CACHE_NAME = `japvoc-audio-v${APP_VERSION}`;
+const OFFLINE_CACHE_NAME = `japvoc-offline-v${APP_VERSION}`;
 const ROMAJI_DATA_URL = '/romaji-data.json';
 
 // Database setup
 const DB_NAME = 'japvoc-db';
 const DB_VERSION = 1;
+
+// Import push notification handler
+importScripts('/push-handler.js');
+
+// Cache configuration
+const CACHE_CONFIG = {
+  version: '1.0.0',
+  assets: {
+    name: 'japvoc-assets-v1',
+    urls: [
+      '/',
+      '/index.html',
+      '/offline.html',
+      '/manifest.json',
+      '/icons/icon-192x192.png',
+      '/icons/icon-512x512.png',
+      '/icons/badge-96x96.png',
+      '/icons/achievement-192x192.png',
+      '/icons/reminder-192x192.png',
+      '/icons/streak-192x192.png',
+      '/icons/new-content-192x192.png',
+      '/icons/progress-192x192.png',
+      '/assets/cityscape.svg',
+      '/assets/noise.svg',
+      '/assets/torii.svg'
+    ]
+  },
+  data: {
+    name: 'japvoc-data-v1',
+    urls: [
+      '/api/vocabulary',
+      '/api/kanji',
+      '/api/grammar',
+      '/api/achievements'
+    ]
+  },
+  audio: {
+    name: 'japvoc-audio-v1',
+    urls: []
+  },
+  offline: {
+    name: 'japvoc-offline-v1',
+    urls: [
+      '/offline.html'
+    ]
+  }
+};
+
+// Cache management
+const CacheManager = {
+  async preloadCriticalAssets() {
+    const cache = await caches.open(CACHE_CONFIG.assets.name);
+    await cache.addAll(CACHE_CONFIG.assets.urls);
+  },
+
+  async cleanupOldCaches() {
+    const cacheNames = await caches.keys();
+    const currentCaches = Object.values(CACHE_CONFIG).map(config => config.name);
+    
+    await Promise.all(
+      cacheNames
+        .filter(name => !currentCaches.includes(name))
+        .map(name => caches.delete(name))
+    );
+  },
+
+  async updateCacheVersion() {
+    const cache = await caches.open(CACHE_CONFIG.assets.name);
+    const response = await cache.match('/version.json');
+    
+    if (response) {
+      const data = await response.json();
+      if (data.version !== CACHE_CONFIG.version) {
+        await this.cleanupOldCaches();
+        await this.preloadCriticalAssets();
+      }
+    }
+  }
+};
+
+// Offline support
+const OfflineManager = {
+  async getOfflineResponse(request) {
+    const cache = await caches.open(CACHE_CONFIG.offline.name);
+    const offlineResponse = await cache.match('/offline.html');
+    
+    if (offlineResponse) {
+      return new Response(offlineResponse.body, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html' }
+      });
+    }
+    
+    return new Response('Offline', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  },
+
+  async handleOfflineRequest(request) {
+    try {
+      // Try to get from cache first
+      const cache = await caches.match(request);
+      if (cache) return cache;
+
+      // If not in cache, try network
+      const response = await fetch(request);
+      
+      // Cache the response if it's successful
+      if (response.ok) {
+        const cache = await caches.open(
+          request.url.includes('/api/') ? CACHE_CONFIG.data.name :
+          request.url.includes('/audio/') ? CACHE_CONFIG.audio.name :
+          CACHE_CONFIG.assets.name
+        );
+        cache.put(request, response.clone());
+      }
+      
+      return response;
+    } catch (error) {
+      // If offline, return offline page for HTML requests
+      if (request.headers.get('accept').includes('text/html')) {
+        return this.getOfflineResponse(request);
+      }
+      throw error;
+    }
+  }
+};
+
+// Request handling
+async function handleRequest(request) {
+  // Handle API requests
+  if (request.url.includes('/api/')) {
+    return OfflineManager.handleOfflineRequest(request);
+  }
+
+  // Handle static assets
+  if (request.url.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+    return OfflineManager.handleOfflineRequest(request);
+  }
+
+  // Handle audio files
+  if (request.url.includes('/audio/')) {
+    return OfflineManager.handleOfflineRequest(request);
+  }
+
+  // Handle HTML requests
+  if (request.headers.get('accept').includes('text/html')) {
+    return OfflineManager.handleOfflineRequest(request);
+  }
+
+  // Default to network-first strategy
+  return fetch(request);
+}
+
+// Service worker event listeners
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    Promise.all([
+      CacheManager.preloadCriticalAssets(),
+      CacheManager.updateCacheVersion()
+    ])
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      CacheManager.cleanupOldCaches(),
+      clients.claim()
+    ])
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(handleRequest(event.request));
+});
+
+// Background sync
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-data') {
+    event.waitUntil(syncData());
+  }
+});
+
+// Sync data with server
+async function syncData() {
+  try {
+    const db = await openDatabase();
+    const pendingChanges = await getPendingChanges(db);
+    
+    for (const change of pendingChanges) {
+      try {
+        await fetch(change.url, {
+          method: change.method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await getAuthToken()}`
+          },
+          body: JSON.stringify(change.data)
+        });
+        
+        await markChangeAsSynced(db, change.id);
+      } catch (error) {
+        console.error('Error syncing change:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Error in background sync:', error);
+  }
+}
+
+// Database helpers
+async function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('JapVocDB', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      
+      // Create stores if they don't exist
+      if (!db.objectStoreNames.contains('pendingChanges')) {
+        db.createObjectStore('pendingChanges', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains('settings')) {
+        db.createObjectStore('settings');
+      }
+    };
+  });
+}
+
+async function getPendingChanges(db) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['pendingChanges'], 'readonly');
+    const store = transaction.objectStore('pendingChanges');
+    const request = store.getAll();
+    
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function markChangeAsSynced(db, id) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['pendingChanges'], 'readwrite');
+    const store = transaction.objectStore('pendingChanges');
+    const request = store.delete(id);
+    
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getAuthToken() {
+  return new Promise((resolve) => {
+    const request = indexedDB.open('JapVocDB', 1);
+    
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const transaction = db.transaction(['settings'], 'readonly');
+      const store = transaction.objectStore('settings');
+      const getRequest = store.get('authToken');
+      
+      getRequest.onsuccess = () => resolve(getRequest.result || '');
+      getRequest.onerror = () => resolve('');
+    };
+    
+    request.onerror = () => resolve('');
+  });
+}
 
 // Open IndexedDB
 async function openDB() {
@@ -117,7 +392,7 @@ const AUDIO_OPTIMIZATION = {
   }
 };
 
-// Cache configuration
+// Enhanced cache configuration
 const CACHE_CONFIG = {
   assets: {
     name: CACHE_NAME,
@@ -126,14 +401,27 @@ const CACHE_CONFIG = {
       '/index.html',
       '/manifest.json',
       '/offline.html',
-      '/romaji-data.json'
+      '/romaji-data.json',
+      '/version.json',
+      '/_headers',
+      '/_redirects'
     ],
-    strategy: 'cache-first'
+    strategy: 'cache-first',
+    patterns: [
+      /\.(js|css|png|jpg|jpeg|gif|svg|woff2?|ttf|eot)$/,
+      /^\/icons\//,
+      /^\/splash\//
+    ]
   },
   data: {
     name: DATA_CACHE_NAME,
     urls: [ROMAJI_DATA_URL],
-    strategy: 'stale-while-revalidate'
+    strategy: 'stale-while-revalidate',
+    patterns: [
+      /^\/api\/vocabulary/,
+      /^\/api\/progress/,
+      /^\/api\/settings/
+    ]
   },
   audio: {
     name: AUDIO_CACHE_NAME,
@@ -241,396 +529,157 @@ const CACHE_CONFIG = {
       '/audio/ef7507293e56a0d2049722edafcdf78b5bbcaa7b.mp3',
       '/audio/41e345bbe377df918774599b9280ce3fc522bf1e.mp3',
       // END AUTO-GENERATED AUDIO FILES
-    ],
-    optimization: AUDIO_OPTIMIZATION
-  }
-};
-
-// Sync configuration
-const SYNC_CONFIG = {
-  tags: {
-    progress: 'sync-progress',
-    romaji: 'sync-romaji-data'
-  },
-  retry: {
-    maxAttempts: 3,
-    backoff: {
-      initial: 1000,
-      multiplier: 2
-    }
-  }
-};
-
-// Resources to cache immediately
-const STATIC_RESOURCES = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/offline.html',
-  '/romaji-data.json',
-  '/dict/base.dat.gz',
-  '/dict/cc.dat.gz',
-  '/dict/check.dat.gz',
-  '/dict/tid.dat.gz',
-  '/dict/tid_map.dat.gz',
-  '/dict/tid_pos.dat.gz',
-  '/dict/unk.dat.gz',
-  '/dict/unk_char.dat.gz',
-  '/dict/unk_compat.dat.gz',
-  '/dict/unk_inv.dat.gz',
-  '/dict/unk_map.dat.gz',
-  '/dict/unk_pos.dat.gz'
-];
-
-// Push notification configuration
-const PUSH_CONFIG = {
-  defaultTitle: 'Japanese Vocabulary Quiz',
-  defaultOptions: {
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge-96x96.png',
-    vibrate: [100, 50, 100],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: 1
-    },
-    actions: [
-      {
-        action: 'study',
-        title: 'Start Studying',
-        icon: '/icons/study-96x96.png'
-      },
-      {
-        action: 'later',
-        title: 'Remind Me Later',
-        icon: '/icons/later-96x96.png'
-      }
     ]
+  },
+  offline: {
+    name: OFFLINE_CACHE_NAME,
+    urls: [
+      '/offline.html',
+      '/icons/offline-icon.png',
+      '/css/offline.css'
+    ],
+    strategy: 'cache-first'
   }
 };
 
-// Track connected clients
-const connectedClients = new Map();
+// Cache management utilities
+const CacheManager = {
+  async preloadCriticalAssets() {
+    const criticalAssets = [
+      '/css/critical.css',
+      '/js/critical.js',
+      '/icons/icon-192x192.png',
+      '/icons/icon-512x512.png'
+    ];
 
-// Handle client connection
-self.addEventListener('connect', (event) => {
-  const port = event.ports[0];
-  port.start();
-  
-  port.addEventListener('message', (event) => {
-    if (event.data?.type === 'CLIENT_CONNECTED') {
-      connectedClients.set(event.data.clientId, port);
-    }
-  });
-});
-
-// Handle client disconnection
-self.addEventListener('message', (event) => {
-  try {
-    if (!event.data) return;
-
-    switch (event.data.type) {
-      case 'CLIENT_UNLOADING':
-        // Remove the client from our tracking
-        if (event.data.clientId) {
-          connectedClients.delete(event.data.clientId);
-        }
-        break;
-      case 'SKIP_WAITING':
-        self.skipWaiting();
-        break;
-      case 'CACHE_UPDATED':
-        // Notify all connected clients about cache update
-        const message = {
-          type: 'CACHE_UPDATED',
-          payload: event.data.payload
-        };
-        
-        // Send to all connected clients
-        connectedClients.forEach((port, clientId) => {
-          try {
-            port.postMessage(message);
-          } catch (error) {
-            console.warn(`Failed to send message to client ${clientId}:`, error);
-            // Remove disconnected client
-            if (error.name === 'InvalidStateError') {
-              connectedClients.delete(clientId);
-              // Try to notify the client to reload
-              try {
-                event.source.postMessage({ type: 'PORT_CLOSED' });
-              } catch (e) {
-                console.warn('Failed to notify client about port closure:', e);
-              }
-            }
-          }
-        });
-        break;
-      default:
-        console.log('Unknown message type:', event.data.type);
-    }
-  } catch (error) {
-    console.error('Error handling message:', error);
-    // Try to notify the client about the error
-    if (event.source) {
-      try {
-        event.source.postMessage({
-          type: 'ERROR',
-          error: error.message
-        });
-      } catch (e) {
-        console.error('Failed to send error message to client:', e);
-      }
-    }
-  }
-});
-
-// Clean up disconnected clients periodically
-setInterval(() => {
-  connectedClients.forEach((port, clientId) => {
-    try {
-      // Try to send a ping message
-      port.postMessage({ type: 'PING' });
-    } catch (error) {
-      // If the port is closed, remove the client
-      if (error.name === 'InvalidStateError') {
-        console.log('Removing disconnected client:', clientId);
-        connectedClients.delete(clientId);
-      }
-    }
-  });
-}, 30000); // Check every 30 seconds
-
-// Install event - cache static resources
-self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing version:', APP_VERSION);
-  
-  event.waitUntil(
-    Promise.all([
-      caches.open(CACHE_CONFIG.assets.name).then(async cache => {
-        console.log('[Service Worker] Caching static assets...');
-        const urls = CACHE_CONFIG.assets.urls;
-        const results = await Promise.allSettled(
-          urls.map(url => 
-            fetch(url)
-              .then(response => {
-                if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
-                return cache.put(url, response);
-              })
-              .catch(error => {
-                console.warn(`[Service Worker] Failed to cache ${url}:`, error);
-                return null;
-              })
-          )
-        );
-        
-        const failed = results.filter(r => r.status === 'rejected');
-        if (failed.length > 0) {
-          console.warn('[Service Worker] Some assets failed to cache:', failed);
-        }
-        return results;
-      }),
-      
-      // Cache initial data
-      caches.open(CACHE_CONFIG.data.name).then(async cache => {
-        console.log('[Service Worker] Caching initial data...');
-        try {
-          const response = await fetch(ROMAJI_DATA_URL);
-          if (!response.ok) throw new Error(`Failed to fetch romaji data: ${response.status}`);
-          await cache.put(ROMAJI_DATA_URL, response);
-          console.log('[Service Worker] Successfully cached romaji data');
-        } catch (error) {
-          console.warn('[Service Worker] Failed to cache romaji data:', error);
-        }
-      }),
-
-      // Pre-cache common audio files
-      caches.open(CACHE_CONFIG.audio.name).then(async cache => {
-        console.log('[Service Worker] Pre-caching common audio files...');
-        const urls = CACHE_CONFIG.audio.preCacheUrls;
-        const results = await Promise.allSettled(
-          urls.map(url => 
-            fetch(url)
-              .then(response => {
-                if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
-                return cache.put(url, response);
-              })
-              .catch(error => {
-                console.warn(`[Service Worker] Failed to pre-cache ${url}:`, error);
-                return null;
-              })
-          )
-        );
-        
-        const failed = results.filter(r => r.status === 'rejected');
-        if (failed.length > 0) {
-          console.warn('[Service Worker] Some audio files failed to pre-cache:', failed);
-        }
-        return results;
-      })
-    ]).then(() => {
-      console.log('[Service Worker] Cache operations completed');
-      return self.skipWaiting();
-    }).catch(error => {
-      console.error('[Service Worker] Cache operation failed:', error);
-    })
-  );
-});
-
-// Activate event - clean up old caches and take control
-self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating version:', APP_VERSION);
-  
-  event.waitUntil(
-    Promise.all([
-      // Clean up old caches
-      caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            if (!Object.values(CACHE_CONFIG).some(config => config.name === cacheName)) {
-              console.log('[Service Worker] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      }),
-      
-      // Take control of all clients
-      self.clients.claim()
-    ]).then(() => {
-      console.log('[Service Worker] Activation complete');
-      // Check for pending syncs
-      return self.registration.sync.getTags().then(tags => {
-        if (tags.includes(SYNC_CONFIG.tags.progress)) {
-          return syncPendingProgress();
-        }
-      });
-    })
-  );
-});
-
-// Fetch event - handle requests
-self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  const url = new URL(request.url);
-
-  // Skip non-GET requests and non-HTTP(S) requests
-  if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
-    return;
-  }
-
-  // Add timeout to fetch requests
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Request timeout')), 5000);
-  });
-
-  // Handle API requests with timeout
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      Promise.race([
-        networkFirst(request),
-        timeoutPromise
-      ]).catch(error => {
-        console.error('Fetch error:', error);
-        return caches.match('/offline.html');
-      })
+    const cache = await caches.open(CACHE_CONFIG.assets.name);
+    await Promise.all(
+      criticalAssets.map(url => 
+        cache.add(url).catch(err => console.warn(`Failed to preload ${url}:`, err))
+      )
     );
-    return;
+  },
+
+  async cleanupOldCaches() {
+    const cacheNames = await caches.keys();
+    const currentCaches = Object.values(CACHE_CONFIG).map(config => config.name);
+    
+    await Promise.all(
+      cacheNames
+        .filter(name => !currentCaches.includes(name))
+        .map(name => caches.delete(name))
+    );
+  },
+
+  async updateCacheVersion() {
+    const cache = await caches.open(CACHE_CONFIG.assets.name);
+    const response = await fetch('/version.json');
+    const version = await response.json();
+    await cache.put('/version.json', new Response(JSON.stringify(version)));
   }
+};
 
-  // Handle static resources
-  if (STATIC_RESOURCES.some(resource => url.pathname.endsWith(resource))) {
-    event.respondWith(cacheFirst(request, CACHE_CONFIG.assets.name));
-    return;
+// Offline support utilities
+const OfflineManager = {
+  async getOfflineResponse(request) {
+    const cache = await caches.open(CACHE_CONFIG.offline.name);
+    const offlineResponse = await cache.match('/offline.html');
+    
+    if (request.headers.get('accept').includes('application/json')) {
+      return new Response(JSON.stringify({
+        error: 'offline',
+        message: 'You are currently offline. Please check your connection.',
+        timestamp: Date.now()
+      }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    return offlineResponse;
+  },
+
+  async handleOfflineRequest(request) {
+    try {
+      const response = await fetch(request);
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response;
+    } catch (error) {
+      console.log('Offline request failed:', request.url);
+      return this.getOfflineResponse(request);
+    }
   }
+};
 
-  // Handle other requests with timeout
-  event.respondWith(
-    Promise.race([
-      cacheFirst(request, CACHE_CONFIG.assets.name),
-      timeoutPromise
-    ]).catch(error => {
-      console.error('Fetch error:', error);
-      if (request.headers.get('accept').includes('text/html')) {
-        return caches.match('/offline.html');
-      }
-      throw error;
-    })
-  );
-});
-
-// Cache-first strategy
-async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cachedResponse = await cache.match(request);
+// Enhanced request handling
+async function handleRequest(request) {
+  const url = new URL(request.url);
   
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return fetch(request);
+  }
+
+  // Handle API requests
+  if (url.pathname.startsWith('/api/')) {
+    return handleApiRequest(request);
+  }
+
+  // Handle static assets
+  if (CACHE_CONFIG.assets.patterns.some(pattern => pattern.test(url.pathname))) {
+    return handleAssetRequest(request);
+  }
+
+  // Handle audio files
+  if (CACHE_CONFIG.audio.patterns.some(pattern => pattern.test(url.pathname))) {
+    return handleAudioRequest(request);
+  }
+
+  // Default to network-first for other requests
+  return networkFirst(request);
+}
+
+async function handleApiRequest(request) {
+  const cache = await caches.open(CACHE_CONFIG.data.name);
+  const cachedResponse = await cache.match(request);
+
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      await cache.put(request, networkResponse.clone());
+      return networkResponse;
+    }
+    throw new Error('Network response was not ok');
+  } catch (error) {
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    return OfflineManager.handleOfflineRequest(request);
+  }
+}
+
+async function handleAssetRequest(request) {
+  const cache = await caches.open(CACHE_CONFIG.assets.name);
+  const cachedResponse = await cache.match(request);
+
   if (cachedResponse) {
+    // Update cache in background
+    fetch(request).then(async response => {
+      if (response.ok) {
+        await cache.put(request, response);
+      }
+    }).catch(() => {});
     return cachedResponse;
   }
 
   try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
+    const response = await fetch(request);
+    if (response.ok) {
+      await cache.put(request, response.clone());
+      return response;
     }
-    return networkResponse;
+    throw new Error('Network response was not ok');
   } catch (error) {
-    // If offline and no cache, return offline page for HTML requests
-    if (request.headers.get('accept').includes('text/html')) {
-      return caches.match('/offline.html');
-    }
-    throw error;
-  }
-}
-
-// Network-first strategy
-async function networkFirst(request) {
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(CACHE_CONFIG.assets.name);
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
-  } catch (error) {
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    // If offline and no cache, return offline page for HTML requests
-    if (request.headers.get('accept').includes('text/html')) {
-      return caches.match('/offline.html');
-    }
-    throw error;
-  }
-}
-
-// Background sync for failed requests
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-vocabulary') {
-    event.waitUntil(syncVocabulary());
-  }
-});
-
-async function syncVocabulary() {
-  const db = await openDB();
-  const pendingItems = await db.getAll('pendingVocabulary');
-  
-  for (const item of pendingItems) {
-    try {
-      const response = await fetch('/api/vocabulary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(item.data)
-      });
-      
-      if (response.ok) {
-        await db.delete('pendingVocabulary', item.id);
-      }
-    } catch (error) {
-      console.error('Sync failed:', error);
-    }
+    return OfflineManager.handleOfflineRequest(request);
   }
 }
 
@@ -769,129 +818,123 @@ async function getAudioQuality() {
   return 'high'; // Default to high quality
 }
 
-// Enhanced background sync with retry logic
-self.addEventListener('sync', (event) => {
-  if (event.tag === SYNC_CONFIG.tags.progress) {
-    event.waitUntil(syncWithRetry(syncPendingProgress));
-  } else if (event.tag === SYNC_CONFIG.tags.romaji) {
-    event.waitUntil(syncWithRetry(syncRomajiData));
-  }
-});
-
-// Retry logic for sync operations
-async function syncWithRetry(syncFunction, attempt = 1) {
+// Network-first strategy
+async function networkFirst(request) {
   try {
-    await syncFunction();
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(CACHE_CONFIG.assets.name);
+      cache.put(request, networkResponse.clone());
+    }
+    return networkResponse;
   } catch (error) {
-    console.error('[Service Worker] Sync attempt failed:', error);
-    // Optionally add retry logic here
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // If offline and no cache, return offline page for HTML requests
+    if (request.headers.get('accept').includes('text/html')) {
+      return caches.match('/offline.html');
+    }
+    throw error;
   }
 }
 
-// Handle push notifications
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
+// Enhanced sync handling
+class SyncManager {
+  static async syncWithRetry(syncFunction, attempt = 1) {
+    const MAX_ATTEMPTS = 3;
+    const BACKOFF_MULTIPLIER = 2;
+    const INITIAL_DELAY = 1000;
 
-  try {
-    const data = event.data.json();
-    const options = {
-      ...PUSH_CONFIG.defaultOptions,
-      ...data.options,
-      body: data.body || 'Time to study Japanese vocabulary!',
-      tag: data.tag || 'study-reminder',
-      renotify: data.renotify || false,
-      requireInteraction: data.requireInteraction || true
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(
-        data.title || PUSH_CONFIG.defaultTitle,
-        options
-      )
-    );
-  } catch (error) {
-    console.error('Error handling push notification:', error);
-    // Show a default notification if parsing fails
-    event.waitUntil(
-      self.registration.showNotification(
-        PUSH_CONFIG.defaultTitle,
-        {
-          ...PUSH_CONFIG.defaultOptions,
-          body: 'Time to study Japanese vocabulary!'
-        }
-      )
-    );
+    try {
+      await syncFunction();
+    } catch (error) {
+      if (attempt < MAX_ATTEMPTS) {
+        const delay = INITIAL_DELAY * Math.pow(BACKOFF_MULTIPLIER, attempt - 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.syncWithRetry(syncFunction, attempt + 1);
+      }
+      throw error;
+    }
   }
-});
 
-// Handle notification clicks
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  if (event.action === 'study') {
-    // Open the quiz page
-    event.waitUntil(
-      clients.openWindow('/quiz')
-    );
-  } else if (event.action === 'later') {
-    // Schedule a new notification for later
-    event.waitUntil(
-      scheduleNotification({
-        title: 'Study Reminder',
-        body: 'Ready to continue your Japanese studies?',
-        delay: 3600000 // 1 hour
-      })
-    );
-  } else {
-    // Default action: open the app
-    event.waitUntil(
-      clients.openWindow('/')
-    );
+  static async handleSync(event) {
+    const { tag } = event;
+    
+    switch (tag) {
+      case 'sync-vocabulary':
+        await this.syncWithRetry(syncVocabulary);
+        break;
+      case 'sync-progress':
+        await this.syncWithRetry(syncProgress);
+        break;
+      case 'sync-settings':
+        await this.syncWithRetry(syncSettings);
+        break;
+      default:
+        console.warn('Unknown sync tag:', tag);
+    }
   }
-});
+}
 
-// Schedule a notification
-async function scheduleNotification(data) {
-  const registration = await self.registration;
-  const options = {
-    ...PUSH_CONFIG.defaultOptions,
-    ...data.options,
-    tag: data.tag || 'study-reminder',
-    showTrigger: new TimestampTrigger(Date.now() + (data.delay || 3600000))
-  };
-
-  return registration.showNotification(
-    data.title || PUSH_CONFIG.defaultTitle,
-    options
+// Update service worker event listeners
+self.addEventListener('install', event => {
+  event.waitUntil(
+    Promise.all([
+      CacheManager.preloadCriticalAssets(),
+      CacheManager.updateCacheVersion()
+    ])
   );
-}
+});
 
-// Enhanced background sync
-const SYNC_TYPES = {
-  VOCABULARY: 'sync-vocabulary',
-  PROGRESS: 'sync-progress',
-  SETTINGS: 'sync-settings'
-};
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    Promise.all([
+      CacheManager.cleanupOldCaches(),
+      self.clients.claim()
+    ])
+  );
+});
 
-// Handle background sync
+self.addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request));
+});
+
+self.addEventListener('sync', event => {
+  event.waitUntil(SyncManager.handleSync(event));
+});
+
+// Background sync for failed requests
 self.addEventListener('sync', (event) => {
-  switch (event.tag) {
-    case SYNC_TYPES.VOCABULARY:
-      event.waitUntil(syncWithRetry(syncVocabulary));
-      break;
-    case SYNC_TYPES.PROGRESS:
-      event.waitUntil(syncWithRetry(syncProgress));
-      break;
-    case SYNC_TYPES.SETTINGS:
-      event.waitUntil(syncWithRetry(syncSettings));
-      break;
-    case SYNC_CONFIG.tags.romaji:
-      event.waitUntil(syncWithRetry(syncRomajiData));
-      break;
-    default:
-      console.log('Unknown sync tag:', event.tag);
+  if (event.tag === 'sync-vocabulary') {
+    event.waitUntil(syncVocabulary());
   }
 });
+
+async function syncVocabulary() {
+  const db = await openDB();
+  const pendingItems = await db.getAll('pendingVocabulary');
+  
+  for (const item of pendingItems) {
+    try {
+      const response = await fetch('/api/vocabulary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(item.data)
+      });
+      
+      if (response.ok) {
+        await db.delete('pendingVocabulary', item.id);
+      }
+    } catch (error) {
+      console.error('Sync failed:', error);
+    }
+  }
+}
 
 // Sync progress data
 async function syncProgress() {
@@ -989,54 +1032,6 @@ async function updateVocabularyCache() {
     console.error('Failed to update vocabulary cache:', error);
   }
 }
-
-// Add message port error handling
-self.addEventListener('message', (event) => {
-  try {
-    if (!event.data) return;
-
-    // Handle client messages
-    switch (event.data.type) {
-      case 'SKIP_WAITING':
-        self.skipWaiting();
-        break;
-      case 'CACHE_UPDATED':
-        // Notify all clients about cache update
-        self.clients.matchAll().then(clients => {
-          clients.forEach(client => {
-            try {
-              client.postMessage({
-                type: 'CACHE_UPDATED',
-                payload: event.data.payload
-              });
-            } catch (error) {
-              console.warn('Failed to send message to client:', error);
-              // If message port is closed, notify the client to reload
-              if (error.name === 'InvalidStateError') {
-                client.postMessage({ type: 'PORT_CLOSED' });
-              }
-            }
-          });
-        });
-        break;
-      default:
-        console.log('Unknown message type:', event.data.type);
-    }
-  } catch (error) {
-    console.error('Error handling message:', error);
-    // Try to notify the client about the error
-    if (event.source) {
-      try {
-        event.source.postMessage({
-          type: 'ERROR',
-          error: error.message
-        });
-      } catch (e) {
-        console.error('Failed to send error message to client:', e);
-      }
-    }
-  }
-});
 
 // Add missing syncRomajiData function
 async function syncRomajiData() {

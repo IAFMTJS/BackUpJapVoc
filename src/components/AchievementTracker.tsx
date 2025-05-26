@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
-import { useAchievements } from '../context/AchievementContext';
+import { useAchievements } from '../context/AchievementsContext';
 
 export const AchievementTracker: React.FC = () => {
   const { currentStreak } = useProgress();

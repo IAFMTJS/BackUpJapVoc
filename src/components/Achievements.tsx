@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useAchievements, Achievement, AchievementCategory } from '../context/AchievementContext';
+import { useAchievements, Achievement, AchievementCategory } from '../context/AchievementsContext';
 import { Box, Typography, Tabs, Tab, Chip, LinearProgress, Tooltip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
@@ -70,7 +70,7 @@ const AchievementsGrid = styled.div`
 `;
 
 const AchievementCard = styled.div<{ unlocked: boolean; tier: AchievementTier }>`
-  background: ${props => props.unlocked ? '#fff' : '#f5f5f5'};
+  background: ${props => props.unlocked ? 'rgba(255, 255, 255, 0.05)' : 'rgba(13, 13, 26, 0.8)'};
   border: 2px solid ${props => {
     switch (props.tier) {
       case 'bronze': return '#cd7f32';
@@ -84,10 +84,13 @@ const AchievementCard = styled.div<{ unlocked: boolean; tier: AchievementTier }>
   padding: 1rem;
   opacity: ${props => props.unlocked ? 1 : 0.7};
   transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 16px rgba(0, 247, 255, 0.1);
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 247, 255, 0.2), 0 0 32px rgba(0, 247, 255, 0.1);
+    border-color: #00f7ff;
   }
 `;
 
@@ -156,8 +159,9 @@ const categoryLabels: Record<AchievementCategory, string> = {
 };
 
 const Achievements: React.FC = () => {
-  const { getThemeClasses } = useTheme();
+  const { getThemeClasses, theme } = useTheme();
   const themeClasses = getThemeClasses();
+  const isNeonMode = theme === 'neon';
   const { 
     achievements, 
     unlockedAchievements, 
@@ -198,36 +202,58 @@ const Achievements: React.FC = () => {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         className={`p-4 rounded-lg shadow-md cursor-pointer transition-all duration-200 ${
-          isCompleted ? 'bg-accent-green/10' :
-          isInProgress ? 'bg-accent-yellow/10' :
-          'bg-dark-lighter'
+          isNeonMode
+            ? isCompleted 
+              ? 'bg-[#00f7ff]/10 border-2 border-[#00f7ff]' 
+              : isInProgress 
+                ? 'bg-[#ff3afc]/10 border-2 border-[#ff3afc]'
+                : 'bg-[#181830]/80 border-2 border-[#00f7ff]/30'
+            : isCompleted 
+              ? 'bg-accent-green/10' 
+              : isInProgress 
+                ? 'bg-accent-yellow/10'
+                : 'bg-dark-lighter'
         }`}
         onClick={() => handleAchievementClick(achievement)}
       >
         <div className="flex items-start gap-4">
-          <div className="text-4xl">{achievement.icon}</div>
+          <div className={`text-4xl ${isNeonMode ? 'text-shadow-neon' : ''}`}>
+            {achievement.icon}
+          </div>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
-              <Typography variant="h6" className="text-text-primary">
+              <Typography 
+                variant="h6" 
+                className={isNeonMode ? 'text-[#00f7ff] text-shadow-neon' : 'text-text-primary'}
+              >
                 {achievement.title}
               </Typography>
               <Chip
                 label={achievement.difficulty}
                 size="small"
                 sx={{
-                  backgroundColor: getDifficultyColor(achievement.difficulty),
-                  color: 'white',
-                  fontWeight: 'bold'
+                  backgroundColor: isNeonMode 
+                    ? getDifficultyColor(achievement.difficulty) + '40'
+                    : getDifficultyColor(achievement.difficulty),
+                  color: isNeonMode ? '#00f7ff' : 'white',
+                  fontWeight: 'bold',
+                  border: isNeonMode ? '1px solid #00f7ff' : 'none',
+                  boxShadow: isNeonMode ? '0 0 8px rgba(0, 247, 255, 0.3)' : 'none'
                 }}
               />
             </div>
-            <Typography variant="body2" className="text-text-secondary mb-3">
+            <Typography 
+              variant="body2" 
+              className={isNeonMode ? 'text-[#ff3afc]' : 'text-text-secondary mb-3'}
+            >
               {achievement.description}
             </Typography>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-text-secondary">Progress:</span>
-                <span className="text-text-primary">
+                <span className={isNeonMode ? 'text-[#00f7ff]/80' : 'text-text-secondary'}>
+                  Progress:
+                </span>
+                <span className={isNeonMode ? 'text-[#00f7ff]' : 'text-text-primary'}>
                   {achievement.progress} / {achievement.maxProgress}
                 </span>
               </div>
@@ -237,17 +263,29 @@ const Achievements: React.FC = () => {
                 sx={{
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: 'var(--background-lightest)',
+                  backgroundColor: isNeonMode ? 'rgba(0, 247, 255, 0.1)' : 'var(--background-lightest)',
                   '& .MuiLinearProgress-bar': {
-                    backgroundColor: isCompleted ? 'var(--accent-green)' :
-                                  isInProgress ? 'var(--accent-yellow)' :
-                                  'var(--accent-red)',
-                    borderRadius: 4
+                    backgroundColor: isNeonMode
+                      ? isCompleted 
+                        ? '#00f7ff'
+                        : isInProgress 
+                          ? '#ff3afc'
+                          : '#9c00ff'
+                      : isCompleted 
+                        ? 'var(--accent-green)'
+                        : isInProgress 
+                          ? 'var(--accent-yellow)'
+                          : 'var(--accent-red)',
+                    borderRadius: 4,
+                    boxShadow: isNeonMode ? '0 0 8px currentColor' : 'none'
                   }
                 }}
               />
               {isCompleted && achievement.unlockedAt && (
-                <Typography variant="caption" className="text-text-secondary">
+                <Typography 
+                  variant="caption" 
+                  className={isNeonMode ? 'text-[#00f7ff]/80' : 'text-text-secondary'}
+                >
                   Unlocked on {format(new Date(achievement.unlockedAt), 'MMM d, yyyy')}
                 </Typography>
               )}

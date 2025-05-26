@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import App, { ThemeWrapper } from './App';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
@@ -10,7 +10,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
 import { WordLevelProvider } from './context/WordLevelContext';
 import { SoundProvider } from './context/SoundContext';
-import { AchievementProvider } from './context/AchievementContext';
+import { AchievementsProvider } from './context/AchievementsContext';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -22,17 +22,19 @@ root.render(
       <AppProvider>
         <ProgressProvider>
           <WordLevelProvider>
-            <AchievementProvider>
+            <AchievementsProvider>
               <SettingsProvider>
                 <SoundProvider>
                   <AccessibilityProvider>
                     <ThemeProvider>
-                      <App />
+                      <ThemeWrapper>
+                        <App />
+                      </ThemeWrapper>
                     </ThemeProvider>
                   </AccessibilityProvider>
                 </SoundProvider>
               </SettingsProvider>
-            </AchievementProvider>
+            </AchievementsProvider>
           </WordLevelProvider>
         </ProgressProvider>
       </AppProvider>

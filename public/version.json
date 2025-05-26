@@ -1,4 +1,42 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2024-03-19"
+  "buildDate": "2024-03-19T00:00:00.000Z",
+  "features": [
+    "Offline support",
+    "Push notifications",
+    "Background sync",
+    "Achievement tracking",
+    "Progress visualization",
+    "Vocabulary management",
+    "Kanji learning",
+    "SRS system",
+    "Writing practice",
+    "Romaji conversion",
+    "Anime vocabulary",
+    "Word levels",
+    "Neon theme",
+    "Accessibility options"
+  ],
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2024-03-19",
+      "changes": [
+        "Initial release",
+        "Added offline support with service worker",
+        "Implemented push notifications with granular preferences",
+        "Added background sync for offline data",
+        "Enhanced achievement system with Firestore integration",
+        "Improved progress tracking and visualization",
+        "Added neon theme with improved visibility",
+        "Implemented accessibility features",
+        "Added comprehensive vocabulary management",
+        "Integrated SRS system for better learning",
+        "Added writing practice with stroke order",
+        "Implemented romaji conversion tools",
+        "Added anime vocabulary section",
+        "Created word level progression system"
+      ]
+    }
+  ]
 } 

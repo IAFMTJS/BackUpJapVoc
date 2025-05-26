@@ -1,8 +1,12 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
+import { useTheme } from './context/ThemeContext';
 import Navigation from './components/Navigation';
 import ThemeToggle from './components/ThemeToggle';
 import ErrorBoundary from './components/ErrorBoundary';
+import OfflineStatus from './components/OfflineStatus';
+import PushNotifications from './components/PushNotifications';
 import { initDatabase } from './utils/offlineSupport';
 import { initDictionaryDB } from './utils/dictionaryOfflineSupport';
 import './App.css';
@@ -32,72 +36,78 @@ const LoadingFallback = () => (
   </div>
 );
 
-// Database initialization component
-const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+// Theme wrapper component to handle Material-UI theme
+export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { theme } = useTheme();
+  
+  const muiTheme = createTheme({
+    palette: {
+      mode: theme === 'dark' ? 'dark' : 'light',
+      primary: {
+        main: theme === 'neon' ? '#00f7ff' : theme === 'dark' ? '#3b82f6' : '#2563eb',
+      },
+      secondary: {
+        main: theme === 'neon' ? '#ff3afc' : theme === 'dark' ? '#8b5cf6' : '#7c3aed',
+      },
+      background: {
+        default: theme === 'neon' ? '#0a0a23' : theme === 'dark' ? '#181830' : '#ffffff',
+        paper: theme === 'neon' ? '#181830' : theme === 'dark' ? '#23233a' : '#ffffff',
+      },
+      text: {
+        primary: theme === 'neon' ? '#00f7ff' : theme === 'dark' ? '#ffffff' : '#1f2937',
+        secondary: theme === 'neon' ? '#ff3afc' : theme === 'dark' ? '#d1d5db' : '#4b5563',
+      },
+    },
+    components: {
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            background: theme === 'neon' ? 'rgba(24, 24, 48, 0.8)' : 
+                      theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 
+                      'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            border: `1px solid ${
+              theme === 'neon' ? 'rgba(0, 247, 255, 0.1)' :
+              theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' :
+              'rgba(0, 0, 0, 0.1)'
+            }`,
+          },
+        },
+      },
+    },
+  });
 
+  return (
+    <MuiThemeProvider theme={muiTheme}>
+      {children}
+    </MuiThemeProvider>
+  );
+};
+
+const App: React.FC = () => {
   useEffect(() => {
     const initializeDatabases = async () => {
+      console.log('Initializing databases...');
       try {
-        console.log('Initializing databases...');
         await Promise.all([
           initDatabase(),
           initDictionaryDB()
         ]);
         console.log('All databases initialized successfully');
-        setIsInitialized(true);
-      } catch (err) {
-        console.error('Failed to initialize databases:', err);
-        setError(err instanceof Error ? err : new Error('Failed to initialize databases'));
+      } catch (error) {
+        console.error('Error initializing databases:', error);
       }
     };
 
     initializeDatabases();
   }, []);
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="text-red-500 text-xl mb-4">Error initializing application</div>
-          <p className="text-gray-600 dark:text-gray-300">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isInitialized) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600 dark:text-gray-300">Initializing application...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-};
-
-export default function App() {
   return (
     <Router>
-      <DatabaseInitializer>
-        <div className="app-background">
-          {/* Cityscape SVG as background */}
-          <img
-            src="/assets/cityscape.svg"
-            alt="Neon Cityscape"
-            className="cityscape-bg"
-            draggable={false}
-          />
+      <ErrorBoundary>
+        <div className="min-h-screen">
           <Navigation />
-          <div className="flex justify-end p-4">
-            <ThemeToggle />
-          </div>
-          <ErrorBoundary>
+          <main className="pt-16">
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -115,9 +125,13 @@ export default function App() {
                 <Route path="/word-levels" element={<WordLevels />} />
               </Routes>
             </Suspense>
-          </ErrorBoundary>
+          </main>
+          <OfflineStatus />
+          <PushNotifications />
         </div>
-      </DatabaseInitializer>
+      </ErrorBoundary>
     </Router>
   );
-} 
+};
+
+export default App; 
