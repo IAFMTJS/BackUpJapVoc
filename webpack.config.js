@@ -193,7 +193,7 @@ module.exports = (env, argv) => {
             name: 'vendor.mui',
             chunks: 'all',
             priority: 30,
-            enforce: true,
+            enforce: false,
             reuseExistingChunk: true
           },
           vendor: {
@@ -222,9 +222,7 @@ module.exports = (env, argv) => {
           }
         }
       },
-      runtimeChunk: {
-        name: (entrypoint) => `runtime-${entrypoint.name}`
-      }
+      runtimeChunk: 'single'
     },
     plugins: [
       new webpack.ProvidePlugin({
@@ -313,7 +311,6 @@ module.exports = (env, argv) => {
           'frame-src': "'none'"
         } : undefined
       }),
-      new webpack.optimize.ModuleConcatenationPlugin(),
       new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development')
       }),

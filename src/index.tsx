@@ -11,6 +11,7 @@ import { AccessibilityProvider } from './context/AccessibilityContext';
 import { WordLevelProvider } from './context/WordLevelContext';
 import { SoundProvider } from './context/SoundContext';
 import { AchievementProvider } from './context/AchievementContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -18,145 +19,127 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <ThemeProvider>
-      <ThemeWrapper>
-        <AuthProvider>
-          <AppProvider>
-            <ProgressProvider>
-              <WordLevelProvider>
-                <AchievementProvider>
-                  <SettingsProvider>
-                    <SoundProvider>
-                      <AccessibilityProvider>
-                        <App />
-                      </AccessibilityProvider>
-                    </SoundProvider>
-                  </SettingsProvider>
-                </AchievementProvider>
-              </WordLevelProvider>
-            </ProgressProvider>
-          </AppProvider>
-        </AuthProvider>
-      </ThemeWrapper>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ThemeWrapper>
+          <ErrorBoundary>
+            <AuthProvider>
+              <AppProvider>
+                <ProgressProvider>
+                  <WordLevelProvider>
+                    <AchievementProvider>
+                      <SettingsProvider>
+                        <SoundProvider>
+                          <AccessibilityProvider>
+                            <App />
+                          </AccessibilityProvider>
+                        </SoundProvider>
+                      </SettingsProvider>
+                    </AchievementProvider>
+                  </WordLevelProvider>
+                </ProgressProvider>
+              </AppProvider>
+            </AuthProvider>
+          </ErrorBoundary>
+        </ThemeWrapper>
+      </ThemeProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
 
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
-  // Force unregister any existing service workers first
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    for (const registration of registrations) {
-      registration.unregister();
-      console.log('Unregistered existing service worker:', registration.scope);
-    }
-  });
-
-  // Delay service worker registration until after initial render
-  setTimeout(() => {
-    window.addEventListener('load', async () => {
-      try {
-        console.log('Starting service worker registration process...');
-        const clientId = await getClientId();
-        
-        // Always unregister existing service worker in production
-        if (process.env.NODE_ENV === 'production') {
-          const existingRegistration = await navigator.serviceWorker.getRegistration();
-          if (existingRegistration) {
-            console.log('Unregistering existing service worker for update...');
-            await existingRegistration.unregister();
-          }
-
-          try {
-            console.log('Registering new service worker...');
-            const newRegistration = await navigator.serviceWorker.register('/service-worker.js', {
-              scope: '/',
-              updateViaCache: 'none'
-            });
-
-            // Force update check
-            if (newRegistration.active) {
-              console.log('Checking for updates...');
-              await newRegistration.update();
-            }
-
-            // Add message port error handling with retry
-            navigator.serviceWorker.addEventListener('messageerror', (event) => {
-              console.warn('Service worker message error:', event);
-              if (event.data?.type === 'PORT_CLOSED') {
-                console.log('Port closed, attempting reload...');
-                // Add a small delay before reloading
-                setTimeout(() => {
-                  if (!document.hidden) {
-                    console.log('Reloading page...');
-                    window.location.reload();
-                  }
-                }, 1000);
-              }
-            });
-
-            // Handle service worker messages
-            navigator.serviceWorker.addEventListener('message', (event) => {
-              if (!event.data) return;
-              console.log('Service worker message:', event.data);
-              
-              switch (event.data.type) {
-                case 'ERROR':
-                  console.error('Service worker error:', event.data.error);
-                  break;
-                case 'CACHE_UPDATED':
-                  console.log('Cache updated:', event.data.payload);
-                  // Force reload after cache update
-                  window.location.reload();
-                  break;
-                case 'UPDATE_AVAILABLE':
-                  console.log('Update available, reloading...');
-                  window.location.reload();
-                  break;
-              }
-            });
-
-            // Handle updates
-            newRegistration.addEventListener('updatefound', () => {
-              console.log('Update found, installing new service worker...');
-              const newWorker = newRegistration.installing;
-              if (!newWorker) return;
-
-              newWorker.addEventListener('statechange', () => {
-                console.log('Service worker state changed:', newWorker.state);
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log('New service worker installed, reloading...');
-                  window.location.reload();
-                }
-              });
-            });
-
-            // Handle controller change
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-              console.log('Service worker controller changed, reloading...');
-              window.location.reload();
-            });
-
-            console.log('ServiceWorker registration successful with scope:', newRegistration.scope);
-          } catch (error) {
-            console.error('ServiceWorker registration failed:', error);
-            // Clear any cached data that might be causing issues
-            if ('caches' in window) {
-              caches.keys().then(cacheNames => {
-                cacheNames.forEach(cacheName => {
-                  caches.delete(cacheName);
-                  console.log('Cleared cache:', cacheName);
-                });
-              });
-            }
-          }
+  // Delay service worker registration until after initial render and theme initialization
+  const registerServiceWorker = async () => {
+    try {
+      // Wait for theme initialization
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      console.log('Starting service worker registration process...');
+      const clientId = await getClientId();
+      
+      // Always unregister existing service worker in production
+      if (process.env.NODE_ENV === 'production') {
+        const existingRegistration = await navigator.serviceWorker.getRegistration();
+        if (existingRegistration) {
+          console.log('Unregistering existing service worker for update...');
+          await existingRegistration.unregister();
         }
-      } catch (error) {
-        console.error('Service worker cleanup failed:', error);
+
+        try {
+          // Clear caches before registering new service worker
+          if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            console.log('Cleared all caches before service worker registration');
+          }
+
+          console.log('Registering new service worker...');
+          const newRegistration = await navigator.serviceWorker.register('/service-worker.js', {
+            scope: '/',
+            updateViaCache: 'none'
+          });
+
+          // Handle service worker updates more gracefully
+          newRegistration.addEventListener('updatefound', () => {
+            const newWorker = newRegistration.installing;
+            if (!newWorker) return;
+
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // Instead of immediate reload, show a notification to the user
+                console.log('New version available. Please refresh to update.');
+                // You could show a notification to the user here
+              }
+            });
+          });
+
+          console.log('ServiceWorker registration successful with scope:', newRegistration.scope);
+        } catch (error) {
+          console.error('ServiceWorker registration failed:', error);
+          // Don't clear caches on registration failure to prevent data loss
+        }
       }
-    });
-  }, 2000); // Delay service worker registration by 2 seconds
+    } catch (error) {
+      console.error('Service worker initialization failed:', error);
+    }
+  };
+
+  // Register service worker after window load
+  window.addEventListener('load', registerServiceWorker);
 }
+
+// Modify the global error handler to be more specific
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+  
+  // Handle specific error types
+  if (event.error?.message?.includes('theme')) {
+    console.log('Theme-related error detected, attempting recovery...');
+    // Instead of immediate reload, try to recover theme state
+    const root = document.getElementById('root');
+    if (root) {
+      // Force a theme re-initialization
+      root.setAttribute('data-theme', 'dark');
+      // Then reload
+      setTimeout(() => window.location.reload(), 1000);
+    }
+  } else if (event.error?.message?.includes('call')) {
+    console.log('Function call error detected, attempting recovery...');
+    // For call-related errors, try clearing runtime cache
+    if ('caches' in window) {
+      caches.keys().then(cacheNames => {
+        const runtimeCache = cacheNames.find(name => name.includes('runtime'));
+        if (runtimeCache) {
+          caches.delete(runtimeCache).then(() => {
+            console.log('Cleared runtime cache, reloading...');
+            window.location.reload();
+          });
+        }
+      });
+    }
+  }
+});
 
 // Add a function to clear all caches and reload
 const clearCachesAndReload = async () => {
@@ -171,15 +154,6 @@ const clearCachesAndReload = async () => {
   }
   window.location.reload();
 };
-
-// Add a global error handler
-window.addEventListener('error', (event) => {
-  console.error('Global error:', event.error);
-  // If we get a theme-related error, try clearing caches and reloading
-  if (event.error?.message?.includes('theme')) {
-    clearCachesAndReload();
-  }
-});
 
 // Helper function to get a unique client ID
 async function getClientId(): Promise<string> {

@@ -42,21 +42,11 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
   const themeContext = useTheme();
   const [isThemeReady, setIsThemeReady] = React.useState(false);
 
-  // Ensure theme is ready before rendering children
-  React.useEffect(() => {
-    // Only set theme as ready if we have both the theme context and a valid theme value
-    if (themeContext && typeof themeContext.theme === 'string' && ['dark', 'light', 'neon'].includes(themeContext.theme)) {
-      setIsThemeReady(true);
-    }
-  }, [themeContext]);
-
   // Create a stable theme object with proper type checking
   const muiTheme = React.useMemo(() => {
-    // Ensure we have a valid theme value
-    const theme = (themeContext?.theme && ['dark', 'light', 'neon'].includes(themeContext.theme)) 
-      ? themeContext.theme 
-      : 'dark';
-
+    // Default to dark theme if context is not ready
+    const theme = themeContext?.theme || 'dark';
+    
     return createTheme({
       palette: {
         mode: theme === 'dark' || theme === 'neon' ? 'dark' : 'light',
@@ -95,6 +85,13 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
       },
     });
   }, [themeContext?.theme]);
+
+  // Ensure theme is ready before rendering children
+  React.useEffect(() => {
+    if (muiTheme && muiTheme.palette && muiTheme.palette.mode) {
+      setIsThemeReady(true);
+    }
+  }, [muiTheme]);
 
   if (!isThemeReady) {
     return (
@@ -193,18 +190,50 @@ const App: React.FC = () => {
 
   // Loading state for context initialization
   const [isContextsReady, setIsContextsReady] = useState(false);
+  const [initError, setInitError] = useState<Error | null>(null);
 
-  // Check if all contexts are ready
+  // Check if all contexts are ready with better error handling
   useEffect(() => {
-    const checkContextsReady = () => {
-      // Add a small delay to ensure all contexts are properly initialized
-      setTimeout(() => {
+    const checkContextsReady = async () => {
+      try {
+        // Initialize database first
+        await initDictionaryDB();
+        
+        // Add a small delay to ensure all contexts are properly initialized
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify theme context is ready
+        const root = document.getElementById('root');
+        if (root && !root.getAttribute('data-theme')) {
+          root.setAttribute('data-theme', 'dark');
+        }
+        
         setIsContextsReady(true);
-      }, 100);
+      } catch (error) {
+        console.error('Context initialization failed:', error);
+        setInitError(error instanceof Error ? error : new Error('Failed to initialize contexts'));
+      }
     };
 
     checkContextsReady();
   }, []);
+
+  if (initError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#181830]">
+        <div className="text-center p-6 bg-white/10 backdrop-blur-lg rounded-lg">
+          <h2 className="text-xl font-bold text-red-400 mb-2">Initialization Error</h2>
+          <p className="text-gray-300 mb-4">{initError.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!isContextsReady) {
     return <LoadingFallback />;
@@ -212,10 +241,25 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <ErrorBoundary>
+      <ErrorBoundary
+        fallback={
+          <div className="flex items-center justify-center min-h-screen bg-[#181830]">
+            <div className="text-center p-6 bg-white/10 backdrop-blur-lg rounded-lg">
+              <h2 className="text-xl font-bold text-red-400 mb-2">Application Error</h2>
+              <p className="text-gray-300 mb-4">An error occurred while loading the application.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Reload Application
+              </button>
+            </div>
+          </div>
+        }
+      >
         <DatabaseProvider>
           <ErrorBoundary>
-            <div className="min-h-screen">
+            <div className="min-h-screen" data-theme="dark">
               <Navigation />
               <main className="pt-16">
                 <ErrorBoundary>
