@@ -223,8 +223,7 @@ module.exports = (env, argv) => {
         }
       },
       runtimeChunk: {
-        name: (entrypoint) => `runtime-${entrypoint.name}`,
-        minSize: 0
+        name: (entrypoint) => `runtime-${entrypoint.name}`
       }
     },
     plugins: [
