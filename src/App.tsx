@@ -39,9 +39,10 @@ const LoadingFallback = () => (
 
 // Theme wrapper component to handle Material-UI theme
 export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { theme } = useTheme();
+  const themeContext = useTheme();
+  const theme = themeContext?.theme || 'dark'; // Provide a default theme if context is not ready
   
-  const muiTheme = createTheme({
+  const muiTheme = React.useMemo(() => createTheme({
     palette: {
       mode: theme === 'dark' ? 'dark' : 'light',
       primary: {
@@ -77,13 +78,10 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
         },
       },
     },
-  });
-
-  // Ensure the theme is properly memoized to prevent unnecessary re-renders
-  const memoizedTheme = React.useMemo(() => muiTheme, [theme]);
+  }), [theme]);
 
   return (
-    <MuiThemeProvider theme={memoizedTheme}>
+    <MuiThemeProvider theme={muiTheme}>
       {children}
     </MuiThemeProvider>
   );
