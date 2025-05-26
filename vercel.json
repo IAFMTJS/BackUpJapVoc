@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "yarn vercel-build",
   "outputDirectory": "build",
   "framework": "create-react-app",
   "builds": [
@@ -9,7 +9,7 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build",
-        "buildCommand": "npm run vercel-build"
+        "buildCommand": "yarn vercel-build"
       }
     }
   ],

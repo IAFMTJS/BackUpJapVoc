@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense, ErrorBoundary } from 'react';
+import React, { useState, lazy, Suspense, Component } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Link } from 'react-router-dom';
 import { useProgress } from '../context/ProgressContext';
@@ -43,6 +43,26 @@ const ComponentLoadingFallback = () => (
 );
 
 // Component error boundary
+class ErrorBoundary extends Component<{ children: React.ReactNode; fallback: React.ReactNode }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
+// Component error boundary wrapper
 const ComponentErrorBoundary: React.FC<{ children: React.ReactNode; componentName: string }> = ({ children, componentName }) => (
   <ErrorBoundary
     fallback={
