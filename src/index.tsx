@@ -18,122 +18,127 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <AppProvider>
-        <ProgressProvider>
-          <WordLevelProvider>
-            <AchievementProvider>
-              <SettingsProvider>
-                <SoundProvider>
-                  <AccessibilityProvider>
-                    <ThemeProvider>
-                      <ThemeWrapper>
+    <ThemeProvider>
+      <ThemeWrapper>
+        <AuthProvider>
+          <AppProvider>
+            <ProgressProvider>
+              <WordLevelProvider>
+                <AchievementProvider>
+                  <SettingsProvider>
+                    <SoundProvider>
+                      <AccessibilityProvider>
                         <App />
-                      </ThemeWrapper>
-                    </ThemeProvider>
-                  </AccessibilityProvider>
-                </SoundProvider>
-              </SettingsProvider>
-            </AchievementProvider>
-          </WordLevelProvider>
-        </ProgressProvider>
-      </AppProvider>
-    </AuthProvider>
+                      </AccessibilityProvider>
+                    </SoundProvider>
+                  </SettingsProvider>
+                </AchievementProvider>
+              </WordLevelProvider>
+            </ProgressProvider>
+          </AppProvider>
+        </AuthProvider>
+      </ThemeWrapper>
+    </ThemeProvider>
   </React.StrictMode>
 );
 
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
-    try {
-      const clientId = await getClientId();
-      
-      // Check if we need to update the service worker
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration) {
-        const currentVersion = await fetch('/version.json').then(r => r.json()).catch(() => ({ version: '1.0.0' }));
-        const cachedVersion = await caches.match('/version.json').then(r => r.json()).catch(() => ({ version: '1.0.0' }));
+  // Delay service worker registration until after initial render
+  setTimeout(() => {
+    window.addEventListener('load', async () => {
+      try {
+        const clientId = await getClientId();
         
-        if (currentVersion.version !== cachedVersion.version) {
-          // Only unregister if versions don't match
-          await registration.unregister();
-          console.log('Unregistered outdated service worker');
-        } else {
-          console.log('Service worker is up to date');
-          return; // Skip re-registration if versions match
+        // Check if we need to update the service worker
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          const currentVersion = await fetch('/version.json').then(r => r.json()).catch(() => ({ version: '1.0.0' }));
+          const cachedVersion = await caches.match('/version.json').then(r => r.json()).catch(() => ({ version: '1.0.0' }));
+          
+          if (currentVersion.version !== cachedVersion.version) {
+            // Only unregister if versions don't match
+            await registration.unregister();
+            console.log('Unregistered outdated service worker');
+          } else {
+            console.log('Service worker is up to date');
+            return; // Skip re-registration if versions match
+          }
         }
-      }
 
-      if (process.env.NODE_ENV === 'production') {
-        try {
-          const newRegistration = await navigator.serviceWorker.register('/service-worker.js', {
-            scope: '/',
-            updateViaCache: 'none'
-          });
+        if (process.env.NODE_ENV === 'production') {
+          try {
+            const newRegistration = await navigator.serviceWorker.register('/service-worker.js', {
+              scope: '/',
+              updateViaCache: 'none'
+            });
 
-          // Add message port error handling
-          navigator.serviceWorker.addEventListener('messageerror', (event) => {
-            console.warn('Service worker message error:', event);
-            if (event.data?.type === 'PORT_CLOSED') {
-              // Only reload if we're not already unloading
-              if (!document.hidden) {
-                window.location.reload();
-              }
-            }
-          });
-
-          // Handle service worker messages
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            if (!event.data) return;
-            
-            switch (event.data.type) {
-              case 'ERROR':
-                console.error('Service worker error:', event.data.error);
-                break;
-              case 'CACHE_UPDATED':
-                console.log('Cache updated:', event.data.payload);
-                break;
-            }
-          });
-
-          // Handle updates
-          newRegistration.addEventListener('updatefound', () => {
-            const newWorker = newRegistration.installing;
-            if (!newWorker) return;
-
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New content is available, show update prompt
-                if (confirm('New version available! Would you like to update?')) {
-                  newWorker.postMessage({ type: 'SKIP_WAITING' });
-                }
+            // Add message port error handling with retry
+            navigator.serviceWorker.addEventListener('messageerror', (event) => {
+              console.warn('Service worker message error:', event);
+              if (event.data?.type === 'PORT_CLOSED') {
+                // Add a small delay before reloading
+                setTimeout(() => {
+                  if (!document.hidden) {
+                    window.location.reload();
+                  }
+                }, 1000);
               }
             });
-          });
 
-          // Handle page unload
-          window.addEventListener('beforeunload', async () => {
-            try {
-              const activeWorker = newRegistration.active;
-              if (activeWorker) {
-                activeWorker.postMessage({ type: 'CLIENT_UNLOADING', clientId });
-                // Give the service worker time to handle the message
-                await new Promise(resolve => setTimeout(resolve, 100));
+            // Handle service worker messages
+            navigator.serviceWorker.addEventListener('message', (event) => {
+              if (!event.data) return;
+              
+              switch (event.data.type) {
+                case 'ERROR':
+                  console.error('Service worker error:', event.data.error);
+                  break;
+                case 'CACHE_UPDATED':
+                  console.log('Cache updated:', event.data.payload);
+                  break;
               }
-            } catch (error) {
-              console.warn('Failed to notify service worker before unload:', error);
-            }
-          });
+            });
 
-          console.log('ServiceWorker registration successful with scope:', newRegistration.scope);
-        } catch (error) {
-          console.error('ServiceWorker registration failed:', error);
+            // Handle updates
+            newRegistration.addEventListener('updatefound', () => {
+              const newWorker = newRegistration.installing;
+              if (!newWorker) return;
+
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New content is available, show update prompt
+                  if (confirm('New version available! Would you like to update?')) {
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                }
+              });
+            });
+
+            // Handle page unload
+            window.addEventListener('beforeunload', async () => {
+              try {
+                const activeWorker = newRegistration.active;
+                if (activeWorker) {
+                  activeWorker.postMessage({ type: 'CLIENT_UNLOADING', clientId });
+                  // Give the service worker time to handle the message
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                }
+              } catch (error) {
+                console.warn('Failed to notify service worker before unload:', error);
+              }
+            });
+
+            console.log('ServiceWorker registration successful with scope:', newRegistration.scope);
+          } catch (error) {
+            console.error('ServiceWorker registration failed:', error);
+          }
         }
+      } catch (error) {
+        console.error('Service worker cleanup failed:', error);
       }
-    } catch (error) {
-      console.error('Service worker cleanup failed:', error);
-    }
-  });
+    });
+  }, 2000); // Delay service worker registration by 2 seconds
 }
 
 // Helper function to get a unique client ID

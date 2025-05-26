@@ -40,45 +40,67 @@ const LoadingFallback = () => (
 // Theme wrapper component to handle Material-UI theme
 export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const themeContext = useTheme();
-  const theme = themeContext?.theme || 'dark'; // Provide a default theme if context is not ready
-  
-  const muiTheme = React.useMemo(() => createTheme({
-    palette: {
-      mode: theme === 'dark' ? 'dark' : 'light',
-      primary: {
-        main: theme === 'neon' ? '#00f7ff' : theme === 'dark' ? '#3b82f6' : '#2563eb',
+  const [isThemeReady, setIsThemeReady] = React.useState(false);
+
+  // Ensure theme is ready before rendering children
+  React.useEffect(() => {
+    if (themeContext && themeContext.theme) {
+      setIsThemeReady(true);
+    }
+  }, [themeContext]);
+
+  // Create a stable theme object
+  const muiTheme = React.useMemo(() => {
+    const theme = themeContext?.theme || 'dark';
+    return createTheme({
+      palette: {
+        mode: theme === 'dark' ? 'dark' : 'light',
+        primary: {
+          main: theme === 'neon' ? '#00f7ff' : theme === 'dark' ? '#3b82f6' : '#2563eb',
+        },
+        secondary: {
+          main: theme === 'neon' ? '#ff3afc' : theme === 'dark' ? '#8b5cf6' : '#7c3aed',
+        },
+        background: {
+          default: theme === 'neon' ? '#0a0a23' : theme === 'dark' ? '#181830' : '#ffffff',
+          paper: theme === 'neon' ? '#181830' : theme === 'dark' ? '#23233a' : '#ffffff',
+        },
+        text: {
+          primary: theme === 'neon' ? '#00f7ff' : theme === 'dark' ? '#ffffff' : '#1f2937',
+          secondary: theme === 'neon' ? '#ff3afc' : theme === 'dark' ? '#d1d5db' : '#4b5563',
+        },
       },
-      secondary: {
-        main: theme === 'neon' ? '#ff3afc' : theme === 'dark' ? '#8b5cf6' : '#7c3aed',
-      },
-      background: {
-        default: theme === 'neon' ? '#0a0a23' : theme === 'dark' ? '#181830' : '#ffffff',
-        paper: theme === 'neon' ? '#181830' : theme === 'dark' ? '#23233a' : '#ffffff',
-      },
-      text: {
-        primary: theme === 'neon' ? '#00f7ff' : theme === 'dark' ? '#ffffff' : '#1f2937',
-        secondary: theme === 'neon' ? '#ff3afc' : theme === 'dark' ? '#d1d5db' : '#4b5563',
-      },
-    },
-    spacing: (factor: number) => `${8 * factor}px`,
-    components: {
-      MuiCard: {
-        styleOverrides: {
-          root: {
-            background: theme === 'neon' ? 'rgba(24, 24, 48, 0.8)' : 
-                      theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 
-                      'rgba(255, 255, 255, 0.8)',
-            backdropFilter: 'blur(10px)',
-            border: `1px solid ${
-              theme === 'neon' ? 'rgba(0, 247, 255, 0.1)' :
-              theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' :
-              'rgba(0, 0, 0, 0.1)'
-            }`,
+      spacing: (factor: number) => `${8 * factor}px`,
+      components: {
+        MuiCard: {
+          styleOverrides: {
+            root: {
+              background: theme === 'neon' ? 'rgba(24, 24, 48, 0.8)' : 
+                        theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 
+                        'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${
+                theme === 'neon' ? 'rgba(0, 247, 255, 0.1)' :
+                theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' :
+                'rgba(0, 0, 0, 0.1)'
+              }`,
+            },
           },
         },
       },
-    },
-  }), [theme]);
+    });
+  }, [themeContext?.theme]);
+
+  if (!isThemeReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#181830]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-lg text-white">Loading theme...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <MuiThemeProvider theme={muiTheme}>
