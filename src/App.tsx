@@ -44,17 +44,22 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Ensure theme is ready before rendering children
   React.useEffect(() => {
-    if (themeContext && themeContext.theme) {
+    // Only set theme as ready if we have both the theme context and a valid theme value
+    if (themeContext && typeof themeContext.theme === 'string' && ['dark', 'light', 'neon'].includes(themeContext.theme)) {
       setIsThemeReady(true);
     }
   }, [themeContext]);
 
-  // Create a stable theme object
+  // Create a stable theme object with proper type checking
   const muiTheme = React.useMemo(() => {
-    const theme = themeContext?.theme || 'dark';
+    // Ensure we have a valid theme value
+    const theme = (themeContext?.theme && ['dark', 'light', 'neon'].includes(themeContext.theme)) 
+      ? themeContext.theme 
+      : 'dark';
+
     return createTheme({
       palette: {
-        mode: theme === 'dark' ? 'dark' : 'light',
+        mode: theme === 'dark' || theme === 'neon' ? 'dark' : 'light',
         primary: {
           main: theme === 'neon' ? '#00f7ff' : theme === 'dark' ? '#3b82f6' : '#2563eb',
         },

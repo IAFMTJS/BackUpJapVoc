@@ -50,26 +50,42 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // Load theme from localStorage or default to 'dark'
+  // Load theme from localStorage or default to 'dark' with validation
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('theme') as Theme) || 'dark';
+      const savedTheme = localStorage.getItem('theme');
+      return (savedTheme && ['dark', 'light', 'neon'].includes(savedTheme)) 
+        ? (savedTheme as Theme) 
+        : 'dark';
     }
     return 'dark';
   });
 
   // Persist theme to localStorage and update body class
   React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('theme', theme);
-      // Remove theme class management from body
+    if (typeof window !== 'undefined' && theme) {
+      try {
+        localStorage.setItem('theme', theme);
+      } catch (error) {
+        console.error('Failed to save theme to localStorage:', error);
+      }
     }
   }, [theme]);
 
+  // Validate theme before setting it
+  const setThemeWithValidation = (newTheme: Theme) => {
+    if (['dark', 'light', 'neon'].includes(newTheme)) {
+      setTheme(newTheme);
+    } else {
+      console.warn(`Invalid theme value: ${newTheme}. Defaulting to 'dark'`);
+      setTheme('dark');
+    }
+  };
+
   // Toggle logic cycles through dark -> light -> neon -> dark
   const toggleTheme = () => {
-    setTheme((prev) =>
-      prev === 'dark' ? 'light' : prev === 'light' ? 'neon' : 'dark'
+    setThemeWithValidation(
+      theme === 'dark' ? 'light' : theme === 'light' ? 'neon' : 'dark'
     );
   };
 
@@ -188,7 +204,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const value = {
     theme,
-    setTheme,
+    setTheme: setThemeWithValidation,
     getThemeClasses,
     toggleTheme,
   };
