@@ -141,30 +141,209 @@ const OfflineManager = {
   }
 };
 
-// Request handling
+// Enhanced request handling
 async function handleRequest(request) {
-  // Handle API requests
-  if (request.url.includes('/api/')) {
-    return OfflineManager.handleOfflineRequest(request);
-  }
+  try {
+    const url = new URL(request.url);
+    
+    // Skip non-GET requests
+    if (request.method !== 'GET') {
+      return fetch(request);
+    }
 
-  // Handle static assets
-  if (request.url.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
-    return OfflineManager.handleOfflineRequest(request);
-  }
+    // Handle API requests
+    if (url.pathname.startsWith('/api/')) {
+      return await handleApiRequest(request);
+    }
 
-  // Handle audio files
-  if (request.url.includes('/audio/')) {
-    return OfflineManager.handleOfflineRequest(request);
-  }
+    // Handle static assets
+    if (CACHE_CONFIG.assets.patterns.some(pattern => pattern.test(url.pathname))) {
+      return await handleAssetRequest(request);
+    }
 
-  // Handle HTML requests
-  if (request.headers.get('accept').includes('text/html')) {
-    return OfflineManager.handleOfflineRequest(request);
-  }
+    // Handle audio files
+    if (CACHE_CONFIG.audio.patterns.some(pattern => pattern.test(url.pathname))) {
+      return await handleAudioRequest(request);
+    }
 
-  // Default to network-first strategy
-  return fetch(request);
+    // Default to network-first for other requests
+    return await networkFirst(request);
+  } catch (error) {
+    console.error('[Service Worker] Error handling request:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'service_worker_error',
+        message: 'An error occurred while processing your request.',
+        timestamp: Date.now()
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+async function handleApiRequest(request) {
+  try {
+    const cache = await caches.open(CACHE_CONFIG.data.name);
+    const cachedResponse = await cache.match(request);
+
+    // Try network first
+    try {
+      const networkResponse = await fetch(request);
+      if (networkResponse.ok) {
+        // Cache the successful response
+        await cache.put(request, networkResponse.clone());
+        return networkResponse;
+      }
+      throw new Error(`Network response was not ok: ${networkResponse.status}`);
+    } catch (error) {
+      // If network fails and we have a cached response, use it
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      // If no cache and offline, return offline response
+      if (!navigator.onLine) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'offline',
+            message: 'You are currently offline. Please check your connection.',
+            timestamp: Date.now()
+          }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error('[Service Worker] API request error:', error);
+    throw error;
+  }
+}
+
+async function handleAssetRequest(request) {
+  try {
+    const cache = await caches.open(CACHE_CONFIG.assets.name);
+    const cachedResponse = await cache.match(request);
+
+    if (cachedResponse) {
+      // Update cache in background if online
+      if (navigator.onLine) {
+        fetch(request).then(async response => {
+          if (response.ok) {
+            await cache.put(request, response);
+          }
+        }).catch(() => {});
+      }
+      return cachedResponse;
+    }
+
+    // If not in cache, try network
+    if (navigator.onLine) {
+      const response = await fetch(request);
+      if (response.ok) {
+        await cache.put(request, response.clone());
+        return response;
+      }
+    }
+
+    // If offline and no cache, return offline page for HTML requests
+    if (request.headers.get('accept').includes('text/html')) {
+      return await caches.match('/offline.html');
+    }
+
+    throw new Error('Asset not available offline');
+  } catch (error) {
+    console.error('[Service Worker] Asset request error:', error);
+    throw error;
+  }
+}
+
+async function handleAudioRequest(request) {
+  try {
+    const cache = await caches.open(CACHE_CONFIG.audio.name);
+    const quality = await getAudioQuality();
+    
+    // Try cache first
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      // Update cache in background if online
+      if (navigator.onLine) {
+        fetch(request).then(async response => {
+          if (response.ok) {
+            const blob = await response.blob();
+            const optimizedBlob = await optimizeAudio(blob, quality);
+            await cache.put(request, new Response(optimizedBlob));
+          }
+        }).catch(() => {});
+      }
+      return cachedResponse;
+    }
+
+    // If not in cache and online, fetch and optimize
+    if (navigator.onLine) {
+      const response = await fetch(request);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch audio: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const optimizedBlob = await optimizeAudio(blob, quality);
+      const optimizedResponse = new Response(optimizedBlob);
+      
+      await cache.put(request, optimizedResponse.clone());
+      return optimizedResponse;
+    }
+
+    // If offline and not in cache, return fallback
+    return new Response(
+      JSON.stringify({ 
+        error: 'offline',
+        message: 'Audio not available offline. Using text-to-speech as fallback.',
+        timestamp: Date.now()
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    console.error('[Service Worker] Audio request error:', error);
+    throw error;
+  }
+}
+
+async function networkFirst(request) {
+  try {
+    if (navigator.onLine) {
+      const networkResponse = await fetch(request);
+      if (networkResponse.ok) {
+        const cache = await caches.open(CACHE_CONFIG.assets.name);
+        await cache.put(request, networkResponse.clone());
+        return networkResponse;
+      }
+    }
+
+    // If network fails or offline, try cache
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // If no cache and HTML request, return offline page
+    if (request.headers.get('accept').includes('text/html')) {
+      return await caches.match('/offline.html');
+    }
+
+    throw new Error('Resource not available');
+  } catch (error) {
+    console.error('[Service Worker] Network-first request error:', error);
+    throw error;
+  }
 }
 
 // Service worker event listeners
@@ -224,13 +403,36 @@ async function syncData() {
   }
 }
 
+// Database connection management
+let dbConnection = null;
+let connectionPromise = null;
+
 // Database helpers
 async function openDatabase() {
-  return new Promise((resolve, reject) => {
+  // If we already have a connection, return it
+  if (dbConnection) {
+    return dbConnection;
+  }
+
+  // If we have a pending connection, wait for it
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  // Create a new connection
+  connectionPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open('JapVocDB', 1);
     
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => {
+      connectionPromise = null;
+      reject(request.error);
+    };
+
+    request.onsuccess = () => {
+      dbConnection = request.result;
+      connectionPromise = null;
+      resolve(dbConnection);
+    };
     
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
@@ -243,7 +445,15 @@ async function openDatabase() {
         db.createObjectStore('settings');
       }
     };
+
+    // Handle connection close
+    request.result.onclose = () => {
+      dbConnection = null;
+      connectionPromise = null;
+    };
   });
+
+  return connectionPromise;
 }
 
 async function getPendingChanges(db) {
@@ -610,79 +820,6 @@ const OfflineManager = {
   }
 };
 
-// Enhanced request handling
-async function handleRequest(request) {
-  const url = new URL(request.url);
-  
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
-    return fetch(request);
-  }
-
-  // Handle API requests
-  if (url.pathname.startsWith('/api/')) {
-    return handleApiRequest(request);
-  }
-
-  // Handle static assets
-  if (CACHE_CONFIG.assets.patterns.some(pattern => pattern.test(url.pathname))) {
-    return handleAssetRequest(request);
-  }
-
-  // Handle audio files
-  if (CACHE_CONFIG.audio.patterns.some(pattern => pattern.test(url.pathname))) {
-    return handleAudioRequest(request);
-  }
-
-  // Default to network-first for other requests
-  return networkFirst(request);
-}
-
-async function handleApiRequest(request) {
-  const cache = await caches.open(CACHE_CONFIG.data.name);
-  const cachedResponse = await cache.match(request);
-
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      await cache.put(request, networkResponse.clone());
-      return networkResponse;
-    }
-    throw new Error('Network response was not ok');
-  } catch (error) {
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    return OfflineManager.handleOfflineRequest(request);
-  }
-}
-
-async function handleAssetRequest(request) {
-  const cache = await caches.open(CACHE_CONFIG.assets.name);
-  const cachedResponse = await cache.match(request);
-
-  if (cachedResponse) {
-    // Update cache in background
-    fetch(request).then(async response => {
-      if (response.ok) {
-        await cache.put(request, response);
-      }
-    }).catch(() => {});
-    return cachedResponse;
-  }
-
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      await cache.put(request, response.clone());
-      return response;
-    }
-    throw new Error('Network response was not ok');
-  } catch (error) {
-    return OfflineManager.handleOfflineRequest(request);
-  }
-}
-
 // Add audio optimization function
 async function optimizeAudio(audioBlob, quality = 'high') {
   const config = AUDIO_OPTIMIZATION[quality];
@@ -726,83 +863,6 @@ async function optimizeAudio(audioBlob, quality = 'high') {
   }
 }
 
-// Update handleAudioRequest function
-async function handleAudioRequest(request) {
-  const cache = await caches.open(CACHE_CONFIG.audio.name);
-  const quality = await getAudioQuality(); // Get user's preferred quality
-  
-  try {
-    // Try cache first
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) {
-      console.log('[Service Worker] Serving audio from cache:', request.url);
-      
-      // Update cache in background if online
-      if (navigator.onLine) {
-        fetch(request).then(async response => {
-          if (response.ok) {
-            const blob = await response.blob();
-            const optimizedBlob = await optimizeAudio(blob, quality);
-            await cache.put(request, new Response(optimizedBlob));
-            console.log('[Service Worker] Updated audio cache:', request.url);
-          }
-        }).catch(error => {
-          console.error('[Service Worker] Failed to update audio cache:', error);
-        });
-      }
-      
-      return cachedResponse;
-    }
-    
-    // If not in cache and online, fetch and optimize
-    if (navigator.onLine) {
-      console.log('[Service Worker] Fetching audio from network:', request.url);
-      const response = await fetch(request);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch audio: ${response.status}`);
-      }
-      
-      // Optimize the audio
-      const blob = await response.blob();
-      const optimizedBlob = await optimizeAudio(blob, quality);
-      
-      // Cache the optimized version
-      await cache.put(request, new Response(optimizedBlob));
-      return new Response(optimizedBlob);
-    }
-    
-    // If offline and not in cache, return fallback response
-    return new Response(
-      JSON.stringify({ 
-        error: 'offline',
-        message: 'Audio not available offline. Using text-to-speech as fallback.'
-      }),
-      {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-  } catch (error) {
-    console.error('[Service Worker] Error handling audio request:', error);
-    
-    // If offline, return fallback response
-    if (!navigator.onLine) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'offline',
-          message: 'Audio not available offline. Using text-to-speech as fallback.'
-        }),
-        {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    }
-    
-    throw error;
-  }
-}
-
 // Add helper function to get user's preferred audio quality
 async function getAudioQuality() {
   try {
@@ -816,29 +876,6 @@ async function getAudioQuality() {
     console.error('[Service Worker] Failed to get audio quality settings:', error);
   }
   return 'high'; // Default to high quality
-}
-
-// Network-first strategy
-async function networkFirst(request) {
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(CACHE_CONFIG.assets.name);
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
-  } catch (error) {
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    // If offline and no cache, return offline page for HTML requests
-    if (request.headers.get('accept').includes('text/html')) {
-      return caches.match('/offline.html');
-    }
-    throw error;
-  }
 }
 
 // Enhanced sync handling

@@ -279,6 +279,23 @@ const pronunciationTips: Record<string, PronunciationTip> = {
   }
 };
 
+// Add Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+// Add function to get random subset without replacement
+const getRandomSubset = <T,>(array: T[], count: number): T[] => {
+  if (count >= array.length) return shuffleArray(array);
+  const shuffled = shuffleArray(array);
+  return shuffled.slice(0, count);
+};
+
 const VocabularyQuiz: React.FC = () => {
   const { isDarkMode, getThemeClasses } = useTheme();
   const { settings: appSettings } = useApp();
@@ -334,6 +351,32 @@ const VocabularyQuiz: React.FC = () => {
     }
   }, [inView, controls]);
 
+  // Add debug effect for quiz state
+  useEffect(() => {
+    console.log('Quiz State Updated:', {
+      mode: quizState.mode,
+      currentQuestion: quizState.currentQuestion,
+      showFeedback: quizState.showFeedback,
+      isCorrect: quizState.isCorrect,
+      questions: quizState.questions.length,
+      currentWord: quizState.currentWord,
+      score: quizState.score,
+      totalQuestions: quizState.totalQuestions
+    });
+  }, [quizState]);
+
+  // Add debug effect for quiz initialization
+  useEffect(() => {
+    if (quizState.mode === 'quiz') {
+      console.log('Quiz Initialized:', {
+        totalQuestions: quizState.totalQuestions,
+        currentWord: quizState.currentWord,
+        questions: quizState.questions,
+        settings: settings
+      });
+    }
+  }, [quizState.mode, quizState.totalQuestions, quizState.currentWord, quizState.questions, settings]);
+
   // Get available categories
   const getAvailableCategories = useCallback(() => {
     const categorySet = new Set<string>();
@@ -353,11 +396,6 @@ const VocabularyQuiz: React.FC = () => {
   // Filter words based on settings
   const getFilteredWords = useCallback(() => {
     return allWords.filter(word => {
-      // Exclude hiragana and katakana words
-      if (word.category === 'hiragana' || word.category === 'katakana') {
-        return false;
-      }
-      
       // Filter by level
       if (word.level > settings.level) {
         return false;
@@ -374,56 +412,65 @@ const VocabularyQuiz: React.FC = () => {
 
   const handleStartQuiz = useCallback(() => {
     const filteredWords = getFilteredWords();
-    console.log('Filtered words count:', filteredWords.length);
+    console.log('Starting Quiz:', {
+      filteredWordsCount: filteredWords.length,
+      settings: settings,
+      questionCount: settings.questionCount
+    });
 
     if (filteredWords.length === 0) {
       alert('No words available for the selected settings. Please try different settings.');
       return;
     }
 
-    // Shuffle and select questions
-    const shuffled = [...filteredWords]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, settings.questionCount);
+    // Use improved randomization
+    const selectedQuestions = getRandomSubset(filteredWords, settings.questionCount);
 
-    setQuizState({
-      mode: 'quiz',
-      currentQuestion: 0,
-      selectedAnswer: null,
-      showFeedback: false,
-      isCorrect: null,
-      showCorrect: false,
-      currentWord: shuffled[0],
-      questions: shuffled,
-      score: 0,
-      totalQuestions: shuffled.length,
-      completed: false,
-      markedForReview: new Set(),
-      skippedQuestions: new Set(),
-      mistakes: [],
-      practiceMode: settings.practiceMode,
-      wordStats: {},
-      showExamples: false,
-      learnProgress: 0,
-      currentComparison: null,
-      pronunciationPractice: null
+    console.log('Selected Questions:', {
+      count: selectedQuestions.length,
+      firstWord: selectedQuestions[0]
+    });
+
+    setQuizState(prev => {
+      const newState = {
+        mode: 'quiz',
+        currentQuestion: 0,
+        selectedAnswer: null,
+        showFeedback: false,
+        isCorrect: null,
+        showCorrect: false,
+        currentWord: selectedQuestions[0],
+        questions: selectedQuestions,
+        score: 0,
+        totalQuestions: selectedQuestions.length,
+        completed: false,
+        markedForReview: new Set(),
+        skippedQuestions: new Set(),
+        mistakes: [],
+        practiceMode: settings.practiceMode,
+        wordStats: {},
+        showExamples: false,
+        learnProgress: 0,
+        currentComparison: null,
+        pronunciationPractice: null
+      };
+      console.log('Setting New Quiz State:', newState);
+      return newState;
     });
 
     setScore(0);
     setCurrentStreak(0);
     setBestStreak(0);
-  }, [getFilteredWords, settings.questionCount, settings.practiceMode]);
+  }, [getFilteredWords, settings.questionCount, settings.practiceMode, settings]);
 
   const generateOptions = useCallback((correctWord: any, allWords: any[]) => {
     const otherWords = allWords.filter(word => 
       word.category === correctWord.category && 
       word.english !== correctWord.english
     );
-    const shuffled = [...otherWords]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
-      .map(word => word.english);
-    return [...shuffled, correctWord.english].sort(() => Math.random() - 0.5);
+    // Use improved randomization for options
+    const selectedOptions = getRandomSubset(otherWords, 3).map(word => word.english);
+    return shuffleArray([...selectedOptions, correctWord.english]);
   }, []);
 
   const calculateWordDifficulty = useCallback((word: string) => {
@@ -496,8 +543,8 @@ const VocabularyQuiz: React.FC = () => {
       ? wordsToReview 
       : quizState.questions.filter(word => !quizState.wordStats[word.japanese]?.nextReview);
     
-    const shuffledWords = [...selectedWords].sort(() => Math.random() - 0.5);
-    const quizWords = shuffledWords.slice(0, settings.questionCount);
+    // Use improved randomization for review quiz
+    const quizWords = getRandomSubset(selectedWords, settings.questionCount);
 
     setQuizState({
       mode: 'quiz',
@@ -524,9 +571,24 @@ const VocabularyQuiz: React.FC = () => {
   }, [getWordsDueForReview, settings.questionCount, settings.practiceMode, quizState.questions, quizState.wordStats]);
 
   const checkAnswer = useCallback((answer: string) => {
-    if (!quizState.questions || quizState.currentQuestion >= quizState.questions.length) return;
+    console.log('Checking Answer:', {
+      answer,
+      currentWord: quizState.currentWord,
+      showFeedback: quizState.showFeedback,
+      mode: quizState.mode
+    });
 
-    const currentWord = quizState.questions[quizState.currentQuestion];
+    if (quizState.mode !== 'quiz' || !quizState.currentWord) {
+      console.log('Invalid quiz state for checking answer');
+      return;
+    }
+
+    if (quizState.showFeedback) {
+      console.log('Already showing feedback, ignoring answer check');
+      return;
+    }
+
+    const currentWord = quizState.currentWord;
     let isCorrect = false;
 
     // Normalize answers for comparison
@@ -539,30 +601,35 @@ const VocabularyQuiz: React.FC = () => {
     isCorrect = normalizedUserAnswer === normalizedCorrectAnswer || 
                 normalizedUserAnswer === normalizedRomaji;
     
-    // Update word stats
+    console.log('Answer Check Result:', {
+      userAnswer: normalizedUserAnswer,
+      correctAnswer: normalizedCorrectAnswer,
+      romaji: normalizedRomaji,
+      isCorrect
+    });
+
+    // Update word stats first
     updateWordStats(currentWord.japanese, isCorrect);
 
-    if (!quizState.practiceMode) {
-      if (!isCorrect) {
-        setQuizState(prev => ({
-          ...prev,
-          mistakes: [...prev.mistakes, {
+    // Batch state updates together
+    const newState = {
+      ...quizState,
+      showFeedback: true,
+      isCorrect,
+      selectedAnswer: answer,
+      score: isCorrect ? quizState.score + 1 : quizState.score,
+      mistakes: !quizState.practiceMode && !isCorrect 
+        ? [...quizState.mistakes, {
             word: currentWord,
             userAnswer: answer,
             correctAnswer: currentWord.english,
             questionIndex: quizState.currentQuestion
           }]
-        }));
-      }
-    }
+        : quizState.mistakes
+    };
 
-    setQuizState(prev => ({
-      ...prev,
-      showFeedback: true,
-      isCorrect,
-      selectedAnswer: answer,
-      score: isCorrect ? prev.score + 1 : prev.score
-    }));
+    console.log('Updating quiz state with feedback:', newState);
+    setQuizState(newState);
 
     // Update streak
     if (isCorrect) {
@@ -575,11 +642,10 @@ const VocabularyQuiz: React.FC = () => {
       setCurrentStreak(0);
     }
 
-    // Update progress
+    // Update progress and achievements
     updateProgress('vocabulary', currentWord.japanese, isCorrect);
     updateWordDifficulty(currentWord.japanese, isCorrect);
     
-    // Check achievements for vocabulary progress
     const masteredWords = Object.values(progress)
       .filter(p => p.section === 'vocabulary' && p.correct >= 3)
       .length;
@@ -590,34 +656,53 @@ const VocabularyQuiz: React.FC = () => {
 
     // Play appropriate sound
     playSound(isCorrect ? 'correct' : 'incorrect');
-  }, [progress, checkAchievements, updateProgress, updateWordDifficulty, playSound]);
+  }, [quizState, progress, checkAchievements, updateProgress, updateWordDifficulty, playSound, currentStreak, bestStreak]);
 
   const handleNextQuestion = useCallback(() => {
-    if (!quizState.showFeedback) return;
+    console.log('Handling Next Question:', {
+      showFeedback: quizState.showFeedback,
+      currentQuestion: quizState.currentQuestion,
+      totalQuestions: quizState.questions.length,
+      mode: quizState.mode
+    });
+
+    if (quizState.mode !== 'quiz') {
+      console.log('Not in quiz mode, ignoring next question');
+      return;
+    }
+
+    if (!quizState.showFeedback) {
+      console.log('Cannot proceed: Feedback not shown');
+      return;
+    }
 
     if (quizState.currentQuestion + 1 >= quizState.questions.length) {
-      setQuizState(prev => ({
-        ...prev,
+      console.log('Quiz completed, showing results');
+      const newState = {
+        ...quizState,
         mode: 'result',
         completed: true
-      }));
+      };
+      console.log('Updating state for results:', newState);
+      setQuizState(newState);
       return;
     }
 
     const nextQuestionIndex = quizState.currentQuestion + 1;
-    setQuizState(prev => ({
-      ...prev,
+    const newState = {
+      ...quizState,
       currentQuestion: nextQuestionIndex,
-      currentWord: prev.questions[nextQuestionIndex],
+      currentWord: quizState.questions[nextQuestionIndex],
       showFeedback: false,
       isCorrect: null,
       showCorrect: false,
       selectedAnswer: null,
-      showExamples: false // Reset examples visibility
-    }));
-
+      showExamples: false
+    };
+    console.log('Updating state for next question:', newState);
+    setQuizState(newState);
     setUserAnswer('');
-  }, [quizState.showFeedback, quizState.currentQuestion, quizState.questions.length]);
+  }, [quizState]);
 
   const handleRestart = useCallback(() => {
     setQuizState({
@@ -965,6 +1050,86 @@ const VocabularyQuiz: React.FC = () => {
             </Typography>
 
             <div className="space-y-6">
+              {/* Category Selection */}
+              <div className="space-y-4">
+                <Typography variant="subtitle1" sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}>
+                  Category
+                </Typography>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { id: 'writing', label: 'Writing Practice' },
+                    { id: 'hiragana', label: 'Hiragana' },
+                    { id: 'katakana', label: 'Katakana' },
+                    { id: 'kanji', label: 'Kanji' },
+                    { id: 'compound', label: 'Compound' },
+                    { id: 'daily', label: 'Daily' }
+                  ].map((category) => (
+                    <motion.button
+                      key={category.id}
+                      type="button"
+                      variants={buttonVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                      onClick={() => setSettings(prev => ({
+                        ...prev,
+                        category: category.id
+                      }))}
+                      className={`p-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                        settings.category === category.id
+                          ? isDarkMode 
+                            ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(0,149,255,0.4)]' 
+                            : 'bg-blue-600 text-white shadow-lg'
+                          : isDarkMode 
+                            ? 'bg-dark-lighter text-gray-300 hover:bg-gray-700' 
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {category.label}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Practice Mode Selection */}
+              <div className="space-y-4">
+                <Typography variant="subtitle1" sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}>
+                  Practice Mode
+                </Typography>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { id: 'standard', label: 'Standard' },
+                    { id: 'practice', label: 'Practice' },
+                    { id: 'custom', label: 'Custom' }
+                  ].map((mode) => (
+                    <motion.button
+                      key={mode.id}
+                      type="button"
+                      variants={buttonVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                      onClick={() => setSettings(prev => ({
+                        ...prev,
+                        practiceMode: mode.id === 'practice',
+                        quizType: mode.id === 'custom' ? 'writing' : 'multiple-choice'
+                      }))}
+                      className={`p-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                        (mode.id === 'practice' && settings.practiceMode) || 
+                        (mode.id === 'custom' && settings.quizType === 'writing') ||
+                        (mode.id === 'standard' && !settings.practiceMode && settings.quizType === 'multiple-choice')
+                          ? isDarkMode 
+                            ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(0,149,255,0.4)]' 
+                            : 'bg-blue-600 text-white shadow-lg'
+                          : isDarkMode 
+                            ? 'bg-dark-lighter text-gray-300 hover:bg-gray-700' 
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {mode.label}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
               <FormControl fullWidth>
                 <InputLabel id="difficulty-label">Difficulty</InputLabel>
                 <Select
@@ -1241,7 +1406,7 @@ const VocabularyQuiz: React.FC = () => {
         animate="visible"
         exit="exit"
         variants={cardVariants}
-        className={`container mx-auto px-4 py-8 ${isDarkMode ? 'bg-dark' : 'bg-dark-lighter'} min-h-screen`}
+        className={`container mx-auto px-4 py-8 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'} min-h-screen`}
       >
         <div className="max-w-4xl mx-auto">
           {/* Progress Section with enhanced visuals */}
@@ -1251,7 +1416,14 @@ const VocabularyQuiz: React.FC = () => {
             animate={controls}
             variants={cardVariants}
           >
-            <Card className={`${isDarkMode ? 'bg-dark-lighter border-dark-border' : 'bg-dark-lighter border-dark-border'} border shadow-lg mb-8 backdrop-blur-sm bg-opacity-90`}>
+            <Card 
+              sx={{
+                backgroundColor: isDarkMode ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)',
+                backdropFilter: 'blur(8px)',
+                marginBottom: '2rem'
+              }}
+            >
               <CardContent className="p-6">
                 <div className="relative mb-6">
                   <motion.div
@@ -1308,7 +1480,13 @@ const VocabularyQuiz: React.FC = () => {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className={`${isDarkMode ? 'bg-dark-lighter border-dark-border' : 'bg-dark-lighter border-dark-border'} border shadow-lg backdrop-blur-sm bg-opacity-90`}>
+              <Card 
+                sx={{
+                  backgroundColor: isDarkMode ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                  borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)',
+                  backdropFilter: 'blur(8px)'
+                }}
+              >
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-6">
                     <Typography variant="h5" className={`${themeClasses.text} font-bold`}>
@@ -1347,52 +1525,67 @@ const VocabularyQuiz: React.FC = () => {
                       {generateOptions(quizState.currentWord, quizState.questions).map((option, index) => (
                         <motion.button
                           key={index}
+                          type="button"
                           variants={buttonVariants}
                           whileHover="hover"
                           whileTap="tap"
-                          onClick={() => !quizState.showFeedback && checkAnswer(option)}
+                          onClick={() => {
+                            if (!quizState.showFeedback) {
+                              checkAnswer(option);
+                            }
+                          }}
                           disabled={quizState.showFeedback}
-                          className={`w-full p-4 text-left rounded-lg transition-all duration-300 ${
-                            quizState.selectedAnswer === option
+                          style={{
+                            width: '100%',
+                            padding: '1rem',
+                            textAlign: 'left',
+                            borderRadius: '0.5rem',
+                            transition: 'all 0.3s',
+                            backgroundColor: quizState.selectedAnswer === option
                               ? quizState.isCorrect
-                                ? isDarkMode
-                                  ? 'bg-neon-blue/20 text-neon-blue shadow-[0_0_10px_rgba(0,149,255,0.3)]'
-                                  : 'bg-green-100 text-green-800'
-                                : isDarkMode
-                                  ? 'bg-neon-pink/20 text-neon-pink shadow-[0_0_10px_rgba(255,0,128,0.3)]'
-                                  : 'bg-red-100 text-red-800'
-                              : isDarkMode
-                                ? 'bg-gray-700 hover:bg-gray-600 text-gray-100'
-                                : 'bg-white hover:bg-gray-50 text-gray-900'
-                          } ${isDarkMode ? 'border-gray-600' : 'border-gray-200'} border backdrop-blur-sm`}
+                                ? isDarkMode ? 'rgba(0, 149, 255, 0.2)' : 'rgba(220, 252, 231, 1)'
+                                : isDarkMode ? 'rgba(255, 0, 128, 0.2)' : 'rgba(254, 226, 226, 1)'
+                              : isDarkMode ? 'rgba(55, 65, 81, 1)' : 'rgba(255, 255, 255, 1)',
+                            color: quizState.selectedAnswer === option
+                              ? quizState.isCorrect
+                                ? isDarkMode ? '#0095ff' : '#166534'
+                                : isDarkMode ? '#ff0080' : '#991b1b'
+                              : isDarkMode ? '#f3f4f6' : '#111827',
+                            border: `1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'}`,
+                            cursor: quizState.showFeedback ? 'not-allowed' : 'pointer',
+                            opacity: quizState.showFeedback ? 0.7 : 1
+                          }}
                         >
                           {option}
                         </motion.button>
                       ))}
                     </div>
                   ) : (
-                    <motion.form 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
+                    <form 
                       onSubmit={(e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         if (!quizState.showFeedback && userAnswer.trim()) {
                           checkAnswer(userAnswer);
                         }
                       }}
                     >
                       <motion.input
-                        whileFocus={{ scale: 1.01 }}
                         type="text"
                         value={userAnswer}
                         onChange={(e) => setUserAnswer(e.target.value)}
                         placeholder={settings.difficulty === 'medium' ? 'Type the romaji' : 'Type the romaji or English'}
-                        className={`w-full p-4 rounded-lg mb-4 ${
-                          isDarkMode 
-                            ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400' 
-                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                        } border focus:outline-none focus:ring-2 focus:ring-blue-500 backdrop-blur-sm transition-all duration-300`}
+                        style={{
+                          width: '100%',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          marginBottom: '1rem',
+                          backgroundColor: isDarkMode ? 'rgba(55, 65, 81, 1)' : 'rgba(255, 255, 255, 1)',
+                          color: isDarkMode ? '#f3f4f6' : '#111827',
+                          border: `1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'}`,
+                          outline: 'none',
+                          transition: 'all 0.3s'
+                        }}
                         disabled={quizState.showFeedback}
                         autoComplete="off"
                         autoCorrect="off"
@@ -1400,26 +1593,36 @@ const VocabularyQuiz: React.FC = () => {
                         spellCheck="false"
                       />
                       <motion.button
+                        type="submit"
                         variants={buttonVariants}
                         whileHover="hover"
                         whileTap="tap"
-                        type="submit"
                         disabled={quizState.showFeedback || !userAnswer.trim()}
-                        className={`w-full py-3 rounded-lg font-medium transition-all duration-300 ${
-                          isDarkMode 
-                            ? 'bg-neon-pink hover:bg-neon-pink/90 text-white shadow-[0_0_10px_rgba(255,0,128,0.4)] hover:shadow-[0_0_20px_rgba(255,0,128,0.6)] disabled:opacity-50 disabled:shadow-none' 
-                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl disabled:opacity-50'
-                        }`}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          borderRadius: '0.5rem',
+                          fontWeight: 500,
+                          transition: 'all 0.3s',
+                          backgroundColor: isDarkMode ? '#ff0080' : '#2563eb',
+                          color: '#ffffff',
+                          cursor: (quizState.showFeedback || !userAnswer.trim()) ? 'not-allowed' : 'pointer',
+                          opacity: (quizState.showFeedback || !userAnswer.trim()) ? 0.5 : 1,
+                          border: 'none',
+                          boxShadow: isDarkMode 
+                            ? '0 0 10px rgba(255, 0, 128, 0.4)' 
+                            : '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}
                       >
                         Check Answer
                       </motion.button>
-                    </motion.form>
+                    </form>
                   )}
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Feedback and Examples Card with enhanced animations */}
+            {/* Feedback and Examples Card */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -1434,7 +1637,13 @@ const VocabularyQuiz: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                   >
-                    <Card className={`${isDarkMode ? 'bg-dark-lighter border-dark-border' : 'bg-dark-lighter border-dark-border'} border shadow-lg backdrop-blur-sm bg-opacity-90`}>
+                    <Card 
+                      sx={{
+                        backgroundColor: isDarkMode ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                        borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                    >
                       <CardContent className="p-6">
                         <motion.div
                           initial={{ scale: 0.8, opacity: 0 }}
@@ -1470,13 +1679,23 @@ const VocabularyQuiz: React.FC = () => {
                           transition={{ delay: 0.4 }}
                         >
                           <Button
-                            onClick={handleNextQuestion}
+                            type="button"
+                            onClick={() => {
+                              handleNextQuestion();
+                            }}
                             fullWidth
-                            className={`mt-4 py-3 ${
-                              isDarkMode 
-                                ? 'bg-neon-blue hover:bg-neon-blue/90 text-white shadow-[0_0_10px_rgba(0,149,255,0.4)] hover:shadow-[0_0_20px_rgba(0,149,255,0.6)]' 
-                                : 'bg-blue-600 hover:bg-blue-700 text-white'
-                            }`}
+                            sx={{
+                              marginTop: '1rem',
+                              padding: '0.75rem',
+                              backgroundColor: isDarkMode ? '#0095ff' : '#2563eb',
+                              color: '#ffffff',
+                              '&:hover': {
+                                backgroundColor: isDarkMode ? 'rgba(0, 149, 255, 0.9)' : '#1d4ed8'
+                              },
+                              boxShadow: isDarkMode 
+                                ? '0 0 10px rgba(0, 149, 255, 0.4)' 
+                                : '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
                           >
                             {quizState.currentQuestion + 1 < quizState.questions.length ? 'Next Question' : 'Finish Quiz'}
                           </Button>
@@ -1486,45 +1705,6 @@ const VocabularyQuiz: React.FC = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Action Buttons with enhanced animations */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex justify-between gap-4"
-              >
-                <motion.button
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  onClick={handleSkipQuestion}
-                  disabled={quizState.showFeedback}
-                  className={`flex-1 py-3 rounded-lg ${
-                    isDarkMode 
-                      ? 'bg-neon-pink/20 text-neon-pink hover:bg-neon-pink/30' 
-                      : 'bg-red-100 text-red-600 hover:bg-red-200'
-                  }`}
-                >
-                  Skip (S)
-                </motion.button>
-                <motion.button
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  onClick={toggleMarkForReview}
-                  className={`flex-1 py-3 rounded-lg ${
-                    quizState.markedForReview.has(quizState.currentQuestion)
-                      ? isDarkMode 
-                        ? 'bg-neon-blue text-white' 
-                        : 'bg-blue-500 text-white'
-                      : isDarkMode 
-                        ? 'bg-neon-blue/20 text-neon-blue hover:bg-neon-blue/30' 
-                        : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                  }`}
-                >
-                  {quizState.markedForReview.has(quizState.currentQuestion) ? '✓ Marked' : 'Mark (M)'}
-                </motion.button>
-              </motion.div>
             </motion.div>
           </div>
         </div>

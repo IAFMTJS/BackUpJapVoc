@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { useAchievements, Achievement, AchievementCategory } from '../context/AchievementsContext';
+import { useAchievements, Achievement, AchievementCategory } from '../context/AchievementContext';
 import { Box, Typography, Tabs, Tab, Chip, LinearProgress, Tooltip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
@@ -163,13 +163,22 @@ const Achievements: React.FC = () => {
   const themeClasses = getThemeClasses();
   const isNeonMode = theme === 'neon';
   const { 
-    achievements, 
-    unlockedAchievements, 
-    inProgressAchievements, 
-    totalPoints,
+    achievements = [],
+    unlockedAchievements = [],
     isLoading,
     error 
   } = useAchievements();
+
+  // Calculate in-progress achievements
+  const inProgressAchievements = achievements.filter(
+    achievement => !achievement.unlockedAt && achievement.progress > 0
+  );
+
+  // Calculate total points
+  const totalPoints = unlockedAchievements.reduce(
+    (total, achievement) => total + (achievement.xpReward || 0),
+    0
+  );
 
   const [activeTab, setActiveTab] = useState(0);
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
@@ -296,6 +305,67 @@ const Achievements: React.FC = () => {
     );
   };
 
+  const renderAchievementDetails = (achievement: Achievement) => (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Chip
+          label={achievement.category}
+          sx={{
+            backgroundColor: getCategoryColor(achievement.category),
+            color: 'white'
+          }}
+        />
+        <Chip
+          label={achievement.tier}
+          sx={{
+            backgroundColor: getDifficultyColor(achievement.tier),
+            color: 'white'
+          }}
+        />
+        <Chip
+          label={`${achievement.xpReward} XP`}
+          sx={{
+            backgroundColor: 'var(--accent-gold)',
+            color: 'white'
+          }}
+        />
+      </div>
+
+      <div>
+        <Typography variant="subtitle2" className="text-text-primary mb-2">
+          Progress:
+        </Typography>
+        <div className="flex justify-between text-sm mb-1">
+          <span className="text-text-secondary">
+            Current: {achievement.progress}
+          </span>
+          <span className="text-text-primary">
+            Required: {achievement.requirement}
+          </span>
+        </div>
+        <LinearProgress
+          variant="determinate"
+          value={(achievement.progress / achievement.requirement) * 100}
+          sx={{
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: 'var(--background-lightest)',
+            '& .MuiLinearProgress-bar': {
+              backgroundColor: achievement.unlockedAt ? 'var(--accent-green)' : 'var(--accent-yellow)',
+              borderRadius: 4
+            }
+          }}
+        />
+      </div>
+
+      {achievement.unlockedAt && (
+        <Typography variant="body2" className="text-text-secondary">
+          Unlocked on {format(new Date(achievement.unlockedAt), 'MMMM d, yyyy')}
+        </Typography>
+      )}
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -309,6 +379,19 @@ const Achievements: React.FC = () => {
       <div className="text-center p-4 text-accent-red">
         <Typography variant="h6">Error loading achievements</Typography>
         <Typography variant="body2">{error}</Typography>
+      </div>
+    );
+  }
+
+  if (!achievements || achievements.length === 0) {
+    return (
+      <div className="text-center p-4">
+        <Typography variant="h6" className="text-text-primary">
+          No achievements available
+        </Typography>
+        <Typography variant="body2" className="text-text-secondary">
+          Start learning to unlock achievements!
+        </Typography>
       </div>
     );
   }
@@ -427,63 +510,7 @@ const Achievements: React.FC = () => {
               </div>
             </DialogTitle>
             <DialogContent>
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Chip
-                    label={selectedAchievement.category}
-                    sx={{
-                      backgroundColor: getCategoryColor(selectedAchievement.category),
-                      color: 'white'
-                    }}
-                  />
-                  <Chip
-                    label={selectedAchievement.difficulty}
-                    sx={{
-                      backgroundColor: getDifficultyColor(selectedAchievement.difficulty),
-                      color: 'white'
-                    }}
-                  />
-                  <Chip
-                    label={`${selectedAchievement.points} points`}
-                    sx={{
-                      backgroundColor: 'var(--accent-gold)',
-                      color: 'white'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <Typography variant="subtitle2" className="text-text-primary mb-2">
-                    Requirements:
-                  </Typography>
-                  <ul className="list-disc list-inside text-text-secondary">
-                    {selectedAchievement.requirements.map((req, index) => (
-                      <li key={index}>
-                        {req.type.replace(/_/g, ' ').toUpperCase()}: {req.value}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <Typography variant="subtitle2" className="text-text-primary mb-2">
-                    Rewards:
-                  </Typography>
-                  <ul className="list-disc list-inside text-text-secondary">
-                    {selectedAchievement.rewards.map((reward, index) => (
-                      <li key={index}>
-                        {reward.type.replace(/_/g, ' ').toUpperCase()}: {reward.value}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {selectedAchievement.unlockedAt && (
-                  <Typography variant="body2" className="text-text-secondary">
-                    Unlocked on {format(new Date(selectedAchievement.unlockedAt), 'MMMM d, yyyy')}
-                  </Typography>
-                )}
-              </div>
+              {renderAchievementDetails(selectedAchievement)}
             </DialogContent>
             <DialogActions>
               <Button onClick={handleCloseDetails} sx={{ color: 'var(--text-primary)' }}>

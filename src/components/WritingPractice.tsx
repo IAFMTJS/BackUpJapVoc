@@ -16,7 +16,7 @@ import { DailyChallengeCard, CharacterDecompositionView, MasteryIndicator, Pract
 // New types for enhanced features
 type PracticeMode = 'standard' | 'practice' | 'custom' | 'daily' | 'compound';
 type MasteryLevel = 'beginner' | 'intermediate' | 'advanced' | 'master';
-type WritingMode = 'hiragana' | 'katakana';
+type WritingMode = 'hiragana' | 'katakana' | 'kanji';
 type Difficulty = 'easy' | 'medium' | 'hard';
 type PracticeType = 'copy' | 'convert' | 'translate';
 type InputMode = 'draw' | 'type';
@@ -223,12 +223,21 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
   const { isDarkMode, getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Separate state for mode and settings to avoid unnecessary re-renders
   const [mode, setMode] = useState<WritingMode>(initialMode);
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [practiceType, setPracticeType] = useState<PracticeType>('copy');
   const [requireTranslation, setRequireTranslation] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>('type');
-  const [state, setState] = useState<WritingPracticeState>({
+
+  // Update mode when initialMode changes
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  // Main practice state
+  const [state, setState] = useState<WritingPracticeState>(() => ({
     currentWord: null,
     userInput: '',
     translationInput: '',
@@ -256,22 +265,30 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     feedback: null,
     practiceGrid: false,
     showComparison: false
-  });
+  }));
 
-  // Memoized functions for performance
-  const getFilteredWords = memoize(() => {
+  // Memoized functions with proper dependency tracking
+  const getFilteredWords = useCallback(() => {
     return measureSync('getFilteredWords', () => {
       const items: PracticeItem[] = [];
       
       if (practiceType === 'copy') {
-        const content = practiceContent[mode][difficulty];
-        items.push(...content);
+        if (mode === 'kanji') {
+          // For kanji mode, use quiz words that contain kanji
+          const kanjiWords = quizWords.filter(word => /[\u4E00-\u9FFF]/.test(word.japanese));
+          items.push(...kanjiWords);
+        } else {
+          const content = practiceContent[mode][difficulty];
+          items.push(...content);
+        }
       } else {
         const filteredQuizWords = quizWords.filter(word => {
           if (mode === 'hiragana') {
             return word.isHiragana && /^[\u3040-\u309F]+$/.test(word.japanese);
           } else if (mode === 'katakana') {
             return word.isKatakana && /^[\u30A0-\u30FF]+$/.test(word.japanese);
+          } else if (mode === 'kanji') {
+            return /[\u4E00-\u9FFF]/.test(word.japanese);
           }
           return false;
         });
@@ -280,7 +297,55 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
 
       return items;
     });
-  });
+  }, [mode, difficulty, practiceType]); // Add proper dependencies
+
+  // Initialize component
+  useEffect(() => {
+    const initializeComponent = async () => {
+      try {
+        // Initialize database if needed
+        await initDatabase();
+        
+        // Load practice history
+        const history = await loadPracticeHistory();
+        setState(prev => ({
+          ...prev,
+          practiceHistory: history
+        }));
+
+        // Start first practice session
+        startNewPractice();
+      } catch (error) {
+        console.error('Error initializing component:', error);
+        // Set error state
+        setState(prev => ({
+          ...prev,
+          feedback: {
+            isCorrect: false,
+            message: 'Error initializing practice session',
+            expectedStroke: 'horizontal',
+            actualStroke: 'horizontal',
+            confidence: 0
+          }
+        }));
+      }
+    };
+
+    initializeComponent();
+  }, []); // Empty dependency array since this should only run once
+
+  // Update total items when mode or difficulty changes
+  useEffect(() => {
+    const items = getFilteredWords();
+    setTotalItems(mode, items.length);
+  }, [mode, difficulty, getFilteredWords, setTotalItems]);
+
+  // Start new practice when mode, difficulty, or practice type changes
+  useEffect(() => {
+    if (state.practiceMode !== 'daily') { // Don't restart if in daily challenge mode
+      startNewPractice();
+    }
+  }, [mode, difficulty, practiceType, state.practiceMode]);
 
   // Debounced stroke analysis
   const analyzeStrokeDebounced = useCallback(
@@ -493,44 +558,18 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
   };
 
   const getDisplayMode = (): 'japanese' | 'romaji' | 'english' => {
-    if (difficulty === 'easy') {
-      return 'japanese'; // Always show in hiragana/katakana
-    }
-    if (difficulty === 'medium') {
-      // Randomly show in romaji or japanese
-      return Math.random() < 0.5 ? 'japanese' : 'romaji';
-    }
-    if (difficulty === 'hard') {
-      return 'english'; // Always show in English
-    }
+    // Always show Japanese characters in the question
     return 'japanese';
   };
 
   const getDisplayText = (word: PracticeItem, displayMode: 'japanese' | 'romaji' | 'english'): string => {
     if (!word) return '';
     
+    // Always show Japanese characters
     if (isQuizWord(word)) {
-      switch (displayMode) {
-        case 'japanese':
-          return word.japanese;
-        case 'romaji':
-          return word.romaji || '';
-        case 'english':
-          return word.english;
-        default:
-          return word.japanese;
-      }
+      return word.japanese;
     } else if (isPracticeContentItem(word)) {
-      switch (displayMode) {
-        case 'japanese':
-          return word.japanese;
-        case 'romaji':
-          return word.romaji;
-        case 'english':
-          return word.english;
-        default:
-          return word.japanese;
-      }
+      return word.japanese;
     }
     return '';
   };
@@ -538,28 +577,11 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
   const getExpectedInput = (word: PracticeItem, displayMode: 'japanese' | 'romaji' | 'english'): string => {
     if (!word) return '';
 
+    // Return both Japanese and romaji as valid answers
     if (isQuizWord(word)) {
-      switch (displayMode) {
-        case 'japanese':
-          return word.japanese;
-        case 'romaji':
-          return word.romaji || '';
-        case 'english':
-          return word.english;
-        default:
-          return word.japanese;
-      }
+      return `${word.japanese} (${word.romaji || ''})`;
     } else if (isPracticeContentItem(word)) {
-      switch (displayMode) {
-        case 'japanese':
-          return word.japanese;
-        case 'romaji':
-          return word.romaji;
-        case 'english':
-          return word.english;
-        default:
-          return word.japanese;
-      }
+      return `${word.japanese} (${word.romaji})`;
     }
     return '';
   };
@@ -571,30 +593,11 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
 
     if (!currentWord) return false;
 
-    if (difficulty === 'easy') {
-      // Vraag is in hiragana/katakana, antwoord mag alles zijn
-      return (
-        normalizedInput === currentWord.japanese.toLowerCase() ||
-        normalizedInput === (currentWord.romaji || '').toLowerCase()
-      );
-    }
-
-    if (difficulty === 'medium') {
-      if (state.displayMode === 'romaji') {
-        // Vraag is romaji, verwacht hiragana/katakana
-        return normalizedInput === currentWord.japanese.toLowerCase();
-      } else {
-        // Vraag is hiragana/katakana, verwacht romaji
-        return normalizedInput === (currentWord.romaji || '').toLowerCase();
-      }
-    }
-
-    if (difficulty === 'hard') {
-      // Vraag is Engels, verwacht Japans (hiragana, katakana of kanji)
-      return normalizedInput === currentWord.japanese.toLowerCase();
-    }
-
-    return false;
+    // Always accept both Japanese and romaji as valid answers
+    return (
+      normalizedInput === currentWord.japanese.toLowerCase() ||
+      normalizedInput === (currentWord.romaji || '').toLowerCase()
+    );
   };
 
   const checkAnswer = () => {
@@ -803,12 +806,46 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
   }, [state.showStrokeGuide, state.currentStroke]);
 
   const handleSubmit = () => {
-    checkAnswer();
+    if (!state.currentWord) {
+      console.warn('No current word available');
+      return;
+    }
+    
+    try {
+      checkAnswer();
+    } catch (error) {
+      console.error('Error checking answer:', error);
+      setState(prev => ({
+        ...prev,
+        feedback: {
+          isCorrect: false,
+          message: 'An error occurred while checking your answer',
+          expectedStroke: 'horizontal',
+          actualStroke: 'horizontal',
+          confidence: 0
+        }
+      }));
+    }
   };
 
   const handleNext = () => {
-    clearCanvas();
-    startNewPractice();
+    try {
+      if (canvasRef.current) {
+        clearCanvas();
+      }
+      startNewPractice();
+    } catch (error) {
+      console.error('Error starting new practice:', error);
+      // Reset to a safe state
+      setState(prev => ({
+        ...prev,
+        currentWord: null,
+        userInput: '',
+        translationInput: '',
+        isCorrect: null,
+        feedback: null
+      }));
+    }
   };
 
   useEffect(() => {
@@ -830,16 +867,6 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
       handleNext();
     }
   }, [state.timeRemaining]);
-
-  useEffect(() => {
-    startNewPractice();
-  }, [mode, difficulty, practiceType]);
-
-  // Initialize total items count when component loads or mode changes
-  useEffect(() => {
-    const items = getFilteredWords();
-    setTotalItems(mode, items.length);
-  }, [mode, difficulty]);
 
   const handlePlayAudio = (japanese: string) => {
     playAudio(japanese);
@@ -934,7 +961,26 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
             {(['standard', 'practice', 'custom', 'daily', 'compound'] as PracticeMode[]).map((mode) => (
               <button
                 key={mode}
-                onClick={() => setState(prev => ({ ...prev, practiceMode: mode }))}
+                onClick={() => {
+                  try {
+                    setState(prev => {
+                      const newState = { ...prev, practiceMode: mode };
+                      // Reset practice state when changing modes
+                      if (mode !== prev.practiceMode) {
+                        newState.currentWord = null;
+                        newState.userInput = '';
+                        newState.translationInput = '';
+                        newState.isCorrect = null;
+                        newState.feedback = null;
+                      }
+                      return newState;
+                    });
+                    // Start new practice after mode change
+                    startNewPractice();
+                  } catch (error) {
+                    console.error('Error changing practice mode:', error);
+                  }
+                }}
                 className={`p-3 rounded-lg transition-all duration-300 ${
                   state.practiceMode === mode
                     ? isDarkMode
@@ -975,11 +1021,6 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
             <h2 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-neon-blue' : 'text-gray-800'}`}>
               {state.currentWord?.japanese || 'Practice Writing'}
             </h2>
-            {state.currentWord && (
-              <div className={`text-lg ${isDarkMode ? 'text-text-primary' : 'text-gray-600'}`}>
-                {state.displayMode === 'japanese' ? state.currentWord.english : state.currentWord.japanese}
-              </div>
-            )}
           </div>
 
           {/* Writing Canvas */}

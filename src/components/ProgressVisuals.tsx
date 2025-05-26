@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme as useCustomTheme } from '../context/ThemeContext';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { useProgress } from '../context/ProgressContext';
-import { useAchievements } from '../context/AchievementsContext';
+import { useAchievements } from '../context/AchievementContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Box, 
@@ -56,39 +56,48 @@ import styled from '@emotion/styled';
 import CalendarHeatmap from './CalendarHeatmap';
 
 // Styled components
-const VisualCard = styled(Card)(({ theme }) => ({
-  background: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'white',
-  backdropFilter: 'blur(10px)',
-  border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-  '&:hover': {
-    transform: 'translateY(-5px)',
-    boxShadow: theme.palette.mode === 'dark' 
-      ? '0 8px 16px rgba(0, 247, 255, 0.2), 0 0 32px rgba(0, 247, 255, 0.1)' 
-      : '0 8px 16px rgba(0, 0, 0, 0.1)'
-  }
-}));
+const VisualCard = styled(Card)(({ theme }) => {
+  const isDark = theme?.palette?.mode === 'dark';
+  return {
+    background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
+    backdropFilter: 'blur(10px)',
+    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+    '&:hover': {
+      transform: 'translateY(-5px)',
+      boxShadow: isDark 
+        ? '0 8px 16px rgba(0, 247, 255, 0.2), 0 0 32px rgba(0, 247, 255, 0.1)' 
+        : '0 8px 16px rgba(0, 0, 0, 0.1)'
+    }
+  };
+});
 
-const ProgressBadge = styled(motion.div)(({ theme }) => ({
-  position: 'relative',
-  width: '80px',
-  height: '80px',
-  borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-  border: `2px solid ${theme.palette.primary.main}`,
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    inset: '-4px',
+const ProgressBadge = styled(motion.div)(({ theme }) => {
+  const isDark = theme?.palette?.mode === 'dark';
+  const primaryColor = theme?.palette?.primary?.main || '#3b82f6';
+  const secondaryColor = theme?.palette?.secondary?.main || '#8b5cf6';
+  
+  return {
+    position: 'relative',
+    width: '80px',
+    height: '80px',
     borderRadius: '50%',
-    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-    opacity: 0.5,
-    zIndex: -1
-  }
-}));
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    border: `2px solid ${primaryColor}`,
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: '-4px',
+      borderRadius: '50%',
+      background: `linear-gradient(45deg, ${primaryColor}, ${secondaryColor})`,
+      opacity: 0.5,
+      zIndex: -1
+    }
+  };
+});
 
 const TrophyContainer = styled(motion.div)({
   position: 'relative',
@@ -128,20 +137,25 @@ const GraphContainer = styled('div')({
   padding: '1rem'
 });
 
-const AvatarContainer = styled(motion.div)(({ theme }) => ({
-  position: 'relative',
-  width: '120px',
-  height: '120px',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    inset: '-4px',
-    borderRadius: '50%',
-    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-    opacity: 0.5,
-    zIndex: -1
-  }
-}));
+const AvatarContainer = styled(motion.div)(({ theme }) => {
+  const primaryColor = theme?.palette?.primary?.main || '#3b82f6';
+  const secondaryColor = theme?.palette?.secondary?.main || '#8b5cf6';
+  
+  return {
+    position: 'relative',
+    width: '120px',
+    height: '120px',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: '-4px',
+      borderRadius: '50%',
+      background: `linear-gradient(45deg, ${primaryColor}, ${secondaryColor})`,
+      opacity: 0.5,
+      zIndex: -1
+    }
+  };
+});
 
 // Animation variants
 const badgeVariants = {
@@ -188,13 +202,45 @@ const trophyVariants = {
 };
 
 const ProgressVisuals: React.FC = () => {
-  const { isDarkMode, getThemeClasses } = useCustomTheme();
+  const { theme } = useCustomTheme();
   const muiTheme = useMuiTheme();
   const { progress, currentStreak, bestStreak } = useProgress();
-  const { achievements, unlockedAchievements } = useAchievements();
+  const { achievements = [], unlockedAchievements = [] } = useAchievements();
   const [activeTab, setActiveTab] = useState(0);
   const isMobile = useMediaQuery('(max-width:600px)');
-  const isNeonMode = muiTheme.palette.mode === 'dark' && muiTheme.palette.primary.main === '#00f7ff';
+  const [isThemeReady, setIsThemeReady] = useState(false);
+
+  // Wait for theme to be ready
+  useEffect(() => {
+    if (muiTheme && muiTheme.palette && muiTheme.palette.mode && muiTheme.palette.primary) {
+      setIsThemeReady(true);
+    }
+  }, [muiTheme]);
+
+  // Use a default theme value if not ready
+  const isNeonMode = isThemeReady && theme === 'neon';
+
+  // Early return with a loading state if theme is not ready
+  if (!isThemeReady) {
+    return (
+      <Box 
+        sx={{ 
+          p: 3, 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '200px',
+          background: 'rgba(0, 0, 0, 0.02)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: 2
+        }}
+      >
+        <Typography variant="body1" color="text.secondary">
+          Loading theme...
+        </Typography>
+      </Box>
+    );
+  }
 
   // Generate heatmap data
   const generateHeatmapData = () => {

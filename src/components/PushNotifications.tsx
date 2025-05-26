@@ -26,8 +26,8 @@ import styled from '@emotion/styled';
 
 const NotificationButton = styled(IconButton)(({ theme }) => ({
   position: 'fixed',
-  bottom: theme.spacing(2),
-  left: theme.spacing(2),
+  bottom: `${theme.spacing(2)}px`,
+  left: `${theme.spacing(2)}px`,
   zIndex: theme.zIndex.snackbar,
   backgroundColor: theme.palette.mode === 'dark' 
     ? 'rgba(0, 0, 0, 0.8)' 
@@ -142,12 +142,27 @@ const PushNotifications: React.FC = () => {
 
     return (
       <Tooltip title={permission === 'granted' ? 'Notification Settings' : 'Enable Notifications'}>
-        <NotificationButton
+        <IconButton
           onClick={permission === 'granted' ? handleOpenSettings : requestPermission}
-          color={permission === 'granted' ? 'primary' : 'default'}
+          sx={{
+            position: 'fixed',
+            bottom: theme.spacing(2),
+            left: theme.spacing(2),
+            zIndex: theme.zIndex.snackbar,
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(0, 0, 0, 0.8)' 
+              : 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(8px)',
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(0, 0, 0, 0.9)' 
+                : 'rgba(255, 255, 255, 1)',
+            },
+            color: permission === 'granted' ? theme.palette.primary.main : theme.palette.text.secondary
+          }}
         >
           {permission === 'granted' ? <NotificationsIcon /> : <NotificationsOffIcon />}
-        </NotificationButton>
+        </IconButton>
       </Tooltip>
     );
   };
@@ -161,6 +176,19 @@ const PushNotifications: React.FC = () => {
         onClose={handleCloseSettings}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: theme.palette.mode === 'dark' 
+              ? 'rgba(35, 35, 58, 0.8)' 
+              : 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(10px)',
+            border: `1px solid ${
+              theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.1)' 
+                : 'rgba(0, 0, 0, 0.1)'
+            }`
+          }
+        }}
       >
         <DialogTitle>
           <Box display="flex" alignItems="center" justifyContent="space-between">

@@ -1,138 +1,63 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useProgress } from './ProgressContext';
 import { useWordLevel } from './WordLevelContext';
+import { useAuth } from './AuthContext';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../services/firebase';
 import { v4 as uuidv4 } from 'uuid';
-
-// Achievement types
-export type AchievementCategory = 'learning' | 'mastery' | 'streak' | 'challenge' | 'social' | 'special';
-export type AchievementDifficulty = 'easy' | 'medium' | 'hard' | 'expert';
-export type AchievementStatus = 'locked' | 'in_progress' | 'completed';
-
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  category: AchievementCategory;
-  difficulty: AchievementDifficulty;
-  status: AchievementStatus;
-  progress: number;
-  maxProgress: number;
-  unlockedAt?: Date;
-  icon: string;
-  points: number;
-  requirements: {
-    type: string;
-    value: number;
-  }[];
-  rewards: {
-    type: string;
-    value: number | string;
-  }[];
-}
-
-interface AchievementContextType {
-  achievements: Achievement[];
-  unlockedAchievements: Achievement[];
-  inProgressAchievements: Achievement[];
-  totalPoints: number;
-  isLoading: boolean;
-  error: string | null;
-  unlockAchievement: (achievementId: string) => Promise<void>;
-  updateProgress: (achievementId: string, progress: number) => Promise<void>;
-  getAchievementProgress: (achievementId: string) => number;
-  getNextAchievement: () => Achievement | null;
-}
+import { 
+  Achievement, 
+  AchievementCategory, 
+  AchievementContextType, 
+  AchievementProgress,
+  INITIAL_ACHIEVEMENTS 
+} from '../types/achievements';
 
 const AchievementContext = createContext<AchievementContextType | undefined>(undefined);
 
-// Initial achievements
-const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  {
-    id: 'first_word',
-    title: 'First Steps',
-    description: 'Learn your first Japanese word',
-    category: 'learning',
-    difficulty: 'easy',
-    status: 'locked',
-    progress: 0,
-    maxProgress: 1,
-    icon: '🎯',
-    points: 10,
-    requirements: [{ type: 'words_learned', value: 1 }],
-    rewards: [{ type: 'points', value: 10 }]
-  },
-  {
-    id: 'word_master',
-    title: 'Word Master',
-    description: 'Master 10 words',
-    category: 'mastery',
-    difficulty: 'medium',
-    status: 'locked',
-    progress: 0,
-    maxProgress: 10,
-    icon: '📚',
-    points: 50,
-    requirements: [{ type: 'words_mastered', value: 10 }],
-    rewards: [{ type: 'points', value: 50 }]
-  },
-  {
-    id: 'streak_3',
-    title: 'Consistent Learner',
-    description: 'Maintain a 3-day study streak',
-    category: 'streak',
-    difficulty: 'easy',
-    status: 'locked',
-    progress: 0,
-    maxProgress: 3,
-    icon: '🔥',
-    points: 30,
-    requirements: [{ type: 'study_streak', value: 3 }],
-    rewards: [{ type: 'points', value: 30 }]
-  },
-  {
-    id: 'perfect_quiz',
-    title: 'Perfect Score',
-    description: 'Complete a quiz with 100% accuracy',
-    category: 'mastery',
-    difficulty: 'hard',
-    status: 'locked',
-    progress: 0,
-    maxProgress: 1,
-    icon: '⭐',
-    points: 100,
-    requirements: [{ type: 'perfect_quiz', value: 1 }],
-    rewards: [{ type: 'points', value: 100 }]
-  },
-  {
-    id: 'kanji_beginner',
-    title: 'Kanji Beginner',
-    description: 'Learn 10 kanji characters',
-    category: 'learning',
-    difficulty: 'medium',
-    status: 'locked',
-    progress: 0,
-    maxProgress: 10,
-    icon: '🀄',
-    points: 40,
-    requirements: [{ type: 'kanji_learned', value: 10 }],
-    rewards: [{ type: 'points', value: 40 }]
-  }
-];
-
 export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const { progress: userProgress } = useProgress();
+  const { currentLevel, unlockedLevels } = useWordLevel();
   const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
+  const [progress, setProgress] = useState<AchievementProgress>({});
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { progress } = useProgress();
-  const { currentLevel, unlockedLevels } = useWordLevel();
 
-  // Load achievements from storage
+  // Load achievements from Firestore
   useEffect(() => {
     const loadAchievements = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const storedAchievements = localStorage.getItem('achievements');
-        if (storedAchievements) {
-          setAchievements(JSON.parse(storedAchievements));
+        const userAchievementsRef = doc(db, 'users', user.uid, 'achievements', 'progress');
+        const docSnap = await getDoc(userAchievementsRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data() as AchievementProgress;
+          setProgress(data);
+          
+          // Update achievements with progress
+          const updatedAchievements = achievements.map(achievement => ({
+            ...achievement,
+            progress: data[achievement.id]?.progress || 0,
+            unlockedAt: data[achievement.id]?.unlockedAt?.toDate()
+          }));
+          
+          setAchievements(updatedAchievements);
+          setUnlockedAchievements(updatedAchievements.filter(a => a.unlockedAt));
+        } else {
+          // Initialize achievements progress for new users
+          const initialProgress: AchievementProgress = {};
+          achievements.forEach(achievement => {
+            initialProgress[achievement.id] = { progress: 0 };
+          });
+          await setDoc(userAchievementsRef, initialProgress);
+          setProgress(initialProgress);
         }
       } catch (err) {
         console.error('Error loading achievements:', err);
@@ -143,55 +68,79 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
 
     loadAchievements();
-  }, []);
-
-  // Save achievements to storage
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('achievements', JSON.stringify(achievements));
-    }
-  }, [achievements, isLoading]);
+  }, [user]);
 
   // Update achievement progress based on user actions
   useEffect(() => {
     const updateAchievementProgress = async () => {
-      setAchievements(prevAchievements => prevAchievements.map(achievement => {
+      if (!user) return;
+
+      const updates: Partial<AchievementProgress> = {};
+      
+      achievements.forEach(achievement => {
         let newProgress = 0;
 
         switch (achievement.id) {
           case 'first_word':
-            newProgress = Object.keys(progress).length > 0 ? 1 : 0;
+            newProgress = Object.keys(userProgress).length > 0 ? 1 : 0;
             break;
           case 'word_master':
-            newProgress = Object.values(progress).filter(p => p.correct >= 3).length;
+            newProgress = Object.values(userProgress).filter(p => p.correct >= 3).length;
             break;
           case 'streak_3':
-            // Calculate streak from progress data
-            const streak = calculateStreak(progress);
+            const streak = calculateStreak(userProgress);
             newProgress = Math.min(streak, 3);
             break;
           case 'perfect_quiz':
             // This will be updated when quiz is completed
             break;
           case 'kanji_beginner':
-            newProgress = Object.keys(progress).filter(key => key.startsWith('kanji-')).length;
+            newProgress = Object.keys(userProgress).filter(key => key.startsWith('kanji-')).length;
             break;
         }
 
-        const status = newProgress >= achievement.maxProgress ? 'completed' :
-                      newProgress > 0 ? 'in_progress' : 'locked';
+        if (newProgress !== progress[achievement.id]?.progress) {
+          updates[achievement.id] = {
+            progress: newProgress,
+            ...(newProgress >= achievement.maxProgress && !progress[achievement.id]?.unlockedAt && {
+              unlockedAt: new Date()
+            })
+          };
+        }
+      });
 
-        return {
-          ...achievement,
-          progress: newProgress,
-          status,
-          unlockedAt: status === 'completed' && !achievement.unlockedAt ? new Date() : achievement.unlockedAt
-        };
-      }));
+      if (Object.keys(updates).length > 0) {
+        try {
+          const userAchievementsRef = doc(db, 'users', user.uid, 'achievements', 'progress');
+          await updateDoc(userAchievementsRef, updates);
+          setProgress(prev => ({ ...prev, ...updates }));
+          
+          // Update achievements state
+          setAchievements(prev => prev.map(achievement => {
+            const update = updates[achievement.id];
+            if (!update) return achievement;
+            
+            const updated = {
+              ...achievement,
+              progress: update.progress,
+              unlockedAt: update.unlockedAt || achievement.unlockedAt
+            };
+            
+            if (update.unlockedAt && !achievement.unlockedAt) {
+              setUnlockedAchievements(prev => [...prev, updated]);
+            }
+            
+            return updated;
+          }));
+        } catch (err) {
+          console.error('Error updating achievements:', err);
+          setError('Failed to update achievements');
+        }
+      }
     };
 
     updateAchievementProgress();
-  }, [progress]); // Only depend on progress changes
+  }, [user, userProgress, achievements, progress]);
 
   const calculateStreak = (progress: Record<string, any>) => {
     const dates = Object.values(progress)
@@ -222,57 +171,79 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return streak;
   };
 
-  const unlockAchievement = useCallback(async (achievementId: string) => {
-    setAchievements(prev => prev.map(achievement => 
-      achievement.id === achievementId
-        ? { ...achievement, status: 'completed', unlockedAt: new Date() }
-        : achievement
-    ));
-  }, []);
+  const checkAchievements = useCallback((category: AchievementCategory, value: number) => {
+    if (!user) return;
 
-  const updateProgress = useCallback(async (achievementId: string, progress: number) => {
-    setAchievements(prev => prev.map(achievement => 
-      achievement.id === achievementId
-        ? { 
-            ...achievement, 
-            progress: Math.min(progress, achievement.maxProgress),
-            status: progress >= achievement.maxProgress ? 'completed' : 'in_progress',
-            unlockedAt: progress >= achievement.maxProgress && !achievement.unlockedAt 
-              ? new Date() 
-              : achievement.unlockedAt
-          }
-        : achievement
-    ));
-  }, []);
+    const updates: Partial<AchievementProgress> = {};
+    
+    achievements
+      .filter(achievement => 
+        achievement.category === category && 
+        !achievement.unlockedAt &&
+        achievement.progress < achievement.maxProgress
+      )
+      .forEach(achievement => {
+        const newProgress = Math.min(value, achievement.maxProgress);
+        if (newProgress !== progress[achievement.id]?.progress) {
+          updates[achievement.id] = {
+            progress: newProgress,
+            ...(newProgress >= achievement.maxProgress && {
+              unlockedAt: new Date()
+            })
+          };
+        }
+      });
+
+    if (Object.keys(updates).length > 0) {
+      const userAchievementsRef = doc(db, 'users', user.uid, 'achievements', 'progress');
+      updateDoc(userAchievementsRef, updates)
+        .then(() => {
+          setProgress(prev => ({ ...prev, ...updates }));
+          setAchievements(prev => prev.map(achievement => {
+            const update = updates[achievement.id];
+            if (!update) return achievement;
+            
+            const updated = {
+              ...achievement,
+              progress: update.progress,
+              unlockedAt: update.unlockedAt || achievement.unlockedAt
+            };
+            
+            if (update.unlockedAt && !achievement.unlockedAt) {
+              setUnlockedAchievements(prev => [...prev, updated]);
+            }
+            
+            return updated;
+          }));
+        })
+        .catch(err => {
+          console.error('Error updating achievements:', err);
+          setError('Failed to update achievements');
+        });
+    }
+  }, [user, achievements, progress]);
 
   const getAchievementProgress = useCallback((achievementId: string) => {
-    const achievement = achievements.find(a => a.id === achievementId);
-    return achievement ? achievement.progress : 0;
-  }, [achievements]);
+    return progress[achievementId]?.progress || 0;
+  }, [progress]);
 
-  const getNextAchievement = useCallback(() => {
-    return achievements
-      .filter(a => a.status === 'in_progress')
-      .sort((a, b) => (b.maxProgress - b.progress) - (a.maxProgress - a.progress))[0] || null;
-  }, [achievements]);
+  const isAchievementUnlocked = useCallback((achievementId: string) => {
+    return !!progress[achievementId]?.unlockedAt;
+  }, [progress]);
 
-  const unlockedAchievements = achievements.filter(a => a.status === 'completed');
-  const inProgressAchievements = achievements.filter(a => a.status === 'in_progress');
-  const totalPoints = unlockedAchievements.reduce((sum, a) => sum + a.points, 0);
+  const value: AchievementContextType = {
+    achievements,
+    progress,
+    unlockedAchievements,
+    checkAchievements,
+    getAchievementProgress,
+    isAchievementUnlocked,
+    isLoading,
+    error
+  };
 
   return (
-    <AchievementContext.Provider value={{
-      achievements,
-      unlockedAchievements,
-      inProgressAchievements,
-      totalPoints,
-      isLoading,
-      error,
-      unlockAchievement,
-      updateProgress,
-      getAchievementProgress,
-      getNextAchievement
-    }}>
+    <AchievementContext.Provider value={value}>
       {children}
     </AchievementContext.Provider>
   );

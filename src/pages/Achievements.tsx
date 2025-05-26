@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import Achievements from '../components/Achievements';
 
-const Achievements: React.FC = () => {
+const AchievementsPage: React.FC = () => {
   const { getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
 
@@ -19,14 +20,10 @@ const Achievements: React.FC = () => {
             </h1>
           </div>
         </div>
-        <div className={`p-6 rounded-lg ${themeClasses.card}`}>
-          <p className={themeClasses.text.secondary}>
-            Your Japanese learning achievements - coming soon...
-          </p>
-        </div>
+        <Achievements />
       </div>
     </div>
   );
 };
 
-export default Achievements; 
+export default AchievementsPage; 

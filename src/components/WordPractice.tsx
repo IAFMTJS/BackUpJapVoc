@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { QuizWord, Difficulty, Category, quizWords } from '../data/quizData';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress } from '../context/ProgressContext';
@@ -33,6 +33,23 @@ interface QuizWord {
   jlptLevel?: string;
   id?: string;
 }
+
+// Add Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+// Add function to get random subset without replacement
+const getRandomSubset = <T,>(array: T[], count: number): T[] => {
+  if (count >= array.length) return shuffleArray(array);
+  const shuffled = shuffleArray(array);
+  return shuffled.slice(0, count);
+};
 
 const WordPractice: React.FC = () => {
   const { theme, getThemeClasses } = useTheme();
@@ -73,26 +90,31 @@ const WordPractice: React.FC = () => {
     });
   };
 
-  const getRandomWord = () => {
-    const filteredWords = getFilteredWords();
-    const availableWords = filteredWords.filter(word => !usedWords.has(word.japanese));
+  const getRandomWord = useCallback(() => {
+    // Filter out words that have been used recently
+    const availableWords = getFilteredWords().filter(word => !usedWords.has(word.japanese));
     
+    // If all words have been used, reset the used words set
     if (availableWords.length === 0) {
       setUsedWords(new Set());
-      return filteredWords[Math.floor(Math.random() * filteredWords.length)];
+      return getFilteredWords()[Math.floor(Math.random() * getFilteredWords().length)];
     }
     
-    return availableWords[Math.floor(Math.random() * availableWords.length)];
-  };
+    // Use improved randomization
+    return getRandomSubset(availableWords, 1)[0];
+  }, [usedWords]);
 
-  const generateOptions = (correctWord: QuizWord) => {
-    const filteredWords = getFilteredWords();
-    const otherWords = filteredWords.filter(word => word.japanese !== correctWord.japanese);
-    const shuffled = otherWords.sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 3);
-    const options = [...selected.map(word => word.english), correctWord.english];
-    return options.sort(() => 0.5 - Math.random());
-  };
+  const generateOptions = useCallback((word: typeof quizWords[0]) => {
+    // Get other words in the same category
+    const otherWords = getFilteredWords().filter(w => 
+      w.category === word.category && 
+      w.japanese !== word.japanese
+    );
+    
+    // Use improved randomization for options
+    const selectedOptions = getRandomSubset(otherWords, 3).map(w => w.english);
+    return shuffleArray([...selectedOptions, word.english]);
+  }, []);
 
   const getTimeForDifficulty = (difficulty: Difficulty): number => {
     switch (difficulty) {
@@ -123,6 +145,11 @@ const WordPractice: React.FC = () => {
     setTotalQuestions(0);
     setShowResult(false);
     setUsedWords(new Set());
+    
+    // Generate initial set of questions
+    const initialQuestions = getRandomSubset(getFilteredWords(), 10);
+    setQuestions(initialQuestions);
+    
     const newWord = getRandomWord();
     setCurrentWord(newWord);
     setOptions(generateOptions(newWord));
@@ -199,20 +226,23 @@ const WordPractice: React.FC = () => {
     setAverageTime(calculateAverageTime(averageTime, newTotalQuestions, timeLeft));
   };
 
-  const handleNext = () => {
-    setUserAnswer('');
-    setShowResult(false);
-    const newWord = getRandomWord();
-    setCurrentWord(newWord);
-    setOptions(generateOptions(newWord));
+  const handleNextQuestion = useCallback(() => {
+    if (!currentWord) return;
+
+    // Add current word to used words
+    setUsedWords(prev => new Set([...prev, currentWord.japanese]));
+
+    // Get next word using improved randomization
+    const nextWord = getRandomWord();
+    setCurrentWord(nextWord);
+    setOptions(generateOptions(nextWord));
     setTimeLeft(getTimeForDifficulty(selectedDifficulty));
     setShowHint(false);
-    setTimerActive(true);
-    setFeedbackMessage('');
+    setUserAnswer('');
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  };
+  }, [currentWord, getRandomWord, generateOptions, selectedDifficulty]);
 
   const handlePlayAudio = (japanese: string) => {
     playAudio(japanese);

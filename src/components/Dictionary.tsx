@@ -40,6 +40,7 @@ import { ShareDialog } from './ShareDialog';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { SavedSearches } from './SavedSearches';
 import { RadicalSearch } from './RadicalSearch';
+import { initializeAudio, playAudio } from '../utils/audio';
 
 // Enhanced types for dictionary features
 type JLPTLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
@@ -271,6 +272,9 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
   const [showExampleGenerator, setShowExampleGenerator] = useState(false);
   const [showStrokeOrder, setShowStrokeOrder] = useState(false);
   const [selectedKanji, setSelectedKanji] = useState<string | null>(null);
+
+  // Add audio initialization state
+  const [audioInitialized, setAudioInitialized] = useState(false);
 
   // Initialize Fuse.js for fuzzy search
   const fuse = useMemo(() => new Fuse(items, {
@@ -526,17 +530,15 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     let filtered = [...items];
     const filterStages: { stage: string; count: number }[] = [];
 
-    // Mode-based filtering only in practice/quiz mode
-    if (mode === 'practice' || mode === 'quiz') {
-      const beforeMode = filtered.length;
-      filtered = filtered.filter(item => {
-        const wordLevel = wordLevels.find(level => 
-          level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
-        );
-        return wordLevel ? unlockedLevels.includes(wordLevel.level) : true;
-      });
-      filterStages.push({ stage: 'Mode', count: filtered.length });
-    }
+    // Always filter out locked words
+    const beforeLocked = filtered.length;
+    filtered = filtered.filter(item => {
+      const wordLevel = wordLevels.find(level => 
+        level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
+      );
+      return wordLevel ? unlockedLevels.includes(wordLevel.level) : true;
+    });
+    filterStages.push({ stage: 'Locked', count: filtered.length });
 
     // Search term filtering
     if (searchTerm.trim()) {
@@ -561,8 +563,8 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
       filterStages.push({ stage: 'Search', count: filtered.length });
     }
 
-    // Level filter with null checks - only apply in practice/quiz mode
-    if (levelFilter !== 'all' && (mode === 'practice' || mode === 'quiz')) {
+    // Level filter with null checks - apply in all modes
+    if (levelFilter !== 'all') {
       const beforeLevel = filtered.length;
       filtered = filtered.filter(item => {
         if (!item) return false;
@@ -1310,8 +1312,16 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     setSelectedItem(item);
   };
 
-  const handlePlayAudio = (japanese: string) => {
-    playAudio(japanese);
+  const handlePlayAudio = async (japanese: string) => {
+    console.log('[Dictionary] Play audio requested for:', japanese);
+    if (!audioInitialized) {
+      console.log('[Dictionary] Audio not initialized, attempting to initialize...');
+      const context = initializeAudio();
+      if (context) {
+        setAudioInitialized(true);
+      }
+    }
+    await playAudio(japanese);
   };
 
   const renderLockedAlert = () => (
@@ -2635,6 +2645,32 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
       </Stack>
     </Box>
   );
+
+  // Initialize audio on component mount
+  useEffect(() => {
+    const initAudio = () => {
+      const context = initializeAudio();
+      if (context) {
+        setAudioInitialized(true);
+        console.log('[Dictionary] Audio initialized successfully');
+      } else {
+        console.warn('[Dictionary] Failed to initialize audio');
+      }
+    };
+
+    // Try to initialize audio immediately
+    initAudio();
+
+    // Also set up click handler for iOS devices
+    const handleClick = () => {
+      if (!audioInitialized) {
+        initAudio();
+      }
+    };
+
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [audioInitialized]);
 
   return (
     <Box sx={{ p: 2 }}>

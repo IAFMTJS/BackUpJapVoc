@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useSound } from '../../context/SoundContext';
 import { useProgress } from '../../context/ProgressContext';
@@ -24,6 +24,23 @@ interface KanaPracticeProps {
   onComplete?: () => void;
 }
 
+// Add Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+// Add function to get random subset without replacement
+const getRandomSubset = <T,>(array: T[], count: number): T[] => {
+  if (count >= array.length) return shuffleArray(array);
+  const shuffled = shuffleArray(array);
+  return shuffled.slice(0, count);
+};
+
 const KanaPractice: React.FC<KanaPracticeProps> = ({ 
   mode: initialMode = 'recognition',
   difficulty: initialDifficulty = 'easy',
@@ -43,7 +60,7 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({
   const [attempts, setAttempts] = useState<number>(0);
   const [showHint, setShowHint] = useState<boolean>(false);
 
-  const generateQuestion = () => {
+  const generateQuestion = useCallback(() => {
     let questionPool: any[] = [];
     
     // Combine kana based on selected type
@@ -51,9 +68,10 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({
     else if (difficulty === 'medium') questionPool = [...questionPool, ...yōonKana];
     else if (difficulty === 'hard') questionPool = [...questionPool, ...dakuonKana];
 
-    // Randomly select a question type and kana
-    const questionType = Math.random() < 0.5 ? 'hiragana' : 'katakana';
-    const kana = questionPool[Math.floor(Math.random() * questionPool.length)];
+    // Use improved randomization for question type and kana
+    const questionTypes = ['hiragana', 'katakana'];
+    const questionType = getRandomSubset(questionTypes, 1)[0];
+    const kana = getRandomSubset(questionPool, 1)[0];
     
     let question: PracticeQuestion;
 
@@ -75,7 +93,6 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({
         };
         break;
       case 'listening':
-        // For listening mode, we'll show romaji and ask for kana
         question = {
           question: kana.romaji,
           correctAnswer: questionType === 'hiragana' ? kana.hiragana : kana.katakana,
@@ -100,12 +117,7 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({
         };
         break;
       default:
-        question = {
-          question: kana.hiragana,
-          correctAnswer: kana.romaji,
-          type: 'romaji',
-          audio: kana.audio
-        };
+        throw new Error(`Invalid mode: ${mode}`);
     }
 
     setCurrentKana(question.question);
@@ -114,11 +126,46 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({
     setScore(prev => prev + (isCorrect ? 1 : 0));
     setAttempts(prev => prev + 1);
     setShowHint(false);
-  };
+
+    return question;
+  }, [mode, difficulty]);
+
+  const startNewPractice = useCallback(() => {
+    // Generate initial set of questions
+    const initialQuestions = Array.from({ length: 10 }, () => generateQuestion());
+    setQuestions(initialQuestions);
+    setCurrentQuestion(0);
+    setScore(0);
+    setShowResult(false);
+    setUserAnswer('');
+    setShowHint(false);
+    setTimeLeft(getTimeForDifficulty(difficulty));
+    setTimerActive(true);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [generateQuestion, difficulty]);
+
+  const handleNextQuestion = useCallback(() => {
+    if (currentQuestion + 1 >= questions.length) {
+      // Generate new set of questions when we run out
+      const newQuestions = Array.from({ length: 10 }, () => generateQuestion());
+      setQuestions(newQuestions);
+      setCurrentQuestion(0);
+    } else {
+      setCurrentQuestion(prev => prev + 1);
+    }
+    setUserAnswer('');
+    setShowHint(false);
+    setTimeLeft(getTimeForDifficulty(difficulty));
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [currentQuestion, questions.length, generateQuestion, difficulty]);
 
   useEffect(() => {
-    generateQuestion();
-  }, [mode, difficulty]);
+    startNewPractice();
+  }, [startNewPractice]);
 
   const checkAnswer = () => {
     if (!currentKana) return;
@@ -128,12 +175,12 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({
     setScore(prev => prev + (isCorrect ? 1 : 0));
 
     setTimeout(() => {
-      generateQuestion();
+      handleNextQuestion();
     }, 1500);
   };
 
   const nextKana = () => {
-    generateQuestion();
+    handleNextQuestion();
   };
 
   const getCorrectAnswer = (kana: string) => {

@@ -27,6 +27,7 @@ interface QuizState {
   strokes: StrokeData[];
   currentStroke: Point[];
   compoundWordProgress: { [word: string]: { attempts: number; successes: number } };
+  questions: Kanji[];
 }
 
 interface QuizSettings {
@@ -98,6 +99,23 @@ const QUIZ_SETTINGS: Record<QuizDifficulty, QuizSettings> = {
   }
 };
 
+// Add Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+// Add function to get random subset without replacement
+const getRandomSubset = <T,>(array: T[], count: number): T[] => {
+  if (count >= array.length) return shuffleArray(array);
+  const shuffled = shuffleArray(array);
+  return shuffled.slice(0, count);
+};
+
 const KanjiQuiz: React.FC = () => {
   const { getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
@@ -116,7 +134,8 @@ const KanjiQuiz: React.FC = () => {
     userInput: '',
     strokes: [],
     currentStroke: [],
-    compoundWordProgress: {}
+    compoundWordProgress: {},
+    questions: []
   });
   const [quizSettings, setQuizSettings] = useState<QuizSettings>(QUIZ_SETTINGS.medium);
   const [currentKanji, setCurrentKanji] = useState<KanjiStrokeData | null>(null);
@@ -131,6 +150,7 @@ const KanjiQuiz: React.FC = () => {
   const [currentExercise, setCurrentExercise] = useState<CompoundWordExercise | null>(null);
   const [exerciseHistory, setExerciseHistory] = useState<CompoundWordExercise[]>([]);
   const [learningContext, setLearningContext] = useState<string[]>([]);
+  const [options, setOptions] = useState<string[]>([]);
 
   // Initialize canvas for stroke input
   useEffect(() => {
@@ -243,30 +263,6 @@ const KanjiQuiz: React.FC = () => {
     }
   };
 
-  // Start quiz
-  const startQuiz = () => {
-    const settings = QUIZ_SETTINGS[quizSettings.difficulty];
-    setQuizState({
-      mode: 'quiz',
-      currentQuestion: 0,
-      selectedAnswer: null,
-      showFeedback: false,
-      isCorrect: null,
-      showCorrect: false,
-      userInput: '',
-      strokes: [],
-      currentStroke: [],
-      compoundWordProgress: {}
-    });
-    setScore(0);
-    setStreak(0);
-    setTimeLeft(settings.timeLimit);
-    setShowStrokeGuide(false);
-
-    // Load first question
-    loadQuestion(0);
-  };
-
   // Load question
   const loadQuestion = (index: number) => {
     // Get all available kanji
@@ -287,27 +283,20 @@ const KanjiQuiz: React.FC = () => {
       availableKanji = kanjiList;
     }
 
-    const kanji = availableKanji[index % availableKanji.length];
-    setCurrentKanji({
-      character: kanji.character,
-      strokes: [], // We'll need to implement stroke order data separately
-      compoundWords: kanji.examples?.map(e => ({
-        word: e.word,
-        reading: e.reading,
-        meaning: e.meaning,
-        kanji: [kanji.character],
-        difficulty: calculateWordDifficulty(e),
-        examples: [],
-        relatedWords: []
-      })) || [],
-      difficulty: calculateKanjiDifficulty(kanji),
-      radicals: kanji.radicals,
-      meanings: [kanji.english], // Using english instead of meaning
-      readings: {
-        onyomi: kanji.onyomi,
-        kunyomi: kanji.kunyomi
-      }
-    });
+    // Use improved randomization instead of modulo
+    const shuffledKanji = shuffleArray(availableKanji);
+    const kanji = shuffledKanji[index % shuffledKanji.length];
+
+    // Generate options using improved randomization
+    const otherKanji = availableKanji.filter(k => k.character !== kanji.character);
+    const options = getRandomSubset(otherKanji, 3).map(k => k.character);
+    const allOptions = shuffleArray([...options, kanji.character]);
+
+    setCurrentKanji(kanji);
+    setOptions(allOptions);
+    setUserInput('');
+    setStrokes([]);
+    setCurrentStroke([]);
 
     // Generate compound words for practice
     if (quizSettings.mode === 'compound') {
@@ -337,6 +326,34 @@ const KanjiQuiz: React.FC = () => {
       );
       setCompoundWords(words);
     }
+  };
+
+  // Start quiz
+  const startQuiz = () => {
+    const settings = QUIZ_SETTINGS[quizSettings.difficulty];
+    // Shuffle all questions at the start
+    const shuffledQuestions = shuffleArray(kanjiList);
+    
+    setQuizState({
+      mode: 'quiz',
+      currentQuestion: 0,
+      selectedAnswer: null,
+      showFeedback: false,
+      isCorrect: null,
+      showCorrect: false,
+      userInput: '',
+      strokes: [],
+      currentStroke: [],
+      compoundWordProgress: {},
+      questions: shuffledQuestions // Store shuffled questions
+    });
+    setScore(0);
+    setStreak(0);
+    setTimeLeft(settings.timeLimit);
+    setShowStrokeGuide(false);
+
+    // Load first question
+    loadQuestion(0);
   };
 
   // Handle quiz completion
@@ -540,7 +557,7 @@ const KanjiQuiz: React.FC = () => {
 
         {currentExercise.type === 'reading' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {currentExercise.options?.map((option, index) => (
+            {options.map((option, index) => (
               <Button
                 key={index}
                 variant={quizState.selectedAnswer === index ? 'contained' : 'outlined'}
@@ -651,13 +668,13 @@ const KanjiQuiz: React.FC = () => {
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {currentKanji.meanings.map((meaning, index) => (
+          {options.map((option, index) => (
             <Button
               key={index}
               variant={quizState.selectedAnswer === index ? 'contained' : 'outlined'}
               onClick={() => {
                 setQuizState(prev => ({ ...prev, selectedAnswer: index }));
-                const isCorrect = meaning === currentKanji.meanings[0];
+                const isCorrect = option === currentKanji.meanings[0];
                 if (isCorrect) {
                   playCorrect();
                   setStreak(prev => prev + 1);
@@ -673,7 +690,7 @@ const KanjiQuiz: React.FC = () => {
               }}
               disabled={quizState.showFeedback}
             >
-              {meaning}
+              {option}
             </Button>
           ))}
         </Box>
@@ -745,13 +762,13 @@ const KanjiQuiz: React.FC = () => {
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {[...currentKanji.readings.onyomi, ...currentKanji.readings.kunyomi].map((reading, index) => (
+          {options.map((option, index) => (
             <Button
               key={index}
               variant={quizState.selectedAnswer === index ? 'contained' : 'outlined'}
               onClick={() => {
                 setQuizState(prev => ({ ...prev, selectedAnswer: index }));
-                const isCorrect = reading === currentKanji.readings.onyomi[0];
+                const isCorrect = option === currentKanji.readings.onyomi[0];
                 if (isCorrect) {
                   playCorrect();
                   setStreak(prev => prev + 1);
@@ -767,7 +784,7 @@ const KanjiQuiz: React.FC = () => {
               }}
               disabled={quizState.showFeedback}
             >
-              {reading}
+              {option}
             </Button>
           ))}
         </Box>

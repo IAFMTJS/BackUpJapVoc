@@ -5,7 +5,7 @@ import { useProgress } from '../context/ProgressContext';
 import { useApp } from '../context/AppContext';
 import { kuroshiroInstance } from '../utils/kuroshiro';
 import { ProgressItem } from '../types';
-import { useAchievements } from '../context/AchievementsContext';
+import { useAchievements } from '../context/AchievementContext';
 
 type Mode = 'flashcards' | 'meaning-quiz' | 'reading-quiz' | 'writing-quiz';
 type QuizDifficulty = 'easy' | 'medium' | 'hard';
@@ -394,14 +394,14 @@ const KanjiPractice: React.FC = () => {
     if (quizComplete) {
       return (
         <div className="text-center">
-          <div className="text-3xl mb-6">Quiz Complete! 🎉</div>
-          <div className="text-2xl mb-4">
+          <div className={`text-3xl mb-6 ${themeClasses.text}`}>Quiz Complete! 🎉</div>
+          <div className={`text-2xl mb-4 ${themeClasses.text}`}>
             Final Score: {score} / {totalQuestions}
           </div>
-          <div className="text-xl mb-4">
+          <div className={`text-xl mb-4 ${themeClasses.text}`}>
             Difficulty: {quizDifficulty.charAt(0).toUpperCase() + quizDifficulty.slice(1)}
           </div>
-          <div className="text-lg mb-6">
+          <div className={`text-lg mb-6 ${themeClasses.text}`}>
             {score === totalQuestions ? 'Perfect Score! 🌟' : 
              score >= totalQuestions * 0.8 ? 'Great Job! 🎯' :
              score >= totalQuestions * 0.6 ? 'Good Work! 👍' :
@@ -409,7 +409,7 @@ const KanjiPractice: React.FC = () => {
           </div>
           <button
             onClick={() => setMode('flashcards')}
-            className="px-6 py-3 rounded-lg bg-primary text-white"
+            className={`px-6 py-3 rounded-lg ${themeClasses.card} ${themeClasses.text}`}
           >
             Return to Flashcards
           </button>
@@ -429,7 +429,7 @@ const KanjiPractice: React.FC = () => {
                   <div className="text-8xl mb-4">{currentKanji.kunyomi[0]}</div>
                 )}
                 {settings.showRomajiGames && (
-                  <div className="text-xl mb-4 text-gray-600">
+                  <div className={`text-xl mb-4 ${themeClasses.text}`}>
                     {romajiMap[currentKanji.character] || 'Loading...'}
                   </div>
                 )}
@@ -444,7 +444,7 @@ const KanjiPractice: React.FC = () => {
                   <div className="text-8xl mb-4">{currentKanji.meaning}</div>
                 )}
                 {settings.showRomajiGames && (
-                  <div className="text-xl mb-4 text-gray-600">
+                  <div className={`text-xl mb-4 ${themeClasses.text}`}>
                     {romajiMap[currentKanji.character] || 'Loading...'}
                   </div>
                 )}
@@ -462,7 +462,7 @@ const KanjiPractice: React.FC = () => {
                   }
                 </div>
                 {settings.showRomajiGames && writingMode === 'reading' && (
-                  <div className="text-xl mb-4 text-gray-600">
+                  <div className={`text-xl mb-4 ${themeClasses.text}`}>
                     {romajiMap[currentKanji.onyomi[0]] || 'Loading...'}
                   </div>
                 )}
@@ -489,7 +489,7 @@ const KanjiPractice: React.FC = () => {
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
               placeholder={mode === 'writing-quiz' ? "Enter the kanji..." : "Enter your answer..."}
-              className={`w-full p-4 rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
+              className={`w-full p-4 rounded-lg ${themeClasses.input}`}
               disabled={!timerActive}
             />
             <button
@@ -497,7 +497,7 @@ const KanjiPractice: React.FC = () => {
               className={`w-full p-4 rounded-lg ${
                 timerActive
                   ? 'bg-primary text-white'
-                  : 'bg-gray-300 text-gray-500'
+                  : `${themeClasses.card} ${themeClasses.text}`
               }`}
               disabled={!timerActive}
             >
@@ -510,7 +510,7 @@ const KanjiPractice: React.FC = () => {
 
     return (
       <div className="text-center">
-        <div className="text-2xl mb-4">
+        <div className={`text-2xl mb-4 ${themeClasses.text}`}>
           {isCorrect ? 'Correct! 🎉' : 'Incorrect 😕'}
         </div>
         {mode === 'meaning-quiz' && (
@@ -522,7 +522,7 @@ const KanjiPractice: React.FC = () => {
               <div className="text-8xl mb-4">{currentKanji.character}</div>
             )}
             {settings.showRomajiGames && (
-              <div className="text-xl mb-4 text-gray-600">
+              <div className={`text-xl mb-4 ${themeClasses.text}`}>
                 {romajiMap[currentKanji.character] || 'Loading...'}
               </div>
             )}
@@ -564,7 +564,7 @@ const KanjiPractice: React.FC = () => {
         </div>
         <button
           onClick={nextQuestion}
-          className="px-6 py-3 rounded-lg bg-primary text-white"
+          className={`px-6 py-3 rounded-lg ${themeClasses.card} ${themeClasses.text}`}
         >
           {questionsRemaining > 0 ? 'Next Question' : 'Finish Quiz'}
         </button>
@@ -582,7 +582,9 @@ const KanjiPractice: React.FC = () => {
           <button
             onClick={() => setMode('flashcards')}
             className={`px-4 py-2 rounded-lg ${
-              mode === 'flashcards' ? 'bg-primary text-white' : 'bg-gray-200'
+              mode === 'flashcards' 
+                ? 'bg-primary text-white' 
+                : `${themeClasses.card} ${themeClasses.text}`
             }`}
           >
             Flashcards
@@ -590,7 +592,9 @@ const KanjiPractice: React.FC = () => {
           <button
             onClick={() => setMode('meaning-quiz')}
             className={`px-4 py-2 rounded-lg ${
-              mode === 'meaning-quiz' ? 'bg-primary text-white' : 'bg-gray-200'
+              mode === 'meaning-quiz' 
+                ? 'bg-primary text-white' 
+                : `${themeClasses.card} ${themeClasses.text}`
             }`}
           >
             Meaning Quiz
@@ -598,7 +602,9 @@ const KanjiPractice: React.FC = () => {
           <button
             onClick={() => setMode('reading-quiz')}
             className={`px-4 py-2 rounded-lg ${
-              mode === 'reading-quiz' ? 'bg-primary text-white' : 'bg-gray-200'
+              mode === 'reading-quiz' 
+                ? 'bg-primary text-white' 
+                : `${themeClasses.card} ${themeClasses.text}`
             }`}
           >
             Reading Quiz
@@ -606,7 +612,9 @@ const KanjiPractice: React.FC = () => {
           <button
             onClick={() => setMode('writing-quiz')}
             className={`px-4 py-2 rounded-lg ${
-              mode === 'writing-quiz' ? 'bg-primary text-white' : 'bg-gray-200'
+              mode === 'writing-quiz' 
+                ? 'bg-primary text-white' 
+                : `${themeClasses.card} ${themeClasses.text}`
             }`}
           >
             Writing Quiz
@@ -618,7 +626,7 @@ const KanjiPractice: React.FC = () => {
           <select
             value={selectedDifficulty}
             onChange={(e) => setSelectedDifficulty(e.target.value)}
-            className="px-4 py-2 rounded-lg border"
+            className={`px-4 py-2 rounded-lg border ${themeClasses.input}`}
           >
             <option value="all">All Difficulties</option>
             <option value="easy">Easy</option>
@@ -629,7 +637,7 @@ const KanjiPractice: React.FC = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 rounded-lg border"
+            className={`px-4 py-2 rounded-lg border ${themeClasses.input}`}
           >
             <option value="all">All Categories</option>
             <option value="nature">Nature</option>
@@ -653,7 +661,7 @@ const KanjiPractice: React.FC = () => {
                 <div className="text-8xl mb-8 font-japanese">{currentKanji.kunyomi[0]}</div>
               )}
               {settings.showRomajiGames && (
-                <div className="text-xl mb-4 text-gray-600">
+                <div className={`text-xl mb-4 ${themeClasses.text}`}>
                   {romajiMap[currentKanji.character] || 'Loading...'}
                 </div>
               )}
@@ -662,7 +670,9 @@ const KanjiPractice: React.FC = () => {
                 <button
                   onClick={() => setShowMeaning(!showMeaning)}
                   className={`w-full p-4 rounded-lg ${
-                    showMeaning ? 'bg-primary text-white' : 'bg-gray-100'
+                    showMeaning 
+                      ? 'bg-primary text-white' 
+                      : `${themeClasses.card} ${themeClasses.text}`
                   }`}
                 >
                   {showMeaning ? currentKanji.english : 'Show Meaning'}
@@ -671,7 +681,9 @@ const KanjiPractice: React.FC = () => {
                 <button
                   onClick={() => setShowReadings(!showReadings)}
                   className={`w-full p-4 rounded-lg ${
-                    showReadings ? 'bg-primary text-white' : 'bg-gray-100'
+                    showReadings 
+                      ? 'bg-primary text-white' 
+                      : `${themeClasses.card} ${themeClasses.text}`
                   }`}
                 >
                   {showReadings ? (
@@ -687,7 +699,9 @@ const KanjiPractice: React.FC = () => {
                 <button
                   onClick={() => setShowExamples(!showExamples)}
                   className={`w-full p-4 rounded-lg ${
-                    showExamples ? 'bg-primary text-white' : 'bg-gray-100'
+                    showExamples 
+                      ? 'bg-primary text-white' 
+                      : `${themeClasses.card} ${themeClasses.text}`
                   }`}
                 >
                   {showExamples ? (
@@ -696,7 +710,7 @@ const KanjiPractice: React.FC = () => {
                         <div key={index}>
                           {settings.showKanjiGames ? example.word : example.reading} 
                           {settings.showRomajiGames && (
-                            <span className="text-gray-600 ml-2">
+                            <span className={`${themeClasses.text} ml-2`}>
                               ({romajiMap[example.word] || 'Loading...'})
                             </span>
                           )}
@@ -710,7 +724,7 @@ const KanjiPractice: React.FC = () => {
                 </button>
 
                 {currentKanji.hint && (
-                  <div className="mt-4 text-sm text-gray-600">
+                  <div className={`mt-4 text-sm ${themeClasses.text}`}>
                     Hint: {currentKanji.hint}
                   </div>
                 )}
@@ -719,26 +733,28 @@ const KanjiPractice: React.FC = () => {
               <div className="flex justify-between mt-8">
                 <button
                   onClick={handlePrevious}
-                  className="px-4 py-2 rounded-lg bg-gray-200"
+                  className={`px-4 py-2 rounded-lg ${themeClasses.card} ${themeClasses.text}`}
                 >
                   Previous
                 </button>
-                <div className="text-gray-600">
+                <div className={themeClasses.text}>
                   {currentIndex + 1} / {filteredKanji.length}
                 </div>
                 <button
                   onClick={handleNext}
-                  className="px-4 py-2 rounded-lg bg-gray-200"
+                  className={`px-4 py-2 rounded-lg ${themeClasses.card} ${themeClasses.text}`}
                 >
                   Next
                 </button>
               </div>
             </div>
           ) : (
-            renderQuizContent()
+            <div className={`${themeClasses.card} rounded-lg p-8 border ${themeClasses.border}`}>
+              {renderQuizContent()}
+            </div>
           )
         ) : (
-          <div className="text-center text-gray-600">
+          <div className={`text-center ${themeClasses.text}`}>
             No kanji found matching the selected filters.
           </div>
         )}

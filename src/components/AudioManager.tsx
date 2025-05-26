@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { wordsByLevel } from '../data/japaneseWords';
-import { openDB } from '../utils/indexedDB';
+import { useDatabase } from '../App';
 
 interface AudioCache {
   id: string;
@@ -20,20 +20,7 @@ const AudioManager: React.FC = () => {
   const [cacheProgress, setCacheProgress] = useState<Record<number, CacheProgress>>({});
   const [isCaching, setIsCaching] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<{ url: string; text: string } | null>(null);
-  const [db, setDb] = useState<IDBDatabase | null>(null);
-
-  // Get database instance from App component
-  useEffect(() => {
-    const getDB = async () => {
-      try {
-        const database = await openDB();
-        setDb(database);
-      } catch (error) {
-        console.error('Failed to get database instance:', error);
-      }
-    };
-    getDB();
-  }, []);
+  const db = useDatabase();
 
   const cacheAudioFiles = async (level: number) => {
     if (!db) return;

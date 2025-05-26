@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, lazy, Suspense, ErrorBoundary } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Link } from 'react-router-dom';
 import { useProgress } from '../context/ProgressContext';
@@ -21,9 +21,18 @@ const LoadingSpinner = () => (
 );
 
 // Lazy load heavy components
-const LazyDictionary = lazy(() => import('../components/Dictionary'));
-const LazyLearningProgress = lazy(() => import('../components/LearningProgress'));
-const LazyProgressVisuals = lazy(() => import('../components/ProgressVisuals'));
+const LazyDictionary = lazy(() => import('../components/Dictionary').then(module => {
+  console.log('Dictionary module loaded:', module);
+  return module;
+}));
+const LazyLearningProgress = lazy(() => import('../components/LearningProgress').then(module => {
+  console.log('LearningProgress module loaded:', module);
+  return module;
+}));
+const LazyProgressVisuals = lazy(() => import('../components/ProgressVisuals').then(module => {
+  console.log('ProgressVisuals module loaded:', module);
+  return module;
+}));
 
 // Loading fallback component for lazy-loaded components
 const ComponentLoadingFallback = () => (
@@ -31,6 +40,25 @@ const ComponentLoadingFallback = () => (
     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
     <span className="ml-3 text-sm">Loading component...</span>
   </div>
+);
+
+// Component error boundary
+const ComponentErrorBoundary: React.FC<{ children: React.ReactNode; componentName: string }> = ({ children, componentName }) => (
+  <ErrorBoundary
+    fallback={
+      <div className="p-4 text-center">
+        <p className="text-red-500 mb-2">Error loading {componentName}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Retry
+        </button>
+      </div>
+    }
+  >
+    {children}
+  </ErrorBoundary>
 );
 
 type TabType = 'progress' | 'dictionary';
@@ -151,13 +179,11 @@ const ProgressPage: React.FC = () => {
     </div>
   );
 
-  // Render loading states for specific sections
-  const renderLoadingState = (section: string) => (
-    <div className={`p-4 rounded-lg ${themeClasses.card} mb-4`}>
-      <div className="flex items-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-        <span className="ml-3 text-sm">Loading {section}...</span>
-      </div>
+  // Loading state component
+  const renderLoadingState = (component: string) => (
+    <div className="flex items-center justify-center min-h-[200px]">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      <span className="ml-3 text-sm">Loading {component}...</span>
     </div>
   );
 
@@ -185,42 +211,31 @@ const ProgressPage: React.FC = () => {
         <div className="space-y-6">
           {/* Progress Visualization */}
           <div className={`p-6 rounded-lg ${themeClasses.card}`}>
-            <Paper 
-              elevation={0}
-              sx={{ 
-                p: 3,
-                borderRadius: 4,
-                background: theme => theme.palette.mode === 'dark' 
-                  ? 'rgba(255, 255, 255, 0.05)' 
-                  : 'rgba(0, 0, 0, 0.02)',
-                backdropFilter: 'blur(10px)',
-                border: theme => `1px solid ${theme.palette.mode === 'dark' 
-                  ? 'rgba(255, 255, 255, 0.1)' 
-                  : 'rgba(0, 0, 0, 0.1)'}`
-              }}
-            >
+            <Paper>
               {isProgressLoading ? (
-                renderLoadingState('progress visualization')
+                renderLoadingState('progress data')
               ) : (
-                <Suspense fallback={<ComponentLoadingFallback />}>
-                  <LazyProgressVisuals />
+                <Suspense fallback={renderLoadingState('progress visualization')}>
+                  <ComponentErrorBoundary componentName="Progress Visualization">
+                    <LazyProgressVisuals />
+                  </ComponentErrorBoundary>
                 </Suspense>
               )}
             </Paper>
           </div>
 
           {/* Dictionary Section */}
-          {activeTab === 'dictionary' && (
-            <Box sx={{ mt: 4 }}>
-              {isSettingsLoading ? (
-                renderLoadingState('dictionary settings')
-              ) : (
-                <Suspense fallback={<ComponentLoadingFallback />}>
-                  <LazyDictionary />
-                </Suspense>
-              )}
-            </Box>
-          )}
+          <Box sx={{ mt: 4 }}>
+            {isSettingsLoading ? (
+              renderLoadingState('dictionary settings')
+            ) : (
+              <Suspense fallback={<ComponentLoadingFallback />}>
+                <ComponentErrorBoundary componentName="Dictionary">
+                  <LazyDictionary mode="all" />
+                </ComponentErrorBoundary>
+              </Suspense>
+            )}
+          </Box>
 
           {/* Progress Section */}
           {activeTab === 'progress' && (
@@ -229,7 +244,9 @@ const ProgressPage: React.FC = () => {
                 renderLoadingState('learning progress')
               ) : (
                 <Suspense fallback={<ComponentLoadingFallback />}>
-                  <LazyLearningProgress />
+                  <ComponentErrorBoundary componentName="Learning Progress">
+                    <LazyLearningProgress />
+                  </ComponentErrorBoundary>
                 </Suspense>
               )}
             </Box>

@@ -11,13 +11,13 @@ import styled from '@emotion/styled';
 
 const StatusContainer = styled(Box)(({ theme }) => ({
   position: 'fixed',
-  bottom: theme.spacing(2),
-  right: theme.spacing(2),
+  bottom: `${theme.spacing(2)}px`,
+  right: `${theme.spacing(2)}px`,
   zIndex: theme.zIndex.snackbar,
   display: 'flex',
   alignItems: 'center',
-  gap: theme.spacing(1),
-  padding: theme.spacing(1, 2),
+  gap: `${theme.spacing(1)}px`,
+  padding: `${theme.spacing(1)}px ${theme.spacing(2)}px`,
   borderRadius: theme.shape.borderRadius,
   backgroundColor: theme.palette.mode === 'dark' 
     ? 'rgba(0, 0, 0, 0.8)' 
@@ -25,6 +25,7 @@ const StatusContainer = styled(Box)(({ theme }) => ({
   backdropFilter: 'blur(8px)',
   boxShadow: theme.shadows[4],
   transition: 'all 0.3s ease',
+  border: `1px solid ${theme.palette.error.main}`,
   '&.offline': {
     border: `1px solid ${theme.palette.error.main}`,
     '& .MuiTypography-root': {
@@ -41,24 +42,25 @@ const StatusContainer = styled(Box)(({ theme }) => ({
 
 const OfflineStatus: React.FC = () => {
   const theme = useTheme();
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [showNotification, setShowNotification] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showStatus, setShowStatus] = useState(false);
+  const [showSnackbar, setShowSnackbar] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationSeverity, setNotificationSeverity] = useState<'success' | 'error' | 'info'>('info');
 
   useEffect(() => {
     const handleOnline = () => {
-      setIsOffline(false);
+      setIsOnline(true);
       setNotificationMessage('You are back online!');
       setNotificationSeverity('success');
-      setShowNotification(true);
+      setShowSnackbar(true);
     };
 
     const handleOffline = () => {
-      setIsOffline(true);
+      setIsOnline(false);
       setNotificationMessage('You are offline. Some features may be limited.');
       setNotificationSeverity('error');
-      setShowNotification(true);
+      setShowSnackbar(true);
     };
 
     // Check connection status periodically
@@ -88,7 +90,7 @@ const OfflineStatus: React.FC = () => {
   }, []);
 
   const handleCloseNotification = () => {
-    setShowNotification(false);
+    setShowSnackbar(false);
   };
 
   const handleRetry = () => {
@@ -97,41 +99,57 @@ const OfflineStatus: React.FC = () => {
 
   return (
     <>
-      <StatusContainer className={isOffline ? 'offline' : 'online'}>
-        {isOffline ? (
-          <>
-            <OfflineIcon color="error" />
-            <Typography variant="body2">
-              Offline Mode
-            </Typography>
-            <IconButton 
-              size="small" 
-              onClick={handleRetry}
-              sx={{ 
-                color: theme.palette.error.main,
-                '&:hover': {
-                  backgroundColor: 'rgba(211, 47, 47, 0.1)'
-                }
-              }}
-            >
-              <RefreshIcon fontSize="small" />
-            </IconButton>
-          </>
-        ) : (
-          <>
-            <OnlineIcon color="success" />
-            <Typography variant="body2">
-              Online
-            </Typography>
-          </>
-        )}
-      </StatusContainer>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: theme.spacing(2),
+          right: theme.spacing(2),
+          zIndex: theme.zIndex.snackbar,
+          display: 'flex',
+          alignItems: 'center',
+          gap: theme.spacing(1),
+          p: `${theme.spacing(1)} ${theme.spacing(2)}`,
+          borderRadius: theme.shape.borderRadius,
+          backgroundColor: theme.palette.mode === 'dark' 
+            ? 'rgba(0, 0, 0, 0.8)' 
+            : 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(8px)',
+          boxShadow: theme.shadows[4],
+          transition: 'all 0.3s ease',
+          border: `1px solid ${
+            isOnline 
+              ? theme.palette.success.main 
+              : theme.palette.error.main
+          }`,
+          '& .MuiTypography-root': {
+            color: isOnline 
+              ? theme.palette.success.main 
+              : theme.palette.error.main
+          }
+        }}
+        className={isOnline ? 'online' : 'offline'}
+      >
+        {isOnline ? <OnlineIcon /> : <OfflineIcon />}
+        <Typography variant="body2">
+          {isOnline ? 'Online' : 'Offline'}
+        </Typography>
+        <IconButton 
+          size="small" 
+          onClick={() => setShowStatus(false)}
+          sx={{ 
+            ml: theme.spacing(1),
+            color: 'inherit'
+          }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
 
       <Snackbar
-        open={showNotification}
+        open={showSnackbar}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
           onClose={handleCloseNotification}

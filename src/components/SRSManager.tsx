@@ -7,7 +7,7 @@ import { Box, Typography, Button, Card, CardContent, LinearProgress, Chip, Stack
 import { JapaneseWord } from '../types';
 import { useSound } from '../context/SoundContext';
 import { allWords } from '../data/japaneseWords';
-import { openDB } from '../utils/indexedDB';
+import { useDatabase } from '../App';
 
 interface SRSItem {
   word: JapaneseWord;
@@ -25,11 +25,13 @@ interface SRSManagerProps {
 }
 
 const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
-  const { isDarkMode, themeClasses } = useTheme();
+  const { isDarkMode, getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
   const { settings } = useApp();
   const { progress, updateProgress } = useProgress();
   const { currentLevel, userProgress } = useWordLevel();
   const { playSound } = useSound();
+  const db = useDatabase();
   
   const [currentItem, setCurrentItem] = useState<SRSItem | null>(null);
   const [reviewQueue, setReviewQueue] = useState<SRSItem[]>([]);
@@ -38,7 +40,6 @@ const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
   const [userAnswer, setUserAnswer] = useState('');
   const [inputError, setInputError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
-  const [db, setDb] = useState<IDBDatabase | null>(null);
 
   // SRS intervals in hours
   const intervals = [1, 6, 24, 72, 168, 336]; // 1h, 6h, 1d, 3d, 1w, 2w
@@ -49,19 +50,6 @@ const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
     nextReview.setHours(nextReview.getHours() + interval);
     return nextReview;
   };
-
-  // Get database instance from App component
-  useEffect(() => {
-    const getDB = async () => {
-      try {
-        const database = await openDB();
-        setDb(database);
-      } catch (error) {
-        console.error('Failed to get database instance:', error);
-      }
-    };
-    getDB();
-  }, []);
 
   // Load review queue from IndexedDB
   const loadReviewQueue = useCallback(async () => {
@@ -387,9 +375,9 @@ const SRSManager: React.FC<SRSManagerProps> = ({ onComplete }) => {
               label={`Level ${index + 1}: ${interval}h`}
               className={themeClasses.card}
               sx={{
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-primary)',
-                background: 'var(--background-lighter)'
+                color: isDarkMode ? 'var(--text-primary)' : 'var(--text-secondary)',
+                background: isDarkMode ? 'var(--background-lighter)' : 'var(--background)',
+                border: `1px solid ${isDarkMode ? 'var(--border-color)' : 'var(--border-color-light)'}`
               }}
             />
           ))}

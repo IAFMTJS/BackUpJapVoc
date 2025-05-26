@@ -10,7 +10,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
 import { WordLevelProvider } from './context/WordLevelContext';
 import { SoundProvider } from './context/SoundContext';
-import { AchievementsProvider } from './context/AchievementsContext';
+import { AchievementProvider } from './context/AchievementContext';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -22,7 +22,7 @@ root.render(
       <AppProvider>
         <ProgressProvider>
           <WordLevelProvider>
-            <AchievementsProvider>
+            <AchievementProvider>
               <SettingsProvider>
                 <SoundProvider>
                   <AccessibilityProvider>
@@ -34,7 +34,7 @@ root.render(
                   </AccessibilityProvider>
                 </SoundProvider>
               </SettingsProvider>
-            </AchievementsProvider>
+            </AchievementProvider>
           </WordLevelProvider>
         </ProgressProvider>
       </AppProvider>
