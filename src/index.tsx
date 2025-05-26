@@ -44,42 +44,51 @@ root.render(
 
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
+  // Force unregister any existing service workers first
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (const registration of registrations) {
+      registration.unregister();
+      console.log('Unregistered existing service worker:', registration.scope);
+    }
+  });
+
   // Delay service worker registration until after initial render
   setTimeout(() => {
     window.addEventListener('load', async () => {
       try {
+        console.log('Starting service worker registration process...');
         const clientId = await getClientId();
         
-        // Check if we need to update the service worker
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (registration) {
-          const currentVersion = await fetch('/version.json').then(r => r.json()).catch(() => ({ version: '1.0.0' }));
-          const cachedVersion = await caches.match('/version.json').then(r => r.json()).catch(() => ({ version: '1.0.0' }));
-          
-          if (currentVersion.version !== cachedVersion.version) {
-            // Only unregister if versions don't match
-            await registration.unregister();
-            console.log('Unregistered outdated service worker');
-          } else {
-            console.log('Service worker is up to date');
-            return; // Skip re-registration if versions match
-          }
-        }
-
+        // Always unregister existing service worker in production
         if (process.env.NODE_ENV === 'production') {
+          const existingRegistration = await navigator.serviceWorker.getRegistration();
+          if (existingRegistration) {
+            console.log('Unregistering existing service worker for update...');
+            await existingRegistration.unregister();
+          }
+
           try {
+            console.log('Registering new service worker...');
             const newRegistration = await navigator.serviceWorker.register('/service-worker.js', {
               scope: '/',
               updateViaCache: 'none'
             });
 
+            // Force update check
+            if (newRegistration.active) {
+              console.log('Checking for updates...');
+              await newRegistration.update();
+            }
+
             // Add message port error handling with retry
             navigator.serviceWorker.addEventListener('messageerror', (event) => {
               console.warn('Service worker message error:', event);
               if (event.data?.type === 'PORT_CLOSED') {
+                console.log('Port closed, attempting reload...');
                 // Add a small delay before reloading
                 setTimeout(() => {
                   if (!document.hidden) {
+                    console.log('Reloading page...');
                     window.location.reload();
                   }
                 }, 1000);
@@ -89,6 +98,7 @@ if ('serviceWorker' in navigator) {
             // Handle service worker messages
             navigator.serviceWorker.addEventListener('message', (event) => {
               if (!event.data) return;
+              console.log('Service worker message:', event.data);
               
               switch (event.data.type) {
                 case 'ERROR':
@@ -96,42 +106,49 @@ if ('serviceWorker' in navigator) {
                   break;
                 case 'CACHE_UPDATED':
                   console.log('Cache updated:', event.data.payload);
+                  // Force reload after cache update
+                  window.location.reload();
+                  break;
+                case 'UPDATE_AVAILABLE':
+                  console.log('Update available, reloading...');
+                  window.location.reload();
                   break;
               }
             });
 
             // Handle updates
             newRegistration.addEventListener('updatefound', () => {
+              console.log('Update found, installing new service worker...');
               const newWorker = newRegistration.installing;
               if (!newWorker) return;
 
               newWorker.addEventListener('statechange', () => {
+                console.log('Service worker state changed:', newWorker.state);
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // New content is available, show update prompt
-                  if (confirm('New version available! Would you like to update?')) {
-                    newWorker.postMessage({ type: 'SKIP_WAITING' });
-                  }
+                  console.log('New service worker installed, reloading...');
+                  window.location.reload();
                 }
               });
             });
 
-            // Handle page unload
-            window.addEventListener('beforeunload', async () => {
-              try {
-                const activeWorker = newRegistration.active;
-                if (activeWorker) {
-                  activeWorker.postMessage({ type: 'CLIENT_UNLOADING', clientId });
-                  // Give the service worker time to handle the message
-                  await new Promise(resolve => setTimeout(resolve, 100));
-                }
-              } catch (error) {
-                console.warn('Failed to notify service worker before unload:', error);
-              }
+            // Handle controller change
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+              console.log('Service worker controller changed, reloading...');
+              window.location.reload();
             });
 
             console.log('ServiceWorker registration successful with scope:', newRegistration.scope);
           } catch (error) {
             console.error('ServiceWorker registration failed:', error);
+            // Clear any cached data that might be causing issues
+            if ('caches' in window) {
+              caches.keys().then(cacheNames => {
+                cacheNames.forEach(cacheName => {
+                  caches.delete(cacheName);
+                  console.log('Cleared cache:', cacheName);
+                });
+              });
+            }
           }
         }
       } catch (error) {
@@ -140,6 +157,29 @@ if ('serviceWorker' in navigator) {
     });
   }, 2000); // Delay service worker registration by 2 seconds
 }
+
+// Add a function to clear all caches and reload
+const clearCachesAndReload = async () => {
+  if ('caches' in window) {
+    try {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+      console.log('All caches cleared');
+    } catch (error) {
+      console.error('Failed to clear caches:', error);
+    }
+  }
+  window.location.reload();
+};
+
+// Add a global error handler
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+  // If we get a theme-related error, try clearing caches and reloading
+  if (event.error?.message?.includes('theme')) {
+    clearCachesAndReload();
+  }
+});
 
 // Helper function to get a unique client ID
 async function getClientId(): Promise<string> {

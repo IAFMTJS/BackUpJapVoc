@@ -330,27 +330,111 @@ async function networkFirst(request) {
   }
 }
 
-// Service worker event listeners
+// Add a function to notify clients about updates
+const notifyClientsAboutUpdate = async () => {
+  const clients = await self.clients.matchAll();
+  clients.forEach(client => {
+    try {
+      client.postMessage({ type: 'UPDATE_AVAILABLE' });
+    } catch (error) {
+      console.error('Failed to notify client about update:', error);
+    }
+  });
+};
+
+// Modify the install event handler
 self.addEventListener('install', (event) => {
+  console.log('Service worker installing...');
+  // Skip waiting to activate immediately
   event.waitUntil(
     Promise.all([
-      CacheManager.preloadCriticalAssets(),
-      CacheManager.updateCacheVersion()
-    ])
+      self.skipWaiting(),
+      // Clear old caches
+      caches.keys().then(cacheNames => 
+        Promise.all(cacheNames.map(name => caches.delete(name)))
+      )
+    ]).then(() => {
+      console.log('Service worker installed and caches cleared');
+      notifyClientsAboutUpdate();
+    })
   );
 });
 
+// Modify the activate event handler
 self.addEventListener('activate', (event) => {
+  console.log('Service worker activating...');
   event.waitUntil(
     Promise.all([
-      CacheManager.cleanupOldCaches(),
-      clients.claim()
-    ])
+      // Take control of all clients immediately
+      self.clients.claim(),
+      // Clear old caches again to be sure
+      caches.keys().then(cacheNames => 
+        Promise.all(cacheNames.map(name => caches.delete(name)))
+      )
+    ]).then(() => {
+      console.log('Service worker activated and claimed clients');
+      notifyClientsAboutUpdate();
+    })
   );
 });
 
+// Add error handling for fetch events
 self.addEventListener('fetch', (event) => {
-  event.respondWith(handleRequest(event.request));
+  event.respondWith(
+    (async () => {
+      try {
+        // Try network first
+        const networkResponse = await fetch(event.request);
+        if (networkResponse.ok) {
+          // Cache the successful response
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(event.request, networkResponse.clone());
+          return networkResponse;
+        }
+        throw new Error('Network response was not ok');
+      } catch (error) {
+        console.log('Network request failed, trying cache:', error);
+        // Try cache if network fails
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        // If both network and cache fail, return a fallback
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+        throw error;
+      }
+    })()
+  );
+});
+
+// Add message handling
+self.addEventListener('message', (event) => {
+  if (!event.data) return;
+
+  switch (event.data.type) {
+    case 'SKIP_WAITING':
+      console.log('Skipping waiting...');
+      self.skipWaiting();
+      break;
+    case 'CLIENT_UNLOADING':
+      console.log('Client unloading:', event.data.clientId);
+      break;
+    default:
+      console.log('Unknown message type:', event.data.type);
+  }
+});
+
+// Add error handling
+self.addEventListener('error', (event) => {
+  console.error('Service worker error:', event.error);
+  notifyClientsAboutUpdate();
+});
+
+self.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled rejection in service worker:', event.reason);
+  notifyClientsAboutUpdate();
 });
 
 // Background sync
@@ -696,7 +780,7 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     Promise.all([
       CacheManager.cleanupOldCaches(),
-      self.clients.claim()
+      clients.claim()
     ])
   );
 });
