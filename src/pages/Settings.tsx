@@ -10,17 +10,97 @@ import AudioManager from '../components/AudioManager';
 import { useAccessibility } from '../context/AccessibilityContext';
 import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
 
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <span className="ml-3 text-lg">Loading settings...</span>
+  </div>
+);
+
 const SettingsPage: React.FC = () => {
   const { getThemeClasses, theme } = useTheme();
   const { settings: appSettings, updateSettings: updateAppSettings } = useApp();
-  const { settings: globalSettings, updateSettings: updateGlobalSettings } = useSettings();
-  const { progress: progressData, resetProgress } = useProgress();
-  const { settings: accessibilitySettings, updateSettings: updateAccessibilitySettings } = useAccessibility();
+  const { 
+    settings: globalSettings, 
+    updateSettings: updateGlobalSettings, 
+    isLoading: isSettingsLoading,
+    error: settingsError 
+  } = useSettings();
+  const { 
+    progress: progressData, 
+    resetProgress, 
+    isLoading: isProgressLoading,
+    error: progressError 
+  } = useProgress();
+  const { 
+    settings: accessibilitySettings, 
+    updateSettings: updateAccessibilitySettings, 
+    isLoading: isAccessibilityLoading 
+  } = useAccessibility();
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
   const [downloadSuccess, setDownloadSuccess] = React.useState(false);
 
   const themeClasses = getThemeClasses();
+
+  // Show error state if there's a critical error
+  if (settingsError || progressError) {
+    return (
+      <div className={themeClasses.container}>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center">
+              <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
+                ← Back to Home
+              </Link>
+              <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
+                Settings
+              </h1>
+            </div>
+          </div>
+          <div className={`p-6 rounded-lg ${themeClasses.card} ${themeClasses.error}`}>
+            <h2 className={`text-xl font-semibold mb-4 ${themeClasses.text.error}`}>
+              Error Loading Settings
+            </h2>
+            <p className={`mb-4 ${themeClasses.text.muted}`}>
+              {settingsError || progressError}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className={`px-4 py-2 rounded ${themeClasses.button.primary}`}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render the page header
+  const renderHeader = () => (
+    <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center">
+        <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
+          ← Back to Home
+        </Link>
+        <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
+          Settings
+        </h1>
+      </div>
+    </div>
+  );
+
+  // Render loading states for specific sections
+  const renderLoadingState = (section: string) => (
+    <div className={`p-4 rounded-lg ${themeClasses.card} mb-4`}>
+      <div className="flex items-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+        <span className="ml-3 text-sm">Loading {section}...</span>
+      </div>
+    </div>
+  );
 
   const renderToggle = (key: keyof Settings, label: string, description?: string) => (
     <div className="flex items-center justify-between">
@@ -211,57 +291,50 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
-            <Link to="/" className={`${themeClasses.text.secondary} hover:text-text-primary transition-colors duration-200 mr-4`}>
-              ← Back to Home
-            </Link>
-            <h1 className={`text-2xl font-bold ${themeClasses.text.primary}`}>Settings</h1>
-          </div>
-        </div>
+        {renderHeader()}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Theme Settings */}
-          <div className={themeClasses.card}>
-            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Appearance</h2>
-            <div className="space-y-4">
-              <div className="py-2">
-                <label className={`text-sm font-medium ${themeClasses.text.primary}`}>Theme</label>
-                <select
-                  className={themeClasses.input}
-                  defaultValue="dark"
-                  disabled
-                >
-                  <option value="dark">Dark Theme</option>
-                  <option value="light" disabled>Light Theme (Coming Soon)</option>
-                  <option value="neon" disabled>Neon Theme (Coming Soon)</option>
-                </select>
-                <p className={`text-sm mt-1 ${themeClasses.text.muted}`}>
-                  More themes will be available in future updates
-                </p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* App Settings Section */}
+          <div className={`rounded-lg shadow-md p-4 ${themeClasses.container} lg:col-span-2`}>
+            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>App Settings</h2>
+            {isSettingsLoading ? (
+              renderLoadingState('app settings')
+            ) : (
+              <div className="space-y-4">
+                <div className="py-2">
+                  <label className={`text-sm font-medium ${themeClasses.text.primary}`}>Theme</label>
+                  <select
+                    className={themeClasses.input}
+                    defaultValue="dark"
+                    disabled
+                  >
+                    <option value="dark">Dark Theme</option>
+                    <option value="light" disabled>Light Theme (Coming Soon)</option>
+                    <option value="neon" disabled>Neon Theme (Coming Soon)</option>
+                  </select>
+                  <p className={`text-sm mt-1 ${themeClasses.text.muted}`}>
+                    More themes will be available in future updates
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {renderToggle('showRomaji', 'Show Romaji', 'Display romaji for Japanese text')}
+                  {renderToggle('showHints', 'Show Hints', 'Display hints during exercises')}
+                  {renderToggle('autoPlay', 'Auto Play', 'Automatically play audio for new words')}
+                  
+                  {renderSelect(
+                    'difficulty',
+                    'Default Difficulty',
+                    [
+                      { value: 'easy', label: 'Easy' },
+                      { value: 'medium', label: 'Medium' },
+                      { value: 'hard', label: 'Hard' }
+                    ],
+                    'Set the default difficulty level for exercises'
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* General Settings */}
-          <div className={themeClasses.card}>
-            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>General Settings</h2>
-            <div className="space-y-4">
-              {renderToggle('showRomaji', 'Show Romaji', 'Display romaji for Japanese text')}
-              {renderToggle('showHints', 'Show Hints', 'Display hints during exercises')}
-              {renderToggle('autoPlay', 'Auto Play', 'Automatically play audio for new words')}
-              
-              {renderSelect(
-                'difficulty',
-                'Default Difficulty',
-                [
-                  { value: 'easy', label: 'Easy' },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'hard', label: 'Hard' }
-                ],
-                'Set the default difficulty level for exercises'
-              )}
-            </div>
+            )}
           </div>
 
           {/* Audio Settings */}
@@ -297,30 +370,44 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {/* Accessibility Settings */}
-          <div className={`rounded-lg shadow-md p-4 ${themeClasses.container} lg:col-span-2`}>
-            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Accessibility Settings</h2>
-            {renderAccessibilitySettings()}
+          <div className={`rounded-lg shadow-md p-4 ${themeClasses.container}`}>
+            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Accessibility</h2>
+            {isAccessibilityLoading ? (
+              renderLoadingState('accessibility settings')
+            ) : (
+              <div className="space-y-4">
+                {renderAccessibilitySettings()}
+              </div>
+            )}
           </div>
 
           {/* Progress Section */}
           <div className={`rounded-lg shadow-md p-4 ${themeClasses.container} lg:col-span-2`}>
             <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Progress</h2>
-            <div className="space-y-3">
-              {Object.entries(progressData).map(([section, stats]) => (
-                <div key={section} className="border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0">
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm font-medium ${themeClasses.text.primary}`}>{section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
-                    <span className={`text-xs ${themeClasses.text.muted}`}>Last: {stats.lastAttempt ? new Date(stats.lastAttempt).toLocaleDateString() : 'Never'}</span>
+            {isProgressLoading ? (
+              renderLoadingState('progress data')
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(progressData).map(([section, stats]) => (
+                  <div key={section} className="border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-medium ${themeClasses.text.primary}`}>
+                        {section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                      </span>
+                      <span className={`text-xs ${themeClasses.text.muted}`}>
+                        Last: {stats.lastAttempt ? new Date(stats.lastAttempt).toLocaleDateString() : 'Never'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-1 text-xs">
+                      <span>Total: {stats.totalQuestions}</span>
+                      <span>Correct: {stats.correctAnswers}</span>
+                      <span>Streak: {stats.bestStreak}</span>
+                      <span>Avg: {stats.averageTime ? stats.averageTime.toFixed(1) : 0}s</span>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-1 text-xs">
-                    <span>Total: {stats.totalQuestions}</span>
-                    <span>Correct: {stats.correctAnswers}</span>
-                    <span>Streak: {stats.bestStreak}</span>
-                    <span>Avg: {stats.averageTime ? stats.averageTime.toFixed(1) : 0}s</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
             <div className="mt-4 flex justify-between items-center">
               <button
                 onClick={handleDownloadOfflineData}

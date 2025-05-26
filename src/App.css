@@ -1,3 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+
+body, html, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Orbitron', 'Montserrat', Arial, sans-serif;
+  background: #0a0a23;
+}
+
+.app-background {
+  position: relative;
+  min-height: 100vh;
+  background: #0a0a23;
+  overflow: hidden;
+}
+
+.cityscape-bg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  min-width: 1200px;
+  height: auto;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.main-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem 3rem 0 3rem;
+  position: relative;
+  z-index: 2;
+}
+
+.logo {
+  font-size: 2.5rem;
+  letter-spacing: 0.1em;
+}
+
+.nav-links a {
+  margin-left: 2rem;
+  font-size: 1.5rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover {
+  color: #fff;
+  text-shadow: 0 0 16px #00f7ff;
+}
+
+.main-content {
+  position: relative;
+  z-index: 2;
+  padding: 4rem 2rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.big-title {
+  font-size: 4rem;
+  margin: 0 0 1rem 0;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: 1.7rem;
+  margin-bottom: 2.5rem;
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.neon-pink {
+  color: #ff3afc;
+  text-shadow:
+    0 0 8px #ff3afc,
+    0 0 24px #ff3afc,
+    0 0 48px #ff3afc;
+  font-weight: bold;
+}
+
+.neon-blue {
+  color: #00f7ff;
+  text-shadow:
+    0 0 8px #00f7ff,
+    0 0 24px #00f7ff,
+    0 0 48px #00f7ff;
+  font-weight: bold;
+}
+
+.neon-btn {
+  background: transparent;
+  border: 2.5px solid #ff3afc;
+  color: #ff3afc;
+  padding: 1.5rem 2.5rem;
+  border-radius: 18px;
+  font-size: 2rem;
+  font-family: inherit;
+  text-shadow: 0 0 8px #ff3afc, 0 0 24px #ff3afc;
+  box-shadow: 0 0 16px #ff3afc, 0 0 32px #ff3afc inset;
+  transition: box-shadow 0.2s, border-color 0.2s, color 0.2s;
+  cursor: pointer;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.neon-btn.blue {
+  border-color: #00f7ff;
+  color: #00f7ff;
+  text-shadow: 0 0 8px #00f7ff, 0 0 24px #00f7ff;
+  box-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff inset;
+}
+.neon-btn:hover {
+  box-shadow: 0 0 32px #fff, 0 0 64px #ff3afc;
+  border-color: #fff;
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .main-content {
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+  .big-title {
+    font-size: 2.5rem;
+    text-align: center;
+  }
+  .button-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+}
+
 /* Base styles */
 :root {
   /* Dark theme colors */

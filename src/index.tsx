@@ -3,6 +3,14 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
+import { AppProvider } from './context/AppContext';
+import { ProgressProvider } from './context/ProgressContext';
+import { SettingsProvider } from './context/SettingsContext';
+import { AccessibilityProvider } from './context/AccessibilityContext';
+import { WordLevelProvider } from './context/WordLevelContext';
+import { SoundProvider } from './context/SoundContext';
+import { AchievementProvider } from './context/AchievementContext';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -10,9 +18,25 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    <AuthProvider>
+      <AppProvider>
+        <ProgressProvider>
+          <WordLevelProvider>
+            <AchievementProvider>
+              <SettingsProvider>
+                <SoundProvider>
+                  <AccessibilityProvider>
+                    <ThemeProvider>
+                      <App />
+                    </ThemeProvider>
+                  </AccessibilityProvider>
+                </SoundProvider>
+              </SettingsProvider>
+            </AchievementProvider>
+          </WordLevelProvider>
+        </ProgressProvider>
+      </AppProvider>
+    </AuthProvider>
   </React.StrictMode>
 );
 
@@ -20,38 +44,27 @@ root.render(
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      // Store the current client ID for cleanup
       const clientId = await getClientId();
       
-      // Always unregister service workers first
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        // Notify the service worker before unregistering
-        try {
-          const activeWorker = registration.active;
-          if (activeWorker) {
-            activeWorker.postMessage({ type: 'CLIENT_UNLOADING', clientId });
-            // Give the service worker time to handle the message
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-        } catch (error) {
-          console.warn('Failed to notify service worker before unregistering:', error);
-        }
+      // Check if we need to update the service worker
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        const currentVersion = await fetch('/version.json').then(r => r.json()).catch(() => ({ version: '1.0.0' }));
+        const cachedVersion = await caches.match('/version.json').then(r => r.json()).catch(() => ({ version: '1.0.0' }));
         
-        await registration.unregister();
-        console.log('Unregistered service worker:', registration.scope);
+        if (currentVersion.version !== cachedVersion.version) {
+          // Only unregister if versions don't match
+          await registration.unregister();
+          console.log('Unregistered outdated service worker');
+        } else {
+          console.log('Service worker is up to date');
+          return; // Skip re-registration if versions match
+        }
       }
-
-      // Clear all caches
-      const cacheNames = await caches.keys();
-      await Promise.all(
-        cacheNames.map(cacheName => caches.delete(cacheName))
-      );
-      console.log('Cleared all caches');
 
       if (process.env.NODE_ENV === 'production') {
         try {
-          const registration = await navigator.serviceWorker.register('/service-worker.js', {
+          const newRegistration = await navigator.serviceWorker.register('/service-worker.js', {
             scope: '/',
             updateViaCache: 'none'
           });
@@ -82,8 +95,8 @@ if ('serviceWorker' in navigator) {
           });
 
           // Handle updates
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
+          newRegistration.addEventListener('updatefound', () => {
+            const newWorker = newRegistration.installing;
             if (!newWorker) return;
 
             newWorker.addEventListener('statechange', () => {
@@ -99,7 +112,7 @@ if ('serviceWorker' in navigator) {
           // Handle page unload
           window.addEventListener('beforeunload', async () => {
             try {
-              const activeWorker = registration.active;
+              const activeWorker = newRegistration.active;
               if (activeWorker) {
                 activeWorker.postMessage({ type: 'CLIENT_UNLOADING', clientId });
                 // Give the service worker time to handle the message
@@ -110,7 +123,7 @@ if ('serviceWorker' in navigator) {
             }
           });
 
-          console.log('ServiceWorker registration successful with scope:', registration.scope);
+          console.log('ServiceWorker registration successful with scope:', newRegistration.scope);
         } catch (error) {
           console.error('ServiceWorker registration failed:', error);
         }

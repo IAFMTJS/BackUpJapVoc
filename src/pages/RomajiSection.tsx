@@ -586,7 +586,7 @@ const RomajiSection: React.FC = () => {
                   {matchOptions.map((opt, i) => (
                     <button
                       key={i}
-                      className={`px-4 py-2 rounded border ${selected === i ? (opt.romaji === matchOptions[0].romaji ? 'bg-green-200' : 'bg-red-200') : 'bg-dark-lighter'}`}
+                      className={`px-4 py-2 rounded border ${matchSelected === i ? (opt.romaji === matchOptions[0].romaji ? 'bg-green-200' : 'bg-red-200') : 'bg-dark-lighter'}`}
                       onClick={() => {
                         setMatchSelected(i);
                         const correct = opt.romaji === matchOptions[0].romaji;

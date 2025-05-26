@@ -132,57 +132,116 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [currentStreak, setCurrentStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [lastStudyDate, setLastStudyDate] = useState<Date | null>(null);
-  
-  // Load initial data
+
+  // Track loading states for each data type
+  const [loadingStates, setLoadingStates] = useState({
+    settings: true,
+    progress: true,
+    pendingProgress: true,
+    streakData: true
+  });
+
+  // Helper function to update loading states
+  const updateLoadingState = (key: keyof typeof loadingStates, value: boolean) => {
+    setLoadingStates(prev => {
+      const newStates = { ...prev, [key]: value };
+      // Update overall loading state
+      setIsLoading(Object.values(newStates).some(state => state));
+      return newStates;
+    });
+  };
+
+  // Load settings independently
   useEffect(() => {
-    const loadInitialData = async () => {
+    const loadSettings = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Load settings first
+        updateLoadingState('settings', true);
+        setSettingsError(null);
         const userSettings = await getSettings(DEFAULT_USER_ID);
         setSettings(userSettings ?? null);
-        
-        // Load progress
+        if (userSettings) {
+          setLastSyncTime(userSettings.lastSync);
+        }
+      } catch (err) {
+        console.error('[ProgressContext] Failed to load settings:', err);
+        setSettingsError(err instanceof Error ? err.message : 'Failed to load settings');
+      } finally {
+        updateLoadingState('settings', false);
+      }
+    };
+    
+    loadSettings();
+  }, []);
+
+  // Load progress independently
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        updateLoadingState('progress', true);
+        setError(null);
         const userProgress = await getProgress(DEFAULT_USER_ID);
         const progressMap = userProgress.reduce((acc, item) => {
           acc[`${item.section}-${item.itemId}`] = item;
           return acc;
         }, {} as Record<string, ProgressItem>);
         setProgress(progressMap);
-        
-        // Load pending progress
-        const pending = await getPendingProgress(DEFAULT_USER_ID);
-        setPendingProgress(pending);
-        
-        // Update last sync time from settings
-        if (userSettings) {
-          setLastSyncTime(userSettings.lastSync);
-        }
-        
-        // Load streak data
-        if (user) {
-          const userProgressRef = doc(db, 'users', user.uid, 'progress', 'data');
-          const docSnap = await getDoc(userProgressRef);
-
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setCurrentStreak(data.currentStreak || 0);
-            setBestStreak(data.bestStreak || 0);
-            setLastStudyDate(data.lastStudyDate?.toDate() || null);
-          }
-        }
       } catch (err) {
-        console.error('[ProgressContext] Failed to load initial data:', err);
+        console.error('[ProgressContext] Failed to load progress:', err);
         setError(err instanceof Error ? err.message : 'Failed to load progress data');
       } finally {
-        setIsLoading(false);
-        setIsSettingsLoading(false);
+        updateLoadingState('progress', false);
       }
     };
     
-    loadInitialData();
+    loadProgress();
+  }, []);
+
+  // Load pending progress independently
+  useEffect(() => {
+    const loadPendingProgress = async () => {
+      try {
+        updateLoadingState('pendingProgress', true);
+        const pending = await getPendingProgress(DEFAULT_USER_ID);
+        setPendingProgress(pending);
+      } catch (err) {
+        console.error('[ProgressContext] Failed to load pending progress:', err);
+        // Don't set error state for pending progress as it's not critical
+      } finally {
+        updateLoadingState('pendingProgress', false);
+      }
+    };
+    
+    loadPendingProgress();
+  }, []);
+
+  // Load streak data independently when user is available
+  useEffect(() => {
+    const loadStreakData = async () => {
+      if (!user) {
+        updateLoadingState('streakData', false);
+        return;
+      }
+
+      try {
+        updateLoadingState('streakData', true);
+        const userProgressRef = doc(db, 'users', user.uid, 'progress', 'data');
+        const docSnap = await getDoc(userProgressRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setCurrentStreak(data.currentStreak || 0);
+          setBestStreak(data.bestStreak || 0);
+          setLastStudyDate(data.lastStudyDate?.toDate() || null);
+        }
+      } catch (err) {
+        console.error('[ProgressContext] Failed to load streak data:', err);
+        // Don't set error state for streak data as it's not critical
+      } finally {
+        updateLoadingState('streakData', false);
+      }
+    };
+    
+    loadStreakData();
   }, [user]);
   
   // Handle online/offline status

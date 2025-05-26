@@ -76,94 +76,113 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const getThemeClasses = () => {
     if (theme === 'neon') {
       return {
-        container: 'min-h-screen font-techno text-white bg-gradient-to-b from-[rgba(13,13,26,0.95)] to-[rgba(13,13,26,0.98)] shadow-[0_0_32px_rgba(0,247,255,0.15),0_0_64px_rgba(0,247,255,0.1)] bg-[url("@assets/noise.svg")] bg-[url("@assets/cityscape.svg")] bg-[url("@assets/torii.svg")] bg-[length:200px_200px,cover,120px_120px] bg-[position:center,bottom,80%_20%] bg-no-repeat bg-[repeat,no-repeat,no-repeat]',
+        container: 'bg-[#0a0a23] min-h-screen',
         text: {
-          primary: 'text-white drop-shadow-[0_0_8px_#00f7ff]',
-          secondary: 'text-neon-cyan',
-          muted: 'text-electric-purple/80',
+          primary: 'neon-blue',
+          secondary: 'neon-pink',
+          muted: 'text-gray-400',
         },
-        card: 'bg-black/60 border-2 border-electric-purple rounded-2xl p-6 shadow-neon-cyan',
+        card: 'neon-card',
         button: {
-          primary: 'bg-neon-pink text-white font-techno px-6 py-3 rounded-lg shadow-neon-pink hover:bg-neon-cyan hover:shadow-neon-cyan transition animate-neon-pulse',
-          secondary: 'bg-black/70 text-neon-cyan border border-neon-cyan rounded-lg px-4 py-2 font-techno hover:bg-electric-purple hover:text-white transition',
+          primary: 'neon-btn',
+          secondary: 'neon-btn blue',
         },
-        input: 'bg-black/70 border border-neon-cyan text-neon-cyan rounded-xl px-4 py-2 focus:border-neon-pink focus:ring-1 focus:ring-neon-pink/20 font-techno',
+        input: 'bg-[#181830] border border-[#00f7ff] text-[#00f7ff] focus:ring-2 focus:ring-[#ff3afc] rounded-lg',
         nav: {
-          background: 'bg-black/70 backdrop-blur-md shadow-neon-pink',
+          background: 'bg-transparent',
           link: {
-            default: 'text-neon-cyan hover:text-neon-pink transition drop-shadow-[0_0_8px_#00f7ff] hover:drop-shadow-[0_0_16px_#ff00c8] font-techno',
-            active: 'text-neon-pink bg-black/80 px-4 py-2 rounded-lg font-bold drop-shadow-[0_0_16px_#ff00c8] font-techno',
+            default: 'neon-blue',
+            active: 'neon-pink underline',
           },
         },
         progress: {
-          background: 'bg-electric-purple/40',
-          bar: 'bg-neon-pink animate-neon-pulse',
+          background: 'bg-[#181830]',
+          bar: 'bg-neon-pink',
         },
         toggle: {
           active: 'bg-neon-pink',
-          default: 'bg-black/70',
+          default: 'bg-[#181830]',
         },
         focus: {
-          ring: 'focus:ring-neon-cyan/40',
+          ring: 'focus:ring-[#00f7ff] focus:ring-2',
         },
         selection: 'selection:bg-[#ff00c8] selection:text-[#00f7ff]',
-        title: 'text-[#00f7ff] drop-shadow-[0_0_16px_#00f7ff,0_0_32px_#00f7ff44]',
-        subtitle: 'text-[#00f7ff] drop-shadow-[0_0_8px_#00f7ff,0_0_16px_#00f7ff44]',
+        title: 'neon-blue',
+        subtitle: 'neon-pink',
       };
     }
-    // ... existing code for dark and light ...
+    if (theme === 'dark') {
+      return {
+        container: 'bg-[#181830] min-h-screen',
+        text: {
+          primary: 'text-white',
+          secondary: 'text-gray-300',
+          muted: 'text-gray-500',
+        },
+        card: 'bg-[#23233a] border border-[#2a2a40] rounded-2xl p-6 shadow-md',
+        button: {
+          primary: 'bg-[#23233a] text-white border border-[#2a2a40] rounded-lg px-4 py-2 hover:bg-[#2a2a40] transition',
+          secondary: 'bg-[#23233a] text-gray-300 border border-[#2a2a40] rounded-lg px-4 py-2 hover:bg-[#2a2a40] transition',
+        },
+        input: 'bg-[#23233a] border border-[#2a2a40] text-white focus:ring-2 focus:ring-blue-500 rounded-lg',
+        nav: {
+          background: 'bg-[#181830]',
+          link: {
+            default: 'text-gray-300 hover:text-white',
+            active: 'text-white underline',
+          },
+        },
+        progress: {
+          background: 'bg-[#23233a]',
+          bar: 'bg-blue-500',
+        },
+        toggle: {
+          active: 'bg-blue-600',
+          default: 'bg-gray-700',
+        },
+        focus: {
+          ring: 'focus:ring-blue-500 focus:ring-2',
+        },
+        selection: 'selection:bg-blue-500/20 selection:text-white',
+        title: 'text-white',
+        subtitle: 'text-gray-300',
+      };
+    }
+    // Light theme
     return {
-      container: theme === 'dark' ? 'bg-dark min-h-screen' : 'bg-white min-h-screen',
+      container: 'bg-white min-h-screen',
       text: {
-        primary: theme === 'dark' ? 'text-text-primary' : 'text-gray-900',
-        secondary: theme === 'dark' ? 'text-text-secondary' : 'text-gray-600',
-        muted: theme === 'dark' ? 'text-text-muted' : 'text-gray-400',
+        primary: 'text-gray-900',
+        secondary: 'text-gray-600',
+        muted: 'text-gray-400',
       },
-      card: theme === 'dark'
-        ? 'bg-dark-lighter border border-dark-border rounded-2xl p-6 transition-all duration-200 hover:shadow-card hover:-translate-y-0.5'
-        : 'bg-white border border-gray-200 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5',
+      card: 'bg-white border border-gray-200 rounded-2xl p-6 shadow',
       button: {
-        primary: theme === 'dark'
-          ? 'bg-dark-lighter hover:bg-dark-lightest text-text-primary border border-dark-border rounded-xl px-6 py-3 font-semibold uppercase text-sm tracking-wider transition-all duration-200 hover:-translate-y-0.5'
-          : 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-700 rounded-xl px-6 py-3 font-semibold uppercase text-sm tracking-wider transition-all duration-200 hover:-translate-y-0.5',
-        secondary: theme === 'dark'
-          ? 'bg-dark hover:bg-dark-lighter text-text-secondary border border-dark-border rounded-xl px-4 py-2 font-medium text-sm transition-all duration-200'
-          : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 rounded-xl px-4 py-2 font-medium text-sm transition-all duration-200',
+        primary: 'bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition',
+        secondary: 'bg-gray-100 text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-200 transition',
       },
-      input: theme === 'dark'
-        ? 'bg-dark-lighter border border-dark-border text-text-primary rounded-xl px-4 py-2 focus:border-accent-red focus:ring-1 focus:ring-accent-red/10 transition-all duration-200'
-        : 'bg-white border border-gray-300 text-gray-900 rounded-xl px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/10 transition-all duration-200',
+      input: 'bg-white border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 rounded-lg',
       nav: {
-        background: theme === 'dark' ? 'bg-dark border-b border-dark-border' : 'bg-white border-b border-gray-200',
+        background: 'bg-white',
         link: {
-          default: theme === 'dark'
-            ? 'text-text-primary hover:text-text-primary hover:bg-dark-lighter px-4 py-2 rounded-lg transition-colors duration-200'
-            : 'text-gray-900 hover:text-blue-600 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors duration-200',
-          active: theme === 'dark'
-            ? 'text-text-primary bg-dark-lighter px-4 py-2 rounded-lg font-medium'
-            : 'text-blue-600 bg-gray-100 px-4 py-2 rounded-lg font-medium',
+          default: 'text-gray-700 hover:text-gray-900',
+          active: 'text-gray-900 underline',
         },
       },
       progress: {
-        background: theme === 'dark' ? 'bg-dark-lighter' : 'bg-gray-200',
-        bar: theme === 'dark' ? 'bg-accent-red' : 'bg-blue-600',
+        background: 'bg-gray-200',
+        bar: 'bg-blue-500',
       },
       toggle: {
-        active: theme === 'dark' ? 'bg-accent-red' : 'bg-blue-600',
-        default: theme === 'dark' ? 'bg-dark-lighter' : 'bg-gray-200',
+        active: 'bg-blue-500',
+        default: 'bg-gray-200',
       },
       focus: {
-        ring: theme === 'dark' ? 'focus:ring-accent-red/20' : 'focus:ring-blue-500/20',
+        ring: 'focus:ring-blue-500 focus:ring-2',
       },
-      selection: theme === 'dark' 
-        ? 'selection:bg-accent-red/20 selection:text-text-primary' 
-        : 'selection:bg-blue-500/20 selection:text-gray-900',
-      title: theme === 'dark' 
-        ? 'text-text-primary' 
-        : 'text-gray-900',
-      subtitle: theme === 'dark' 
-        ? 'text-text-secondary' 
-        : 'text-gray-600',
+      selection: 'selection:bg-blue-500/20 selection:text-gray-900',
+      title: 'text-gray-900',
+      subtitle: 'text-gray-600',
     };
   };
 
@@ -176,7 +195,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   return (
     <ThemeContext.Provider value={value}>
-      <div className={`theme-${theme}`}>
+      <div className={`theme-${theme} ${theme === 'neon' ? 'theme-neon' : ''}`}>
         {children}
       </div>
     </ThemeContext.Provider>

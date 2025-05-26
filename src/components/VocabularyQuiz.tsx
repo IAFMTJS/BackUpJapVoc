@@ -966,15 +966,15 @@ const VocabularyQuiz: React.FC = () => {
 
             <div className="space-y-6">
               <FormControl fullWidth>
-                <InputLabel className={themeClasses.text}>Difficulty</InputLabel>
+                <InputLabel id="difficulty-label">Difficulty</InputLabel>
                 <Select
                   value={settings.difficulty}
                   label="Difficulty"
+                  labelId="difficulty-label"
                   onChange={(e) => setSettings(prev => ({
                     ...prev,
                     difficulty: e.target.value as Difficulty
                   }))}
-                  className={`${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
                   sx={{
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)',
@@ -997,15 +997,15 @@ const VocabularyQuiz: React.FC = () => {
               </FormControl>
 
               <FormControl fullWidth>
-                <InputLabel className={themeClasses.text}>Number of Questions</InputLabel>
+                <InputLabel id="question-count-label">Number of Questions</InputLabel>
                 <Select
                   value={settings.questionCount}
                   label="Number of Questions"
+                  labelId="question-count-label"
                   onChange={(e) => setSettings(prev => ({
                     ...prev,
                     questionCount: e.target.value as number
                   }))}
-                  className={`${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
                   sx={{
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)',
@@ -1030,7 +1030,7 @@ const VocabularyQuiz: React.FC = () => {
               </FormControl>
 
               <div className="space-y-4">
-                <Typography variant="subtitle1" className={themeClasses.text}>
+                <Typography variant="subtitle1" sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}>
                   Quiz Options
                 </Typography>
                 <FormControlLabel
@@ -1041,11 +1041,11 @@ const VocabularyQuiz: React.FC = () => {
                         ...prev,
                         practiceMode: e.target.checked
                       }))}
-                      className={themeClasses.checkbox}
+                      sx={{ color: isDarkMode ? 'primary.main' : 'primary.main' }}
                     />
                   }
                   label="Practice Mode (No Scoring)"
-                  className={themeClasses.text}
+                  sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}
                 />
                 <FormControlLabel
                   control={
@@ -1055,11 +1055,11 @@ const VocabularyQuiz: React.FC = () => {
                         ...prev,
                         showExamples: e.target.checked
                       }))}
-                      className={themeClasses.checkbox}
+                      sx={{ color: isDarkMode ? 'primary.main' : 'primary.main' }}
                     />
                   }
                   label="Show Example Sentences"
-                  className={themeClasses.text}
+                  sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}
                 />
               </div>
             </div>

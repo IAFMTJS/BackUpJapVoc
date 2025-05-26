@@ -7,6 +7,104 @@ const DATA_CACHE_NAME = `japvoc-data-v${APP_VERSION}`;
 const AUDIO_CACHE_NAME = `japvoc-audio-v${APP_VERSION}`;
 const ROMAJI_DATA_URL = '/romaji-data.json';
 
+// Database setup
+const DB_NAME = 'japvoc-db';
+const DB_VERSION = 1;
+
+// Open IndexedDB
+async function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      
+      // Create object stores
+      if (!db.objectStoreNames.contains('pendingVocabulary')) {
+        db.createObjectStore('pendingVocabulary', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains('pendingProgress')) {
+        db.createObjectStore('pendingProgress', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains('pendingSettings')) {
+        db.createObjectStore('pendingSettings', { keyPath: 'id', autoIncrement: true });
+      }
+    };
+  });
+}
+
+// Audio conversion utilities
+function audioBufferToWav(buffer) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+  
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  
+  const dataLength = buffer.length * numChannels * bytesPerSample;
+  const bufferLength = 44 + dataLength;
+  const arrayBuffer = new ArrayBuffer(bufferLength);
+  const view = new DataView(arrayBuffer);
+  
+  // Write WAV header
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataLength, true);
+  
+  // Write audio data
+  const offset = 44;
+  const channelData = [];
+  for (let i = 0; i < numChannels; i++) {
+    channelData.push(buffer.getChannelData(i));
+  }
+  
+  let pos = 0;
+  while (pos < buffer.length) {
+    for (let i = 0; i < numChannels; i++) {
+      const sample = Math.max(-1, Math.min(1, channelData[i][pos]));
+      const value = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      view.setInt16(offset + pos * blockAlign + i * bytesPerSample, value, true);
+    }
+    pos++;
+  }
+  
+  return arrayBuffer;
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
+async function convertToMp3(wavBlob, bitrate) {
+  // For now, return the WAV blob as we don't have MP3 conversion
+  // In a real implementation, you would use a library like lamejs
+  return wavBlob;
+}
+
+// Custom TimestampTrigger polyfill
+class TimestampTrigger {
+  constructor(timestamp) {
+    this.timestamp = timestamp;
+  }
+}
+
 // Add audio optimization configuration
 const AUDIO_OPTIMIZATION = {
   high: {
@@ -787,6 +885,11 @@ self.addEventListener('sync', (event) => {
     case SYNC_TYPES.SETTINGS:
       event.waitUntil(syncWithRetry(syncSettings));
       break;
+    case SYNC_CONFIG.tags.romaji:
+      event.waitUntil(syncWithRetry(syncRomajiData));
+      break;
+    default:
+      console.log('Unknown sync tag:', event.tag);
   }
 });
 
@@ -934,3 +1037,26 @@ self.addEventListener('message', (event) => {
     }
   }
 });
+
+// Add missing syncRomajiData function
+async function syncRomajiData() {
+  try {
+    const response = await fetch(ROMAJI_DATA_URL);
+    if (!response.ok) throw new Error(`Failed to fetch romaji data: ${response.status}`);
+    
+    const cache = await caches.open(CACHE_CONFIG.data.name);
+    await cache.put(ROMAJI_DATA_URL, response.clone());
+    
+    // Notify clients of the update
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'ROMAJI_DATA_UPDATED'
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Failed to sync romaji data:', error);
+    throw error;
+  }
+}

@@ -107,11 +107,7 @@ const WordLevelsContent: React.FC = () => {
 };
 
 const WordLevelsPage: React.FC = () => {
-  return (
-    <WordLevelProvider>
-      <WordLevelsContent />
-    </WordLevelProvider>
-  );
+  return <WordLevelsContent />;
 };
 
 export default WordLevelsPage; 

@@ -184,13 +184,16 @@ interface LevelStats {
 }
 
 interface SearchOptions {
-  term: string;
+  query: string;  // Changed from term to query to match usage
   filters: {
-    jlptLevel: string[];
-    wordType: string[];
-    difficulty: string[];
-    frequency: string[];
-    radicals: string[];
+    category?: string;  // Added optional category filter
+    level?: number;     // Added optional level filter
+    jlptLevel?: string; // Added optional JLPT level filter
+    jlptLevels?: string[];
+    wordType?: string[];
+    difficulty?: string[];
+    frequency?: string[];
+    radicals?: string[];
   };
   sortBy: 'frequency' | 'mastery' | 'lastViewed' | 'level';
   viewMode: 'grid' | 'list';
@@ -240,9 +243,12 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
   const [visualizationData, setVisualizationData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchOptions, setSearchOptions] = useState<SearchOptions>({
-    term: '',
+    query: '',
     filters: {
-      jlptLevel: [],
+      category: undefined,
+      level: undefined,
+      jlptLevel: undefined,
+      jlptLevels: [],
       wordType: [],
       difficulty: [],
       frequency: [],
@@ -380,110 +386,115 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     };
   }, []);
 
-  // Load dictionary items with offline support
+  // First useEffect for loading items
   useEffect(() => {
     const loadItems = async () => {
       setIsLoading(true);
       try {
         let loadedItems: DictionaryItem[] = [];
         console.log('=== Dictionary Loading Debug ===');
-        console.log('Starting to load dictionary items...');
-        console.log('Mode:', mode);
-        console.log('Is offline:', isOffline);
-        console.log('Search options:', JSON.stringify(searchOptions, null, 2));
-        console.log('allWords available:', allWords?.length || 0);
-        console.log('allWords sample:', allWords?.slice(0, 3));
-
-        if (isOffline) {
-          // Load from IndexedDB
-          console.log('Loading from IndexedDB...');
-          loadedItems = await memoizedSearch(searchOptions);
-          console.log('Loaded from IndexedDB:', loadedItems.length);
-          console.log('IndexedDB sample:', loadedItems.slice(0, 3));
-        } else {
-          // Use allWords directly instead of API
-          console.log('Loading from allWords...');
-          if (!allWords || allWords.length === 0) {
-            console.error('allWords is empty or undefined');
-            throw new Error('Dictionary data not available');
-          }
-          
-          console.log('Initial allWords length:', allWords.length);
-          loadedItems = allWords.filter(word => {
-            // First apply mode-based filtering
-            if (mode !== 'all') {
-              if (mode === 'hiragana' && !word.isHiragana) return false;
-              if (mode === 'katakana' && !word.isKatakana) return false;
-              if (mode === 'kanji' && !word.kanji) return false;
-            }
-
-            const searchLower = searchOptions.query.toLowerCase().trim();
-            if (!searchLower) return true;
-
-            // Search in Japanese text
-            if (word.japanese.toLowerCase().includes(searchLower)) return true;
-
-            // Search in English text
-            if (word.english.toLowerCase().includes(searchLower)) return true;
-
-            // Search in romaji
-            if (word.romaji?.toLowerCase().includes(searchLower)) return true;
-
-            return false;
-          });
-          console.log('After mode and search filter:', loadedItems.length);
-          console.log('Mode and search filter sample:', loadedItems.slice(0, 3));
-
-          // Apply filters from searchOptions
-          if (searchOptions.filters.category) {
-            loadedItems = loadedItems.filter(word => word.category === searchOptions.filters.category);
-            console.log('After category filter:', loadedItems.length);
-            console.log('Category filter sample:', loadedItems.slice(0, 3));
-          }
-          if (searchOptions.filters.level) {
-            loadedItems = loadedItems.filter(word => word.level === searchOptions.filters.level);
-            console.log('After level filter:', loadedItems.length);
-            console.log('Level filter sample:', loadedItems.slice(0, 3));
-          }
-          if (searchOptions.filters.jlptLevel) {
-            loadedItems = loadedItems.filter(word => word.jlptLevel === searchOptions.filters.jlptLevel);
-            console.log('After JLPT filter:', loadedItems.length);
-            console.log('JLPT filter sample:', loadedItems.slice(0, 3));
-          }
-
-          // Apply sorting
-          loadedItems.sort((a, b) => {
-            switch (searchOptions.sortBy) {
-              case 'japanese':
-                return a.japanese.localeCompare(b.japanese, 'ja');
-              case 'english':
-                return a.english.localeCompare(b.english);
-              case 'level':
-                return a.level - b.level;
-              default:
-                return 0;
-            }
-          });
-          console.log('After sorting:', loadedItems.length);
-          console.log('Sorting sample:', loadedItems.slice(0, 3));
-
-          // Apply limit and offset
-          loadedItems = loadedItems.slice(
-            searchOptions.offset || 0,
-            (searchOptions.offset || 0) + (searchOptions.limit || 50)
-          );
-          console.log('After pagination:', loadedItems.length);
-          console.log('Pagination sample:', loadedItems.slice(0, 3));
-          
-          // Cache items for offline use
-          console.log('Caching items for offline use...');
-          await Promise.all(loadedItems.map(item => saveWord(item)));
-          console.log('Caching complete');
+        console.log('Initial state:', {
+          mode,
+          searchOptions,
+          isOffline,
+          allWordsAvailable: allWords?.length || 0
+        });
+        
+        // Check if allWords is available
+        if (!allWords || allWords.length === 0) {
+          console.error('allWords is empty or undefined');
+          throw new Error('Dictionary data not available');
         }
 
-        console.log('Final items count:', loadedItems.length);
-        console.log('Final items sample:', loadedItems.slice(0, 3));
-        console.log('=== End Dictionary Loading Debug ===');
+        // Load from allWords with filtering
+        loadedItems = allWords.filter(word => {
+          // Mode-based filtering
+          if (mode !== 'all') {
+            const modeMatch = 
+              (mode === 'hiragana' && word.isHiragana) ||
+              (mode === 'katakana' && word.isKatakana) ||
+              (mode === 'kanji' && word.kanji);
+            
+            if (!modeMatch) {
+              console.log('Word filtered by mode:', {
+                word: word.japanese,
+                mode,
+                isHiragana: word.isHiragana,
+                isKatakana: word.isKatakana,
+                hasKanji: !!word.kanji
+              });
+              return false;
+            }
+          }
+
+          // Search term filtering with null checks
+          const searchQuery = searchOptions?.query?.toLowerCase()?.trim();
+          if (!searchQuery) return true;
+          
+          const searchMatch = 
+            (word.japanese?.toLowerCase() || '').includes(searchQuery) ||
+            (word.english?.toLowerCase() || '').includes(searchQuery) ||
+            (word.romaji?.toLowerCase() || '').includes(searchQuery);
+
+          if (!searchMatch) {
+            console.log('Word filtered by search:', {
+              word: word.japanese,
+              searchTerm: searchQuery
+            });
+            return false;
+          }
+
+          return true;
+        });
+
+        console.log('After initial filtering:', {
+          totalWords: allWords.length,
+          filteredWords: loadedItems.length,
+          modeFiltered: mode !== 'all' ? loadedItems.filter(w => 
+            (mode === 'hiragana' && w.isHiragana) ||
+            (mode === 'katakana' && w.isKatakana) ||
+            (mode === 'kanji' && w.kanji)
+          ).length : 'N/A',
+          searchFiltered: searchOptions.query ? loadedItems.filter(w =>
+            w.japanese.toLowerCase().includes(searchOptions.query.toLowerCase()) ||
+            w.english.toLowerCase().includes(searchOptions.query.toLowerCase()) ||
+            w.romaji?.toLowerCase().includes(searchOptions.query.toLowerCase())
+          ).length : 'N/A'
+        });
+
+        // Apply additional filters
+        if (searchOptions.filters.category) {
+          const beforeCategory = loadedItems.length;
+          loadedItems = loadedItems.filter(word => word.category === searchOptions.filters.category);
+          console.log('Category filter:', {
+            category: searchOptions.filters.category,
+            before: beforeCategory,
+            after: loadedItems.length,
+            removed: beforeCategory - loadedItems.length
+          });
+        }
+
+        if (searchOptions.filters.level) {
+          const beforeLevel = loadedItems.length;
+          loadedItems = loadedItems.filter(word => word.level === searchOptions.filters.level);
+          console.log('Level filter:', {
+            level: searchOptions.filters.level,
+            before: beforeLevel,
+            after: loadedItems.length,
+            removed: beforeLevel - loadedItems.length
+          });
+        }
+
+        if (searchOptions.filters.jlptLevel) {
+          const beforeJLPT = loadedItems.length;
+          loadedItems = loadedItems.filter(word => word.jlptLevel === searchOptions.filters.jlptLevel);
+          console.log('JLPT filter:', {
+            jlptLevel: searchOptions.filters.jlptLevel,
+            before: beforeJLPT,
+            after: loadedItems.length,
+            removed: beforeJLPT - loadedItems.length
+          });
+        }
 
         setItems(loadedItems);
         setFilteredItems(loadedItems);
@@ -498,6 +509,138 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
     loadItems();
   }, [isOffline, searchOptions, mode, memoizedSearch, setTotalItems]);
+
+  // Second useEffect for filtering
+  useEffect(() => {
+    console.log('=== Dictionary Filtering Debug ===');
+    console.log('Initial state:', {
+      itemsCount: items.length,
+      searchTerm,
+      levelFilter,
+      filter,
+      sortBy,
+      mode,
+      unlockedLevels
+    });
+
+    let filtered = [...items];
+    const filterStages: { stage: string; count: number }[] = [];
+
+    // Mode-based filtering only in practice/quiz mode
+    if (mode === 'practice' || mode === 'quiz') {
+      const beforeMode = filtered.length;
+      filtered = filtered.filter(item => {
+        const wordLevel = wordLevels.find(level => 
+          level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
+        );
+        return wordLevel ? unlockedLevels.includes(wordLevel.level) : true;
+      });
+      filterStages.push({ stage: 'Mode', count: filtered.length });
+    }
+
+    // Search term filtering
+    if (searchTerm.trim()) {
+      const beforeSearch = filtered.length;
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(item => {
+        if (!item) return false;
+        
+        const matches = 
+          ('japanese' in item ? item.japanese : item.character).toLowerCase().includes(searchLower) ||
+          ('english' in item ? item.english : '').toLowerCase().includes(searchLower) ||
+          ('romaji' in item ? item.romaji : '').toLowerCase().includes(searchLower);
+        
+        if (!matches) {
+          console.log('Word filtered by search:', {
+            word: 'japanese' in item ? item.japanese : item.character,
+            searchTerm: searchLower
+          });
+        }
+        return matches;
+      });
+      filterStages.push({ stage: 'Search', count: filtered.length });
+    }
+
+    // Level filter with null checks - only apply in practice/quiz mode
+    if (levelFilter !== 'all' && (mode === 'practice' || mode === 'quiz')) {
+      const beforeLevel = filtered.length;
+      filtered = filtered.filter(item => {
+        if (!item) return false;
+
+        const wordLevel = wordLevels.find(level => 
+          level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
+        );
+        const levelMatch = wordLevel?.level === levelFilter;
+        
+        if (!levelMatch) {
+          console.log('Word filtered by level:', {
+            word: 'japanese' in item ? item.japanese : item.character,
+            level: wordLevel?.level,
+            requiredLevel: levelFilter
+          });
+        }
+        return levelMatch;
+      });
+      filterStages.push({ stage: 'Level', count: filtered.length });
+    }
+
+    // Status filter with null checks
+    if (filter !== 'all' && localProgress) {
+      const beforeStatus = filtered.length;
+      filtered = filtered.filter(item => {
+        if (!item) return false;
+
+        const itemId = 'japanese' in item ? item.japanese : item.character;
+        const progress = localProgress[itemId];
+        
+        const statusMatch = 
+          (filter === 'unmarked' && !progress) ||
+          (filter === 'marked' && progress && progress.mastery < 3) ||
+          (filter === 'mastered' && progress && progress.mastery >= 3);
+
+        if (!statusMatch) {
+          console.log('Word filtered by status:', {
+            word: itemId,
+            status: filter,
+            progress: progress?.mastery
+          });
+        }
+        return statusMatch;
+      });
+      filterStages.push({ stage: 'Status', count: filtered.length });
+    }
+
+    // Sort items
+    if (sortBy) {
+      const beforeSort = filtered.length;
+      filtered.sort((a, b) => {
+        if (!a || !b) return 0;
+
+        switch (sortBy) {
+          case 'japanese':
+            return ('japanese' in a ? a.japanese : a.character)
+              .localeCompare('japanese' in b ? b.japanese : b.character);
+          case 'english':
+            return ('english' in a ? a.english : '')
+              .localeCompare('english' in b ? b.english : '');
+          case 'level':
+            return (('level' in a ? a.level : 0) - ('level' in b ? b.level : 0));
+          case 'mastery':
+            const aProgress = localProgress?.['japanese' in a ? a.japanese : a.character]?.mastery || 0;
+            const bProgress = localProgress?.['japanese' in b ? b.japanese : b.character]?.mastery || 0;
+            return bProgress - aProgress;
+          default:
+            return 0;
+        }
+      });
+      filterStages.push({ stage: 'Sort', count: filtered.length });
+    }
+
+    console.log('Filtering stages:', filterStages);
+    console.log('Final filtered items:', filtered.length);
+    
+    setFilteredItems(filtered);
+  }, [items, searchTerm, levelFilter, filter, sortBy, mode, localProgress, wordLevels, unlockedLevels]);
 
   // Handle word relationships visualization
   const handleShowRelationships = async (wordId: string) => {

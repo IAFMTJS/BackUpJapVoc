@@ -1,6 +1,5 @@
 const path = require('path');
 const webpack = require('webpack');
-const WebpackObfuscator = require('webpack-obfuscator');
 const TerserPlugin = require('terser-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -25,7 +24,8 @@ module.exports = (env, argv) => {
       chunkFilename: isProduction ? 'static/js/[name].[contenthash:8].chunk.js' : 'static/js/[name].chunk.js',
       publicPath: '/',
       clean: true,
-      crossOriginLoading: 'anonymous'
+      crossOriginLoading: 'anonymous',
+      assetModuleFilename: 'static/media/[name].[hash][ext][query]'
     },
     module: {
       rules: [
@@ -55,9 +55,10 @@ module.exports = (env, argv) => {
                 modules: false,
                 url: {
                   filter: (url, resourcePath) => {
-                    // Allow webpack aliases in CSS
-                    if (url.startsWith('@') || url.startsWith('/')) {
-                      return true;
+                    if (url.startsWith('@')) return true;
+                    if (url.startsWith('../')) return true;
+                    if (url.startsWith('/assets/')) {
+                      return url.replace('/assets/', '../assets/');
                     }
                     return false;
                   }
@@ -70,7 +71,19 @@ module.exports = (env, argv) => {
                 postcssOptions: {
                   plugins: [
                     require('tailwindcss'),
-                    require('autoprefixer')
+                    require('autoprefixer'),
+                    require('cssnano')({
+                      preset: ['default', {
+                        discardComments: { removeAll: true },
+                        normalizeWhitespace: true,
+                        minifyFontValues: true,
+                        minifyGradients: true,
+                        mergeLonghand: true,
+                        mergeRules: true,
+                        reduceIdents: false,
+                        zindex: false
+                      }]
+                    })
                   ]
                 }
               }
@@ -78,11 +91,11 @@ module.exports = (env, argv) => {
           ]
         },
         {
-          test: /\.(png|svg|jpg|jpeg|gif)$/i,
+          test: /\.(png|svg|jpg|jpeg|gif|webp)$/i,
           type: 'asset',
           parser: {
             dataUrlCondition: {
-              maxSize: 8 * 1024 // 8kb
+              maxSize: 4 * 1024 // Reduced to 4kb for better performance
             }
           },
           generator: {
@@ -101,7 +114,8 @@ module.exports = (env, argv) => {
         '@': path.resolve(__dirname, 'src'),
         '~public': path.resolve(__dirname, 'public'),
         'process': 'process/browser.js',
-        '@assets': path.resolve(__dirname, 'assets')
+        '@assets': path.resolve(__dirname, 'assets'),
+        '/assets': path.resolve(__dirname, 'assets')
       },
       fallback: {
         "path": require.resolve("path-browserify"),
@@ -125,43 +139,88 @@ module.exports = (env, argv) => {
           terserOptions: {
             compress: {
               drop_console: isProduction,
-              drop_debugger: isProduction
+              drop_debugger: isProduction,
+              pure_funcs: isProduction ? ['console.log'] : []
             },
             format: {
               comments: false
-            }
+            },
+            mangle: true
           },
           extractComments: false
+        }),
+        new ImageMinimizerPlugin({
+          minimizer: {
+            implementation: ImageMinimizerPlugin.imageminMinify,
+            options: {
+              plugins: [
+                ['imagemin-mozjpeg', { quality: 60, progressive: true }],
+                ['imagemin-pngquant', { quality: [0.6, 0.8], speed: 4 }],
+                ['imagemin-gifsicle', { interlaced: true, optimizationLevel: 3 }],
+                // Temporarily commenting out SVGO plugin due to dependency issues
+                /*['imagemin-svgo', {
+                  plugins: [
+                    {
+                      name: 'preset-default',
+                      params: {
+                        overrides: {
+                          removeViewBox: false,
+                          addAttributesToSVGElement: {
+                            params: {
+                              attributes: [
+                                { xmlns: 'http://www.w3.org/2000/svg' }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }]*/
+              ]
+            }
+          }
         })
       ],
       splitChunks: {
         chunks: 'all',
-        maxInitialRequests: Infinity,
-        minSize: 0,
+        maxInitialRequests: 25,
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
+          mui: {
+            test: /[\\/]node_modules[\\/]@mui[\\/]/,
+            name: 'vendor.mui',
+            chunks: 'all',
+            priority: 30
+          },
           vendor: {
-            test: /[\\/]node_modules[\\/]/,
+            test: /[\\/]node_modules[\\/](?!@mui)[\\/]/,
             name(module) {
               const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
               return `vendor.${packageName.replace('@', '')}`;
             },
+            chunks: 'all',
+            priority: 20
           },
-          kuromoji: {
-            test: /[\\/]node_modules[\\/](kuromoji|kuroshiro)[\\/]/,
-            name: 'vendor.kuromoji',
+          common: {
+            name: 'common',
+            minChunks: 2,
             priority: 10,
+            reuseExistingChunk: true,
+            enforce: true
           },
-          firebase: {
-            test: /[\\/]node_modules[\\/]firebase[\\/]/,
-            name: 'vendor.firebase',
-            priority: 10,
-          },
-          recharts: {
-            test: /[\\/]node_modules[\\/]recharts[\\/]/,
-            name: 'vendor.recharts',
-            priority: 10,
+          styles: {
+            name: 'styles',
+            test: /\.css$/,
+            chunks: 'all',
+            enforce: true,
+            priority: 30
           }
         }
+      },
+      runtimeChunk: {
+        name: 'runtime'
       }
     },
     plugins: [
@@ -241,12 +300,17 @@ module.exports = (env, argv) => {
           'frame-src': "'none'"
         } : undefined
       }),
+      new webpack.optimize.ModuleConcatenationPlugin(),
+      new webpack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development')
+      }),
       ...(isProduction ? [
         new CompressionPlugin({
-          test: /\.(js|css|html|svg)$/,
+          test: /\.(js|css|html|svg|json)$/,
           algorithm: 'gzip',
           threshold: 10240,
-          minRatio: 0.8
+          minRatio: 0.8,
+          deleteOriginalAssets: false
         }),
         new MiniCssExtractPlugin({
           filename: 'static/css/[name].[contenthash:8].css',
@@ -254,75 +318,65 @@ module.exports = (env, argv) => {
         }),
         new BrotliPlugin({
           asset: '[path].br[query]',
-          test: /\.(js|css|html|svg)$/,
+          test: /\.(js|css|html|svg|json)$/,
           threshold: 10240,
-          minRatio: 0.8
+          minRatio: 0.8,
+          deleteOriginalAssets: false
         }),
         new SubresourceIntegrityPlugin({
           hashFuncNames: ['sha384']
         }),
-        new WebpackObfuscator({
-          rotateStringArray: true,
-          stringArray: true,
-          stringArrayEncoding: ['base64'],
-          stringArrayThreshold: 0.75
-        }),
         ...(analyzeBundle ? [new BundleAnalyzerPlugin()] : []),
-        new ImageMinimizerPlugin({
-          minimizer: {
-            implementation: ImageMinimizerPlugin.imageminMinify,
-            options: {
-              plugins: [
-                ['imagemin-mozjpeg', { quality: 65 }],
-                ['imagemin-pngquant', { quality: [0.65, 0.90] }],
-                ['imagemin-gifsicle', { interlaced: false }],
-                ['imagemin-webp', { quality: 75 }]
-              ]
-            }
-          }
-        })
       ] : [])
     ],
     devServer: {
-      static: {
-        directory: path.join(__dirname, 'public'),
-      },
-      compress: true,
-      port: 3001,
-      hot: true,
-      historyApiFallback: true,
-      proxy: [{
-        context: ['/api'],
-        target: 'http://localhost:3000',
-        secure: false,
-        changeOrigin: true,
-        ws: true,
-        onError: (err, req, res) => {
-          console.error('Proxy error:', err);
-          res.writeHead(500, {
-            'Content-Type': 'text/plain',
-          });
-          res.end('Proxy error occurred. Please check the server logs.');
+      static: [
+        {
+          directory: path.join(__dirname, 'public'),
+          publicPath: '/',
+          watch: true
         },
-        onProxyReq: (proxyReq, req, res) => {
-          // Add request timeout
-          proxyReq.setTimeout(5000);
+        {
+          directory: path.join(__dirname, 'build'),
+          publicPath: '/',
+          watch: true
         }
-      }],
+      ],
+      historyApiFallback: {
+        disableDotRule: true,
+        rewrites: [
+          { from: /^\//, to: '/index.html' }
+        ]
+      },
+      hot: 'only',
+      port: 3002,
+      allowedHosts: 'all',
       headers: {
-        'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'DENY',
-        'X-XSS-Protection': '1; mode=block',
-        'Referrer-Policy': 'strict-origin-when-cross-origin',
-        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      },
+      devMiddleware: {
+        writeToDisk: false,
+        publicPath: '/'
       },
       client: {
         overlay: {
           errors: true,
           warnings: false
         },
-        logging: 'error',
-        progress: true
+        progress: true,
+        logging: 'info'
+      },
+      compress: true,
+      open: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          secure: false,
+          changeOrigin: true
+        }
       }
     },
     devtool: isProduction ? false : 'eval-source-map',

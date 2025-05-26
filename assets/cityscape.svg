@@ -2,27 +2,166 @@
 <svg width="1200" height="400" viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0.97  0 0 1 0 1  0 0 0 1 0"/>
+    </filter>
+    <!-- Window pattern definitions -->
+    <pattern id="window-pattern-1" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect x="2" y="2" width="8" height="8" fill="#00f7ff" opacity="0.6"/>
+    </pattern>
+    <pattern id="window-pattern-2" width="30" height="30" patternUnits="userSpaceOnUse">
+      <rect x="5" y="5" width="10" height="10" fill="#00f7ff" opacity="0.7"/>
+      <rect x="20" y="5" width="10" height="10" fill="#00f7ff" opacity="0.7"/>
+      <rect x="5" y="20" width="10" height="10" fill="#00f7ff" opacity="0.7"/>
+      <rect x="20" y="20" width="10" height="10" fill="#00f7ff" opacity="0.7"/>
+    </pattern>
+
+    <!-- Fog gradient definitions -->
+    <linearGradient id="fog-gradient-1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f7ff" stop-opacity="0">
+        <animate attributeName="offset" values="0;1;0" dur="30s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="50%" stop-color="#00f7ff" stop-opacity="0.15">
+        <animate attributeName="offset" values="0.5;1.5;0.5" dur="30s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%" stop-color="#00f7ff" stop-opacity="0">
+        <animate attributeName="offset" values="1;2;1" dur="30s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
+
+    <linearGradient id="fog-gradient-2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f7ff" stop-opacity="0">
+        <animate attributeName="offset" values="0;1;0" dur="45s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="50%" stop-color="#00f7ff" stop-opacity="0.2">
+        <animate attributeName="offset" values="0.5;1.5;0.5" dur="45s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%" stop-color="#00f7ff" stop-opacity="0">
+        <animate attributeName="offset" values="1;2;1" dur="45s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
+
+    <linearGradient id="fog-gradient-3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f7ff" stop-opacity="0">
+        <animate attributeName="offset" values="0;1;0" dur="60s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="50%" stop-color="#00f7ff" stop-opacity="0.25">
+        <animate attributeName="offset" values="0.5;1.5;0.5" dur="60s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%" stop-color="#00f7ff" stop-opacity="0">
+        <animate attributeName="offset" values="1;2;1" dur="60s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
+
+    <!-- Fog blur filter -->
+    <filter id="fog-blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur"/>
       <feComposite in="SourceGraphic" in2="blur" operator="over"/>
     </filter>
+
+    <!-- Fog turbulence filter for more organic movement -->
+    <filter id="fog-turbulence" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" result="turbulence">
+        <animate attributeName="baseFrequency" values="0.01;0.02;0.01" dur="30s" repeatCount="indefinite"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="10" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
   </defs>
-  <g filter="url(#neon-glow)" fill="#00f7ff" opacity="0.8">
-    <!-- Modern buildings -->
-    <path d="M0,400 L0,200 L50,200 L50,400 Z"/>
-    <path d="M100,400 L100,150 L150,150 L150,400 Z"/>
-    <path d="M200,400 L200,180 L250,180 L250,400 Z"/>
+  
+  <!-- Background fog layer (lowest) -->
+  <rect x="0" y="200" width="1200" height="200" fill="url(#fog-gradient-1)" filter="url(#fog-blur)" opacity="0.3">
+    <animate attributeName="opacity" values="0.3;0.4;0.3" dur="20s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Middle fog layer -->
+  <rect x="0" y="150" width="1200" height="150" fill="url(#fog-gradient-2)" filter="url(#fog-blur)" opacity="0.4">
+    <animate attributeName="opacity" values="0.4;0.5;0.4" dur="25s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Foreground fog layer (highest) -->
+  <rect x="0" y="100" width="1200" height="100" fill="url(#fog-gradient-3)" filter="url(#fog-blur)" opacity="0.5">
+    <animate attributeName="opacity" values="0.5;0.6;0.5" dur="30s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Additional atmospheric fog with turbulence -->
+  <rect x="0" y="0" width="1200" height="400" fill="url(#fog-gradient-2)" filter="url(#fog-turbulence)" opacity="0.2">
+    <animate attributeName="opacity" values="0.2;0.3;0.2" dur="40s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Background layer (distant buildings) -->
+  <g filter="url(#neon-glow)" fill="#00f7ff" opacity="0.4">
+    <path d="M-50,400 L-50,250 L0,250 L0,400 Z"/>
+    <path d="M50,400 L50,280 L100,280 L100,400 Z"/>
+    <path d="M150,400 L150,260 L200,200 L200,400 Z"/>
+    <path d="M250,400 L250,220 L300,220 L300,400 Z"/>
+    <path d="M350,400 L350,240 L400,240 L400,400 Z"/>
+    <path d="M450,400 L450,200 L500,200 L500,400 Z"/>
+    <path d="M550,400 L550,230 L600,230 L600,400 Z"/>
+    <path d="M650,400 L650,210 L700,210 L700,400 Z"/>
+    <path d="M750,400 L750,240 L800,240 L800,400 Z"/>
+    <path d="M850,400 L850,220 L900,220 L900,400 Z"/>
+    <path d="M950,400 L950,260 L1000,260 L1000,400 Z"/>
+    <path d="M1050,400 L1050,230 L1100,230 L1100,400 Z"/>
+    <path d="M1150,400 L1150,250 L1200,250 L1200,400 Z"/>
+  </g>
+
+  <!-- Middle layer (main buildings) -->
+  <g filter="url(#neon-glow)" fill="#00f7ff" opacity="0.7">
+    <!-- Modern skyscrapers -->
+    <path d="M0,400 L0,150 L40,150 L40,180 L80,180 L80,400 Z" fill="url(#window-pattern-1)"/>
+    <path d="M100,400 L100,100 L140,100 L140,130 L180,130 L180,400 Z" fill="url(#window-pattern-2)"/>
+    
     <!-- Traditional Japanese buildings -->
-    <path d="M300,400 L300,100 L350,100 L350,120 L330,120 L330,400 Z"/>
-    <path d="M400,400 L400,80 L450,80 L450,100 L420,100 L420,400 Z"/>
+    <path d="M200,400 L200,80 L240,80 L240,100 L220,100 L220,120 L260,120 L260,400 Z"/>
+    <path d="M280,400 L280,60 L320,60 L320,80 L300,80 L300,100 L340,100 L340,400 Z"/>
+    
+    <!-- Modern buildings with varied heights -->
+    <path d="M360,400 L360,120 L400,120 L400,150 L440,150 L440,400 Z" fill="url(#window-pattern-1)"/>
+    <path d="M460,400 L460,90 L500,90 L500,120 L540,120 L540,400 Z" fill="url(#window-pattern-2)"/>
+    
+    <!-- Temple complex -->
+    <path d="M560,400 L560,40 L600,40 L600,60 L580,60 L580,80 L620,80 L620,100 L640,100 L640,400 Z"/>
+    <path d="M660,400 L660,50 L700,50 L700,70 L680,70 L680,90 L720,90 L720,400 Z"/>
+    
     <!-- More modern buildings -->
-    <path d="M500,400 L500,220 L550,220 L550,400 Z"/>
-    <path d="M600,400 L600,160 L650,160 L650,400 Z"/>
-    <!-- Traditional temple -->
-    <path d="M700,400 L700,50 L750,50 L750,70 L730,70 L730,90 L770,90 L770,400 Z"/>
+    <path d="M740,400 L740,110 L780,110 L780,140 L820,140 L820,400 Z" fill="url(#window-pattern-1)"/>
+    <path d="M840,400 L840,130 L880,130 L880,160 L920,160 L920,400 Z" fill="url(#window-pattern-2)"/>
+    
+    <!-- Traditional buildings -->
+    <path d="M940,400 L940,70 L980,70 L980,90 L960,90 L960,110 L1000,110 L1000,400 Z"/>
+    <path d="M1020,400 L1020,85 L1060,85 L1060,105 L1040,105 L1040,125 L1080,125 L1080,400 Z"/>
+    
+    <!-- Final modern buildings -->
+    <path d="M1100,400 L1100,95 L1140,95 L1140,125 L1180,125 L1180,400 Z" fill="url(#window-pattern-1)"/>
+  </g>
+
+  <!-- Foreground layer (closest buildings) -->
+  <g filter="url(#neon-glow)" fill="#00f7ff" opacity="0.9">
+    <!-- Tallest buildings -->
+    <path d="M20,400 L20,50 L60,50 L60,80 L100,80 L100,400 Z" fill="url(#window-pattern-2)"/>
+    <path d="M120,400 L120,30 L160,30 L160,60 L200,60 L200,400 Z" fill="url(#window-pattern-1)"/>
+    
+    <!-- Traditional gate -->
+    <path d="M220,400 L220,20 L260,20 L260,40 L240,40 L240,60 L280,60 L280,80 L300,80 L300,400 Z"/>
+    
+    <!-- Modern buildings -->
+    <path d="M320,400 L320,40 L360,40 L360,70 L400,70 L400,400 Z" fill="url(#window-pattern-2)"/>
+    <path d="M420,400 L420,60 L460,60 L460,90 L500,90 L500,400 Z" fill="url(#window-pattern-1)"/>
+    
+    <!-- Temple tower -->
+    <path d="M520,400 L520,10 L560,10 L560,30 L540,30 L540,50 L580,50 L580,70 L600,70 L600,90 L620,90 L620,400 Z"/>
+    
     <!-- More buildings -->
-    <path d="M800,400 L800,180 L850,180 L850,400 Z"/>
-    <path d="M900,400 L900,140 L950,140 L950,400 Z"/>
-    <path d="M1000,400 L1000,200 L1050,200 L1050,400 Z"/>
-    <path d="M1100,400 L1100,160 L1150,160 L1150,400 Z"/>
+    <path d="M640,400 L640,45 L680,45 L680,75 L720,75 L720,400 Z" fill="url(#window-pattern-2)"/>
+    <path d="M740,400 L740,55 L780,55 L780,85 L820,85 L820,400 Z" fill="url(#window-pattern-1)"/>
+    
+    <!-- Traditional buildings -->
+    <path d="M840,400 L840,25 L880,25 L880,45 L860,45 L860,65 L900,65 L900,400 Z"/>
+    <path d="M920,400 L920,35 L960,35 L960,55 L940,55 L940,75 L980,75 L980,400 Z"/>
+    
+    <!-- Final modern buildings -->
+    <path d="M1000,400 L1000,40 L1040,40 L1040,70 L1080,70 L1080,400 Z" fill="url(#window-pattern-2)"/>
+    <path d="M1080,400 L1080,50 L1120,50 L1120,80 L1160,80 L1160,400 Z" fill="url(#window-pattern-1)"/>
   </g>
 </svg> 

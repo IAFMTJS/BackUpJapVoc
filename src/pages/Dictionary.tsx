@@ -4,18 +4,17 @@ import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../context/SettingsContext';
 import { useProgress } from '../context/ProgressContext';
 import { useAccessibility } from '../context/AccessibilityContext';
-import VocabularyQuiz from '../components/VocabularyQuiz';
-import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
+import DictionaryComponent from '../components/Dictionary';
 
 // Loading component
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-[200px]">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    <span className="ml-3 text-lg">Loading vocabulary section...</span>
+    <span className="ml-3 text-lg">Loading dictionary...</span>
   </div>
 );
 
-const VocabularySection: React.FC = () => {
+const Dictionary: React.FC = () => {
   const { getThemeClasses, theme } = useTheme();
   const { settings: globalSettings, isLoading: isSettingsLoading } = useSettings();
   const { progress, isLoading: isProgressLoading } = useProgress();
@@ -37,7 +36,7 @@ const VocabularySection: React.FC = () => {
                 ← Back to Home
               </Link>
               <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
-                Vocabulary Section
+                Dictionary
               </h1>
             </div>
           </div>
@@ -51,21 +50,6 @@ const VocabularySection: React.FC = () => {
 
   return (
     <div className={themeClasses.container}>
-      {/* Decorative cityscape background */}
-      <div className="absolute inset-0 pointer-events-none z-0 opacity-10">
-        <JapaneseCityscape 
-          width={1000}
-          height={500}
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            right: 0,
-            transform: 'scaleX(-1)',
-            filter: theme === 'dark' ? 'brightness(0.6)' : 'brightness(0.9)'
-          }}
-        />
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
@@ -73,21 +57,17 @@ const VocabularySection: React.FC = () => {
               ← Back to Home
             </Link>
             <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
-              Vocabulary Section
+              Japanese Dictionary
             </h1>
           </div>
         </div>
 
         <div className={`p-6 rounded-lg ${themeClasses.card}`}>
-          <p className={`${themeClasses.text.secondary} mb-8`}>
-            Test your knowledge of Japanese vocabulary words. 
-            Choose a difficulty level, category, and number of questions to start the quiz.
-          </p>
-          <VocabularyQuiz />
+          <DictionaryComponent mode="all" />
         </div>
       </div>
     </div>
   );
 };
 
-export default VocabularySection; 
+export default Dictionary; 

@@ -15,50 +15,317 @@
 @keyframes neon-pulse {
   0%, 100% {
     opacity: 1;
-    text-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff44;
+    text-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff44, 0 0 48px #00f7ff22;
   }
   50% {
     opacity: 0.8;
-    text-shadow: 0 0 24px #00f7ff, 0 0 48px #00f7ff66;
+    text-shadow: 0 0 24px #00f7ff, 0 0 48px #00f7ff66, 0 0 72px #00f7ff44;
   }
+}
+
+@keyframes neon-flicker {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1) drop-shadow(0 0 8px currentColor);
+  }
+  50% {
+    opacity: 0.9;
+    filter: brightness(1.2) drop-shadow(0 0 12px currentColor);
+  }
+  25%, 75% {
+    opacity: 0.95;
+    filter: brightness(1.1) drop-shadow(0 0 10px currentColor);
+  }
+}
+
+@keyframes neon-border-glow {
+  0%, 100% {
+    border-color: #00f7ff;
+    box-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff44, inset 0 0 16px #00f7ff;
+  }
+  50% {
+    border-color: #ff00c8;
+    box-shadow: 0 0 24px #ff00c8, 0 0 48px #ff00c866, inset 0 0 24px #ff00c8;
+  }
+}
+
+@keyframes neon-text-rainbow {
+  0% { color: #00f7ff; text-shadow: 0 0 16px #00f7ff; }
+  33% { color: #ff00c8; text-shadow: 0 0 16px #ff00c8; }
+  66% { color: #9c00ff; text-shadow: 0 0 16px #9c00ff; }
+  100% { color: #00f7ff; text-shadow: 0 0 16px #00f7ff; }
 }
 
 @keyframes grid-move {
   0% {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(25px) scale(1.02);
+    opacity: 0.7;
   }
   100% {
-    transform: translateY(50px);
+    transform: translateY(50px) scale(1);
+    opacity: 0.5;
   }
 }
 
 @keyframes neon-glow {
   0%, 100% {
-    box-shadow: 0 0 16px currentColor, 0 0 32px currentColor44;
+    box-shadow: 0 0 16px currentColor, 0 0 32px currentColor44, 0 0 48px currentColor22;
   }
   50% {
-    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor66;
+    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor66, 0 0 72px currentColor44;
   }
 }
 
-/* Add these utility classes */
+@keyframes neon-scanline {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0.1;
+  }
+}
+
+/* Enhanced utility classes */
 .animate-neon-pulse {
   animation: neon-pulse 2s infinite;
+}
+
+.animate-neon-flicker {
+  animation: neon-flicker 3s infinite;
+}
+
+.animate-neon-border-glow {
+  animation: neon-border-glow 4s infinite;
+}
+
+.animate-neon-text-rainbow {
+  animation: neon-text-rainbow 6s infinite;
 }
 
 .animate-neon-glow {
   animation: neon-glow 2s infinite;
 }
 
-/* Theme-specific styles will be moved to ThemeContext */
+.animate-neon-scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-neon-scanline::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00f7ff, transparent);
+  animation: neon-scanline 3s linear infinite;
+}
+
+/* Theme-specific styles */
 .theme-neon {
-  background: linear-gradient(180deg, rgba(13,13,26,0.95) 0%, rgba(13,13,26,0.98) 100%);
-  box-shadow: 0 0 32px rgba(0,247,255,0.15), 0 0 64px rgba(0,247,255,0.1);
-  color: #fff;
-  font-family: 'Orbitron', 'Rajdhani', 'Audiowide', sans-serif;
-  background-image: url('../assets/noise.svg'), url('../assets/cityscape.svg'), url('../assets/torii.svg');
-  background-size: 200px 200px, cover, 120px 120px;
-  background-repeat: repeat, no-repeat, no-repeat;
-  background-position: center, bottom, 80% 20%;
-  min-height: 100vh;
+  --neon-bg: #060c23;
+  --neon-text: #ffffff;
+  --neon-pink: #ff00c8;
+  --neon-blue: #00f7ff;
+  --neon-shadow-pink: 0 0 10px #ff00c8, 0 0 20px #ff00c8, 0 0 30px #ff00c8;
+  --neon-shadow-blue: 0 0 10px #00f7ff, 0 0 20px #00f7ff, 0 0 30px #00f7ff;
+  
+  background-color: var(--neon-bg);
+  color: var(--neon-text);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-neon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(rgba(102, 51, 153, 0.1), rgba(51, 0, 102, 0.2)),
+    url('../assets/noise.svg'),
+    url('../assets/cityscape.svg'),
+    url('../assets/torii.svg');
+  background-size: 
+    cover,
+    200px 200px,
+    cover,
+    200px 200px;
+  background-position: 
+    center,
+    center,
+    center,
+    top right;
+  background-repeat: 
+    no-repeat,
+    repeat,
+    no-repeat,
+    no-repeat;
+  opacity: 0.8;
+  z-index: 0;
+  pointer-events: none;
+  animation: fog-movement 20s ease-in-out infinite;
+}
+
+@keyframes fog-movement {
+  0% {
+    background-position: 
+      center,
+      center,
+      center,
+      top right;
+  }
+  50% {
+    background-position: 
+      center,
+      center,
+      center 10px,
+      top right 10px;
+  }
+  100% {
+    background-position: 
+      center,
+      center,
+      center,
+      top right;
+  }
+}
+
+.theme-neon::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,247,255,0.03) 2px,
+    rgba(0,247,255,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Neon card styles */
+.neon-card {
+  background: rgba(13,13,26,0.8);
+  border: 1px solid rgba(0,247,255,0.3);
+  box-shadow: 0 0 16px rgba(0,247,255,0.2);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.neon-card:hover {
+  border-color: rgba(0,247,255,0.6);
+  box-shadow: 0 0 24px rgba(0,247,255,0.3);
+  transform: translateY(-2px);
+}
+
+/* Neon button styles */
+.neon-button {
+  background: rgba(13,13,26,0.8);
+  border: 1px solid rgba(0,247,255,0.3);
+  color: #00f7ff;
+  text-shadow: 0 0 8px #00f7ff;
+  box-shadow: 0 0 16px rgba(0,247,255,0.2);
+  transition: all 0.3s ease;
+}
+
+.neon-button:hover {
+  background: rgba(0,247,255,0.1);
+  border-color: rgba(0,247,255,0.6);
+  box-shadow: 0 0 24px rgba(0,247,255,0.3);
+  transform: translateY(-2px);
+}
+
+.neon-button:active {
+  transform: translateY(0);
+  box-shadow: 0 0 8px rgba(0,247,255,0.2);
+}
+
+/* Neon input styles */
+.neon-input {
+  background: rgba(13,13,26,0.8);
+  border: 1px solid rgba(0,247,255,0.3);
+  color: #00f7ff;
+  box-shadow: 0 0 16px rgba(0,247,255,0.1);
+  transition: all 0.3s ease;
+}
+
+.neon-input:focus {
+  border-color: rgba(0,247,255,0.6);
+  box-shadow: 0 0 24px rgba(0,247,255,0.2);
+  outline: none;
+}
+
+/* Neon text styles */
+.neon-text {
+  color: #00f7ff;
+  text-shadow: 0 0 8px #00f7ff;
+}
+
+.neon-text-gradient {
+  background: linear-gradient(90deg, #00f7ff, #ff00c8, #9c00ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: neon-text-rainbow 6s infinite;
+}
+
+@layer components {
+  .neon-blue {
+    @apply text-[#00f7ff];
+    text-shadow: 0 0 8px #00f7ff, 0 0 24px #00f7ff, 0 0 48px #00f7ff;
+  }
+
+  .neon-pink {
+    @apply text-[#ff3afc];
+    text-shadow: 0 0 8px #ff3afc, 0 0 24px #ff3afc, 0 0 48px #ff3afc;
+  }
+
+  .neon-card {
+    @apply bg-[#0d0d1a]/80 border border-[#00f7ff]/30 rounded-xl p-6;
+    box-shadow: 0 0 16px rgba(0, 247, 255, 0.2);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+  }
+
+  .neon-card:hover {
+    @apply border-[#00f7ff]/60;
+    box-shadow: 0 0 24px rgba(0, 247, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .neon-btn {
+    @apply bg-transparent border-2 border-[#ff3afc] text-[#ff3afc] px-4 py-2 rounded-lg;
+    text-shadow: 0 0 8px #ff3afc, 0 0 24px #ff3afc;
+    box-shadow: 0 0 16px #ff3afc, 0 0 32px #ff3afc inset;
+    transition: all 0.2s ease;
+  }
+
+  .neon-btn.blue {
+    @apply border-[#00f7ff] text-[#00f7ff];
+    text-shadow: 0 0 8px #00f7ff, 0 0 24px #00f7ff;
+    box-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff inset;
+  }
+
+  .neon-btn:hover {
+    @apply border-white text-white;
+    box-shadow: 0 0 32px #fff, 0 0 64px #ff3afc;
+  }
 } 

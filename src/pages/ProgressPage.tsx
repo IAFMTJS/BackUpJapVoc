@@ -1,18 +1,24 @@
 import React, { useState, lazy, Suspense } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Link } from 'react-router-dom';
-import Dictionary from '../components/Dictionary';
-import LearningProgress from '../components/LearningProgress';
-import { downloadOfflineData } from '../utils/offlineData';
 import { useProgress } from '../context/ProgressContext';
+import { useSettings } from '../context/SettingsContext';
+import { useAccessibility } from '../context/AccessibilityContext';
 import { ProgressItem } from '../types';
 import { quizWords } from '../data/quizData';
 import { kanjiList } from '../data/kanjiData';
 import { beginnerPhrases } from './AnimeSection';
 import { romajiWords, romajiSentences, romajiStories } from '../data/romajiWords';
-import { Box, Container, Typography, Paper, Button } from '@mui/material';
-import { motion } from 'framer-motion';
 import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
+import { Paper, Box } from '@mui/material';
+
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <span className="ml-3 text-lg">Loading progress...</span>
+  </div>
+);
 
 // Lazy load heavy components
 const LazyDictionary = lazy(() => import('../components/Dictionary'));
@@ -21,11 +27,10 @@ const LazyProgressVisuals = lazy(() => import('../components/ProgressVisuals'));
 
 // Loading fallback component for lazy-loaded components
 const ComponentLoadingFallback = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
-    <Typography variant="body1" color="text.secondary">
-      Loading component...
-    </Typography>
-  </Box>
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+    <span className="ml-3 text-sm">Loading component...</span>
+  </div>
 );
 
 type TabType = 'progress' | 'dictionary';
@@ -35,7 +40,7 @@ const sections = [
     id: 'vocabulary', 
     name: 'Vocabulary Quiz', 
     icon: '📝', 
-    total: quizWords.filter(item => item.isHiragana).length + quizWords.filter(item => item.isKatakana).length,
+    total: quizWords.filter(item => item.isHiragana || item.isKatakana).length,
     description: 'Test your knowledge of Japanese vocabulary'
   },
   { 
@@ -83,74 +88,81 @@ const sections = [
   },
 ];
 
-// Add type definitions for section stats
-type DictionaryStats = {
-  masteryLevels: {
-    started: number;
-    almostMastered: number;
-    mastered: number;
-  };
-  recentActivity: number;
-  totalItems: number;
-  progressPercentage: number;
-};
-
-type OtherSectionStats = {
-  completed: number;
-  totalItems: number;
-  progressPercentage: number;
-  recentActivity: number;
-};
-
-type SectionStats = DictionaryStats | OtherSectionStats;
-
 const ProgressPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('progress');
   const { getThemeClasses, theme } = useTheme();
+  const { 
+    progress, 
+    isLoading: isProgressLoading, 
+    error: progressError,
+    settings,
+    isSettingsLoading,
+    settingsError
+  } = useProgress();
+  const { settings: accessibilitySettings, isLoading: isAccessibilityLoading } = useAccessibility();
+
   const themeClasses = getThemeClasses();
-  const { progress, isLoading, error } = useProgress();
 
-  const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
-  };
-
-  if (isLoading) {
+  // Show error state if there's a critical error
+  if (progressError) {
     return (
-      <Container maxWidth="lg">
-        <Box sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-          <Typography variant="h6" color="text.secondary">
-            Loading your progress...
-          </Typography>
-        </Box>
-      </Container>
+      <div className={themeClasses.container}>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center">
+              <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
+                ← Back to Home
+              </Link>
+              <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
+                Learning Progress
+              </h1>
+            </div>
+          </div>
+          <div className={`p-6 rounded-lg ${themeClasses.card} ${themeClasses.error}`}>
+            <h2 className={`text-xl font-semibold mb-4 ${themeClasses.text.error}`}>
+              Error Loading Progress
+            </h2>
+            <p className={`mb-4 ${themeClasses.text.muted}`}>
+              {progressError}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className={`px-4 py-2 rounded ${themeClasses.button.primary}`}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  if (error) {
-    return (
-      <Container maxWidth="lg">
-        <Box sx={{ py: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '50vh' }}>
-          <Typography variant="h6" color="error" gutterBottom>
-            Error loading progress
-          </Typography>
-          <Typography color="text.secondary">
-            {error}
-          </Typography>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={() => window.location.reload()}
-            sx={{ mt: 2 }}
-          >
-            Retry
-          </Button>
-        </Box>
-      </Container>
-    );
-  }
+  // Render the page header
+  const renderHeader = () => (
+    <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center">
+        <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
+          ← Back to Home
+        </Link>
+        <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
+          Learning Progress
+        </h1>
+      </div>
+    </div>
+  );
+
+  // Render loading states for specific sections
+  const renderLoadingState = (section: string) => (
+    <div className={`p-4 rounded-lg ${themeClasses.card} mb-4`}>
+      <div className="flex items-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+        <span className="ml-3 text-sm">Loading {section}...</span>
+      </div>
+    </div>
+  );
 
   return (
-    <Container maxWidth="lg">
+    <div className={themeClasses.container}>
       {/* Decorative cityscape background */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10">
         <JapaneseCityscape 
@@ -166,82 +178,74 @@ const ProgressPage: React.FC = () => {
         />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10"
-      >
-        <Box sx={{ py: 4 }}>
-          <Typography 
-            variant="h3" 
-            component="h1" 
-            gutterBottom 
-            sx={{ 
-              textAlign: 'center',
-              fontWeight: 'bold',
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-              backgroundClip: 'text',
-              textFillColor: 'transparent',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}
-          >
-            Your Learning Journey
-          </Typography>
-          
-          <Typography 
-            variant="h6" 
-            component="p" 
-            sx={{ 
-              textAlign: 'center', 
-              mb: 4,
-              color: 'text.secondary',
-              maxWidth: '800px',
-              mx: 'auto'
-            }}
-          >
-            Track your progress, celebrate achievements, and visualize your Japanese learning journey.
-            Every step forward is a milestone in your language learning adventure.
-          </Typography>
+      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
+        {renderHeader()}
 
-          <Paper 
-            elevation={0}
-            sx={{ 
-              p: 3,
-              borderRadius: 4,
-              background: theme => theme.palette.mode === 'dark' 
-                ? 'rgba(255, 255, 255, 0.05)' 
-                : 'rgba(0, 0, 0, 0.02)',
-              backdropFilter: 'blur(10px)',
-              border: theme => `1px solid ${theme.palette.mode === 'dark' 
-                ? 'rgba(255, 255, 255, 0.1)' 
-                : 'rgba(0, 0, 0, 0.1)'}`
-            }}
-          >
-            <Suspense fallback={<ComponentLoadingFallback />}>
-              <LazyProgressVisuals />
-            </Suspense>
-          </Paper>
+        {/* Main content area */}
+        <div className="space-y-6">
+          {/* Progress Visualization */}
+          <div className={`p-6 rounded-lg ${themeClasses.card}`}>
+            <Paper 
+              elevation={0}
+              sx={{ 
+                p: 3,
+                borderRadius: 4,
+                background: theme => theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.05)' 
+                  : 'rgba(0, 0, 0, 0.02)',
+                backdropFilter: 'blur(10px)',
+                border: theme => `1px solid ${theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.1)' 
+                  : 'rgba(0, 0, 0, 0.1)'}`
+              }}
+            >
+              {isProgressLoading ? (
+                renderLoadingState('progress visualization')
+              ) : (
+                <Suspense fallback={<ComponentLoadingFallback />}>
+                  <LazyProgressVisuals />
+                </Suspense>
+              )}
+            </Paper>
+          </div>
 
+          {/* Dictionary Section */}
           {activeTab === 'dictionary' && (
             <Box sx={{ mt: 4 }}>
-              <Suspense fallback={<ComponentLoadingFallback />}>
-                <LazyDictionary />
-              </Suspense>
+              {isSettingsLoading ? (
+                renderLoadingState('dictionary settings')
+              ) : (
+                <Suspense fallback={<ComponentLoadingFallback />}>
+                  <LazyDictionary />
+                </Suspense>
+              )}
             </Box>
           )}
 
+          {/* Progress Section */}
           {activeTab === 'progress' && (
             <Box sx={{ mt: 4 }}>
-              <Suspense fallback={<ComponentLoadingFallback />}>
-                <LazyLearningProgress />
-              </Suspense>
+              {isProgressLoading ? (
+                renderLoadingState('learning progress')
+              ) : (
+                <Suspense fallback={<ComponentLoadingFallback />}>
+                  <LazyLearningProgress />
+                </Suspense>
+              )}
             </Box>
           )}
-        </Box>
-      </motion.div>
-    </Container>
+
+          {/* Accessibility Settings Notice */}
+          {isAccessibilityLoading && (
+            <div className={`p-4 rounded-lg ${themeClasses.card} bg-yellow-50 dark:bg-yellow-900/20`}>
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                Loading accessibility settings...
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -74,6 +74,49 @@ const KanjiPractice: React.FC = () => {
   const incorrectSound = new Audio('/sounds/incorrect.mp3');
   const timeUpSound = new Audio('/sounds/time-up.mp3');
 
+  // Add logging for component state
+  useEffect(() => {
+    console.log('KanjiPractice State:', {
+      mode,
+      currentIndex,
+      filteredKanjiCount: filteredKanji.length,
+      currentKanji: filteredKanji[currentIndex],
+      settings: {
+        showKanjiGames: settings.showKanjiGames,
+        showRomajiGames: settings.showRomajiGames
+      }
+    });
+  }, [mode, currentIndex, filteredKanji, settings]);
+
+  // Initialize filtered kanji
+  useEffect(() => {
+    console.log('Initializing filtered kanji...');
+    let filtered = kanjiList;
+
+    // Apply difficulty filter only if explicitly set
+    if (selectedDifficulty !== 'all') {
+      filtered = filtered.filter(kanji => kanji.difficulty === selectedDifficulty);
+      console.log(`Filtered by difficulty ${selectedDifficulty}:`, filtered.length);
+    }
+
+    // Apply category filter only if explicitly set
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(kanji => kanji.category === selectedCategory);
+      console.log(`Filtered by category ${selectedCategory}:`, filtered.length);
+    }
+
+    setFilteredKanji(filtered);
+    console.log('Final filtered kanji count:', filtered.length);
+  }, [selectedDifficulty, selectedCategory]);
+
+  // Ensure kanji are displayed by default
+  useEffect(() => {
+    if (settings.showKanjiGames === undefined) {
+      console.log('Setting showKanjiGames to true by default');
+      settings.showKanjiGames = true;
+    }
+  }, [settings]);
+
   // Function to get romaji for a given text
   const getRomaji = async (text: string) => {
     if (romajiMap[text]) return romajiMap[text];
@@ -530,36 +573,52 @@ const KanjiPractice: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-white">
-        Kanji Practice
-      </h1>
-
-      {/* Kanji Progress Bar and Stats */}
+    <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <span className="font-semibold text-gray-700 dark:text-gray-200">Kanji Progress</span>
-          <span className="font-bold text-gray-700 dark:text-gray-200">{kanjiProgressPercent}%</span>
+        <h1 className="text-3xl font-bold mb-4">Kanji Practice</h1>
+        
+        {/* Mode Selection */}
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => setMode('flashcards')}
+            className={`px-4 py-2 rounded-lg ${
+              mode === 'flashcards' ? 'bg-primary text-white' : 'bg-gray-200'
+            }`}
+          >
+            Flashcards
+          </button>
+          <button
+            onClick={() => setMode('meaning-quiz')}
+            className={`px-4 py-2 rounded-lg ${
+              mode === 'meaning-quiz' ? 'bg-primary text-white' : 'bg-gray-200'
+            }`}
+          >
+            Meaning Quiz
+          </button>
+          <button
+            onClick={() => setMode('reading-quiz')}
+            className={`px-4 py-2 rounded-lg ${
+              mode === 'reading-quiz' ? 'bg-primary text-white' : 'bg-gray-200'
+            }`}
+          >
+            Reading Quiz
+          </button>
+          <button
+            onClick={() => setMode('writing-quiz')}
+            className={`px-4 py-2 rounded-lg ${
+              mode === 'writing-quiz' ? 'bg-primary text-white' : 'bg-gray-200'
+            }`}
+          >
+            Writing Quiz
+          </button>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2">
-          <div
-            className="bg-green-500 h-3 rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${kanjiProgressPercent}%` }}
-          />
-        </div>
-        <div className="flex gap-6 text-sm text-gray-700 dark:text-gray-300 mt-2">
-          <span>Not started: <span className="font-bold">{notStarted}</span></span>
-          <span>In progress: <span className="font-bold">{inProgress}</span></span>
-          <span>Mastered: <span className="font-bold">{mastered}</span> / {totalKanji}</span>
-        </div>
-      </div>
 
-      <div className={`mb-8 ${themeClasses.container} rounded-lg shadow-md p-6`}>
-        <div className="flex flex-wrap gap-4 mb-6">
+        {/* Filters */}
+        <div className="flex gap-4 mb-6">
           <select
             value={selectedDifficulty}
             onChange={(e) => setSelectedDifficulty(e.target.value)}
-            className={`p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
+            className="px-4 py-2 rounded-lg border"
           >
             <option value="all">All Difficulties</option>
             <option value="easy">Easy</option>
@@ -570,163 +629,117 @@ const KanjiPractice: React.FC = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className={`p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
+            className="px-4 py-2 rounded-lg border"
           >
             <option value="all">All Categories</option>
             <option value="nature">Nature</option>
             <option value="people">People</option>
             <option value="body">Body</option>
-            <option value="position">Position</option>
-            <option value="size">Size</option>
             <option value="numbers">Numbers</option>
             <option value="time">Time</option>
+            <option value="position">Position</option>
+            <option value="size">Size</option>
             <option value="currency">Currency</option>
           </select>
-
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as Mode)}
-            className={`p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
-          >
-            <option value="flashcards">Flashcards</option>
-            <option value="meaning-quiz">Meaning Quiz</option>
-            <option value="reading-quiz">Reading Quiz</option>
-            <option value="writing-quiz">Writing Quiz</option>
-          </select>
-
-          {mode !== 'flashcards' && (
-            <>
-              {mode === 'reading-quiz' && (
-                <select
-                  value={readingType}
-                  onChange={(e) => setReadingType(e.target.value as 'onyomi' | 'kunyomi')}
-                  className={`p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
-                >
-                  <option value="onyomi">Onyomi</option>
-                  <option value="kunyomi">Kunyomi</option>
-                </select>
-              )}
-              {mode === 'writing-quiz' && (
-                <select
-                  value={writingMode}
-                  onChange={(e) => setWritingMode(e.target.value as 'meaning' | 'reading')}
-                  className={`p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
-                >
-                  <option value="meaning">From Meaning</option>
-                  <option value="reading">From Reading</option>
-                </select>
-              )}
-              <select
-                value={quizDifficulty}
-                onChange={(e) => setQuizDifficulty(e.target.value as QuizDifficulty)}
-                className={`p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
-              >
-                <option value="easy">Easy (45s, 10 questions)</option>
-                <option value="medium">Medium (30s, 15 questions)</option>
-                <option value="hard">Hard (20s, 20 questions)</option>
-              </select>
-              <button
-                onClick={startQuiz}
-                className="px-4 py-2 rounded-lg bg-primary text-white"
-              >
-                Start New Quiz
-              </button>
-            </>
-          )}
         </div>
 
-        {mode === 'flashcards' ? (
-          <div className={`${themeClasses.card} rounded-lg p-8 border ${themeClasses.border} text-center`}>
-            {settings.showKanjiGames ? (
-              <div className="text-8xl mb-8">{currentKanji.character}</div>
-            ) : (
-              <div className="text-8xl mb-8">{currentKanji.kunyomi[0]}</div>
-            )}
-            {settings.showRomajiGames && (
-              <div className="text-xl mb-4 text-gray-600">
-                {romajiMap[currentKanji.character] || 'Loading...'}
-              </div>
-            )}
-            
-            <div className="space-y-4">
-              <button
-                onClick={() => setShowMeaning(!showMeaning)}
-                className={`w-full p-4 rounded-lg ${
-                  showMeaning ? 'bg-primary text-white' : 'bg-gray-100'
-                }`}
-              >
-                {showMeaning ? currentKanji.meaning : 'Show Meaning'}
-              </button>
-
-              <button
-                onClick={() => setShowReadings(!showReadings)}
-                className={`w-full p-4 rounded-lg ${
-                  showReadings ? 'bg-primary text-white' : 'bg-gray-100'
-                }`}
-              >
-                {showReadings ? (
-                  <div>
-                    <div>Onyomi: {currentKanji.onyomi.join(', ')}</div>
-                    <div>Kunyomi: {currentKanji.kunyomi.join(', ')}</div>
-                  </div>
-                ) : (
-                  'Show Readings'
-                )}
-              </button>
-
-              <button
-                onClick={() => setShowExamples(!showExamples)}
-                className={`w-full p-4 rounded-lg ${
-                  showExamples ? 'bg-primary text-white' : 'bg-gray-100'
-                }`}
-              >
-                {showExamples ? (
-                  <div className="space-y-2">
-                    {currentKanji.examples.map((example, index) => (
-                      <div key={index}>
-                        {settings.showKanjiGames ? example.word : example.reading} 
-                        {settings.showRomajiGames && (
-                          <span className="text-gray-600 ml-2">
-                            ({romajiMap[example.word] || 'Loading...'})
-                          </span>
-                        )}
-                        {' - '}{example.meaning}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  'Show Examples'
-                )}
-              </button>
-
-              {currentKanji.hint && (
-                <div className="mt-4 text-sm text-gray-600">
-                  Hint: {currentKanji.hint}
+        {/* Content */}
+        {filteredKanji.length > 0 ? (
+          mode === 'flashcards' ? (
+            <div className={`${themeClasses.card} rounded-lg p-8 border ${themeClasses.border} text-center`}>
+              {settings.showKanjiGames ? (
+                <div className="text-8xl mb-8 font-japanese">{currentKanji.character}</div>
+              ) : (
+                <div className="text-8xl mb-8 font-japanese">{currentKanji.kunyomi[0]}</div>
+              )}
+              {settings.showRomajiGames && (
+                <div className="text-xl mb-4 text-gray-600">
+                  {romajiMap[currentKanji.character] || 'Loading...'}
                 </div>
               )}
-            </div>
+              
+              <div className="space-y-4">
+                <button
+                  onClick={() => setShowMeaning(!showMeaning)}
+                  className={`w-full p-4 rounded-lg ${
+                    showMeaning ? 'bg-primary text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {showMeaning ? currentKanji.english : 'Show Meaning'}
+                </button>
 
-            <div className="flex justify-between mt-8">
-              <button
-                onClick={handlePrevious}
-                className="px-4 py-2 rounded-lg bg-gray-200"
-              >
-                Previous
-              </button>
-              <div className="text-gray-600">
-                {currentIndex + 1} / {filteredKanji.length}
+                <button
+                  onClick={() => setShowReadings(!showReadings)}
+                  className={`w-full p-4 rounded-lg ${
+                    showReadings ? 'bg-primary text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {showReadings ? (
+                    <div>
+                      <div>Onyomi: {currentKanji.onyomi.join(', ')}</div>
+                      <div>Kunyomi: {currentKanji.kunyomi.join(', ')}</div>
+                    </div>
+                  ) : (
+                    'Show Readings'
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setShowExamples(!showExamples)}
+                  className={`w-full p-4 rounded-lg ${
+                    showExamples ? 'bg-primary text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {showExamples ? (
+                    <div className="space-y-2">
+                      {currentKanji.examples?.map((example, index) => (
+                        <div key={index}>
+                          {settings.showKanjiGames ? example.word : example.reading} 
+                          {settings.showRomajiGames && (
+                            <span className="text-gray-600 ml-2">
+                              ({romajiMap[example.word] || 'Loading...'})
+                            </span>
+                          )}
+                          {' - '}{example.meaning}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    'Show Examples'
+                  )}
+                </button>
+
+                {currentKanji.hint && (
+                  <div className="mt-4 text-sm text-gray-600">
+                    Hint: {currentKanji.hint}
+                  </div>
+                )}
               </div>
-              <button
-                onClick={handleNext}
-                className="px-4 py-2 rounded-lg bg-gray-200"
-              >
-                Next
-              </button>
+
+              <div className="flex justify-between mt-8">
+                <button
+                  onClick={handlePrevious}
+                  className="px-4 py-2 rounded-lg bg-gray-200"
+                >
+                  Previous
+                </button>
+                <div className="text-gray-600">
+                  {currentIndex + 1} / {filteredKanji.length}
+                </div>
+                <button
+                  onClick={handleNext}
+                  className="px-4 py-2 rounded-lg bg-gray-200"
+                >
+                  Next
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            renderQuizContent()
+          )
         ) : (
-          <div className={`${themeClasses.card} rounded-lg p-8 border ${themeClasses.border}`}>
-            {renderQuizContent()}
+          <div className="text-center text-gray-600">
+            No kanji found matching the selected filters.
           </div>
         )}
       </div>
