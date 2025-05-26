@@ -192,7 +192,9 @@ module.exports = (env, argv) => {
             test: /[\\/]node_modules[\\/]@mui[\\/]/,
             name: 'vendor.mui',
             chunks: 'all',
-            priority: 30
+            priority: 30,
+            enforce: true,
+            reuseExistingChunk: true
           },
           vendor: {
             test: /[\\/]node_modules[\\/](?!@mui)[\\/]/,
@@ -201,7 +203,8 @@ module.exports = (env, argv) => {
               return `vendor.${packageName.replace('@', '')}`;
             },
             chunks: 'all',
-            priority: 20
+            priority: 20,
+            reuseExistingChunk: true
           },
           common: {
             name: 'common',
@@ -220,7 +223,8 @@ module.exports = (env, argv) => {
         }
       },
       runtimeChunk: {
-        name: 'runtime'
+        name: (entrypoint) => `runtime-${entrypoint.name}`,
+        minSize: 0
       }
     },
     plugins: [
@@ -282,6 +286,16 @@ module.exports = (env, argv) => {
           minifyURLs: true,
         } : false,
         preload: [
+          {
+            rel: 'preload',
+            as: 'script',
+            href: '/static/js/runtime-main.js'
+          },
+          {
+            rel: 'preload',
+            as: 'script',
+            href: '/static/js/vendor.mui.js'
+          },
           {
             rel: 'preload',
             as: 'script',
