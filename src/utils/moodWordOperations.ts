@@ -34,19 +34,38 @@ const DEFAULT_CATEGORY: EmotionalCategory = 'neutral';
 
 // Database name and version
 const DB_NAME = 'MoodWordsDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'moodWords';
 
 // Initialize the database
 export async function initMoodWordsDB() {
   try {
     const db = await openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          store.createIndex('category', 'emotionalContext.category');
-          store.createIndex('mastered', 'mastered');
-          store.createIndex('lastReviewed', 'lastReviewed');
+      upgrade(db, oldVersion, newVersion) {
+        console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
+        
+        if (oldVersion < 1) {
+          // Initial database creation
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            store.createIndex('category', 'emotionalContext.category');
+            store.createIndex('mastered', 'mastered');
+            store.createIndex('lastReviewed', 'lastReviewed');
+          }
+        }
+        
+        if (oldVersion < 2) {
+          // Migration to version 2: Remove audioUrl field
+          console.log('Migrating to version 2: Removing audioUrl field');
+          if (db.objectStoreNames.contains(STORE_NAME)) {
+            // Delete the old store
+            db.deleteObjectStore(STORE_NAME);
+            // Create new store without audioUrl
+            const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            store.createIndex('category', 'emotionalContext.category');
+            store.createIndex('mastered', 'mastered');
+            store.createIndex('lastReviewed', 'lastReviewed');
+          }
         }
       },
     });
@@ -77,16 +96,12 @@ async function convertToMoodWord(jsonWord: any): Promise<MoodWord> {
     'high': 3,
     'very high': 4
   };
-
-  // Generate audio URL for the word
-  const audioUrl = await generateMoodWordAudio(jsonWord.japanese);
   
   return {
     id: crypto.randomUUID(),
     japanese: jsonWord.japanese || '',
     romaji: jsonWord.romaji || '',
     english: jsonWord.english || '',
-    audioUrl,
     emotionalContext: {
       category,
       originalCategory: jsonWord.category,
