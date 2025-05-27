@@ -305,20 +305,18 @@ const MoodPage: React.FC = () => {
                       💭 {word.emotionalContext.usageNotes}
                     </Typography>
                   )}
-                  {word.audioUrl && (
-                    <IconButton
-                      onClick={() => handlePlayAudio(word)}
-                      className="mt-2"
-                      color="primary"
-                      disabled={isPlayingAudio}
-                    >
-                      {isPlayingAudio ? (
-                        <CircularProgress size={24} />
-                      ) : (
-                        <VolumeUpIcon />
-                      )}
-                    </IconButton>
-                  )}
+                  <IconButton
+                    onClick={() => handlePlayAudio(word)}
+                    className="mt-2"
+                    color="primary"
+                    disabled={isPlayingAudio}
+                  >
+                    {isPlayingAudio ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      <VolumeUpIcon />
+                    )}
+                  </IconButton>
 
                   {/* Add formality level */}
                   {word.formality && (

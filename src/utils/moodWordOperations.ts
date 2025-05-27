@@ -208,31 +208,6 @@ export async function updateWordMastery(wordId: string, mastered: boolean): Prom
   }
 }
 
-// Update word audio in database
-export async function updateWordAudio(wordId: string, audioUrl: string): Promise<void> {
-  let db;
-  try {
-    db = await openDB(DB_NAME, DB_VERSION);
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    
-    const word = await store.get(wordId);
-    if (word) {
-      word.audioUrl = audioUrl;
-      await store.put(word);
-    }
-    
-    await tx.done;
-  } catch (error) {
-    console.error('Error updating word audio:', error);
-    throw error;
-  } finally {
-    if (db) {
-      db.close();
-    }
-  }
-}
-
 // Load all mood words from database
 export async function loadAllMoodWords(): Promise<MoodWord[]> {
   let db;
