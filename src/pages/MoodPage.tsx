@@ -49,22 +49,10 @@ const MoodPage: React.FC = () => {
     try {
       setIsPlayingAudio(true);
       setAudioError(null);
-
-      if (!word.audioUrl) {
-        // If no audio URL exists, try to generate one
-        const audioUrl = await generateMoodWordAudio(word.japanese);
-        if (audioUrl) {
-          // Update the word in the database and state
-          const updatedWord = { ...word, audioUrl };
-          await updateWordAudio(word.id, audioUrl);
-          setWords(words.map(w => w.id === word.id ? updatedWord : w));
-          await playAudio(audioUrl);
-        } else {
-          throw new Error('Could not generate audio for this word');
-        }
-      } else {
-        await playAudio(word.audioUrl);
-      }
+      
+      // Always use the Japanese text to play audio
+      await playAudio(word.japanese);
+      
     } catch (error) {
       console.error('Error playing audio:', error);
       setAudioError(error instanceof Error ? error.message : 'Failed to play audio');
@@ -415,25 +403,5 @@ const MoodPage: React.FC = () => {
     </Container>
   );
 };
-
-// Add a function to update word audio in the database
-async function updateWordAudio(wordId: string, audioUrl: string): Promise<void> {
-  try {
-    const db = await openDB('MoodWordsDB', 1);
-    const tx = db.transaction('moodWords', 'readwrite');
-    const store = tx.objectStore('moodWords');
-    const word = await store.get(wordId);
-    
-    if (word) {
-      word.audioUrl = audioUrl;
-      await store.put(word);
-    }
-    
-    await tx.done;
-  } catch (error) {
-    console.error('Error updating word audio:', error);
-    throw error;
-  }
-}
 
 export default MoodPage; 
