@@ -145,7 +145,7 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
     console.log('[playAudio] Audio context not initialized, attempting to initialize...');
     audioContext = initializeAudio();
     if (!audioContext) {
-      console.warn('[playAudio] Failed to initialize audio context, using Web Speech API fallback');
+      console.log('[playAudio] Failed to initialize audio context, using Web Speech API fallback');
       useWebSpeechFallback(text);
       return;
     }
@@ -164,76 +164,68 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
     }
   }
 
-  const filename = await getAudioFilename(text);
-  const audioPath = `/audio/${filename}`;
-  console.log(`[playAudio] Requested:`, { text, filename, audioPath, audioContextState: audioContext.state });
-
   try {
     // Try to play from IndexedDB cache first
+    const filename = await getAudioFilename(text);
     let blob = await getAudio(filename);
+    
     if (!blob) {
-      // If not in cache, fetch and cache
-      console.log('[playAudio] Audio not in cache, fetching from server...');
-      const response = await fetch(audioPath);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch audio: ${response.status}`);
+      // If not in cache, try to fetch from server
+      try {
+        console.log('[playAudio] Audio not in cache, attempting to fetch from server...');
+        const response = await fetch(`/audio/${filename}`);
+        
+        if (response.ok) {
+          blob = await response.blob();
+          await setAudio(filename, blob);
+          console.log('[playAudio] Audio fetched and cached successfully');
+        } else if (response.status === 404) {
+          // Silently fall back to Web Speech API for 404s
+          console.log('[playAudio] Audio not found on server, using Web Speech API');
+          useWebSpeechFallback(text);
+          return;
+        } else {
+          // For other errors, log and fall back
+          console.warn(`[playAudio] Server returned ${response.status}, using Web Speech API`);
+          useWebSpeechFallback(text);
+          return;
+        }
+      } catch (fetchError) {
+        // Only log non-404 errors
+        if (!(fetchError instanceof Error && fetchError.message.includes('404'))) {
+          console.warn('[playAudio] Error fetching audio:', fetchError);
+        }
+        useWebSpeechFallback(text);
+        return;
       }
-      blob = await response.blob();
-      await setAudio(filename, blob);
-      console.log('[playAudio] Audio fetched and cached successfully');
     }
 
-    // Handle iOS audio restrictions
-    if (isIOS) {
-      // iOS requires audio to be loaded and played in the same user interaction
+    // If we have a blob (either from cache or server), play it
+    if (blob) {
       const url = URL.createObjectURL(blob);
+      
+      // Clean up any existing audio player
       if (audioPlayer) {
         audioPlayer.pause();
         URL.revokeObjectURL(audioPlayer.src);
       }
-      audioPlayer = new Audio(url);
-      audioPlayer.preload = 'auto';
-      
-      // Add iOS-specific event listeners
-      audioPlayer.addEventListener('play', () => {
-        console.log('[playAudio] iOS: Audio started playing');
-      });
-      
-      audioPlayer.addEventListener('error', (e) => {
-        console.error('[playAudio] iOS: Audio playback error:', e);
-        URL.revokeObjectURL(url);
-        useWebSpeechFallback(text);
-      });
 
-      try {
-        // For iOS, we need to play immediately after user interaction
-        await audioPlayer.play();
-        console.log('[playAudio] iOS: Audio playback started successfully');
-      } catch (error) {
-        console.error('[playAudio] iOS: Failed to play audio:', error);
-        URL.revokeObjectURL(url);
-        useWebSpeechFallback(text);
-      }
-
-      audioPlayer.onended = () => {
-        console.log('[playAudio] iOS: Audio playback ended');
-        URL.revokeObjectURL(url);
-        audioPlayer = null;
-      };
-    } else {
-      // Non-iOS platforms use standard playback
-      const url = URL.createObjectURL(blob);
-      if (audioPlayer) {
-        audioPlayer.pause();
-        URL.revokeObjectURL(audioPlayer.src);
-      }
+      // Create new audio player
       audioPlayer = new Audio(url);
       
+      // Add error handling
       audioPlayer.addEventListener('error', (e) => {
         console.error('[playAudio] Audio playback error:', e);
         URL.revokeObjectURL(url);
         useWebSpeechFallback(text);
       });
+
+      // Add iOS-specific handling
+      if (isIOS) {
+        audioPlayer.addEventListener('play', () => {
+          console.log('[playAudio] iOS: Audio started playing');
+        });
+      }
 
       try {
         await audioPlayer.play();
@@ -242,42 +234,72 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
         console.error('[playAudio] Failed to play audio:', error);
         URL.revokeObjectURL(url);
         useWebSpeechFallback(text);
+        return;
       }
 
+      // Clean up when done
       audioPlayer.onended = () => {
         console.log('[playAudio] Audio playback ended');
         URL.revokeObjectURL(url);
         audioPlayer = null;
       };
+    } else {
+      // If we somehow got here without a blob, use Web Speech API
+      console.log('[playAudio] No audio blob available, using Web Speech API');
+      useWebSpeechFallback(text);
     }
   } catch (error) {
-    console.error('[playAudio] Failed to play audio:', error);
+    console.error('[playAudio] Unexpected error:', error);
     useWebSpeechFallback(text);
   }
 };
 
-// Helper function for Web Speech API fallback
+// Helper function for Web Speech API fallback with better voice selection
 const useWebSpeechFallback = (text: string) => {
   console.log('[useWebSpeechFallback] Using Web Speech API for:', text);
-  if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP';
-    utterance.rate = 0.8;
-    utterance.pitch = 1;
-    
-    // Try to find a Japanese voice
-    const voices = window.speechSynthesis.getVoices();
-    const japaneseVoice = voices.find(voice => voice.lang.includes('ja'));
-    if (japaneseVoice) {
-      utterance.voice = japaneseVoice;
-      console.log('[useWebSpeechFallback] Using Japanese voice:', japaneseVoice.name);
-    } else {
-      console.warn('[useWebSpeechFallback] No Japanese voice found, using default voice');
-    }
-    
-    window.speechSynthesis.speak(utterance);
-  } else {
+  
+  if (!('speechSynthesis' in window)) {
     console.error('[useWebSpeechFallback] Web Speech API not supported');
+    return;
+  }
+
+  // Cancel any ongoing speech
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ja-JP';
+  utterance.rate = 0.8;
+  utterance.pitch = 1;
+  
+  // Try to find a Japanese voice
+  const voices = window.speechSynthesis.getVoices();
+  const japaneseVoice = voices.find(voice => 
+    voice.lang.includes('ja') && 
+    (voice.name.includes('Google') || voice.name.includes('Microsoft'))
+  ) || voices.find(voice => voice.lang.includes('ja'));
+
+  if (japaneseVoice) {
+    utterance.voice = japaneseVoice;
+    console.log('[useWebSpeechFallback] Using Japanese voice:', japaneseVoice.name);
+  } else {
+    console.warn('[useWebSpeechFallback] No Japanese voice found, using default voice');
+  }
+
+  // Add error handling
+  utterance.onerror = (event) => {
+    console.error('[useWebSpeechFallback] Speech synthesis error:', event);
+  };
+
+  // Add end handling
+  utterance.onend = () => {
+    console.log('[useWebSpeechFallback] Speech synthesis completed');
+  };
+
+  // Speak the text
+  try {
+    window.speechSynthesis.speak(utterance);
+  } catch (error) {
+    console.error('[useWebSpeechFallback] Failed to start speech synthesis:', error);
   }
 };
 
@@ -417,5 +439,106 @@ export const playDynamicAudio = async (text: string): Promise<void> => {
     }
   } else {
     console.error('[playDynamicAudio] Web Speech API not supported');
+  }
+};
+
+// Add a function to generate audio URL for a mood word
+export const generateMoodWordAudio = async (word: string): Promise<string | undefined> => {
+  try {
+    // First try to get from cache
+    const hash = SHA1(word).toString();
+    const filename = `${hash}.mp3`;
+    const cachedBlob = await getAudio(filename);
+    
+    if (cachedBlob) {
+      console.log(`[generateMoodWordAudio] Using cached audio for: ${word}`);
+      return URL.createObjectURL(cachedBlob);
+    }
+
+    // If not in cache, try to fetch from server
+    try {
+      const response = await fetch(`/audio/${filename}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        await setAudio(filename, blob);
+        console.log(`[generateMoodWordAudio] Fetched and cached audio for: ${word}`);
+        return URL.createObjectURL(blob);
+      }
+      // Don't log 404s as errors since they're expected
+      if (response.status !== 404) {
+        console.warn(`[generateMoodWordAudio] Server returned ${response.status} for: ${word}`);
+      }
+    } catch (fetchError) {
+      // Only log non-404 errors
+      if (!(fetchError instanceof Error && fetchError.message.includes('404'))) {
+        console.warn(`[generateMoodWordAudio] Error fetching audio: ${fetchError}`);
+      }
+    }
+
+    // If not found on server, use Web Speech API as fallback
+    if ('speechSynthesis' in window) {
+      console.log(`[generateMoodWordAudio] Using Web Speech API for: ${word}`);
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 0.8;
+      utterance.pitch = 1;
+      
+      // Get Japanese voice
+      const voices = window.speechSynthesis.getVoices();
+      const japaneseVoice = voices.find(voice => voice.lang.includes('ja'));
+      if (japaneseVoice) {
+        utterance.voice = japaneseVoice;
+        console.log(`[generateMoodWordAudio] Using Japanese voice: ${japaneseVoice.name}`);
+      } else {
+        console.warn('[generateMoodWordAudio] No Japanese voice found, using default voice');
+      }
+
+      // Create audio blob from speech synthesis
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const mediaStreamDestination = audioContext.createMediaStreamDestination();
+      const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
+      const audioChunks: Blob[] = [];
+
+      return new Promise((resolve) => {
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          try {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+            await setAudio(filename, audioBlob);
+            console.log(`[generateMoodWordAudio] Generated and cached audio for: ${word}`);
+            resolve(URL.createObjectURL(audioBlob));
+          } catch (error) {
+            console.error(`[generateMoodWordAudio] Error saving generated audio: ${error}`);
+            resolve(undefined);
+          } finally {
+            audioContext.close();
+          }
+        };
+
+        mediaRecorder.start();
+        window.speechSynthesis.speak(utterance);
+        
+        utterance.onend = () => {
+          mediaRecorder.stop();
+        };
+
+        // Add timeout in case speech synthesis fails
+        setTimeout(() => {
+          if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            console.warn(`[generateMoodWordAudio] Speech synthesis timed out for: ${word}`);
+          }
+        }, 5000);
+      });
+    }
+
+    console.warn(`[generateMoodWordAudio] Web Speech API not available for: ${word}`);
+    return undefined;
+  } catch (error) {
+    console.error(`[generateMoodWordAudio] Unexpected error for word ${word}:`, error);
+    return undefined;
   }
 }; 

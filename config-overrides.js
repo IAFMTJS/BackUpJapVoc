@@ -5,5 +5,11 @@ module.exports = function override(config, env) {
     "path": require.resolve("path-browserify")
   };
 
+  // Add fallback for async_hooks
+  config.resolve.fallback = {
+    ...config.resolve.fallback,
+    "async_hooks": false
+  };
+
   return config;
 }; 

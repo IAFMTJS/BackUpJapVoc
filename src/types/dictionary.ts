@@ -36,6 +36,35 @@ export interface WordRelationship {
   context?: string;
 }
 
+export type EmotionalCategory = 
+  | 'flirting' 
+  | 'anger' 
+  | 'love' 
+  | 'happiness' 
+  | 'sadness' 
+  | 'surprise' 
+  | 'fear' 
+  | 'disgust' 
+  | 'neutral'
+  | 'respect'    // 尊敬 (sonkei)
+  | 'shame'      // 恥 (haji)
+  | 'gratitude'  // 感謝 (kansha)
+  | 'pride'      // 誇り (hokori)
+  | 'embarrassment' // 恥ずかしい (hazukashii)
+  | 'excitement' // 興奮 (kofun)
+  | 'loneliness' // 寂しい (sabishii)
+  | 'nostalgia'  // 懐かしい (natsukashii)
+  | 'determination' // 決意 (ketsui)
+  | 'relief'     // 安心 (anshin);
+
+export interface EmotionalContext {
+  category: EmotionalCategory;
+  intensity: number; // 1-5 scale
+  emoji: string;
+  relatedEmotions?: EmotionalCategory[];
+  usageNotes?: string;
+}
+
 export interface DictionaryItem {
   id: string;
   japanese: string;
@@ -56,6 +85,7 @@ export interface DictionaryItem {
   tags?: string[];
   notes?: string;
   lastViewed?: Date;
+  emotionalContext?: EmotionalContext;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,6 +100,9 @@ export interface DictionarySearchOptions {
     minMastery?: number;
     maxMastery?: number;
     tags?: string[];
+    emotionalCategory?: EmotionalCategory;
+    minEmotionalIntensity?: number;
+    maxEmotionalIntensity?: number;
   };
   sortBy?: 'frequency' | 'mastery' | 'lastViewed' | 'level';
   limit?: number;

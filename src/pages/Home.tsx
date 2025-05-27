@@ -12,6 +12,7 @@ const FEATURE_CATEGORIES = [
     title: 'Core Learning',
     items: [
       { to: '/vocabulary', icon: '📚', title: 'Vocabulary', desc: 'Build your Japanese vocabulary', color: 'blue' },
+      { to: '/new-words', icon: '🆕', title: 'New Words', desc: 'Learn and track new vocabulary', color: 'green' },
       { to: '/kanji', icon: '漢字', title: 'Kanji Study', desc: 'Master Japanese characters', color: 'purple' },
       { to: '/writing', icon: '✍️', title: 'Writing Practice', desc: 'Practice writing Japanese characters', color: 'green' },
       { to: '/romaji', icon: '🔤', title: 'Romaji Practice', desc: 'Learn Japanese pronunciation', color: 'orange' }

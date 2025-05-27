@@ -58,7 +58,15 @@ module.exports = (env, argv) => {
         }
       }
     },
-    devtool: 'eval-source-map'
+    devtool: 'eval-source-map',
+    resolve: {
+      ...baseConfig(env, argv).resolve,
+      fallback: {
+        ...baseConfig(env, argv).resolve.fallback,
+        "async_hooks": false,
+        "path": require.resolve("path-browserify")
+      }
+    }
   };
 
   // Merge with base config

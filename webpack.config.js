@@ -25,7 +25,9 @@ module.exports = (env, argv) => {
       publicPath: '/',
       clean: true,
       crossOriginLoading: 'anonymous',
-      assetModuleFilename: 'static/media/[name].[hash][ext][query]'
+      assetModuleFilename: 'static/media/[name].[hash][ext][query]',
+      chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
+      chunkLoadTimeout: 120000
     },
     module: {
       rules: [
@@ -129,7 +131,8 @@ module.exports = (env, argv) => {
         "https": require.resolve("https-browserify"),
         "os": require.resolve("os-browserify/browser"),
         "url": require.resolve("url/"),
-        "zlib": require.resolve("browserify-zlib")
+        "zlib": require.resolve("browserify-zlib"),
+        "async_hooks": false
       }
     },
     optimization: {
@@ -149,6 +152,7 @@ module.exports = (env, argv) => {
           },
           extractComments: false
         }),
+        /* Temporarily commenting out image optimization
         new ImageMinimizerPlugin({
           minimizer: {
             implementation: ImageMinimizerPlugin.imageminMinify,
@@ -157,36 +161,17 @@ module.exports = (env, argv) => {
                 ['imagemin-mozjpeg', { quality: 60, progressive: true }],
                 ['imagemin-pngquant', { quality: [0.6, 0.8], speed: 4 }],
                 ['imagemin-gifsicle', { interlaced: true, optimizationLevel: 3 }],
-                // Temporarily commenting out SVGO plugin due to dependency issues
-                /*['imagemin-svgo', {
-                  plugins: [
-                    {
-                      name: 'preset-default',
-                      params: {
-                        overrides: {
-                          removeViewBox: false,
-                          addAttributesToSVGElement: {
-                            params: {
-                              attributes: [
-                                { xmlns: 'http://www.w3.org/2000/svg' }
-                              ]
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }]*/
               ]
             }
           }
         })
+        */
       ],
       splitChunks: {
         chunks: 'all',
         maxInitialRequests: 25,
-        minSize: 20000,
-        maxSize: 244000,
+        minSize: 10000,
+        maxSize: 500000,
         cacheGroups: {
           mui: {
             test: /[\\/]node_modules[\\/]@mui[\\/]/,
@@ -368,7 +353,7 @@ module.exports = (env, argv) => {
         'Cache-Control': 'no-cache, no-store, must-revalidate'
       },
       devMiddleware: {
-        writeToDisk: false,
+        writeToDisk: true,
         publicPath: '/'
       },
       client: {
@@ -377,7 +362,8 @@ module.exports = (env, argv) => {
           warnings: false
         },
         progress: true,
-        logging: 'info'
+        logging: 'info',
+        reconnect: true
       },
       compress: true,
       open: true,

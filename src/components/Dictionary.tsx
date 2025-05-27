@@ -26,7 +26,7 @@ import { LearningPathVisualization } from '../utils/learningPathVisualization';
 import { useCache, useDebounce, useThrottle, useMemoization } from '../utils/performanceOptimization';
 import { wordLevels } from '../data/wordLevels';
 import WordCloud from './WordCloud';
-import { allWords } from '../data/japaneseWords';
+import { allWords, waitForWords } from '../data/japaneseWords';
 import Fuse from 'fuse.js';
 import { useSettings } from '../context/SettingsContext';
 import { useHotkeys } from 'react-hotkeys-hook';  // Changed from useKeyboardShortcut to useHotkeys
@@ -395,23 +395,28 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     const loadItems = async () => {
       setIsLoading(true);
       try {
-        let loadedItems: DictionaryItem[] = [];
         console.log('=== Dictionary Loading Debug ===');
-        console.log('Initial state:', {
+        console.log('Waiting for words to be loaded...');
+        
+        // Wait for words to be loaded
+        await waitForWords();
+        
+        console.log('Words loaded. Initial state:', {
           mode,
           searchOptions,
           isOffline,
-          allWordsAvailable: allWords?.length || 0
+          allWordsAvailable: allWords?.length || 0,
+          allWordsSample: allWords?.slice(0, 5)
         });
         
         // Check if allWords is available
         if (!allWords || allWords.length === 0) {
-          console.error('allWords is empty or undefined');
+          console.error('allWords is empty or undefined after waiting');
           throw new Error('Dictionary data not available');
         }
 
         // Load from allWords with filtering
-        loadedItems = allWords.filter(word => {
+        let loadedItems: DictionaryItem[] = allWords.filter(word => {
           // Mode-based filtering
           if (mode !== 'all') {
             const modeMatch = 

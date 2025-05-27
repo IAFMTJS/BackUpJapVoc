@@ -12,6 +12,8 @@ import './App.css';
 import { openDB } from './utils/indexedDB';
 import GamesPage from './pages/GamesPage';
 import { initializeAudio } from './utils/audio';
+import { importWords } from './utils/importWords';
+import { initializeMoodWords } from './utils/initMoodWords';
 
 // Lazy load all route components
 const Home = lazy(() => import('./pages/Home'));
@@ -26,6 +28,7 @@ const Anime = lazy(() => import('./pages/AnimeSection'));
 const Progress = lazy(() => import('./pages/ProgressPage'));
 const Achievements = lazy(() => import('./pages/Achievements'));
 const WordLevels = lazy(() => import('./pages/WordLevelsPage'));
+const Mood = lazy(() => import('./pages/MoodPage'));
 
 // Loading component with better visual feedback
 const LoadingFallback = () => (
@@ -136,6 +139,22 @@ const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children })
         const database = await openDB();
         setDb(database);
         console.log('Main database initialized successfully');
+
+        // Check if we need to import words
+        const tx = database.transaction('words', 'readonly');
+        const store = tx.objectStore('words');
+        const count = await store.count();
+        
+        if (count === 0) {
+          console.log('No words found in database, importing words...');
+          const result = await importWords();
+          if (!result.success) {
+            throw new Error(`Failed to import words: ${result.error}`);
+          }
+          console.log(`Successfully imported ${result.count} words`);
+        } else {
+          console.log(`Database already contains ${count} words`);
+        }
       } catch (err) {
         console.error('Failed to initialize main database:', err);
         setError(err instanceof Error ? err : new Error('Failed to initialize database'));
@@ -198,6 +217,11 @@ const App: React.FC = () => {
       try {
         // Initialize database first
         await initDictionaryDB();
+        
+        // Initialize mood words
+        console.log('Initializing mood words...');
+        await initializeMoodWords();
+        console.log('Mood words initialized successfully');
         
         // Add a small delay to ensure all contexts are properly initialized
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -330,6 +354,16 @@ const App: React.FC = () => {
                           <WordLevels />
                         </ErrorBoundary>
                       } />
+                      <Route
+                        path="/mood"
+                        element={
+                          <ErrorBoundary>
+                            <Suspense fallback={<LoadingFallback />}>
+                              <Mood />
+                            </Suspense>
+                          </ErrorBoundary>
+                        }
+                      />
                     </Routes>
                   </Suspense>
                 </ErrorBoundary>

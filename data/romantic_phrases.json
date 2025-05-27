@@ -1,0 +1,695 @@
+[
+  {
+    "japanese": "君の目は、美しい桜のようだね。",
+    "romaji": "Kimi no me wa, utsukushii sakura no you da ne.",
+    "english": "Your eyes are like beautiful cherry blossoms.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "admiration",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of admiration"
+    ]
+  },
+  {
+    "japanese": "あなたと一緒に時を過ごすと、まるで東京の夜が明るく輝くようだ。",
+    "romaji": "Anata to issho ni toki o sugosu to, marude Tokyo no yoru ga akaruku kagayaku you da.",
+    "english": "Spending time with you makes even the nights in Tokyo seem brighter.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "joy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses how someone brightens your life"
+    ]
+  },
+  {
+    "japanese": "もし君がラーメンだとしたら、僕は毎日君を食べたいな。",
+    "romaji": "Moshi kimi ga rāmen da to shitara, boku wa mainichi kimi o tabetai na.",
+    "english": "If you were ramen, I'd want you every day.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "playfulness",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Playful expression of affection"
+    ]
+  },
+  {
+    "japanese": "あなたの声を聞くと、心がポッキーのように折れそうだ。",
+    "romaji": "Anata no koe o kiku to, kokoro ga Pokkī no yō ni oresō da.",
+    "english": "Hearing your voice breaks my heart like Pocky.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "longing",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Playful expression of emotional impact"
+    ]
+  },
+  {
+    "japanese": "君は私の心の中の富士山、常に美しく、そして遠くからも際立っている。",
+    "romaji": "Kimi wa watashi no kokoro no naka no Fujisan, tsune ni utsukushiku, soshite tōku kara mo kiwadatte iru.",
+    "english": "You're the Mount Fuji in my heart — always beautiful and outstanding.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "admiration",
+      "devotion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of deep admiration"
+    ]
+  },
+  {
+    "japanese": "あなたともっと話したいです。僕と一緒にお茶でもどう？",
+    "romaji": "Anata to motto hanashitai desu. Boku to issho ni ocha demo dō?",
+    "english": "I want to talk more. How about tea together?",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "interest",
+      "affection",
+      "curiosity"
+    ],
+    "usage_notes": [
+      "Use when asking someone out",
+      "Polite and gentle approach"
+    ]
+  },
+  {
+    "japanese": "君の笑顔には、全世界を照らす光がある。",
+    "romaji": "Kimi no egao ni wa, zen sekai o terasu hikari ga aru.",
+    "english": "Your smile lights up the whole world.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "admiration",
+      "joy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of admiration"
+    ]
+  },
+  {
+    "japanese": "私の心はあなたのものです。鍵を渡します。",
+    "romaji": "Watashi no kokoro wa anata no mono desu. Kagi o watashimasu.",
+    "english": "My heart is yours. Here's the key.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "devotion",
+      "commitment"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expression of deep commitment"
+    ]
+  },
+  {
+    "japanese": "僕たち、星座のように運命で結ばれてると思わない？",
+    "romaji": "Bokutachi, seiza no yō ni unmei de musubareteru to omowanai?",
+    "english": "Don't you think we're destined like constellations?",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "destiny",
+      "romance"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of destiny"
+    ]
+  },
+  {
+    "japanese": "君と話すと、まるで花見のような幸せを感じるよ。",
+    "romaji": "Kimi to hanasu to, marude hanami no yō na shiawase o kanjiru yo.",
+    "english": "Talking with you feels like a cherry blossom viewing party.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "joy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Cultural reference to hanami (cherry blossom viewing)"
+    ]
+  },
+  {
+    "japanese": "君がいれば、どこでも楽しいよ。",
+    "romaji": "Kimi ga ireba, doko demo tanoshii yo.",
+    "english": "Anywhere is fun with you.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "joy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses joy in being together",
+      "Can be used to express deep affection"
+    ]
+  },
+  {
+    "japanese": "君のことを考えるだけで幸せだ。",
+    "romaji": "Kimi no koto o kangaeru dake de shiawase da.",
+    "english": "Just thinking of you makes me happy.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses deep affection",
+      "Can be used to express love"
+    ]
+  },
+  {
+    "japanese": "君は僕の人生の光だ。",
+    "romaji": "Kimi wa boku no jinsei no hikari da.",
+    "english": "You are the light of my life.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "devotion",
+      "admiration"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of deep love",
+      "Expresses strong emotional connection"
+    ]
+  },
+  {
+    "japanese": "君の手を握ると、安心する。",
+    "romaji": "Kimi no te o nigiru to, anshin suru.",
+    "english": "I feel safe holding your hand.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "security",
+      "trust"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses trust and comfort",
+      "Can be used to express emotional security"
+    ]
+  },
+  {
+    "japanese": "君のことが好きだよ。",
+    "romaji": "Kimi no koto ga suki da yo.",
+    "english": "I like you.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "fondness"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Common way to express romantic interest",
+      "Can be used to confess feelings"
+    ]
+  },
+  {
+    "japanese": "一緒に未来を歩んでいきたい。",
+    "romaji": "Issho ni mirai o arunde ikitai.",
+    "english": "I want to walk into the future with you.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "commitment",
+      "devotion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses long-term commitment",
+      "Often used to express desire for a future together"
+    ]
+  },
+  {
+    "japanese": "君をずっと見守りたい。",
+    "romaji": "Kimi o zutto mimamoritai.",
+    "english": "I want to always watch over you.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "protection",
+      "devotion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses protective feelings",
+      "Shows deep commitment and care"
+    ]
+  },
+  {
+    "japanese": "君は忍者？だって、僕の心を盗んだから。",
+    "romaji": "Kimi wa ninja? Datte, boku no kokoro o nusunda kara.",
+    "english": "Are you a ninja? You stole my heart.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "playfulness",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Playful expression of love",
+      "Uses cultural reference to ninja"
+    ]
+  },
+  {
+    "japanese": "君はWi-Fi？だって、僕は君とつながってる気がする。",
+    "romaji": "Kimi wa Wi-Fi? Datte, boku wa kimi to tsunagatteru ki ga suru.",
+    "english": "Are you Wi-Fi? I feel connected to you.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "connection",
+      "playfulness"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Modern expression using technology reference",
+      "Playful way to express connection"
+    ]
+  },
+  {
+    "japanese": "君はカメラ？だって、君を見るたびに笑顔になるから。",
+    "romaji": "Kimi wa kamera? Datte, kimi o miru tabi ni egao ni naru kara.",
+    "english": "Are you a camera? You make me smile.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "playfulness"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Playful expression of happiness",
+      "Uses camera metaphor for capturing joy"
+    ]
+  },
+  {
+    "japanese": "そんな目で見ないでよ。",
+    "romaji": "Sonna me de minaide yo.",
+    "english": "Don't look at me like that.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "embarrassment",
+      "flirtation",
+      "shyness"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Often used when feeling shy or embarrassed",
+      "Can be playful or serious depending on context"
+    ]
+  },
+  {
+    "japanese": "もう、エッチなんだから！",
+    "romaji": "Mō, ecchi nan dakara!",
+    "english": "You're such a perv!",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "embarrassment",
+      "playfulness",
+      "flirtation"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Playful expression of embarrassment",
+      "Often used in a teasing way",
+      "Consider cultural context and relationship"
+    ]
+  },
+  {
+    "japanese": "あなたともっと近づきたいな。",
+    "romaji": "Anata to motto chikazukitai na.",
+    "english": "I want to get closer to you.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "desire",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be emotional or physical closeness",
+      "Consider relationship context"
+    ]
+  },
+  {
+    "japanese": "そんなこと言われたら、ドキドキするよ。",
+    "romaji": "Sonna koto iwaretara, dokidoki suru yo.",
+    "english": "That makes my heart race.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "excitement",
+      "nervousness",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses excitement or nervousness",
+      "Common expression of romantic feelings"
+    ]
+  },
+  {
+    "japanese": "夜、一緒にいたいな…。",
+    "romaji": "Yoru, issho ni itai na…",
+    "english": "I want to stay the night with you.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "desire",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire for intimacy",
+      "Consider relationship context and cultural norms",
+      "Use with appropriate caution"
+    ]
+  },
+  {
+    "japanese": "キスしたい。",
+    "romaji": "Kisu shitai.",
+    "english": "I want to kiss you.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "desire",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Direct expression of desire",
+      "Consider relationship context and cultural norms",
+      "Use with appropriate caution"
+    ]
+  },
+  {
+    "japanese": "抱きしめていい？",
+    "romaji": "Dakishimete ii?",
+    "english": "Can I hold you?",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "desire",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire for physical intimacy",
+      "Consider relationship context and cultural norms",
+      "Use with appropriate caution",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "もっと触ってもいい？",
+    "romaji": "Motto sawatte mo ii?",
+    "english": "Can I touch you more?",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "desire",
+      "intimacy",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire for physical intimacy",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "私のこと、どう思ってるの？",
+    "romaji": "Watashi no koto, dō omotteru no?",
+    "english": "What do you really think of me?",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "curiosity",
+      "insecurity",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire to know partner's feelings",
+      "Can indicate emotional vulnerability",
+      "Common in developing relationships"
+    ]
+  },
+  {
+    "japanese": "君の体、あたたかいね。",
+    "romaji": "Kimi no karada, atatakai ne.",
+    "english": "Your body is warm.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "intimacy",
+      "comfort",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses physical intimacy",
+      "Consider relationship context and cultural norms",
+      "Use with appropriate caution",
+      "Often used in intimate moments"
+    ]
+  },
+  {
+    "japanese": "服、脱いでみて。",
+    "romaji": "Fuku, nuide mite.",
+    "english": "Take off your clothes.",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "intimacy",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "今夜は帰さないよ。",
+    "romaji": "Kon'ya wa kaesanai yo.",
+    "english": "I won't let you go home tonight.",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "声、我慢できる？",
+    "romaji": "Koe, gaman dekiru?",
+    "english": "Can you hold back your voice?",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "intimacy",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "もっと感じたい。",
+    "romaji": "Motto kanjitai.",
+    "english": "I want to feel more.",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "激しくしてもいい？",
+    "romaji": "Hageshiku shite mo ii?",
+    "english": "Can I be rough?",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries",
+      "Requires clear communication about preferences"
+    ]
+  },
+  {
+    "japanese": "私をめちゃくちゃにして。",
+    "romaji": "Watashi o mechakucha ni shite.",
+    "english": "Wreck me.",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries",
+      "Requires clear communication about preferences"
+    ]
+  },
+  {
+    "japanese": "そこ、すごく気持ちいい…。",
+    "romaji": "Soko, sugoku kimochi ii…",
+    "english": "That feels so good…",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "pleasure",
+      "intimacy",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "やめないで…もっとして…。",
+    "romaji": "Yamenaide… motto shite…",
+    "english": "Don't stop… do it more…",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "pleasure"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "もう、我慢できない…。",
+    "romaji": "Mō, gaman dekinai…",
+    "english": "I can't hold back anymore…",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  }
+] 

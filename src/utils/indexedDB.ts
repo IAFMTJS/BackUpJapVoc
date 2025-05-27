@@ -5,6 +5,21 @@ const DB_CONFIG = {
   name: 'JapVocDB',
   version: 1,
   stores: {
+    words: {
+      name: 'words',
+      keyPath: 'id',
+      indexes: [
+        { name: 'by-japanese', keyPath: 'japanese', unique: false },
+        { name: 'by-english', keyPath: 'english', unique: false },
+        { name: 'by-romaji', keyPath: 'romaji', unique: false },
+        { name: 'by-level', keyPath: 'level', unique: false },
+        { name: 'by-category', keyPath: 'category', unique: false },
+        { name: 'by-jlpt', keyPath: 'jlptLevel', unique: false },
+        { name: 'by-mastery', keyPath: 'mastery.level', unique: false },
+        { name: 'by-last-viewed', keyPath: 'lastViewed', unique: false },
+        { name: 'by-emotional-context', keyPath: 'emotionalContext.category', unique: false }
+      ]
+    },
     progress: {
       name: 'progress',
       keyPath: 'id',
@@ -56,6 +71,17 @@ const migrations: Migration[] = [
     upgrade: async (db: IDBDatabase, transaction: IDBTransaction) => {
       console.log('[IndexedDB] Starting migration to version 1...');
       try {
+        // Create words store
+        console.log('[IndexedDB] Creating words store...');
+        const wordsStore = db.createObjectStore(DB_CONFIG.stores.words.name, {
+          keyPath: DB_CONFIG.stores.words.keyPath
+        });
+        console.log('[IndexedDB] Creating words store indexes...');
+        DB_CONFIG.stores.words.indexes.forEach(index => {
+          wordsStore.createIndex(index.name, index.keyPath, { unique: index.unique });
+        });
+        console.log('[IndexedDB] Words store created successfully');
+
         // Create progress store
         console.log('[IndexedDB] Creating progress store...');
         const progressStore = db.createObjectStore(DB_CONFIG.stores.progress.name, {

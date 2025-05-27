@@ -1,8 +1,34 @@
 import { JapaneseWord, ExampleSentence } from './types';
-import processedWords from './processed_words.json';
+import { quizWords } from './quizData';
 
-console.log('Loading processed words...');
-console.log('Number of processed words:', processedWords?.length || 0);
+// Initialize with quiz words
+let processedWords = quizWords.map(word => ({
+  kanji: word.japanese,
+  kana: word.japanese,
+  english: word.english,
+  romaji: word.romaji,
+  category: word.category,
+  level: word.difficulty === 'easy' ? 1 : word.difficulty === 'medium' ? 2 : 3,
+  examples: word.examples || [],
+  notes: word.notes || '',
+  jlptLevel: word.jlptLevel
+}));
+
+// Initialize empty arrays
+export let allWords: JapaneseWord[] = [];
+export let wordsByLevel: Record<number, JapaneseWord[]> = {};
+export let wordsByDifficulty: Record<'beginner' | 'intermediate' | 'advanced', JapaneseWord[]> = {
+  beginner: [],
+  intermediate: [],
+  advanced: []
+};
+export let wordsByCategory: Record<string, JapaneseWord[]> = {};
+export let wordsByJLPT: Record<string, JapaneseWord[]> = {};
+
+// Process the words immediately
+console.log('Initializing dictionary with', processedWords.length, 'words...');
+processWords();
+console.log('Dictionary initialization complete. Total words:', allWords.length);
 
 // Helper to convert JLPT level string to number and difficulty
 function parseLevel(level: string | number | undefined | null, category?: string): { level: number; difficulty: 'beginner' | 'intermediate' | 'advanced'; jlptLevel?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' } {
@@ -126,74 +152,91 @@ function processExamples(word: any): ExampleSentence[] {
   return examples;
 }
 
-// Map processedWords to JapaneseWord[]
-console.log('Mapping processed words to JapaneseWord[]...');
-export const allWords: JapaneseWord[] = (processedWords as any[]).map((w, idx) => {
-  const { level, difficulty, jlptLevel } = parseLevel(w.level, w.category);
-  
-  return {
-    id: `cw-${idx + 1}`,
-    japanese: w.kanji && w.kanji.length > 0 ? w.kanji : w.kana,
-    english: w.english,
-    romaji: w.romaji,
-    hiragana: w.kana,
-    kanji: w.kanji || undefined,
-    level,
-    difficulty,
-    jlptLevel,
-    category: w.category || 'noun',
-    examples: processExamples(w),
-    notes: w.notes || '',
-    isHiragana: /^[\u3040-\u309F]+$/.test(w.kana),
-    isKatakana: /^[\u30A0-\u30FF]+$/.test(w.kana)
+function processWords() {
+  allWords = processedWords.map((w, idx) => {
+    const { level, difficulty, jlptLevel } = parseLevel(w.level, w.category);
+    
+    return {
+      id: `cw-${idx + 1}`,
+      japanese: w.kanji && w.kanji.length > 0 ? w.kanji : w.kana,
+      english: w.english,
+      romaji: w.romaji,
+      hiragana: w.kana,
+      kanji: w.kanji || undefined,
+      level,
+      difficulty,
+      jlptLevel,
+      category: w.category || 'noun',
+      examples: processExamples(w),
+      notes: w.notes || '',
+      isHiragana: /^[\u3040-\u309F]+$/.test(w.kana),
+      isKatakana: /^[\u30A0-\u30FF]+$/.test(w.kana)
+    };
+  });
+
+  // Group by level
+  wordsByLevel = {};
+  allWords.forEach(word => {
+    if (!wordsByLevel[word.level]) wordsByLevel[word.level] = [];
+    wordsByLevel[word.level].push(word);
+  });
+
+  // Group by difficulty
+  wordsByDifficulty = {
+    beginner: [],
+    intermediate: [],
+    advanced: []
   };
-});
-console.log('Finished mapping words. Total words:', allWords.length);
+  allWords.forEach(word => {
+    wordsByDifficulty[word.difficulty].push(word);
+  });
 
-// Group by level
-export const wordsByLevel: Record<number, JapaneseWord[]> = {};
-allWords.forEach(word => {
-  if (!wordsByLevel[word.level]) wordsByLevel[word.level] = [];
-  wordsByLevel[word.level].push(word);
-});
+  // Group by category
+  wordsByCategory = {};
+  allWords.forEach(word => {
+    const cat = word.category || 'noun';
+    if (!wordsByCategory[cat]) wordsByCategory[cat] = [];
+    wordsByCategory[cat].push(word);
+  });
 
-// Group by difficulty
-export const wordsByDifficulty: Record<'beginner' | 'intermediate' | 'advanced', JapaneseWord[]> = {
-  beginner: [],
-  intermediate: [],
-  advanced: []
-};
-allWords.forEach(word => {
-  wordsByDifficulty[word.difficulty].push(word);
-});
+  // Log the number of words in each category
+  console.log('Words by category:');
+  Object.entries(wordsByCategory).forEach(([category, words]) => {
+    console.log(`${category}: ${words.length} words`);
+  });
 
-// Group by category
-export const wordsByCategory: Record<string, JapaneseWord[]> = {};
-allWords.forEach(word => {
-  const cat = word.category || 'noun';
-  if (!wordsByCategory[cat]) wordsByCategory[cat] = [];
-  wordsByCategory[cat].push(word);
-});
+  // Group by JLPT level
+  wordsByJLPT = {};
+  allWords.forEach(word => {
+    if (word.jlptLevel) {
+      if (!wordsByJLPT[word.jlptLevel]) wordsByJLPT[word.jlptLevel] = [];
+      wordsByJLPT[word.jlptLevel].push(word);
+    }
+  });
+}
 
-// Log the number of words in each category
-console.log('Words by category:');
-Object.entries(wordsByCategory).forEach(([category, words]) => {
-  console.log(`${category}: ${words.length} words`);
-});
+// Export a function to check if words are loaded
+export function areWordsLoaded(): boolean {
+  return allWords.length > 0;
+}
 
-// Group by JLPT level
-export const wordsByJLPT: Record<string, JapaneseWord[]> = {};
-allWords.forEach(word => {
-  if (word.jlptLevel) {
-    if (!wordsByJLPT[word.jlptLevel]) wordsByJLPT[word.jlptLevel] = [];
-    wordsByJLPT[word.jlptLevel].push(word);
+// Export a function to wait for words to be loaded
+export async function waitForWords(): Promise<void> {
+  if (areWordsLoaded()) {
+    return Promise.resolve();
   }
-});
-
-// Log the number of words in each JLPT level
-console.log('Words by JLPT level:');
-Object.entries(wordsByJLPT).forEach(([level, words]) => {
-  console.log(`${level}: ${words.length} words`);
-});
+  
+  // If words aren't loaded yet, wait a bit and try again
+  return new Promise((resolve) => {
+    const checkWords = () => {
+      if (areWordsLoaded()) {
+        resolve();
+      } else {
+        setTimeout(checkWords, 100);
+      }
+    };
+    checkWords();
+  });
+}
 
 // We'll continue adding more words in subsequent edits... 

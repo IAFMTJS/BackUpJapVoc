@@ -1,0 +1,1793 @@
+[
+  {
+    "japanese": "死ね！",
+    "romaji": "Shine!",
+    "english": "Die! (very offensive)",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "frustration",
+      "irritation",
+      "rage"
+    ],
+    "usage_notes": [
+      "Use with caution",
+      "Consider the relationship context"
+    ]
+  },
+  {
+    "japanese": "あなたともっと話したいです。僕と一緒にお茶でもどう？",
+    "romaji": "I want to talk more. How about tea together?",
+    "english": "Anata to motto hanashitai desu. Boku to issho ni ocha demo dō?",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "あなたの声を聞くと、心がポッキーのように折れそうだ。",
+    "romaji": "Hearing your voice breaks my heart like Pocky.",
+    "english": "Anata no koe o kiku to, kokoro ga Pokkī no yō ni oresō da.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "お前！",
+    "romaji": "Omae!",
+    "english": "You! (rude)",
+    "category": "angry",
+    "intensity": "medium",
+    "related_emotions": [
+      "anger",
+      "frustration",
+      "irritation"
+    ],
+    "usage_notes": [
+      "Rude way to address someone",
+      "Use with caution",
+      "Consider the relationship context"
+    ]
+  },
+  {
+    "japanese": "キスだけじゃ足りない。",
+    "romaji": "Kisu dake ja tarinai.",
+    "english": "A kiss isn't enough.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "こんちくしょう！",
+    "romaji": "Konchikushō!",
+    "english": "Damn you!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "frustration",
+      "rage"
+    ],
+    "usage_notes": [
+      "Strong expression of anger",
+      "Use with extreme caution",
+      "Considered very rude"
+    ]
+  },
+  {
+    "japanese": "そんな目で見ないでよ。",
+    "romaji": "Sonna me de minaide yo.",
+    "english": "Don't look at me like that.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "だまれこのやろう！",
+    "romaji": "Damare kono yarō!",
+    "english": "Shut up, you bastard!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "rage",
+      "frustration"
+    ],
+    "usage_notes": [
+      "Very strong expression of anger",
+      "Use with extreme caution",
+      "Considered extremely rude"
+    ]
+  },
+  {
+    "japanese": "どうでもいい。",
+    "romaji": "Dō demo ii.",
+    "english": "Whatever.",
+    "category": "indifferent",
+    "intensity": "medium",
+    "related_emotions": [
+      "indifference",
+      "apathy",
+      "disinterest"
+    ],
+    "usage_notes": [
+      "Expresses disinterest or indifference",
+      "Can be considered rude depending on context",
+      "Often used when annoyed or frustrated"
+    ]
+  },
+  {
+    "japanese": "ばかやろう！",
+    "romaji": "Bakayarō!",
+    "english": "You idiot!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "frustration",
+      "irritation"
+    ],
+    "usage_notes": [
+      "Strong expression of anger",
+      "Use with caution",
+      "Considered rude"
+    ]
+  },
+  {
+    "japanese": "ふざけるな！",
+    "romaji": "Fuzakeru na!",
+    "english": "Don't mess with me!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "frustration",
+      "warning"
+    ],
+    "usage_notes": [
+      "Strong expression of anger",
+      "Use with caution",
+      "Considered rude"
+    ]
+  },
+  {
+    "japanese": "君と一緒にいると心が温かくなる。",
+    "romaji": "Kimi to issho ni iru to kokoro ga atatakaku naru.",
+    "english": "My heart warms when I'm with you.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "君と話すと、まるで花見のような幸せを感じるよ。",
+    "romaji": "Talking with you feels like a",
+    "english": "Kimi to hanasu to, marude hanami no yō na shiawase o kanjiru yo.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "君はGoogle？だって、僕が探してたすべてを持ってるから。",
+    "romaji": "Kimi wa Google? Datte, boku ga sagashiteta subete o motteru kara.",
+    "english": "You're Google — you have everything I was looking for.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "君は寿司？だって、僕の心を巻き込んでるから。",
+    "romaji": "Kimi wa sushi? Datte, boku no kokoro o makikonderu kara.",
+    "english": "Are you sushi? You're rolling into my heart.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "夜、一緒にいたいな…。",
+    "romaji": "I want to stay the night with you.",
+    "english": "Yoru, issho ni itai na…",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "私のこと、どう思ってるの？",
+    "romaji": "What do you really think of me?",
+    "english": "Watashi no koto, dō omotteru no?",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "私の心はあなたのものです。鍵を渡します。",
+    "romaji": "Watashi no kokoro wa anata no mono desu. Kagi o watashimasu.",
+    "english": "My heart is yours. Here's the key.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be used to express deep feelings"
+    ]
+  },
+  {
+    "japanese": "貴様！",
+    "romaji": "Kisama!",
+    "english": "You scum! (very rude)",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "rage",
+      "hatred"
+    ],
+    "usage_notes": [
+      "Very rude way to address someone",
+      "Use with extreme caution",
+      "Considered extremely offensive"
+    ]
+  },
+  {
+    "japanese": "うざい！",
+    "romaji": "Uzai!",
+    "english": "Annoying!",
+    "category": "annoyed",
+    "intensity": "medium",
+    "related_emotions": [
+      "irritation",
+      "frustration",
+      "annoyance"
+    ],
+    "usage_notes": [
+      "Casual expression of annoyance",
+      "Common among young people",
+      "Can be considered rude in formal settings"
+    ]
+  },
+  {
+    "japanese": "好きにすれば？",
+    "romaji": "Suki ni sureba?",
+    "english": "Do as you like.",
+    "category": "annoyed",
+    "intensity": "medium",
+    "related_emotions": [
+      "irritation",
+      "indifference",
+      "frustration"
+    ],
+    "usage_notes": [
+      "Passive-aggressive expression",
+      "Often used when annoyed or frustrated",
+      "Can be considered rude depending on context"
+    ]
+  },
+  {
+    "japanese": "もういい。",
+    "romaji": "Mō ii.",
+    "english": "I'm done.",
+    "category": "annoyed",
+    "intensity": "medium",
+    "related_emotions": [
+      "frustration",
+      "irritation",
+      "giving up"
+    ],
+    "usage_notes": [
+      "Expresses frustration or giving up",
+      "Often used when annoyed or tired of a situation",
+      "Can be considered rude depending on context"
+    ]
+  },
+  {
+    "japanese": "は？",
+    "romaji": "Ha?",
+    "english": "What the hell?",
+    "category": "angry",
+    "intensity": "medium",
+    "related_emotions": [
+      "anger",
+      "confusion",
+      "irritation"
+    ],
+    "usage_notes": [
+      "Very rude way to express confusion or disbelief",
+      "Use with extreme caution",
+      "Considered very impolite"
+    ]
+  },
+  {
+    "japanese": "くそ！",
+    "romaji": "Kuso!",
+    "english": "Shit!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "frustration",
+      "irritation"
+    ],
+    "usage_notes": [
+      "Strong expression of anger or frustration",
+      "Use with caution",
+      "Considered rude"
+    ]
+  },
+  {
+    "japanese": "しんじまえ！",
+    "romaji": "Shinjimae!",
+    "english": "Drop dead!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "rage",
+      "hatred"
+    ],
+    "usage_notes": [
+      "Very strong expression of anger",
+      "Use with extreme caution",
+      "Considered extremely offensive"
+    ]
+  },
+  {
+    "japanese": "くそくらえ！",
+    "romaji": "Kusokurae!",
+    "english": "Eat shit!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "rage",
+      "hatred"
+    ],
+    "usage_notes": [
+      "Very strong expression of anger",
+      "Use with extreme caution",
+      "Considered extremely offensive"
+    ]
+  },
+  {
+    "japanese": "くたばれ！",
+    "romaji": "Kutabare!",
+    "english": "Drop dead!",
+    "category": "angry",
+    "intensity": "very high",
+    "related_emotions": [
+      "rage",
+      "hatred",
+      "fury"
+    ],
+    "usage_notes": [
+      "Extremely offensive expression",
+      "Use with extreme caution",
+      "Considered very rude and aggressive",
+      "Often used in heated arguments",
+      "Cultural note: One of the strongest expressions of anger"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何を言ってるんだ (What are you saying)",
+      "冷静になれ (Calm down)",
+      "失礼だぞ (That's rude)"
+    ]
+  },
+  {
+    "japanese": "君の目は、美しい桜のようだね。",
+    "romaji": "Kimi no me wa, utsukushii sakura no you da ne.",
+    "english": "Your eyes are like beautiful cherry blossoms.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "admiration",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of admiration"
+    ]
+  },
+  {
+    "japanese": "あなたと一緒に時を過ごすと、まるで東京の夜が明るく輝くようだ。",
+    "romaji": "Anata to issho ni toki o sugosu to, marude Tokyo no yoru ga akaruku kagayaku you da.",
+    "english": "Spending time with you makes even the nights in Tokyo seem brighter.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "joy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses how someone brightens your life"
+    ]
+  },
+  {
+    "japanese": "もし君がラーメンだとしたら、僕は毎日君を食べたいな。",
+    "romaji": "Moshi kimi ga rāmen da to shitara, boku wa mainichi kimi o tabetai na.",
+    "english": "If you were ramen, I'd want you every day.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "playfulness",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Playful expression of affection"
+    ]
+  },
+  {
+    "japanese": "君は私の心の中の富士山、常に美しく、そして遠くからも際立っている。",
+    "romaji": "Kimi wa watashi no kokoro no naka no Fujisan, tsune ni utsukushiku, soshite tōku kara mo kiwadatte iru.",
+    "english": "You're the Mount Fuji in my heart — always beautiful and outstanding.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "admiration",
+      "devotion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of deep admiration"
+    ]
+  },
+  {
+    "japanese": "君の笑顔には、全世界を照らす光がある。",
+    "romaji": "Kimi no egao ni wa, zen sekai o terasu hikari ga aru.",
+    "english": "Your smile lights up the whole world.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "admiration",
+      "joy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of admiration"
+    ]
+  },
+  {
+    "japanese": "私の心はあなたのものです。鍵を渡します。",
+    "romaji": "Watashi no kokoro wa anata no mono desu. Kagi o watashimasu.",
+    "english": "My heart is yours. Here's the key.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "devotion",
+      "commitment"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expression of deep commitment"
+    ]
+  },
+  {
+    "japanese": "僕たち、星座のように運命で結ばれてると思わない？",
+    "romaji": "Bokutachi, seiza no yō ni unmei de musubareteru to omowanai?",
+    "english": "Don't you think we're destined like constellations?",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "destiny",
+      "romance"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of destiny"
+    ]
+  },
+  {
+    "japanese": "君と話すと、まるで花見のような幸せを感じるよ。",
+    "romaji": "Kimi to hanasu to, marude hanami no yō na shiawase o kanjiru yo.",
+    "english": "Talking with you feels like a cherry blossom viewing party.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "joy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Cultural reference to hanami (cherry blossom viewing)"
+    ]
+  },
+  {
+    "japanese": "君がいれば、どこでも楽しいよ。",
+    "romaji": "Kimi ga ireba, doko demo tanoshii yo.",
+    "english": "Anywhere is fun with you.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "joy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses joy in being together",
+      "Can be used to express deep affection"
+    ]
+  },
+  {
+    "japanese": "君のことを考えるだけで幸せだ。",
+    "romaji": "Kimi no koto o kangaeru dake de shiawase da.",
+    "english": "Just thinking of you makes me happy.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses deep affection",
+      "Can be used to express love"
+    ]
+  },
+  {
+    "japanese": "君は僕の人生の光だ。",
+    "romaji": "Kimi wa boku no jinsei no hikari da.",
+    "english": "You are the light of my life.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "devotion",
+      "admiration"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Poetic expression of deep love",
+      "Expresses strong emotional connection"
+    ]
+  },
+  {
+    "japanese": "君の手を握ると、安心する。",
+    "romaji": "Kimi no te o nigiru to, anshin suru.",
+    "english": "I feel safe holding your hand.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "security",
+      "trust"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses trust and comfort",
+      "Can be used to express emotional security"
+    ]
+  },
+  {
+    "japanese": "君のことが好きだよ。",
+    "romaji": "Kimi no koto ga suki da yo.",
+    "english": "I like you.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "affection",
+      "fondness"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Common way to express romantic interest",
+      "Can be used to confess feelings"
+    ]
+  },
+  {
+    "japanese": "一緒に未来を歩んでいきたい。",
+    "romaji": "Issho ni mirai o arunde ikitai.",
+    "english": "I want to walk into the future with you.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "commitment",
+      "devotion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses long-term commitment",
+      "Often used to express desire for a future together"
+    ]
+  },
+  {
+    "japanese": "君をずっと見守りたい。",
+    "romaji": "Kimi o zutto mimamoritai.",
+    "english": "I want to always watch over you.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "protection",
+      "devotion"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses protective feelings",
+      "Shows deep commitment and care"
+    ]
+  },
+  {
+    "japanese": "君は忍者？だって、僕の心を盗んだから。",
+    "romaji": "Kimi wa ninja? Datte, boku no kokoro o nusunda kara.",
+    "english": "Are you a ninja? You stole my heart.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "playfulness",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Playful expression of love",
+      "Uses cultural reference to ninja"
+    ]
+  },
+  {
+    "japanese": "君はWi-Fi？だって、僕は君とつながってる気がする。",
+    "romaji": "Kimi wa Wi-Fi? Datte, boku wa kimi to tsunagatteru ki ga suru.",
+    "english": "Are you Wi-Fi? I feel connected to you.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "connection",
+      "playfulness"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Modern expression using technology reference",
+      "Playful way to express connection"
+    ]
+  },
+  {
+    "japanese": "君はカメラ？だって、君を見るたびに笑顔になるから。",
+    "romaji": "Kimi wa kamera? Datte, kimi o miru tabi ni egao ni naru kara.",
+    "english": "Are you a camera? You make me smile.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "happiness",
+      "playfulness"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Playful expression of happiness",
+      "Uses camera metaphor for capturing joy"
+    ]
+  },
+  {
+    "japanese": "そんな目で見ないでよ。",
+    "romaji": "Sonna me de minaide yo.",
+    "english": "Don't look at me like that.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "embarrassment",
+      "flirtation",
+      "shyness"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Often used when feeling shy or embarrassed",
+      "Can be playful or serious depending on context"
+    ]
+  },
+  {
+    "japanese": "もう、エッチなんだから！",
+    "romaji": "Mō, ecchi nan dakara!",
+    "english": "You're such a perv!",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "embarrassment",
+      "playfulness",
+      "flirtation"
+    ],
+    "usage_notes": [
+      "Use in casual romantic contexts",
+      "Playful expression of embarrassment",
+      "Often used in a teasing way",
+      "Consider cultural context and relationship"
+    ]
+  },
+  {
+    "japanese": "あなたともっと近づきたいな。",
+    "romaji": "Anata to motto chikazukitai na.",
+    "english": "I want to get closer to you.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "love",
+      "desire",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Can be emotional or physical closeness",
+      "Consider relationship context"
+    ]
+  },
+  {
+    "japanese": "そんなこと言われたら、ドキドキするよ。",
+    "romaji": "Sonna koto iwaretara, dokidoki suru yo.",
+    "english": "That makes my heart race.",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "excitement",
+      "nervousness",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses excitement or nervousness",
+      "Common expression of romantic feelings"
+    ]
+  },
+  {
+    "japanese": "夜、一緒にいたいな…。",
+    "romaji": "Yoru, issho ni itai na…",
+    "english": "I want to stay the night with you.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "desire",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire for intimacy",
+      "Consider relationship context and cultural norms",
+      "Use with appropriate caution"
+    ]
+  },
+  {
+    "japanese": "キスしたい。",
+    "romaji": "Kisu shitai.",
+    "english": "I want to kiss you.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "desire",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Direct expression of desire",
+      "Consider relationship context and cultural norms",
+      "Use with appropriate caution"
+    ]
+  },
+  {
+    "japanese": "抱きしめていい？",
+    "romaji": "Dakishimete ii?",
+    "english": "Can I hold you?",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "love",
+      "desire",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire for physical intimacy",
+      "Consider relationship context and cultural norms",
+      "Use with appropriate caution",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "もっと触ってもいい？",
+    "romaji": "Motto sawatte mo ii?",
+    "english": "Can I touch you more?",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "desire",
+      "intimacy",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire for physical intimacy",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "私のこと、どう思ってるの？",
+    "romaji": "Watashi no koto, dō omotteru no?",
+    "english": "What do you really think of me?",
+    "category": "romantic",
+    "intensity": "medium",
+    "related_emotions": [
+      "curiosity",
+      "insecurity",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire to know partner's feelings",
+      "Can indicate emotional vulnerability",
+      "Common in developing relationships"
+    ]
+  },
+  {
+    "japanese": "君の体、あたたかいね。",
+    "romaji": "Kimi no karada, atatakai ne.",
+    "english": "Your body is warm.",
+    "category": "romantic",
+    "intensity": "high",
+    "related_emotions": [
+      "intimacy",
+      "comfort",
+      "affection"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses physical intimacy",
+      "Consider relationship context and cultural norms",
+      "Use with appropriate caution",
+      "Often used in intimate moments"
+    ]
+  },
+  {
+    "japanese": "服、脱いでみて。",
+    "romaji": "Fuku, nuide mite.",
+    "english": "Take off your clothes.",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "intimacy",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "今夜は帰さないよ。",
+    "romaji": "Kon'ya wa kaesanai yo.",
+    "english": "I won't let you go home tonight.",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "声、我慢できる？",
+    "romaji": "Koe, gaman dekiru?",
+    "english": "Can you hold back your voice?",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "intimacy",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "もっと感じたい。",
+    "romaji": "Motto kanjitai.",
+    "english": "I want to feel more.",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "激しくしてもいい？",
+    "romaji": "Hageshiku shite mo ii?",
+    "english": "Can I be rough?",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries",
+      "Requires clear communication about preferences"
+    ]
+  },
+  {
+    "japanese": "私をめちゃくちゃにして。",
+    "romaji": "Watashi o mechakucha ni shite.",
+    "english": "Wreck me.",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries",
+      "Requires clear communication about preferences"
+    ]
+  },
+  {
+    "japanese": "そこ、すごく気持ちいい…。",
+    "romaji": "Soko, sugoku kimochi ii…",
+    "english": "That feels so good…",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "pleasure",
+      "intimacy",
+      "passion"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "やめないで…もっとして…。",
+    "romaji": "Yamenaide… motto shite…",
+    "english": "Don't stop… do it more…",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "pleasure"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "もう、我慢できない…。",
+    "romaji": "Mō, gaman dekinai…",
+    "english": "I can't hold back anymore…",
+    "category": "romantic",
+    "intensity": "very high",
+    "related_emotions": [
+      "desire",
+      "passion",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use only in established romantic relationships",
+      "Requires explicit consent",
+      "Consider relationship context and cultural norms",
+      "Use with extreme caution",
+      "Always ensure clear consent",
+      "Important to respect boundaries"
+    ]
+  },
+  {
+    "japanese": "頑張って！",
+    "romaji": "Ganbatte!",
+    "english": "Do your best!",
+    "category": "motivational",
+    "intensity": "medium",
+    "related_emotions": [
+      "encouragement",
+      "support",
+      "determination"
+    ],
+    "usage_notes": [
+      "Use to encourage someone",
+      "Common in sports and academic contexts",
+      "Can be used with friends or colleagues",
+      "Often used before exams or competitions",
+      "Cultural note: Very common in Japanese culture"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "ありがとう (Thank you)",
+      "頑張ります (I'll do my best)",
+      "はい、頑張ります (Yes, I'll try my best)"
+    ]
+  },
+  {
+    "japanese": "大丈夫ですよ。",
+    "romaji": "Daijōbu desu yo.",
+    "english": "It's okay, don't worry.",
+    "category": "empathetic",
+    "intensity": "medium",
+    "related_emotions": [
+      "reassurance",
+      "comfort",
+      "understanding"
+    ],
+    "usage_notes": [
+      "Use to comfort someone",
+      "Common in supportive situations",
+      "Can be used in both casual and formal settings",
+      "Often used when someone is worried or upset",
+      "Cultural note: Shows consideration for others' feelings"
+    ],
+    "formality": "polite",
+    "common_responses": [
+      "ありがとうございます (Thank you very much)",
+      "助かります (That helps)",
+      "安心しました (I feel relieved)"
+    ]
+  },
+  {
+    "japanese": "お疲れ様です。",
+    "romaji": "Otsukaresama desu.",
+    "english": "Thank you for your hard work.",
+    "category": "respect",
+    "intensity": "medium",
+    "related_emotions": [
+      "gratitude",
+      "acknowledgment",
+      "respect"
+    ],
+    "usage_notes": [
+      "Use in workplace or formal settings",
+      "Common greeting when leaving work",
+      "Shows respect for others' efforts",
+      "Cultural note: Essential in Japanese workplace culture",
+      "Can be shortened to 'お疲れ' in casual settings"
+    ],
+    "formality": "formal",
+    "common_responses": [
+      "お疲れ様です (Same to you)",
+      "ありがとうございます (Thank you)",
+      "お先に失礼します (Excuse me for leaving first)"
+    ]
+  },
+  {
+    "japanese": "めっちゃ面白い！",
+    "romaji": "Meccha omoshiroi!",
+    "english": "That's super funny!",
+    "category": "playful",
+    "intensity": "high",
+    "related_emotions": [
+      "amusement",
+      "joy",
+      "excitement"
+    ],
+    "usage_notes": [
+      "Use in casual, friendly settings",
+      "Very informal expression",
+      "Common among young people",
+      "Cultural note: 'めっちゃ' is Kansai dialect, now popular nationwide",
+      "Shows enthusiasm and casual friendship"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "でしょ？ (Right?)",
+      "ありがとう (Thanks)",
+      "嬉しい (I'm glad)"
+    ]
+  },
+  {
+    "japanese": "心配しないでください。",
+    "romaji": "Shinpai shinaide kudasai.",
+    "english": "Please don't worry.",
+    "category": "empathetic",
+    "intensity": "medium",
+    "related_emotions": [
+      "reassurance",
+      "care",
+      "consideration"
+    ],
+    "usage_notes": [
+      "Use in formal or polite settings",
+      "Shows concern for others' well-being",
+      "Common in professional or formal relationships",
+      "Cultural note: Demonstrates Japanese emphasis on consideration",
+      "More formal than '大丈夫ですよ'"
+    ],
+    "formality": "formal",
+    "common_responses": [
+      "ありがとうございます (Thank you very much)",
+      "承知しました (I understand)",
+      "ご心配ありがとうございます (Thank you for your concern)"
+    ]
+  },
+  {
+    "japanese": "一緒に頑張りましょう！",
+    "romaji": "Issho ni ganbarimashō!",
+    "english": "Let's do our best together!",
+    "category": "motivational",
+    "intensity": "high",
+    "related_emotions": [
+      "encouragement",
+      "unity",
+      "determination"
+    ],
+    "usage_notes": [
+      "Use in team or group settings",
+      "Shows solidarity and support",
+      "Common in workplace or school settings",
+      "Cultural note: Emphasizes group effort and unity",
+      "More formal than '頑張って'"
+    ],
+    "formality": "polite",
+    "common_responses": [
+      "はい、頑張りましょう (Yes, let's do our best)",
+      "よろしくお願いします (Please take care of me)",
+      "一緒に頑張りましょう (Let's do our best together)"
+    ]
+  },
+  {
+    "japanese": "おめでとうございます！",
+    "romaji": "Omedetō gozaimasu!",
+    "english": "Congratulations!",
+    "category": "positive",
+    "intensity": "high",
+    "related_emotions": [
+      "joy",
+      "pride",
+      "happiness"
+    ],
+    "usage_notes": [
+      "Use in formal celebrations",
+      "Common for graduations, weddings, promotions",
+      "Cultural note: Often accompanied by bowing",
+      "Can be shortened to 'おめでとう' in casual settings",
+      "Shows respect and genuine happiness for others"
+    ],
+    "formality": "formal",
+    "common_responses": [
+      "ありがとうございます (Thank you very much)",
+      "おかげさまで (Thanks to you)",
+      "これからも頑張ります (I'll continue to do my best)"
+    ]
+  },
+  {
+    "japanese": "すごく楽しかった！",
+    "romaji": "Sugoku tanoshikatta!",
+    "english": "That was really fun!",
+    "category": "playful",
+    "intensity": "high",
+    "related_emotions": [
+      "joy",
+      "excitement",
+      "satisfaction"
+    ],
+    "usage_notes": [
+      "Use after enjoyable activities",
+      "Very casual expression",
+      "Common among friends",
+      "Cultural note: Shows enthusiasm and appreciation",
+      "Often used to express gratitude for the experience"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "私も楽しかった (I had fun too)",
+      "また遊ぼうね (Let's hang out again)",
+      "ありがとう (Thanks)"
+    ]
+  },
+  {
+    "japanese": "お世話になりました。",
+    "romaji": "Osewa ni narimashita.",
+    "english": "Thank you for your help and support.",
+    "category": "respect",
+    "intensity": "high",
+    "related_emotions": [
+      "gratitude",
+      "respect",
+      "appreciation"
+    ],
+    "usage_notes": [
+      "Use when leaving a workplace or ending a relationship",
+      "Very formal expression of gratitude",
+      "Cultural note: Essential in Japanese business culture",
+      "Shows deep appreciation for support received",
+      "Often used in farewell speeches"
+    ],
+    "formality": "formal",
+    "common_responses": [
+      "こちらこそ (Same here)",
+      "お世話になりました (Same to you)",
+      "またよろしくお願いします (Please take care of me again)"
+    ]
+  },
+  {
+    "japanese": "応援しています！",
+    "romaji": "Ōen shite imasu!",
+    "english": "I'm rooting for you!",
+    "category": "motivational",
+    "intensity": "high",
+    "related_emotions": [
+      "support",
+      "encouragement",
+      "enthusiasm"
+    ],
+    "usage_notes": [
+      "Use to show support for someone's efforts",
+      "Common in sports and personal challenges",
+      "Cultural note: Shows active support and involvement",
+      "Can be used in both casual and formal settings",
+      "Often used with '頑張って'"
+    ],
+    "formality": "polite",
+    "common_responses": [
+      "ありがとうございます (Thank you very much)",
+      "頑張ります (I'll do my best)",
+      "応援ありがとう (Thanks for your support)"
+    ]
+  },
+  {
+    "japanese": "消えろ！",
+    "romaji": "Kiero!",
+    "english": "Get lost!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "frustration",
+      "irritation"
+    ],
+    "usage_notes": [
+      "Strong expression of anger",
+      "Use with caution",
+      "Considered rude",
+      "Often used to dismiss someone angrily",
+      "Cultural note: More aggressive than '消えて' (kiete)"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何だよ (What's your problem)",
+      "落ち着け (Calm down)",
+      "失礼だ (That's rude)"
+    ]
+  },
+  {
+    "japanese": "うるさい！",
+    "romaji": "Urusai!",
+    "english": "Shut up!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "irritation",
+      "anger",
+      "frustration"
+    ],
+    "usage_notes": [
+      "Strong expression of irritation",
+      "Use with caution",
+      "Considered rude",
+      "Common among young people",
+      "Cultural note: Can be very offensive in formal settings"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何だよ (What's your problem)",
+      "落ち着いて (Calm down)",
+      "失礼だぞ (That's rude)"
+    ]
+  },
+  {
+    "japanese": "ふざけんなよ！",
+    "romaji": "Fuzaken na yo!",
+    "english": "Don't mess with me!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "warning",
+      "frustration"
+    ],
+    "usage_notes": [
+      "Strong expression of anger",
+      "Use with caution",
+      "Considered rude",
+      "Often used as a warning",
+      "Cultural note: More aggressive than 'ふざけるな'"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何を言ってるんだ (What are you saying)",
+      "落ち着け (Calm down)",
+      "誤解だよ (It's a misunderstanding)"
+    ]
+  },
+  {
+    "japanese": "てめえ！",
+    "romaji": "Temē!",
+    "english": "You bastard!",
+    "category": "angry",
+    "intensity": "very high",
+    "related_emotions": [
+      "rage",
+      "hatred",
+      "contempt"
+    ],
+    "usage_notes": [
+      "Extremely rude way to address someone",
+      "Use with extreme caution",
+      "Considered very offensive",
+      "Often used in confrontations",
+      "Cultural note: One of the rudest ways to say 'you'"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何だよ (What's your problem)",
+      "失礼だぞ (That's rude)",
+      "喧嘩売ってるのか (Are you looking for a fight)"
+    ]
+  },
+  {
+    "japanese": "くたばってしまえ！",
+    "romaji": "Kutabatte shimae!",
+    "english": "Go to hell and die!",
+    "category": "angry",
+    "intensity": "very high",
+    "related_emotions": [
+      "rage",
+      "hatred",
+      "fury"
+    ],
+    "usage_notes": [
+      "Extremely offensive expression",
+      "Use with extreme caution",
+      "Considered extremely rude",
+      "Often used in extreme anger",
+      "Cultural note: One of the strongest expressions of hatred"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何を言ってるんだ (What are you saying)",
+      "冷静になれ (Calm down)",
+      "それは言い過ぎだ (That's going too far)"
+    ]
+  },
+  {
+    "japanese": "この野郎！",
+    "romaji": "Kono yarō!",
+    "english": "You bastard!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "frustration",
+      "contempt"
+    ],
+    "usage_notes": [
+      "Strong expression of anger",
+      "Use with caution",
+      "Considered rude",
+      "Often used in confrontations",
+      "Cultural note: Common in anime and manga, but very rude in real life"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何だよ (What's your problem)",
+      "落ち着け (Calm down)",
+      "失礼だぞ (That's rude)"
+    ]
+  },
+  {
+    "japanese": "くたばれこのやろう！",
+    "romaji": "Kutabare kono yarō!",
+    "english": "Drop dead, you bastard!",
+    "category": "angry",
+    "intensity": "very high",
+    "related_emotions": [
+      "rage",
+      "hatred",
+      "fury"
+    ],
+    "usage_notes": [
+      "Extremely offensive expression",
+      "Use with extreme caution",
+      "Considered extremely rude",
+      "Combines two strong insults",
+      "Cultural note: One of the strongest expressions of anger and hatred"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何を言ってるんだ (What are you saying)",
+      "冷静になれ (Calm down)",
+      "それは言い過ぎだ (That's going too far)"
+    ]
+  },
+  {
+    "japanese": "うざったい！",
+    "romaji": "Uzattai!",
+    "english": "You're so annoying!",
+    "category": "angry",
+    "intensity": "medium",
+    "related_emotions": [
+      "irritation",
+      "annoyance",
+      "frustration"
+    ],
+    "usage_notes": [
+      "Expression of strong annoyance",
+      "Use with caution",
+      "Considered rude",
+      "Common among young people",
+      "Cultural note: More intense than 'うざい'"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何だよ (What's your problem)",
+      "落ち着いて (Calm down)",
+      "失礼だぞ (That's rude)"
+    ]
+  },
+  {
+    "japanese": "くたばってしまえこのやろう！",
+    "romaji": "Kutabatte shimae kono yarō!",
+    "english": "Go to hell and die, you bastard!",
+    "category": "angry",
+    "intensity": "very high",
+    "related_emotions": [
+      "rage",
+      "hatred",
+      "fury"
+    ],
+    "usage_notes": [
+      "Extremely offensive expression",
+      "Use with extreme caution",
+      "Considered extremely rude",
+      "Combines multiple strong insults",
+      "Cultural note: One of the strongest possible expressions of anger and hatred"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何を言ってるんだ (What are you saying)",
+      "冷静になれ (Calm down)",
+      "それは言い過ぎだ (That's going too far)"
+    ]
+  },
+  {
+    "japanese": "目が合うと、ドキドキする…",
+    "romaji": "Me ga au to, dokidoki suru...",
+    "english": "My heart races when our eyes meet...",
+    "category": "flirting",
+    "intensity": "high",
+    "related_emotions": [
+      "attraction",
+      "nervousness",
+      "excitement"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses strong attraction",
+      "Often used when feeling shy",
+      "Cultural note: Common in romantic situations",
+      "Consider relationship context"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "私も (Me too)",
+      "嬉しい (I'm happy)",
+      "照れるな (Don't make me blush)"
+    ]
+  },
+  {
+    "japanese": "もっと近くに来て…",
+    "romaji": "Motto chikaku ni kite...",
+    "english": "Come closer...",
+    "category": "flirting",
+    "intensity": "high",
+    "related_emotions": [
+      "desire",
+      "attraction",
+      "intimacy"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire for closeness",
+      "Consider relationship context",
+      "Cultural note: More intimate than '近くに来て'",
+      "Use with appropriate caution"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "いいよ (Okay)",
+      "恥ずかしい (I'm embarrassed)",
+      "どうして (Why)"
+    ]
+  },
+  {
+    "japanese": "目を逸らさないで…",
+    "romaji": "Me o sorasanaide...",
+    "english": "Don't look away...",
+    "category": "flirting",
+    "intensity": "high",
+    "related_emotions": [
+      "desire",
+      "intimacy",
+      "attraction"
+    ],
+    "usage_notes": [
+      "Use in romantic contexts",
+      "Expresses desire for connection",
+      "Consider relationship context",
+      "Cultural note: More intimate than '見て'",
+      "Use with appropriate caution"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "恥ずかしい (I'm embarrassed)",
+      "いいよ (Okay)",
+      "どうして (Why)"
+    ]
+  },
+  {
+    "japanese": "この野郎、覚えてろ！",
+    "romaji": "Kono yarō, oboetero!",
+    "english": "You'll pay for this!",
+    "category": "angry",
+    "intensity": "very high",
+    "related_emotions": [
+      "rage",
+      "vengeance",
+      "threat"
+    ],
+    "usage_notes": [
+      "Strong expression of anger and threat",
+      "Use with extreme caution",
+      "Considered very rude",
+      "Often used in confrontations",
+      "Cultural note: Implies future retaliation"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何を言ってるんだ (What are you saying)",
+      "冷静になれ (Calm down)",
+      "誤解だよ (It's a misunderstanding)"
+    ]
+  },
+  {
+    "japanese": "二度と会うな！",
+    "romaji": "Nido to au na!",
+    "english": "Never show your face again!",
+    "category": "angry",
+    "intensity": "very high",
+    "related_emotions": [
+      "rage",
+      "rejection",
+      "hatred"
+    ],
+    "usage_notes": [
+      "Strong expression of rejection",
+      "Use with extreme caution",
+      "Considered very rude",
+      "Often used to end relationships",
+      "Cultural note: Very final and harsh"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何を言ってるんだ (What are you saying)",
+      "落ち着け (Calm down)",
+      "誤解だよ (It's a misunderstanding)"
+    ]
+  },
+  {
+    "japanese": "お前なんか大嫌い！",
+    "romaji": "Omae nanka daikirai!",
+    "english": "I hate you so much!",
+    "category": "angry",
+    "intensity": "very high",
+    "related_emotions": [
+      "hatred",
+      "anger",
+      "rejection"
+    ],
+    "usage_notes": [
+      "Strong expression of hatred",
+      "Use with extreme caution",
+      "Considered very rude",
+      "Often used in emotional breakups",
+      "Cultural note: Very hurtful expression"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "何を言ってるんだ (What are you saying)",
+      "落ち着け (Calm down)",
+      "誤解だよ (It's a misunderstanding)"
+    ]
+  },
+  {
+    "japanese": "触らないで！",
+    "romaji": "Sawaranaide!",
+    "english": "Don't touch me!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "rejection",
+      "discomfort"
+    ],
+    "usage_notes": [
+      "Strong expression of rejection",
+      "Use when feeling uncomfortable",
+      "Considered rude but justified in certain situations",
+      "Often used to establish boundaries",
+      "Cultural note: Important to respect personal space"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "すみません (I'm sorry)",
+      "誤解だよ (It's a misunderstanding)",
+      "申し訳ない (I apologize)"
+    ]
+  },
+  {
+    "japanese": "離して！",
+    "romaji": "Hanashite!",
+    "english": "Let me go!",
+    "category": "angry",
+    "intensity": "high",
+    "related_emotions": [
+      "anger",
+      "fear",
+      "rejection"
+    ],
+    "usage_notes": [
+      "Strong expression of rejection",
+      "Use when feeling trapped or uncomfortable",
+      "Considered rude but justified in certain situations",
+      "Often used to establish boundaries",
+      "Cultural note: Important to respect personal freedom"
+    ],
+    "formality": "casual",
+    "common_responses": [
+      "すみません (I'm sorry)",
+      "誤解だよ (It's a misunderstanding)",
+      "申し訳ない (I apologize)"
+    ]
+  }
+]
