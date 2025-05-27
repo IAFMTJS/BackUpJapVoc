@@ -102,37 +102,11 @@ const loadAudioMap = async (retries = 3): Promise<boolean> => {
   return false;
 };
 
-// Helper to get audio filename from Japanese text with better matching
+// Helper to get audio filename from Japanese text
 async function getAudioFilename(text: string): Promise<string> {
-  // If audio map is empty, try to load it
-  if (Object.keys(audioMap).length === 0) {
-    const success = await loadAudioMap();
-    if (!success) {
-      console.warn('[getAudioFilename] Failed to load audio map, using hash fallback');
-      return `${SHA1(text).toString()}.mp3`;
-    }
-  }
-  
-  // Try exact match first
-  if (audioMap[text]) {
-    console.log('[getAudioFilename] Found exact match for:', text);
-    return audioMap[text];
-  }
-  
-  // Try to find a partial match, preferring longer matches
-  const partialMatches = Object.entries(audioMap)
-    .filter(([key]) => text.includes(key))
-    .sort(([a], [b]) => b.length - a.length); // Sort by length descending
-    
-  if (partialMatches.length > 0) {
-    const [match, filename] = partialMatches[0];
-    console.log('[getAudioFilename] Found partial match:', { text, match, filename });
-    return filename;
-  }
-  
-  // If no match found, use SHA-1 hash as fallback
+  // Always use SHA1 hash for consistency
   const hash = SHA1(text).toString();
-  console.log('[getAudioFilename] No match found, using hash:', hash);
+  console.log('[getAudioFilename] Generated hash for:', { text, hash });
   return `${hash}.mp3`;
 }
 
@@ -140,13 +114,16 @@ async function getAudioFilename(text: string): Promise<string> {
 export const playAudio = async (text: string, type: 'word' | 'example' = 'word'): Promise<void> => {
   console.log('[playAudio] Starting playback for:', { text, type, audioContextState: audioContext?.state });
   
+  // Store original text for fallback
+  const originalText = text;
+  
   // Initialize audio context if needed
   if (!audioContext) {
     console.log('[playAudio] Audio context not initialized, attempting to initialize...');
     audioContext = initializeAudio();
     if (!audioContext) {
       console.log('[playAudio] Failed to initialize audio context, using Web Speech API fallback');
-      useWebSpeechFallback(text);
+      useWebSpeechFallback(originalText);
       return;
     }
   }
@@ -159,7 +136,7 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
       console.log('[playAudio] iOS: Audio context resumed successfully');
     } catch (error) {
       console.error('[playAudio] iOS: Failed to resume audio context:', error);
-      useWebSpeechFallback(text);
+      useWebSpeechFallback(originalText);
       return;
     }
   }
@@ -182,12 +159,12 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
         } else if (response.status === 404) {
           // Silently fall back to Web Speech API for 404s
           console.log('[playAudio] Audio not found on server, using Web Speech API');
-          useWebSpeechFallback(text);
+          useWebSpeechFallback(originalText);
           return;
         } else {
           // For other errors, log and fall back
           console.warn(`[playAudio] Server returned ${response.status}, using Web Speech API`);
-          useWebSpeechFallback(text);
+          useWebSpeechFallback(originalText);
           return;
         }
       } catch (fetchError) {
@@ -195,7 +172,7 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
         if (!(fetchError instanceof Error && fetchError.message.includes('404'))) {
           console.warn('[playAudio] Error fetching audio:', fetchError);
         }
-        useWebSpeechFallback(text);
+        useWebSpeechFallback(originalText);
         return;
       }
     }
@@ -217,7 +194,7 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
       audioPlayer.addEventListener('error', (e) => {
         console.error('[playAudio] Audio playback error:', e);
         URL.revokeObjectURL(url);
-        useWebSpeechFallback(text);
+        useWebSpeechFallback(originalText);
       });
 
       // Add iOS-specific handling
@@ -233,7 +210,7 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
       } catch (error) {
         console.error('[playAudio] Failed to play audio:', error);
         URL.revokeObjectURL(url);
-        useWebSpeechFallback(text);
+        useWebSpeechFallback(originalText);
         return;
       }
 
@@ -246,11 +223,11 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
     } else {
       // If we somehow got here without a blob, use Web Speech API
       console.log('[playAudio] No audio blob available, using Web Speech API');
-      useWebSpeechFallback(text);
+      useWebSpeechFallback(originalText);
     }
   } catch (error) {
     console.error('[playAudio] Unexpected error:', error);
-    useWebSpeechFallback(text);
+    useWebSpeechFallback(originalText);
   }
 };
 
@@ -266,12 +243,21 @@ const useWebSpeechFallback = (text: string) => {
   // Cancel any ongoing speech
   window.speechSynthesis.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(text);
+  // Handle blob URLs - extract the original text if possible
+  let textToSpeak = text;
+  if (text.startsWith('blob:')) {
+    // If we have a blob URL, we need to get the original text
+    // For now, we'll use a placeholder and log a warning
+    console.warn('[useWebSpeechFallback] Received blob URL instead of text, using fallback text');
+    textToSpeak = 'テキスト'; // Fallback text
+  }
+
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
   utterance.lang = 'ja-JP';
   utterance.rate = 0.8;
   utterance.pitch = 1;
   
-  // Try to find a Japanese voice
+  // Try to find a Japanese voice with better selection
   const voices = window.speechSynthesis.getVoices();
   const japaneseVoice = voices.find(voice => 
     voice.lang.includes('ja') && 
@@ -285,19 +271,46 @@ const useWebSpeechFallback = (text: string) => {
     console.warn('[useWebSpeechFallback] No Japanese voice found, using default voice');
   }
 
-  // Add error handling
+  // Add error handling with more detailed logging
   utterance.onerror = (event) => {
-    console.error('[useWebSpeechFallback] Speech synthesis error:', event);
+    console.error('[useWebSpeechFallback] Speech synthesis error:', {
+      error: event.error,
+      elapsedTime: event.elapsedTime,
+      name: event.name,
+      utterance: event.utterance
+    });
   };
 
-  // Add end handling
+  // Add end handling with cleanup
   utterance.onend = () => {
     console.log('[useWebSpeechFallback] Speech synthesis completed');
+    // Clean up any resources if needed
+    if (text.startsWith('blob:')) {
+      URL.revokeObjectURL(text);
+    }
   };
 
-  // Speak the text
+  // Add boundary handling for better debugging
+  utterance.onboundary = (event) => {
+    console.log('[useWebSpeechFallback] Speech boundary:', {
+      name: event.name,
+      elapsedTime: event.elapsedTime,
+      charIndex: event.charIndex
+    });
+  };
+
+  // Speak the text with better error handling
   try {
-    window.speechSynthesis.speak(utterance);
+    // For iOS, we need to ensure the context is active
+    if (isIOS && audioContext?.state === 'suspended') {
+      audioContext.resume().then(() => {
+        window.speechSynthesis.speak(utterance);
+      }).catch(error => {
+        console.error('[useWebSpeechFallback] iOS: Failed to resume audio context:', error);
+      });
+    } else {
+      window.speechSynthesis.speak(utterance);
+    }
   } catch (error) {
     console.error('[useWebSpeechFallback] Failed to start speech synthesis:', error);
   }
