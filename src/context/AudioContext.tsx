@@ -44,34 +44,59 @@ interface AudioProviderProps {
 
 export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
   const [settings, setSettings] = useState<AudioSettings>(() => {
-    const saved = localStorage.getItem('audioSettings');
-    return saved ? JSON.parse(saved) : defaultSettings;
+    try {
+      const saved = localStorage.getItem('audioSettings');
+      return saved ? JSON.parse(saved) : defaultSettings;
+    } catch (error) {
+      console.error('Error loading audio settings:', error);
+      return defaultSettings;
+    }
   });
   const [isPlaying, setIsPlaying] = useState(false);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   const audioService = AudioService.getInstance();
 
   useEffect(() => {
-    // Load available voices
-    const voices = audioService.getAvailableVoices();
-    setAvailableVoices(voices);
-    
-    // Set default voice if not set
-    if (!settings.preferredVoice && voices.length > 0) {
-      const japaneseVoice = voices.find(v => v.lang.includes('ja')) || voices[0];
-      updateSettings({ preferredVoice: japaneseVoice.name });
+    try {
+      // Load available voices
+      const voices = audioService.getAvailableVoices();
+      setAvailableVoices(voices);
+      
+      // Set default voice if not set
+      if (!settings.preferredVoice && voices.length > 0) {
+        const japaneseVoice = voices.find(v => v.lang.includes('ja')) || voices[0];
+        updateSettings({ preferredVoice: japaneseVoice.name });
+      }
+
+      setIsInitialized(true);
+    } catch (error) {
+      console.error('Error initializing audio provider:', error);
+      // Continue with default settings
+      setIsInitialized(true);
     }
   }, []);
 
   const updateSettings = (newSettings: Partial<AudioSettings>) => {
-    setSettings(prev => {
-      const updated = { ...prev, ...newSettings };
-      localStorage.setItem('audioSettings', JSON.stringify(updated));
-      return updated;
-    });
+    try {
+      setSettings(prev => {
+        const updated = { ...prev, ...newSettings };
+        localStorage.setItem('audioSettings', JSON.stringify(updated));
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error updating audio settings:', error);
+      // Update state without persisting to localStorage
+      setSettings(prev => ({ ...prev, ...newSettings }));
+    }
   };
 
   const playAudio = async (text: string) => {
+    if (!isInitialized) {
+      console.warn('Audio provider not fully initialized');
+      return;
+    }
+
     try {
       setIsPlaying(true);
       await audioService.playAudio(text, {
@@ -80,14 +105,21 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
         rate: settings.rate,
         pitch: settings.pitch
       });
+    } catch (error) {
+      console.error('Error playing audio:', error);
     } finally {
       setIsPlaying(false);
     }
   };
 
   const stopAudio = () => {
-    audioService.stopAudio();
-    setIsPlaying(false);
+    try {
+      audioService.stopAudio();
+    } catch (error) {
+      console.error('Error stopping audio:', error);
+    } finally {
+      setIsPlaying(false);
+    }
   };
 
   const value = {

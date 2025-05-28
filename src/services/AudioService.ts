@@ -15,33 +15,57 @@ class AudioService {
   private currentAudio: HTMLAudioElement | null = null;
   private ttsVoices: SpeechSynthesisVoice[] = [];
   private defaultVoice: SpeechSynthesisVoice | null = null;
-  private audioGenerator: AudioGenerationManager;
+  private audioGenerator: AudioGenerationManager | null = null;
+  private isInitialized = false;
 
   private constructor() {
-    if (typeof window !== 'undefined') {
-      // Initialize Web Speech API
-      if ('speechSynthesis' in window) {
-        this.loadVoices();
-        window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
-      }
+    try {
+      if (typeof window !== 'undefined') {
+        // Initialize Web Speech API
+        if ('speechSynthesis' in window) {
+          this.loadVoices();
+          window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
+        }
 
-      // Initialize AudioContext
-      if ('AudioContext' in window || 'webkitAudioContext' in window) {
-        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        // Initialize AudioContext only when needed
+        this.audioGenerator = AudioGenerationManager.getInstance();
+        this.isInitialized = true;
       }
-
-      // Initialize audio generator
-      this.audioGenerator = AudioGenerationManager.getInstance();
+    } catch (error) {
+      console.error('Error initializing AudioService:', error);
+      // Continue with limited functionality
+      this.isInitialized = true;
     }
   }
 
   private loadVoices() {
-    this.ttsVoices = window.speechSynthesis.getVoices();
-    // Find Japanese voices
-    const japaneseVoices = this.ttsVoices.filter(voice => 
-      voice.lang.includes('ja') || voice.name.includes('Japanese')
-    );
-    this.defaultVoice = japaneseVoices[0] || this.ttsVoices[0];
+    try {
+      if ('speechSynthesis' in window) {
+        this.ttsVoices = window.speechSynthesis.getVoices();
+        // Find Japanese voices
+        const japaneseVoices = this.ttsVoices.filter(voice => 
+          voice.lang.includes('ja') || voice.name.includes('Japanese')
+        );
+        this.defaultVoice = japaneseVoices[0] || this.ttsVoices[0];
+      }
+    } catch (error) {
+      console.error('Error loading voices:', error);
+      this.ttsVoices = [];
+      this.defaultVoice = null;
+    }
+  }
+
+  private async initializeAudioContext() {
+    if (this.audioContext) return;
+
+    try {
+      if ('AudioContext' in window || 'webkitAudioContext' in window) {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+    } catch (error) {
+      console.error('Error initializing AudioContext:', error);
+      // Continue without AudioContext
+    }
   }
 
   public static getInstance(): AudioService {
@@ -101,6 +125,11 @@ class AudioService {
   }
 
   public async playAudio(text: string, options: AudioOptions = {}) {
+    if (!this.isInitialized) {
+      console.warn('AudioService not fully initialized');
+      return;
+    }
+
     // Stop any currently playing audio
     this.stopAudio();
 
@@ -110,33 +139,41 @@ class AudioService {
     }
 
     try {
-      // Try to get pre-recorded audio first
-      const audioUrl = await this.audioGenerator.getAudio({
-        text,
-        voice: options.voice,
-        rate: options.rate,
-        pitch: options.pitch
-      });
+      // Initialize AudioContext on first use
+      await this.initializeAudioContext();
 
-      // Create and play audio element
-      const audio = new Audio(audioUrl);
-      this.currentAudio = audio;
-      
-      return new Promise<void>((resolve, reject) => {
-        audio.onended = () => {
-          this.currentAudio = null;
-          resolve();
-        };
-        audio.onerror = (error) => {
-          this.currentAudio = null;
-          reject(error);
-        };
-        audio.play().catch(error => {
-          // If playback fails, fall back to TTS
-          console.log('Falling back to TTS for:', text);
-          this.playTTS(text, options).then(resolve).catch(reject);
+      // Try to get pre-recorded audio first
+      if (this.audioGenerator) {
+        const audioUrl = await this.audioGenerator.getAudio({
+          text,
+          voice: options.voice,
+          rate: options.rate,
+          pitch: options.pitch
         });
-      });
+
+        // Create and play audio element
+        const audio = new Audio(audioUrl);
+        this.currentAudio = audio;
+        
+        return new Promise<void>((resolve, reject) => {
+          audio.onended = () => {
+            this.currentAudio = null;
+            resolve();
+          };
+          audio.onerror = (error) => {
+            this.currentAudio = null;
+            reject(error);
+          };
+          audio.play().catch(error => {
+            // If playback fails, fall back to TTS
+            console.log('Falling back to TTS for:', text);
+            this.playTTS(text, options).then(resolve).catch(reject);
+          });
+        });
+      } else {
+        // If audio generator is not available, use TTS
+        return this.playTTS(text, options);
+      }
     } catch (error) {
       // Fallback to TTS if pre-recorded audio generation fails
       console.log('Falling back to TTS for:', text);
@@ -178,6 +215,9 @@ class AudioService {
   }
 
   public getCacheStats() {
+    if (!this.audioGenerator) {
+      return { size: 0, entryCount: 0 };
+    }
     return {
       size: this.audioGenerator.getCacheSize(),
       entryCount: this.audioGenerator.getCacheEntryCount()
@@ -185,7 +225,9 @@ class AudioService {
   }
 
   public clearAudioCache() {
-    this.audioGenerator.clearCache();
+    if (this.audioGenerator) {
+      this.audioGenerator.clearCache();
+    }
   }
 }
 

@@ -126,24 +126,23 @@ const App: React.FC = () => {
     let isInitialized = false;
     const handleUserInteraction = async () => {
       if (!isInitialized) {
-        console.log('[App] Initializing audio on user interaction...');
-        const success = await initializeAudioCache();
-        if (success) {
-          isInitialized = true;
-          console.log('[App] Audio initialized successfully');
-          
-          // For iOS, we need to ensure the context is resumed
-          if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
-            try {
-              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-              if (audioContext.state === 'suspended') {
-                await audioContext.resume();
-                console.log('[App] iOS: Audio context resumed successfully');
-              }
-            } catch (error) {
-              console.error('[App] iOS: Failed to resume audio context:', error);
+        try {
+          console.log('[App] Initializing audio on user interaction...');
+          // Don't wait for audio initialization to complete
+          initializeAudioCache().then(success => {
+            if (success) {
+              isInitialized = true;
+              console.log('[App] Audio initialized successfully');
             }
-          }
+          }).catch(error => {
+            console.error('[App] Audio initialization failed:', error);
+            // Continue even if audio initialization fails
+            isInitialized = true;
+          });
+        } catch (error) {
+          console.error('[App] Error in audio initialization:', error);
+          // Continue even if audio initialization fails
+          isInitialized = true;
         }
       }
     };
@@ -153,11 +152,6 @@ const App: React.FC = () => {
     events.forEach(event => {
       document.addEventListener(event, handleUserInteraction, { once: true });
     });
-
-    // Also try to initialize on load for non-iOS devices
-    if (!(/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream)) {
-      handleUserInteraction();
-    }
 
     return () => {
       events.forEach(event => {
@@ -179,13 +173,12 @@ const App: React.FC = () => {
         
         // Initialize mood words
         console.log('Initializing mood words...');
-        await initializeMoodWords();
-        console.log('Mood words initialized successfully');
+        await initializeMoodWords().catch(error => {
+          console.error('Mood words initialization failed:', error);
+          // Continue even if mood words initialization fails
+        });
         
-        // Add a small delay to ensure all contexts are properly initialized
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Verify theme context is ready
+        // Set theme context
         const root = document.getElementById('root');
         if (root && !root.getAttribute('data-theme')) {
           root.setAttribute('data-theme', 'dark');
@@ -194,59 +187,55 @@ const App: React.FC = () => {
         setIsContextsReady(true);
       } catch (error) {
         console.error('Context initialization failed:', error);
-        setInitError(error instanceof Error ? error : new Error('Failed to initialize contexts'));
+        // Set error but don't prevent app from loading
+        setInitError(error instanceof Error ? error : new Error('Some features may not be available'));
+        setIsContextsReady(true);
       }
     };
 
     checkContextsReady();
   }, []);
 
+  // Show error message but allow app to continue
   if (initError) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#181830]">
-        <div className="text-center p-6 bg-white/10 backdrop-blur-lg rounded-lg">
-          <h2 className="text-xl font-bold text-red-400 mb-2">Initialization Error</h2>
-          <p className="text-gray-300 mb-4">{initError.message}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
+    console.error('Initialization error:', initError);
   }
 
+  // Show loading state only if contexts are not ready
   if (!isContextsReady) {
     return <LoadingFallback />;
   }
 
   return (
     <Router>
-      <ThemeProvider>
-        <DatabaseProvider>
-          <AudioProvider>
-            <ProgressProvider>
-              <SettingsProvider>
-                <AccessibilityProvider>
-                  <ErrorBoundary
-                    fallback={
-                      <div className="flex items-center justify-center min-h-screen bg-[#181830]">
-                        <div className="text-center p-6 bg-white/10 backdrop-blur-lg rounded-lg">
-                          <h2 className="text-xl font-bold text-red-400 mb-2">Application Error</h2>
-                          <p className="text-gray-300 mb-4">An error occurred while loading the application.</p>
-                          <button
-                            onClick={() => window.location.reload()}
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                          >
-                            Reload Application
-                          </button>
-                        </div>
-                      </div>
-                    }
-                  >
+      <ErrorBoundary
+        fallback={
+          <div className="flex items-center justify-center min-h-screen bg-[#181830]">
+            <div className="text-center p-6 bg-white/10 backdrop-blur-lg rounded-lg">
+              <h2 className="text-xl font-bold text-red-400 mb-2">Application Error</h2>
+              <p className="text-gray-300 mb-4">An error occurred while loading the application.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Reload Application
+              </button>
+            </div>
+          </div>
+        }
+      >
+        <ThemeProvider>
+          <DatabaseProvider>
+            <AudioProvider>
+              <ProgressProvider>
+                <SettingsProvider>
+                  <AccessibilityProvider>
                     <div className="min-h-screen" data-theme="dark">
+                      {initError && (
+                        <div className="fixed top-0 left-0 right-0 bg-yellow-500/90 text-black p-2 text-center z-50">
+                          Some features may not be available. Please try reloading the page.
+                        </div>
+                      )}
                       <Navigation />
                       <main className="pt-16">
                         <ErrorBoundary>
@@ -334,13 +323,13 @@ const App: React.FC = () => {
                       <OfflineStatus />
                       <PushNotifications />
                     </div>
-                  </ErrorBoundary>
-                </AccessibilityProvider>
-              </SettingsProvider>
-            </ProgressProvider>
-          </AudioProvider>
-        </DatabaseProvider>
-      </ThemeProvider>
+                  </AccessibilityProvider>
+                </SettingsProvider>
+              </ProgressProvider>
+            </AudioProvider>
+          </DatabaseProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     </Router>
   );
 };

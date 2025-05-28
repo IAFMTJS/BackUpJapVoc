@@ -714,3 +714,623 @@ Conflicting values for 'process.env.NODE_ENV'
 
 1 WARNING in child compilations (Use 'stats.children: true' resp. '--stats-children' for more details)
 webpack 5.99.9 compiled with 2 warnings in 67066 ms
+Starting webpack build...
+Environment: {"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true}
+Arguments: {"config":["webpack.config.prod.js"],"env":{"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true}}
+Final webpack configuration:
+{
+  "mode": "production",
+  "entry": "./src/index.tsx",
+  "output": {
+    "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+    "filename": "static/js/[name].js",
+    "chunkFilename": "static/js/[name].chunk.js",
+    "publicPath": "/",
+    "clean": true,
+    "crossOriginLoading": "anonymous",
+    "assetModuleFilename": "static/media/[name].[hash][ext][query]",
+    "chunkLoadingGlobal": "webpackChunkBackupJapVoc",
+    "chunkLoadTimeout": 120000
+  },
+  "module": {
+    "rules": [
+      {
+        "test": {},
+        "exclude": {},
+        "use": {
+          "loader": "babel-loader",
+          "options": {
+            "cacheDirectory": true,
+            "presets": [
+              "@babel/preset-env",
+              [
+                "@babel/preset-react",
+                {
+                  "runtime": "automatic"
+                }
+              ],
+              "@babel/preset-typescript"
+            ]
+          }
+        }
+      },
+      {
+        "test": {},
+        "use": [
+          "style-loader",
+          {
+            "loader": "css-loader",
+            "options": {
+              "importLoaders": 1,
+              "modules": false,
+              "url": {}
+            }
+          },
+          {
+            "loader": "postcss-loader",
+            "options": {
+              "postcssOptions": {
+                "plugins": [
+                  null,
+                  null,
+                  {
+                    "version": "8.5.3",
+                    "plugins": [
+                      {
+                        "postcssPlugin": "postcss-discard-comments"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-gradients"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-initial"
+                      },
+                      {
+                        "postcssPlugin": "postcss-svgo"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-display-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-transforms"
+                      },
+                      {
+                        "postcssPlugin": "postcss-colormin"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-timing-functions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-calc"
+                      },
+                      {
+                        "postcssPlugin": "postcss-convert-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-ordered-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-selectors"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-params"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-charset"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-overridden"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-string"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-unicode"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-font-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-url"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-repeat-style"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-positions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-whitespace"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-longhand"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-duplicates"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-rules"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-empty"
+                      },
+                      {
+                        "postcssPlugin": "postcss-unique-selectors"
+                      },
+                      {
+                        "postcssPlugin": "css-declaration-sorter"
+                      },
+                      {
+                        "postcssPlugin": "cssnano-util-raw-cache"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "test": {},
+        "type": "asset",
+        "parser": {
+          "dataUrlCondition": {
+            "maxSize": 4096
+          }
+        },
+        "generator": {
+          "filename": "static/media/[name].[hash][ext]"
+        }
+      },
+      {
+        "test": {},
+        "type": "json"
+      }
+    ]
+  },
+  "resolve": {
+    "extensions": [
+      ".tsx",
+      ".ts",
+      ".js",
+      ".jsx",
+      ".tsx",
+      ".ts",
+      ".js",
+      ".jsx"
+    ],
+    "alias": {
+      "@": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\src",
+      "~public": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+      "process": "process/browser.js",
+      "@assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets",
+      "/assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets"
+    },
+    "fallback": {
+      "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\path-browserify\\index.js",
+      "fs": false,
+      "crypto": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\crypto-browserify\\index.js",
+      "stream": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-browserify\\index.js",
+      "buffer": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\buffer\\index.js",
+      "util": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\util\\util.js",
+      "assert": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\assert\\build\\assert.js",
+      "http": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-http\\index.js",
+      "https": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\https-browserify\\index.js",
+      "os": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\os-browserify\\browser.js",
+      "url": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\url\\url.js",
+      "zlib": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\browserify-zlib\\lib\\index.js",
+      "async_hooks": false
+    }
+  },
+  "optimization": {
+    "minimize": true,
+    "minimizer": [
+      {
+        "options": {
+          "test": {},
+          "extractComments": false,
+          "parallel": true,
+          "minimizer": {
+            "options": {
+              "compress": {
+                "drop_console": false,
+                "drop_debugger": false,
+                "pure_funcs": []
+              },
+              "format": {
+                "comments": false
+              },
+              "mangle": true
+            }
+          }
+        }
+      },
+      {
+        "options": {
+          "test": {},
+          "extractComments": false,
+          "parallel": true,
+          "minimizer": {
+            "options": {
+              "compress": {
+                "drop_console": false,
+                "drop_debugger": false,
+                "pure_funcs": []
+              },
+              "format": {
+                "comments": false
+              },
+              "mangle": true
+            }
+          }
+        }
+      }
+    ],
+    "splitChunks": {
+      "chunks": "all",
+      "maxInitialRequests": 25,
+      "minSize": 10000,
+      "maxSize": 500000,
+      "cacheGroups": {
+        "mui": {
+          "test": {},
+          "name": "vendor.mui",
+          "chunks": "all",
+          "priority": 30,
+          "enforce": false,
+          "reuseExistingChunk": true
+        },
+        "vendor": {
+          "test": {},
+          "chunks": "all",
+          "priority": 20,
+          "reuseExistingChunk": true
+        },
+        "common": {
+          "name": "common",
+          "minChunks": 2,
+          "priority": 10,
+          "reuseExistingChunk": true,
+          "enforce": true
+        },
+        "styles": {
+          "name": "styles",
+          "test": {},
+          "chunks": "all",
+          "enforce": true,
+          "priority": 30
+        }
+      }
+    },
+    "runtimeChunk": "single"
+  },
+  "plugins": [
+    {
+      "definitions": {
+        "process": "process/browser.js",
+        "Buffer": [
+          "buffer",
+          "Buffer"
+        ]
+      }
+    },
+    {
+      "patterns": [
+        {
+          "from": "src/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "node_modules/kuromoji/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "public",
+          "to": ".",
+          "globOptions": {
+            "ignore": [
+              "**/index.html",
+              "**/.DS_Store",
+              "**/dict/**",
+              "**/assets/**"
+            ]
+          }
+        },
+        {
+          "from": "src/data/romaji-data.json",
+          "to": "romaji-data.json"
+        }
+      ],
+      "options": {}
+    },
+    {
+      "userOptions": {
+        "template": "public/index.html",
+        "inject": "body",
+        "minify": false,
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ]
+      },
+      "version": 5,
+      "options": {
+        "template": "public/index.html",
+        "templateContent": false,
+        "filename": "index.html",
+        "publicPath": "auto",
+        "hash": false,
+        "inject": "body",
+        "scriptLoading": "defer",
+        "compile": true,
+        "favicon": false,
+        "minify": false,
+        "cache": true,
+        "showErrors": true,
+        "chunks": "all",
+        "excludeChunks": [],
+        "chunksSortMode": "auto",
+        "meta": {},
+        "base": false,
+        "title": "Webpack App",
+        "xhtml": false,
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ]
+      }
+    },
+    {
+      "definitions": {
+        "process.env.NODE_ENV": "\"development\""
+      }
+    },
+    {
+      "definitions": {
+        "process": "process/browser.js",
+        "Buffer": [
+          "buffer",
+          "Buffer"
+        ]
+      }
+    },
+    {
+      "patterns": [
+        {
+          "from": "src/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "node_modules/kuromoji/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "public",
+          "to": ".",
+          "globOptions": {
+            "ignore": [
+              "**/index.html",
+              "**/.DS_Store",
+              "**/dict/**",
+              "**/assets/**"
+            ]
+          }
+        },
+        {
+          "from": "src/data/romaji-data.json",
+          "to": "romaji-data.json"
+        }
+      ],
+      "options": {}
+    },
+    {
+      "userOptions": {
+        "template": "public/index.html",
+        "inject": "body",
+        "minify": false,
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ]
+      },
+      "version": 5,
+      "options": {
+        "template": "public/index.html",
+        "templateContent": false,
+        "filename": "index.html",
+        "publicPath": "auto",
+        "hash": false,
+        "inject": "body",
+        "scriptLoading": "defer",
+        "compile": true,
+        "favicon": false,
+        "minify": false,
+        "cache": true,
+        "showErrors": true,
+        "chunks": "all",
+        "excludeChunks": [],
+        "chunksSortMode": "auto",
+        "meta": {},
+        "base": false,
+        "title": "Webpack App",
+        "xhtml": false,
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ]
+      }
+    },
+    {
+      "definitions": {
+        "process.env.NODE_ENV": "\"development\""
+      }
+    },
+    {}
+  ],
+  "devServer": {
+    "static": [
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+        "publicPath": "/",
+        "watch": true
+      },
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+        "publicPath": "/",
+        "watch": true
+      }
+    ],
+    "historyApiFallback": {
+      "disableDotRule": true,
+      "rewrites": [
+        {
+          "from": {},
+          "to": "/index.html"
+        }
+      ]
+    },
+    "hot": "only",
+    "port": 3002,
+    "allowedHosts": "all",
+    "headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
+      "Cache-Control": "no-cache, no-store, must-revalidate"
+    },
+    "devMiddleware": {
+      "writeToDisk": true,
+      "publicPath": "/"
+    },
+    "client": {
+      "overlay": {
+        "errors": true,
+        "warnings": false
+      },
+      "progress": true,
+      "logging": "info",
+      "reconnect": true
+    },
+    "compress": true,
+    "open": true,
+    "proxy": {
+      "/api": {
+        "target": "http://localhost:3000",
+        "secure": false,
+        "changeOrigin": true
+      }
+    }
+  },
+  "devtool": "source-map",
+  "performance": {
+    "hints": false,
+    "maxEntrypointSize": 512000,
+    "maxAssetSize": 512000
+  },
+  "stats": {
+    "errorDetails": true,
+    "logging": "verbose",
+    "loggingDebug": [
+      "webpack"
+    ],
+    "loggingTrace": true,
+    "children": true
+  }
+}
