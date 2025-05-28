@@ -9,6 +9,17 @@ import { motion } from 'framer-motion';
 // Feature categories for better organization
 const FEATURE_CATEGORIES = [
   {
+    title: 'Learning Tools',
+    items: [
+      { to: '/vocabulary', icon: '📚', title: 'Vocabulary', desc: 'Learn and practice Japanese words', color: 'blue' },
+      { to: '/mood', icon: '😊', title: 'Mood', desc: 'Learn words through emotional context', color: 'pink' },
+      { to: '/dictionary', icon: '📖', title: 'Dictionary', desc: 'Look up words and meanings', color: 'purple' },
+      { to: '/writing', icon: '✍️', title: 'Writing', desc: 'Practice writing Japanese characters', color: 'green' },
+      { to: '/kanji', icon: '漢字', title: 'Kanji', desc: 'Master Japanese characters', color: 'orange' },
+      { to: '/romaji', icon: 'あ', title: 'Romaji', desc: 'Learn Japanese pronunciation', color: 'yellow' }
+    ]
+  },
+  {
     title: 'Core Learning',
     items: [
       { to: '/vocabulary', icon: '📚', title: 'Vocabulary', desc: 'Build your Japanese vocabulary', color: 'blue' },

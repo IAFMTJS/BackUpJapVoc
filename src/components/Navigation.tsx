@@ -14,7 +14,7 @@ const Navigation: React.FC = () => {
   const navItems = [
     { path: '/', label: 'Home' },
     { path: '/vocabulary', label: 'Vocabulary' },
-    { path: '/mood', label: 'New Words' },
+    { path: '/mood', label: 'Mood' },
     { path: '/dictionary', label: 'Dictionary' },
     { path: '/writing', label: 'Writing' },
     { path: '/kanji', label: 'Kanji' },
