@@ -7,7 +7,7 @@ import { Box, Typography, Button, Card, CardContent, LinearProgress, Chip, Stack
 import { JapaneseWord } from '../types';
 import { useSound } from '../context/SoundContext';
 import { allWords } from '../data/japaneseWords';
-import { useDatabase } from '../App';
+import { useDatabase } from '../context/DatabaseContext';
 
 interface SRSItem {
   word: JapaneseWord;

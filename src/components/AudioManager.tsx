@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { wordsByLevel } from '../data/japaneseWords';
-import { useDatabase } from '../App';
+import { useDatabase } from '../context/DatabaseContext';
 
 interface AudioCache {
-  id: string;
-  blob: Blob;
-  type: 'word' | 'example';
-  exampleIndex?: number;
+  text: string;
+  audio: HTMLAudioElement;
 }
 
 interface CacheProgress {
@@ -20,7 +18,8 @@ const AudioManager: React.FC = () => {
   const [cacheProgress, setCacheProgress] = useState<Record<number, CacheProgress>>({});
   const [isCaching, setIsCaching] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<{ url: string; text: string } | null>(null);
-  const db = useDatabase();
+  const { db } = useDatabase();
+  const [audioCache, setAudioCache] = useState<Record<string, AudioCache>>({});
 
   const cacheAudioFiles = async (level: number) => {
     if (!db) return;
@@ -99,20 +98,42 @@ const AudioManager: React.FC = () => {
     }));
   };
 
-  const playAudio = async (id: string, type: 'word' | 'example', exampleIndex?: number) => {
-    if (!db) return;
-
-    const transaction = db.transaction(['audioFiles'], 'readonly');
-    const store = transaction.objectStore('audioFiles');
-    const request = store.get(type === 'example' ? `${id}_example_${exampleIndex}` : id);
-
-    request.onsuccess = (event) => {
-      const audioData = (event.target as IDBRequest).result as AudioCache;
-      if (audioData) {
-        const url = URL.createObjectURL(audioData.blob);
-        setCurrentAudio({ url, text: audioData.text });
+  const playAudio = async (text: string) => {
+    try {
+      if (!db) {
+        console.error('Database not initialized');
+        return;
       }
-    };
+
+      // Check cache first
+      if (audioCache[text]) {
+        audioCache[text].audio.play();
+        return;
+      }
+
+      // Get audio URL from database
+      const tx = db.transaction('words', 'readonly');
+      const store = tx.objectStore('words');
+      const index = store.index('by-japanese');
+      const word = await index.get(text);
+
+      if (!word) {
+        console.error('Word not found in database:', text);
+        return;
+      }
+
+      // Create and cache audio element
+      const audio = new Audio(`/audio/${word.id}.mp3`);
+      const cache: AudioCache = { text, audio };
+      setAudioCache(prev => ({ ...prev, [text]: cache }));
+
+      // Play audio
+      audio.play().catch(error => {
+        console.error('Error playing audio:', error);
+      });
+    } catch (error) {
+      console.error('Error in playAudio:', error);
+    }
   };
 
   const cacheAllLevels = async () => {

@@ -9,6 +9,7 @@ import { downloadOfflineData } from '../utils/offlineData';
 import AudioManager from '../components/AudioManager';
 import { useAccessibility } from '../context/AccessibilityContext';
 import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
+import { useDatabase } from '../context/DatabaseContext';
 
 // Loading component
 const LoadingSpinner = () => (
