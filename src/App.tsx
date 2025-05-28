@@ -14,6 +14,11 @@ import GamesPage from './pages/GamesPage';
 import { initializeAudio } from './utils/audio';
 import { importWords } from './utils/importWords';
 import { initializeMoodWords } from './utils/initMoodWords';
+import { ThemeProvider } from './context/ThemeContext';
+import { ProgressProvider } from './context/ProgressContext';
+import { SettingsProvider } from './context/SettingsContext';
+import { AccessibilityProvider } from './context/AccessibilityContext';
+import { DatabaseProvider } from './context/DatabaseContext';
 
 // Lazy load all route components
 const Home = lazy(() => import('./pages/Home'));
@@ -315,114 +320,122 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <ErrorBoundary
-        fallback={
-          <div className="flex items-center justify-center min-h-screen bg-[#181830]">
-            <div className="text-center p-6 bg-white/10 backdrop-blur-lg rounded-lg">
-              <h2 className="text-xl font-bold text-red-400 mb-2">Application Error</h2>
-              <p className="text-gray-300 mb-4">An error occurred while loading the application.</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              >
-                Reload Application
-              </button>
-            </div>
-          </div>
-        }
-      >
+      <ThemeProvider>
         <DatabaseProvider>
-          <ErrorBoundary>
-            <div className="min-h-screen" data-theme="dark">
-              <Navigation />
-              <main className="pt-16">
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Routes>
-                      <Route path="/" element={
+          <ProgressProvider>
+            <SettingsProvider>
+              <AccessibilityProvider>
+                <ErrorBoundary
+                  fallback={
+                    <div className="flex items-center justify-center min-h-screen bg-[#181830]">
+                      <div className="text-center p-6 bg-white/10 backdrop-blur-lg rounded-lg">
+                        <h2 className="text-xl font-bold text-red-400 mb-2">Application Error</h2>
+                        <p className="text-gray-300 mb-4">An error occurred while loading the application.</p>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                        >
+                          Reload Application
+                        </button>
+                      </div>
+                    </div>
+                  }
+                >
+                  <ErrorBoundary>
+                    <div className="min-h-screen" data-theme="dark">
+                      <Navigation />
+                      <main className="pt-16">
                         <ErrorBoundary>
-                          <Home />
+                          <Suspense fallback={<LoadingFallback />}>
+                            <Routes>
+                              <Route path="/" element={
+                                <ErrorBoundary>
+                                  <Home />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/settings" element={
+                                <ErrorBoundary>
+                                  <Settings />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/vocabulary" element={
+                                <ErrorBoundary>
+                                  <Vocabulary />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/dictionary" element={
+                                <ErrorBoundary>
+                                  <Dictionary />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/writing" element={
+                                <ErrorBoundary>
+                                  <Writing />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/kanji" element={
+                                <ErrorBoundary>
+                                  <Kanji />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/romaji" element={
+                                <ErrorBoundary>
+                                  <Romaji />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/srs" element={
+                                <ErrorBoundary>
+                                  <SRS />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/games" element={
+                                <ErrorBoundary>
+                                  <GamesPage />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/anime" element={
+                                <ErrorBoundary>
+                                  <Anime />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/progress" element={
+                                <ErrorBoundary>
+                                  <Progress />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/achievements" element={
+                                <ErrorBoundary>
+                                  <Achievements />
+                                </ErrorBoundary>
+                              } />
+                              <Route path="/word-levels" element={
+                                <ErrorBoundary>
+                                  <WordLevels />
+                                </ErrorBoundary>
+                              } />
+                              <Route
+                                path="/mood"
+                                element={
+                                  <ErrorBoundary>
+                                    <Suspense fallback={<LoadingFallback />}>
+                                      <Mood />
+                                    </Suspense>
+                                  </ErrorBoundary>
+                                }
+                              />
+                            </Routes>
+                          </Suspense>
                         </ErrorBoundary>
-                      } />
-                      <Route path="/settings" element={
-                        <ErrorBoundary>
-                          <Settings />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/vocabulary" element={
-                        <ErrorBoundary>
-                          <Vocabulary />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/dictionary" element={
-                        <ErrorBoundary>
-                          <Dictionary />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/writing" element={
-                        <ErrorBoundary>
-                          <Writing />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/kanji" element={
-                        <ErrorBoundary>
-                          <Kanji />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/romaji" element={
-                        <ErrorBoundary>
-                          <Romaji />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/srs" element={
-                        <ErrorBoundary>
-                          <SRS />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/games" element={
-                        <ErrorBoundary>
-                          <GamesPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/anime" element={
-                        <ErrorBoundary>
-                          <Anime />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/progress" element={
-                        <ErrorBoundary>
-                          <Progress />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/achievements" element={
-                        <ErrorBoundary>
-                          <Achievements />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/word-levels" element={
-                        <ErrorBoundary>
-                          <WordLevels />
-                        </ErrorBoundary>
-                      } />
-                      <Route
-                        path="/mood"
-                        element={
-                          <ErrorBoundary>
-                            <Suspense fallback={<LoadingFallback />}>
-                              <Mood />
-                            </Suspense>
-                          </ErrorBoundary>
-                        }
-                      />
-                    </Routes>
-                  </Suspense>
+                      </main>
+                      <OfflineStatus />
+                      <PushNotifications />
+                    </div>
+                  </ErrorBoundary>
                 </ErrorBoundary>
-              </main>
-              <OfflineStatus />
-              <PushNotifications />
-            </div>
-          </ErrorBoundary>
-        </DatabaseProvider>
+              </SettingsProvider>
+            </ProgressProvider>
+          </DatabaseProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     </Router>
   );
