@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -10,6 +10,7 @@ import AudioManager from '../components/AudioManager';
 import { useAccessibility } from '../context/AccessibilityContext';
 import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
 import { useDatabase } from '../context/DatabaseContext';
+import AudioService from '../services/AudioService';
 
 // Loading component
 const LoadingSpinner = () => (
@@ -18,6 +19,15 @@ const LoadingSpinner = () => (
     <span className="ml-3 text-lg">Loading settings...</span>
   </div>
 );
+
+interface AudioSettings {
+  useTTS: boolean;
+  preferredVoice: string;
+  rate: number;
+  pitch: number;
+  autoPlay: boolean;
+  volume: number;
+}
 
 const SettingsPage: React.FC = () => {
   const { getThemeClasses, theme } = useTheme();
@@ -42,8 +52,64 @@ const SettingsPage: React.FC = () => {
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
   const [downloadSuccess, setDownloadSuccess] = React.useState(false);
+  const [audioSettings, setAudioSettings] = useState<AudioSettings>({
+    useTTS: true,
+    preferredVoice: '',
+    rate: 1,
+    pitch: 1,
+    autoPlay: false,
+    volume: 1,
+  });
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [cacheStats, setCacheStats] = useState({ size: 0, entryCount: 0 });
+  const audioService = AudioService.getInstance();
 
   const themeClasses = getThemeClasses();
+
+  useEffect(() => {
+    // Load available voices
+    const voices = audioService.getAvailableVoices();
+    setAvailableVoices(voices);
+    
+    // Set default voice if not set
+    if (!audioSettings.preferredVoice && voices.length > 0) {
+      const japaneseVoice = voices.find(v => v.lang.includes('ja')) || voices[0];
+      setAudioSettings(prev => ({
+        ...prev,
+        preferredVoice: japaneseVoice.name
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Update cache stats periodically
+    const updateCacheStats = () => {
+      const stats = audioService.getCacheStats();
+      setCacheStats(stats);
+    };
+
+    updateCacheStats();
+    const interval = setInterval(updateCacheStats, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleAudioSettingChange = (setting: keyof AudioSettings, value: any) => {
+    setAudioSettings(prev => ({
+      ...prev,
+      [setting]: value
+    }));
+    // Save to localStorage or your preferred storage
+    localStorage.setItem('audioSettings', JSON.stringify({
+      ...audioSettings,
+      [setting]: value
+    }));
+  };
+
+  const handleClearAudioCache = () => {
+    audioService.clearAudioCache();
+    setCacheStats({ size: 0, entryCount: 0 });
+  };
 
   // Show error state if there's a critical error
   if (settingsError || progressError) {
@@ -272,6 +338,28 @@ const SettingsPage: React.FC = () => {
     </div>
   );
 
+  const renderAudioCacheSettings = () => (
+    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <h3 className="text-sm font-medium mb-2">Audio Cache</h3>
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span>Cache Size:</span>
+          <span>{Math.round(cacheStats.size / 1024 / 1024)} MB</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span>Cached Items:</span>
+          <span>{cacheStats.entryCount}</span>
+        </div>
+        <button
+          onClick={handleClearAudioCache}
+          className="w-full px-3 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+        >
+          Clear Audio Cache
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className={`${themeClasses.container} relative min-h-screen`}>
       {/* Theme-specific cityscape background */}
@@ -342,10 +430,109 @@ const SettingsPage: React.FC = () => {
           <div className={themeClasses.card}>
             <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Audio Settings</h2>
             <div className="space-y-3">
-              {renderToggle('autoPlay', 'Auto Play', 'Automatically play audio for new words')}
-              <div className="mt-4">
-                <AudioManager />
+              <div className="flex items-center justify-between">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={audioSettings.useTTS}
+                    onChange={(e) => handleAudioSettingChange('useTTS', e.target.checked)}
+                    className="mr-2"
+                  />
+                  Use Text-to-Speech (TTS)
+                </label>
               </div>
+
+              {audioSettings.useTTS && (
+                <>
+                  <div>
+                    <label className="block mb-2">Preferred Voice</label>
+                    <select
+                      value={audioSettings.preferredVoice}
+                      onChange={(e) => handleAudioSettingChange('preferredVoice', e.target.value)}
+                      className="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-700"
+                    >
+                      {availableVoices.map(voice => (
+                        <option key={voice.name} value={voice.name}>
+                          {voice.name} ({voice.lang})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block mb-2">Speech Rate</label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2"
+                      step="0.1"
+                      value={audioSettings.rate}
+                      onChange={(e) => handleAudioSettingChange('rate', parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                    <span className="text-sm">{audioSettings.rate}x</span>
+                  </div>
+
+                  <div>
+                    <label className="block mb-2">Pitch</label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2"
+                      step="0.1"
+                      value={audioSettings.pitch}
+                      onChange={(e) => handleAudioSettingChange('pitch', parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                    <span className="text-sm">{audioSettings.pitch}x</span>
+                  </div>
+                </>
+              )}
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={audioSettings.autoPlay}
+                    onChange={(e) => handleAudioSettingChange('autoPlay', e.target.checked)}
+                    className="mr-2"
+                  />
+                  Auto-play audio
+                </label>
+              </div>
+
+              <div>
+                <label className="block mb-2">Volume</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={audioSettings.volume}
+                  onChange={(e) => handleAudioSettingChange('volume', parseFloat(e.target.value))}
+                  className="w-full"
+                />
+                <span className="text-sm">{Math.round(audioSettings.volume * 100)}%</span>
+              </div>
+
+              <div className="mt-4">
+                <button
+                  onClick={() => {
+                    // Test audio with current settings
+                    audioService.playAudio('こんにちは、テストです。', {
+                      useTTS: audioSettings.useTTS,
+                      voice: audioSettings.preferredVoice,
+                      rate: audioSettings.rate,
+                      pitch: audioSettings.pitch
+                    });
+                  }}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                >
+                  Test Audio Settings
+                </button>
+              </div>
+
+              {renderAudioCacheSettings()}
             </div>
           </div>
 

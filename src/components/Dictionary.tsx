@@ -40,7 +40,7 @@ import { ShareDialog } from './ShareDialog';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { SavedSearches } from './SavedSearches';
 import { RadicalSearch } from './RadicalSearch';
-import { initializeAudio, playAudio } from '../utils/audio';
+import { initializeAudioCache, playAudio } from '../utils/audio';
 import { useDatabase } from '../context/DatabaseContext';
 
 // Enhanced types for dictionary features
@@ -1231,8 +1231,8 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
       if (!audioInitialized) {
         console.log('[Dictionary] Initializing audio context...');
         try {
-          const context = await initializeAudio();
-          if (context) {
+          const success = await initializeAudioCache();
+          if (success) {
             setAudioInitialized(true);
             console.log('[Dictionary] Audio context initialized successfully');
           }
@@ -1276,7 +1276,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     try {
       if (!audioInitialized) {
         console.log('[Dictionary] Audio not initialized, attempting to initialize...');
-        const context = await initializeAudio();
+        const context = await initializeAudioCache();
         if (context) {
           setAudioInitialized(true);
           // For iOS, ensure the context is resumed before playing
