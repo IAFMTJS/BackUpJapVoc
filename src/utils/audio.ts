@@ -14,65 +14,83 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).M
 let audioContext: AudioContext | null = null;
 let isInitialized = false;
 
-// Initialize audio context on user interaction
+// Add persistent audio elements for iOS
+let persistentAudioElements: { [key: string]: HTMLAudioElement } = {};
+let audioContextPromise: Promise<AudioContext | null> | null = null;
+
+// Modified initializeAudio function with better iOS handling
 export const initializeAudio = () => {
-  console.log('[initializeAudio] Attempting to initialize audio context...');
-  
-  // If already initialized and context exists, just return it
-  if (isInitialized && audioContext) {
-    console.log('[initializeAudio] Audio context already initialized:', audioContext.state);
-    return audioContext;
+  if (audioContextPromise) {
+    return audioContextPromise;
   }
 
-  try {
-    // Create audio context with better iOS compatibility
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    audioContext = new AudioContextClass({
-      latencyHint: 'interactive',
-      sampleRate: 44100
-    });
+  audioContextPromise = new Promise(async (resolve) => {
+    console.log('[initializeAudio] Attempting to initialize audio context...');
     
-    // Set up audio context state change listener
-    audioContext.addEventListener('statechange', () => {
-      console.log('[initializeAudio] Audio context state changed:', audioContext?.state);
-    });
-
-    // For iOS, we need to resume the context on any user interaction
-    if (isIOS) {
-      const resumeContext = async () => {
-        if (audioContext && audioContext.state === 'suspended') {
-          try {
-            await audioContext.resume();
-            console.log('[initializeAudio] iOS: Audio context resumed on user interaction');
-          } catch (error) {
-            console.error('[initializeAudio] iOS: Failed to resume audio context:', error);
-          }
-        }
-      };
-
-      // Add persistent event listeners for common user interactions
-      const events = ['click', 'touchstart', 'keydown'];
-      events.forEach(event => {
-        document.addEventListener(event, resumeContext);
-      });
-
-      // Store the event listeners for cleanup
-      audioContext.addEventListener('statechange', () => {
-        if (audioContext?.state === 'closed') {
-          events.forEach(event => {
-            document.removeEventListener(event, resumeContext);
-          });
-        }
-      });
+    if (isInitialized && audioContext) {
+      console.log('[initializeAudio] Audio context already initialized:', audioContext.state);
+      resolve(audioContext);
+      return;
     }
 
-    isInitialized = true;
-    console.log('[initializeAudio] Audio context created successfully:', audioContext.state);
-    return audioContext;
-  } catch (error) {
-    console.error('[initializeAudio] Failed to create audio context:', error);
-    return null;
-  }
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      audioContext = new AudioContextClass({
+        latencyHint: 'interactive',
+        sampleRate: 44100
+      });
+
+      // Set up audio context state change listener
+      audioContext.addEventListener('statechange', () => {
+        console.log('[initializeAudio] Audio context state changed:', audioContext?.state);
+      });
+
+      // For iOS, we need to resume the context on any user interaction
+      if (isIOS) {
+        const resumeContext = async () => {
+          if (audioContext && audioContext.state === 'suspended') {
+            try {
+              await audioContext.resume();
+              console.log('[initializeAudio] iOS: Audio context resumed on user interaction');
+            } catch (error) {
+              console.error('[initializeAudio] iOS: Failed to resume audio context:', error);
+            }
+          }
+        };
+
+        // Add persistent event listeners for common user interactions
+        const events = ['click', 'touchstart', 'keydown'];
+        events.forEach(event => {
+          document.addEventListener(event, resumeContext, { passive: true });
+        });
+
+        // Store the event listeners for cleanup
+        audioContext.addEventListener('statechange', () => {
+          if (audioContext?.state === 'closed') {
+            events.forEach(event => {
+              document.removeEventListener(event, resumeContext);
+            });
+          }
+        });
+
+        // Pre-create some audio elements for iOS
+        for (let i = 0; i < 3; i++) {
+          const audio = new Audio();
+          audio.preload = 'auto';
+          persistentAudioElements[`audio_${i}`] = audio;
+        }
+      }
+
+      isInitialized = true;
+      console.log('[initializeAudio] Audio context created successfully:', audioContext.state);
+      resolve(audioContext);
+    } catch (error) {
+      console.error('[initializeAudio] Failed to create audio context:', error);
+      resolve(null);
+    }
+  });
+
+  return audioContextPromise;
 };
 
 // Load audio map with retries
@@ -125,17 +143,16 @@ async function getAudioFilename(text: string): Promise<string> {
   return `${hash}.mp3`;
 }
 
-// Modified playAudio function with better iOS handling and error recovery
+// Modified playAudio function with better iOS handling
 export const playAudio = async (text: string, type: 'word' | 'example' = 'word'): Promise<void> => {
   console.log('[playAudio] Starting playback for:', { text, type, audioContextState: audioContext?.state });
   
-  // Store original text for fallback
   const originalText = text;
   
   // Initialize audio context if needed
   if (!audioContext || !isInitialized) {
     console.log('[playAudio] Audio context not initialized, attempting to initialize...');
-    audioContext = initializeAudio();
+    audioContext = await initializeAudio();
     if (!audioContext) {
       console.log('[playAudio] Failed to initialize audio context, using Web Speech API fallback');
       useWebSpeechFallback(originalText);
@@ -161,12 +178,10 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
   }
 
   try {
-    // Try to play from IndexedDB cache first
     const filename = await getAudioFilename(text);
     let blob = await getAudio(filename);
     
     if (!blob) {
-      // If not in cache, try to fetch from server
       try {
         console.log('[playAudio] Audio not in cache, attempting to fetch from server...');
         const response = await fetch(`/audio/${filename}`);
@@ -176,18 +191,15 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
           await setAudio(filename, blob);
           console.log('[playAudio] Audio fetched and cached successfully');
         } else if (response.status === 404) {
-          // Silently fall back to Web Speech API for 404s
           console.log('[playAudio] Audio not found on server, using Web Speech API');
           useWebSpeechFallback(originalText);
           return;
         } else {
-          // For other errors, log and fall back
           console.warn(`[playAudio] Server returned ${response.status}, using Web Speech API`);
           useWebSpeechFallback(originalText);
           return;
         }
       } catch (fetchError) {
-        // Only log non-404 errors
         if (!(fetchError instanceof Error && fetchError.message.includes('404'))) {
           console.warn('[playAudio] Error fetching audio:', fetchError);
         }
@@ -196,21 +208,38 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
       }
     }
 
-    // If we have a blob (either from cache or server), play it
     if (blob) {
       const url = URL.createObjectURL(blob);
       
-      // Clean up any existing audio player
-      if (audioPlayer) {
-        audioPlayer.pause();
-        URL.revokeObjectURL(audioPlayer.src);
+      let audioElement: HTMLAudioElement;
+      
+      if (isIOS) {
+        // For iOS, try to use a persistent audio element
+        const availableElement = Object.values(persistentAudioElements).find(audio => 
+          audio.paused && !audio.src
+        );
+        
+        if (availableElement) {
+          audioElement = availableElement;
+        } else {
+          // If no persistent element is available, create a new one
+          audioElement = new Audio();
+        }
+      } else {
+        // For non-iOS devices, clean up existing player
+        if (audioPlayer) {
+          audioPlayer.pause();
+          URL.revokeObjectURL(audioPlayer.src);
+        }
+        audioElement = new Audio();
       }
 
-      // Create new audio player
-      audioPlayer = new Audio(url);
+      // Set up the audio element
+      audioElement.src = url;
+      audioElement.preload = 'auto';
       
       // Add error handling
-      audioPlayer.addEventListener('error', (e) => {
+      audioElement.addEventListener('error', (e) => {
         console.error('[playAudio] Audio playback error:', e);
         URL.revokeObjectURL(url);
         useWebSpeechFallback(originalText);
@@ -218,14 +247,33 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
 
       // Add iOS-specific handling
       if (isIOS) {
-        audioPlayer.addEventListener('play', () => {
+        audioElement.addEventListener('play', () => {
           console.log('[playAudio] iOS: Audio started playing');
+        });
+        
+        // Add load event handler for iOS
+        audioElement.addEventListener('load', () => {
+          console.log('[playAudio] iOS: Audio loaded successfully');
         });
       }
 
       try {
-        await audioPlayer.play();
+        // For iOS, we need to load the audio first
+        if (isIOS) {
+          await new Promise((resolve, reject) => {
+            audioElement.addEventListener('canplaythrough', resolve, { once: true });
+            audioElement.addEventListener('error', reject, { once: true });
+            audioElement.load();
+          });
+        }
+        
+        await audioElement.play();
         console.log('[playAudio] Audio playback started successfully');
+        
+        // Store the current player for non-iOS devices
+        if (!isIOS) {
+          audioPlayer = audioElement;
+        }
       } catch (error) {
         console.error('[playAudio] Failed to play audio:', error);
         URL.revokeObjectURL(url);
@@ -234,13 +282,18 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
       }
 
       // Clean up when done
-      audioPlayer.onended = () => {
+      audioElement.onended = () => {
         console.log('[playAudio] Audio playback ended');
         URL.revokeObjectURL(url);
-        audioPlayer = null;
+        if (!isIOS) {
+          audioPlayer = null;
+        } else {
+          // For iOS, reset the persistent element
+          audioElement.src = '';
+          audioElement.load();
+        }
       };
     } else {
-      // If we somehow got here without a blob, use Web Speech API
       console.log('[playAudio] No audio blob available, using Web Speech API');
       useWebSpeechFallback(originalText);
     }

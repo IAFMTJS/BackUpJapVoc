@@ -278,6 +278,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
   // Add audio initialization state
   const [audioInitialized, setAudioInitialized] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
 
   // Initialize Fuse.js for fuzzy search
   const fuse = useMemo(() => new Fuse(items, {
@@ -1226,78 +1227,81 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
 
   // Initialize audio on component mount
   useEffect(() => {
-    let isInitialized = false;
-    const initAudio = async () => {
-      if (!isInitialized) {
-        console.log('[Dictionary] Attempting to initialize audio...');
-        const context = initializeAudio();
-        if (context) {
-          isInitialized = true;
-          setAudioInitialized(true);
-          console.log('[Dictionary] Audio initialized successfully');
+    const initializeAudioContext = async () => {
+      if (!audioInitialized) {
+        console.log('[Dictionary] Initializing audio context...');
+        try {
+          const context = await initializeAudio();
+          if (context) {
+            setAudioInitialized(true);
+            console.log('[Dictionary] Audio context initialized successfully');
+          }
+        } catch (error) {
+          console.error('[Dictionary] Failed to initialize audio context:', error);
+        }
+      }
+    };
 
-          // For iOS, ensure the context is resumed
-          if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
+    // For iOS, we need to wait for user interaction
+    if (isIOS) {
+      const handleInteraction = async () => {
+        await initializeAudioContext();
+      };
+
+      const events = ['click', 'touchstart', 'keydown'];
+      events.forEach(event => {
+        document.addEventListener(event, handleInteraction, { once: true, passive: true });
+      });
+
+      return () => {
+        events.forEach(event => {
+          document.removeEventListener(event, handleInteraction);
+        });
+      };
+    } else {
+      // For non-iOS devices, initialize immediately
+      initializeAudioContext();
+    }
+  }, [audioInitialized]);
+
+  const handlePlayAudio = async (japanese: string) => {
+    if (isAudioLoading) {
+      console.log('[Dictionary] Audio is already loading, ignoring request');
+      return;
+    }
+
+    console.log('[Dictionary] Play audio requested for:', japanese);
+    setIsAudioLoading(true);
+
+    try {
+      if (!audioInitialized) {
+        console.log('[Dictionary] Audio not initialized, attempting to initialize...');
+        const context = await initializeAudio();
+        if (context) {
+          setAudioInitialized(true);
+          // For iOS, ensure the context is resumed before playing
+          if (isIOS) {
             try {
               if (context.state === 'suspended') {
                 await context.resume();
-                console.log('[Dictionary] iOS: Audio context resumed successfully');
+                // Add a small delay to ensure the context is fully resumed
+                await new Promise(resolve => setTimeout(resolve, 100));
               }
             } catch (error) {
               console.error('[Dictionary] iOS: Failed to resume audio context:', error);
+              setIsAudioLoading(false);
+              return;
             }
           }
         }
       }
-    };
 
-    // Try to initialize audio immediately for non-iOS devices
-    if (!(/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream)) {
-      initAudio();
+      await playAudio(japanese);
+    } catch (error) {
+      console.error('[Dictionary] Error playing audio:', error);
+    } finally {
+      setIsAudioLoading(false);
     }
-
-    // For iOS, initialize on first user interaction
-    const handleInteraction = () => {
-      if (!isInitialized) {
-        initAudio();
-      }
-    };
-
-    const events = ['click', 'touchstart', 'keydown'];
-    events.forEach(event => {
-      document.addEventListener(event, handleInteraction, { once: true });
-    });
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, handleInteraction);
-      });
-    };
-  }, []);
-
-  const handlePlayAudio = async (japanese: string) => {
-    console.log('[Dictionary] Play audio requested for:', japanese);
-    if (!audioInitialized) {
-      console.log('[Dictionary] Audio not initialized, attempting to initialize...');
-      const context = initializeAudio();
-      if (context) {
-        setAudioInitialized(true);
-        // For iOS, ensure the context is resumed before playing
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
-          try {
-            if (context.state === 'suspended') {
-              await context.resume();
-              // Add a small delay to ensure the context is fully resumed
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-          } catch (error) {
-            console.error('[Dictionary] iOS: Failed to resume audio context:', error);
-            return;
-          }
-        }
-      }
-    }
-    await playAudio(japanese);
   };
 
   const renderLockedAlert = () => (
