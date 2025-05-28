@@ -41,12 +41,20 @@ class AudioService {
   private loadVoices() {
     try {
       if ('speechSynthesis' in window) {
-        this.ttsVoices = window.speechSynthesis.getVoices();
-        // Find Japanese voices
-        const japaneseVoices = this.ttsVoices.filter(voice => 
-          voice.lang.includes('ja') || voice.name.includes('Japanese')
+        const allVoices = window.speechSynthesis.getVoices();
+        // Only keep Japanese voices
+        this.ttsVoices = allVoices.filter(voice => 
+          voice.lang.includes('ja') || 
+          voice.name.toLowerCase().includes('japanese') ||
+          voice.name.toLowerCase().includes('jp-')
         );
-        this.defaultVoice = japaneseVoices[0] || this.ttsVoices[0];
+        
+        // Set default voice to first Japanese voice, or null if none available
+        this.defaultVoice = this.ttsVoices[0] || null;
+        
+        if (this.ttsVoices.length === 0) {
+          console.warn('No Japanese voices found. Text-to-speech may not work as expected.');
+        }
       }
     } catch (error) {
       console.error('Error loading voices:', error);
@@ -203,7 +211,12 @@ class AudioService {
   }
 
   public getAvailableVoices(): SpeechSynthesisVoice[] {
-    return this.ttsVoices;
+    // Return only Japanese voices
+    return this.ttsVoices.filter(voice => 
+      voice.lang.includes('ja') || 
+      voice.name.toLowerCase().includes('japanese') ||
+      voice.name.toLowerCase().includes('jp-')
+    );
   }
 
   public isTTSSupported(): boolean {
