@@ -42,18 +42,16 @@ class AudioService {
     try {
       if ('speechSynthesis' in window) {
         const allVoices = window.speechSynthesis.getVoices();
-        // Only keep Japanese voices
+        // Only keep Kyoko voice
         this.ttsVoices = allVoices.filter(voice => 
-          voice.lang.includes('ja') || 
-          voice.name.toLowerCase().includes('japanese') ||
-          voice.name.toLowerCase().includes('jp-')
+          voice.name.toLowerCase().includes('kyoko')
         );
         
-        // Set default voice to first Japanese voice, or null if none available
+        // Set default voice to Kyoko, or null if not available
         this.defaultVoice = this.ttsVoices[0] || null;
         
         if (this.ttsVoices.length === 0) {
-          console.warn('No Japanese voices found. Text-to-speech may not work as expected.');
+          console.warn('Kyoko voice not found. Text-to-speech may not work as expected.');
         }
       }
     } catch (error) {
@@ -211,11 +209,9 @@ class AudioService {
   }
 
   public getAvailableVoices(): SpeechSynthesisVoice[] {
-    // Return only Japanese voices
+    // Return only Kyoko voice
     return this.ttsVoices.filter(voice => 
-      voice.lang.includes('ja') || 
-      voice.name.toLowerCase().includes('japanese') ||
-      voice.name.toLowerCase().includes('jp-')
+      voice.name.toLowerCase().includes('kyoko')
     );
   }
 
