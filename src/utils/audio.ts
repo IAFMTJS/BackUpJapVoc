@@ -12,52 +12,67 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).M
 
 // Add audio context initialization
 let audioContext: AudioContext | null = null;
+let isInitialized = false;
 
 // Initialize audio context on user interaction
 export const initializeAudio = () => {
   console.log('[initializeAudio] Attempting to initialize audio context...');
-  if (!audioContext) {
-    try {
-      // Create audio context with better iOS compatibility
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      audioContext = new AudioContextClass({
-        latencyHint: 'interactive',
-        sampleRate: 44100
-      });
-      
-      // Set up audio context state change listener
-      audioContext.addEventListener('statechange', () => {
-        console.log('[initializeAudio] Audio context state changed:', audioContext?.state);
-      });
-
-      // For iOS, we need to resume the context on any user interaction
-      if (isIOS) {
-        const resumeContext = async () => {
-          if (audioContext && audioContext.state === 'suspended') {
-            try {
-              await audioContext.resume();
-              console.log('[initializeAudio] iOS: Audio context resumed on user interaction');
-            } catch (error) {
-              console.error('[initializeAudio] iOS: Failed to resume audio context:', error);
-            }
-          }
-        };
-
-        // Add event listeners for common user interactions
-        ['click', 'touchstart', 'keydown'].forEach(event => {
-          document.addEventListener(event, resumeContext, { once: true });
-        });
-      }
-
-      console.log('[initializeAudio] Audio context created successfully:', audioContext.state);
-    } catch (error) {
-      console.error('[initializeAudio] Failed to create audio context:', error);
-      return null;
-    }
-  } else {
-    console.log('[initializeAudio] Audio context already exists:', audioContext.state);
+  
+  // If already initialized and context exists, just return it
+  if (isInitialized && audioContext) {
+    console.log('[initializeAudio] Audio context already initialized:', audioContext.state);
+    return audioContext;
   }
-  return audioContext;
+
+  try {
+    // Create audio context with better iOS compatibility
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    audioContext = new AudioContextClass({
+      latencyHint: 'interactive',
+      sampleRate: 44100
+    });
+    
+    // Set up audio context state change listener
+    audioContext.addEventListener('statechange', () => {
+      console.log('[initializeAudio] Audio context state changed:', audioContext?.state);
+    });
+
+    // For iOS, we need to resume the context on any user interaction
+    if (isIOS) {
+      const resumeContext = async () => {
+        if (audioContext && audioContext.state === 'suspended') {
+          try {
+            await audioContext.resume();
+            console.log('[initializeAudio] iOS: Audio context resumed on user interaction');
+          } catch (error) {
+            console.error('[initializeAudio] iOS: Failed to resume audio context:', error);
+          }
+        }
+      };
+
+      // Add persistent event listeners for common user interactions
+      const events = ['click', 'touchstart', 'keydown'];
+      events.forEach(event => {
+        document.addEventListener(event, resumeContext);
+      });
+
+      // Store the event listeners for cleanup
+      audioContext.addEventListener('statechange', () => {
+        if (audioContext?.state === 'closed') {
+          events.forEach(event => {
+            document.removeEventListener(event, resumeContext);
+          });
+        }
+      });
+    }
+
+    isInitialized = true;
+    console.log('[initializeAudio] Audio context created successfully:', audioContext.state);
+    return audioContext;
+  } catch (error) {
+    console.error('[initializeAudio] Failed to create audio context:', error);
+    return null;
+  }
 };
 
 // Load audio map with retries
@@ -118,7 +133,7 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
   const originalText = text;
   
   // Initialize audio context if needed
-  if (!audioContext) {
+  if (!audioContext || !isInitialized) {
     console.log('[playAudio] Audio context not initialized, attempting to initialize...');
     audioContext = initializeAudio();
     if (!audioContext) {
@@ -128,16 +143,20 @@ export const playAudio = async (text: string, type: 'word' | 'example' = 'word')
     }
   }
 
-  // For iOS, ensure context is resumed
-  if (isIOS && audioContext.state === 'suspended') {
-    console.log('[playAudio] iOS: Audio context is suspended, attempting to resume...');
-    try {
-      await audioContext.resume();
-      console.log('[playAudio] iOS: Audio context resumed successfully');
-    } catch (error) {
-      console.error('[playAudio] iOS: Failed to resume audio context:', error);
-      useWebSpeechFallback(originalText);
-      return;
+  // For iOS, ensure context is resumed and wait for it
+  if (isIOS) {
+    if (audioContext.state === 'suspended') {
+      console.log('[playAudio] iOS: Audio context is suspended, attempting to resume...');
+      try {
+        await audioContext.resume();
+        // Add a small delay to ensure the context is fully resumed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('[playAudio] iOS: Audio context resumed successfully');
+      } catch (error) {
+        console.error('[playAudio] iOS: Failed to resume audio context:', error);
+        useWebSpeechFallback(originalText);
+        return;
+      }
     }
   }
 
