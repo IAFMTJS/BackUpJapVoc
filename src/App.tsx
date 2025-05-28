@@ -20,6 +20,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
 import { DatabaseProvider } from './context/DatabaseContext';
 import { AudioProvider } from './context/AudioContext';
+import { WordLevelProvider } from './context/WordLevelContext';
 
 // Lazy load all route components
 const Home = lazy(() => import('./pages/Home'));
@@ -228,103 +229,105 @@ const App: React.FC = () => {
           <DatabaseProvider>
             <AudioProvider>
               <ProgressProvider>
-                <SettingsProvider>
-                  <AccessibilityProvider>
-                    <div className="min-h-screen" data-theme="dark">
-                      {initError && (
-                        <div className="fixed top-0 left-0 right-0 bg-yellow-500/90 text-black p-2 text-center z-50">
-                          Some features may not be available. Please try reloading the page.
-                        </div>
-                      )}
-                      <Navigation />
-                      <main className="pt-16">
-                        <ErrorBoundary>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Routes>
-                              <Route path="/" element={
-                                <ErrorBoundary>
-                                  <Home />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/settings" element={
-                                <ErrorBoundary>
-                                  <Settings />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/vocabulary" element={
-                                <ErrorBoundary>
-                                  <Vocabulary />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/dictionary" element={
-                                <ErrorBoundary>
-                                  <Dictionary />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/writing" element={
-                                <ErrorBoundary>
-                                  <Writing />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/kanji" element={
-                                <ErrorBoundary>
-                                  <Kanji />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/romaji" element={
-                                <ErrorBoundary>
-                                  <Romaji />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/srs" element={
-                                <ErrorBoundary>
-                                  <SRS />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/games" element={
-                                <ErrorBoundary>
-                                  <GamesPage />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/anime" element={
-                                <ErrorBoundary>
-                                  <Anime />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/progress" element={
-                                <ErrorBoundary>
-                                  <Progress />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/achievements" element={
-                                <ErrorBoundary>
-                                  <Achievements />
-                                </ErrorBoundary>
-                              } />
-                              <Route path="/word-levels" element={
-                                <ErrorBoundary>
-                                  <WordLevels />
-                                </ErrorBoundary>
-                              } />
-                              <Route
-                                path="/mood"
-                                element={
+                <WordLevelProvider>
+                  <SettingsProvider>
+                    <AccessibilityProvider>
+                      <div className="min-h-screen" data-theme="dark">
+                        {initError && (
+                          <div className="fixed top-0 left-0 right-0 bg-yellow-500/90 text-black p-2 text-center z-50">
+                            Some features may not be available. Please try reloading the page.
+                          </div>
+                        )}
+                        <Navigation />
+                        <main className="pt-16">
+                          <ErrorBoundary>
+                            <Suspense fallback={<LoadingFallback />}>
+                              <Routes>
+                                <Route path="/" element={
                                   <ErrorBoundary>
-                                    <Suspense fallback={<LoadingFallback />}>
-                                      <Mood />
-                                    </Suspense>
+                                    <Home />
                                   </ErrorBoundary>
-                                }
-                              />
-                            </Routes>
-                          </Suspense>
-                        </ErrorBoundary>
-                      </main>
-                      <OfflineStatus />
-                      <PushNotifications />
-                    </div>
-                  </AccessibilityProvider>
-                </SettingsProvider>
+                                } />
+                                <Route path="/settings" element={
+                                  <ErrorBoundary>
+                                    <Settings />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/vocabulary" element={
+                                  <ErrorBoundary>
+                                    <Vocabulary />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/dictionary" element={
+                                  <ErrorBoundary>
+                                    <Dictionary />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/writing" element={
+                                  <ErrorBoundary>
+                                    <Writing />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/kanji" element={
+                                  <ErrorBoundary>
+                                    <Kanji />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/romaji" element={
+                                  <ErrorBoundary>
+                                    <Romaji />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/srs" element={
+                                  <ErrorBoundary>
+                                    <SRS />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/games" element={
+                                  <ErrorBoundary>
+                                    <GamesPage />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/anime" element={
+                                  <ErrorBoundary>
+                                    <Anime />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/progress" element={
+                                  <ErrorBoundary>
+                                    <Progress />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/achievements" element={
+                                  <ErrorBoundary>
+                                    <Achievements />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="/word-levels" element={
+                                  <ErrorBoundary>
+                                    <WordLevels />
+                                  </ErrorBoundary>
+                                } />
+                                <Route
+                                  path="/mood"
+                                  element={
+                                    <ErrorBoundary>
+                                      <Suspense fallback={<LoadingFallback />}>
+                                        <Mood />
+                                      </Suspense>
+                                    </ErrorBoundary>
+                                  }
+                                />
+                              </Routes>
+                            </Suspense>
+                          </ErrorBoundary>
+                        </main>
+                        <OfflineStatus />
+                        <PushNotifications />
+                      </div>
+                    </AccessibilityProvider>
+                  </SettingsProvider>
+                </WordLevelProvider>
               </ProgressProvider>
             </AudioProvider>
           </DatabaseProvider>
