@@ -33,6 +33,8 @@ export interface Settings {
   showKanjiGames: boolean;
   showRomajiGames: boolean;
   useHiraganaGames: boolean;
+  showHiragana: boolean;
+  showKatakana: boolean;
 }
 
 interface QuizData {
@@ -95,7 +97,9 @@ export const defaultSettings: Settings = {
   showRomajiJLPT: true,
   showKanjiGames: true,
   showRomajiGames: true,
-  useHiraganaGames: true
+  useHiraganaGames: true,
+  showHiragana: true,
+  showKatakana: true
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);

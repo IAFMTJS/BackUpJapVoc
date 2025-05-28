@@ -41,6 +41,7 @@ import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { SavedSearches } from './SavedSearches';
 import { RadicalSearch } from './RadicalSearch';
 import { initializeAudio, playAudio } from '../utils/audio';
+import { useDatabase } from '../context/DatabaseContext';
 
 // Enhanced types for dictionary features
 type JLPTLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
@@ -202,11 +203,13 @@ interface SearchOptions {
 }
 
 const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
-  const { isDarkMode, getThemeClasses } = useTheme();
-  const themeClasses = getThemeClasses();
-  const { progress, updateProgress, setTotalItems } = useProgress();
-  const { playSound } = useSound();
-  const { currentLevel, unlockedLevels, getWordMasteryForLevel } = useWordLevel();
+  const { theme } = useTheme();
+  const { progress, updateProgress } = useProgress();
+  const { wordLevel } = useWordLevel();
+  const { playCorrect, playIncorrect } = useSound();
+  const { db } = useDatabase();
+  const [isDbReady, setIsDbReady] = useState(false);
+  const [dbError, setDbError] = useState<Error | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
   const [items, setItems] = useState<DictionaryItem[]>([]);
@@ -390,28 +393,26 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     };
   }, []);
 
-  // First useEffect for loading items
+  // First useEffect for loading items - modified to prevent unnecessary reloads
   useEffect(() => {
+    let isMounted = true;
+    let loadTimeout: NodeJS.Timeout;
+
     const loadItems = async () => {
+      if (!isMounted) return;
+      
       setIsLoading(true);
       try {
-        console.log('=== Dictionary Loading Debug ===');
-        console.log('Waiting for words to be loaded...');
+        console.log('[Dictionary] Loading items...');
         
         // Wait for words to be loaded
         await waitForWords();
         
-        console.log('Words loaded. Initial state:', {
-          mode,
-          searchOptions,
-          isOffline,
-          allWordsAvailable: allWords?.length || 0,
-          allWordsSample: allWords?.slice(0, 5)
-        });
+        if (!isMounted) return;
         
         // Check if allWords is available
         if (!allWords || allWords.length === 0) {
-          console.error('allWords is empty or undefined after waiting');
+          console.error('[Dictionary] allWords is empty or undefined after waiting');
           throw new Error('Dictionary data not available');
         }
 
@@ -424,230 +425,136 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
               (mode === 'katakana' && word.isKatakana) ||
               (mode === 'kanji' && word.kanji);
             
-            if (!modeMatch) {
-              console.log('Word filtered by mode:', {
-                word: word.japanese,
-                mode,
-                isHiragana: word.isHiragana,
-                isKatakana: word.isKatakana,
-                hasKanji: !!word.kanji
-              });
-              return false;
-            }
+            if (!modeMatch) return false;
           }
 
           // Search term filtering with null checks
           const searchQuery = searchOptions?.query?.toLowerCase()?.trim();
           if (!searchQuery) return true;
           
-          const searchMatch = 
+          return (
             (word.japanese?.toLowerCase() || '').includes(searchQuery) ||
             (word.english?.toLowerCase() || '').includes(searchQuery) ||
-            (word.romaji?.toLowerCase() || '').includes(searchQuery);
-
-          if (!searchMatch) {
-            console.log('Word filtered by search:', {
-              word: word.japanese,
-              searchTerm: searchQuery
-            });
-            return false;
-          }
-
-          return true;
+            (word.romaji?.toLowerCase() || '').includes(searchQuery)
+          );
         });
 
-        console.log('After initial filtering:', {
-          totalWords: allWords.length,
-          filteredWords: loadedItems.length,
-          modeFiltered: mode !== 'all' ? loadedItems.filter(w => 
-            (mode === 'hiragana' && w.isHiragana) ||
-            (mode === 'katakana' && w.isKatakana) ||
-            (mode === 'kanji' && w.kanji)
-          ).length : 'N/A',
-          searchFiltered: searchOptions.query ? loadedItems.filter(w =>
-            w.japanese.toLowerCase().includes(searchOptions.query.toLowerCase()) ||
-            w.english.toLowerCase().includes(searchOptions.query.toLowerCase()) ||
-            w.romaji?.toLowerCase().includes(searchOptions.query.toLowerCase())
-          ).length : 'N/A'
-        });
+        if (!isMounted) return;
 
         // Apply additional filters
         if (searchOptions.filters.category) {
-          const beforeCategory = loadedItems.length;
           loadedItems = loadedItems.filter(word => word.category === searchOptions.filters.category);
-          console.log('Category filter:', {
-            category: searchOptions.filters.category,
-            before: beforeCategory,
-            after: loadedItems.length,
-            removed: beforeCategory - loadedItems.length
-          });
         }
 
         if (searchOptions.filters.level) {
-          const beforeLevel = loadedItems.length;
           loadedItems = loadedItems.filter(word => word.level === searchOptions.filters.level);
-          console.log('Level filter:', {
-            level: searchOptions.filters.level,
-            before: beforeLevel,
-            after: loadedItems.length,
-            removed: beforeLevel - loadedItems.length
-          });
         }
 
         if (searchOptions.filters.jlptLevel) {
-          const beforeJLPT = loadedItems.length;
           loadedItems = loadedItems.filter(word => word.jlptLevel === searchOptions.filters.jlptLevel);
-          console.log('JLPT filter:', {
-            jlptLevel: searchOptions.filters.jlptLevel,
-            before: beforeJLPT,
-            after: loadedItems.length,
-            removed: beforeJLPT - loadedItems.length
-          });
         }
 
-        setItems(loadedItems);
-        setFilteredItems(loadedItems);
-        setTotalItems(mode, loadedItems.length);
+        // Batch state updates
+        if (isMounted) {
+          setItems(loadedItems);
+          setFilteredItems(loadedItems);
+          setTotalItems(mode, loadedItems.length);
+        }
       } catch (error) {
-        console.error('Error loading dictionary items:', error);
-        setSyncError('Failed to load dictionary items');
+        console.error('[Dictionary] Error loading items:', error);
+        if (isMounted) {
+          setSyncError('Failed to load dictionary items');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    loadItems();
-  }, [isOffline, searchOptions, mode, memoizedSearch, setTotalItems]);
+    // Debounce the loadItems call
+    loadTimeout = setTimeout(() => {
+      loadItems();
+    }, 300);
 
-  // Second useEffect for filtering
+    return () => {
+      isMounted = false;
+      clearTimeout(loadTimeout);
+    };
+  }, [mode, searchOptions.query, searchOptions.filters.category, searchOptions.filters.level, searchOptions.filters.jlptLevel]);
+
+  // Second useEffect for filtering - modified to prevent unnecessary updates
   useEffect(() => {
-    console.log('=== Dictionary Filtering Debug ===');
-    console.log('Initial state:', {
-      itemsCount: items.length,
-      searchTerm,
-      levelFilter,
-      filter,
-      sortBy,
-      mode,
-      unlockedLevels
-    });
+    let isMounted = true;
+    let filterTimeout: NodeJS.Timeout;
 
-    let filtered = [...items];
-    const filterStages: { stage: string; count: number }[] = [];
+    const applyFilters = () => {
+      if (!isMounted) return;
 
-    // Always filter out locked words
-    const beforeLocked = filtered.length;
-    filtered = filtered.filter(item => {
-      const wordLevel = wordLevels.find(level => 
-        level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
-      );
-      return wordLevel ? unlockedLevels.includes(wordLevel.level) : true;
-    });
-    filterStages.push({ stage: 'Locked', count: filtered.length });
+      let filtered = [...items];
+      const filterStages: { stage: string; count: number }[] = [];
 
-    // Search term filtering
-    if (searchTerm.trim()) {
-      const beforeSearch = filtered.length;
-      const searchLower = searchTerm.toLowerCase().trim();
+      // Always filter out locked words
       filtered = filtered.filter(item => {
-        if (!item) return false;
-        
-        const matches = 
-          ('japanese' in item ? item.japanese : item.character).toLowerCase().includes(searchLower) ||
-          ('english' in item ? item.english : '').toLowerCase().includes(searchLower) ||
-          ('romaji' in item ? item.romaji : '').toLowerCase().includes(searchLower);
-        
-        if (!matches) {
-          console.log('Word filtered by search:', {
-            word: 'japanese' in item ? item.japanese : item.character,
-            searchTerm: searchLower
-          });
-        }
-        return matches;
-      });
-      filterStages.push({ stage: 'Search', count: filtered.length });
-    }
-
-    // Level filter with null checks - apply in all modes
-    if (levelFilter !== 'all') {
-      const beforeLevel = filtered.length;
-      filtered = filtered.filter(item => {
-        if (!item) return false;
-
         const wordLevel = wordLevels.find(level => 
           level.words.some(w => w.japanese === ('japanese' in item ? item.japanese : item.character))
         );
-        const levelMatch = wordLevel?.level === levelFilter;
-        
-        if (!levelMatch) {
-          console.log('Word filtered by level:', {
-            word: 'japanese' in item ? item.japanese : item.character,
-            level: wordLevel?.level,
-            requiredLevel: levelFilter
-          });
-        }
-        return levelMatch;
+        return wordLevel ? unlockedLevels.includes(wordLevel.level) : true;
       });
-      filterStages.push({ stage: 'Level', count: filtered.length });
-    }
 
-    // Status filter with null checks
-    if (filter !== 'all' && localProgress) {
-      const beforeStatus = filtered.length;
-      filtered = filtered.filter(item => {
-        if (!item) return false;
+      // Search term filtering
+      if (searchTerm.trim()) {
+        const searchLower = searchTerm.toLowerCase().trim();
+        filtered = filtered.filter(item => {
+          if (!item) return false;
+          
+          return (
+            ('japanese' in item ? item.japanese : item.character).toLowerCase().includes(searchLower) ||
+            ('english' in item ? item.english : '').toLowerCase().includes(searchLower) ||
+            ('romaji' in item ? item.romaji : '').toLowerCase().includes(searchLower)
+          );
+        });
+      }
 
-        const itemId = 'japanese' in item ? item.japanese : item.character;
-        const progress = localProgress[itemId];
-        
-        const statusMatch = 
-          (filter === 'unmarked' && !progress) ||
-          (filter === 'marked' && progress && progress.mastery < 3) ||
-          (filter === 'mastered' && progress && progress.mastery >= 3);
+      // Sort items
+      if (sortBy) {
+        filtered.sort((a, b) => {
+          if (!a || !b) return 0;
 
-        if (!statusMatch) {
-          console.log('Word filtered by status:', {
-            word: itemId,
-            status: filter,
-            progress: progress?.mastery
-          });
-        }
-        return statusMatch;
-      });
-      filterStages.push({ stage: 'Status', count: filtered.length });
-    }
+          switch (sortBy) {
+            case 'japanese':
+              return ('japanese' in a ? a.japanese : a.character)
+                .localeCompare('japanese' in b ? b.japanese : b.character);
+            case 'english':
+              return ('english' in a ? a.english : '')
+                .localeCompare('english' in b ? b.english : '');
+            case 'level':
+              return (('level' in a ? a.level : 0) - ('level' in b ? b.level : 0));
+            case 'mastery':
+              const aProgress = localProgress?.['japanese' in a ? a.japanese : a.character]?.mastery || 0;
+              const bProgress = localProgress?.['japanese' in b ? b.japanese : b.character]?.mastery || 0;
+              return bProgress - aProgress;
+            default:
+              return 0;
+          }
+        });
+      }
 
-    // Sort items
-    if (sortBy) {
-      const beforeSort = filtered.length;
-      filtered.sort((a, b) => {
-        if (!a || !b) return 0;
+      if (isMounted) {
+        setFilteredItems(filtered);
+      }
+    };
 
-        switch (sortBy) {
-          case 'japanese':
-            return ('japanese' in a ? a.japanese : a.character)
-              .localeCompare('japanese' in b ? b.japanese : b.character);
-          case 'english':
-            return ('english' in a ? a.english : '')
-              .localeCompare('english' in b ? b.english : '');
-          case 'level':
-            return (('level' in a ? a.level : 0) - ('level' in b ? b.level : 0));
-          case 'mastery':
-            const aProgress = localProgress?.['japanese' in a ? a.japanese : a.character]?.mastery || 0;
-            const bProgress = localProgress?.['japanese' in b ? b.japanese : b.character]?.mastery || 0;
-            return bProgress - aProgress;
-          default:
-            return 0;
-        }
-      });
-      filterStages.push({ stage: 'Sort', count: filtered.length });
-    }
+    // Debounce the filter application
+    filterTimeout = setTimeout(() => {
+      applyFilters();
+    }, 300);
 
-    console.log('Filtering stages:', filterStages);
-    console.log('Final filtered items:', filtered.length);
-    
-    setFilteredItems(filtered);
-  }, [items, searchTerm, levelFilter, filter, sortBy, mode, localProgress, wordLevels, unlockedLevels]);
+    return () => {
+      isMounted = false;
+      clearTimeout(filterTimeout);
+    };
+  }, [items, searchTerm, sortBy, localProgress, wordLevels, unlockedLevels]);
 
   // Handle word relationships visualization
   const handleShowRelationships = async (wordId: string) => {
@@ -1317,6 +1224,57 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     setSelectedItem(item);
   };
 
+  // Initialize audio on component mount
+  useEffect(() => {
+    let isInitialized = false;
+    const initAudio = async () => {
+      if (!isInitialized) {
+        console.log('[Dictionary] Attempting to initialize audio...');
+        const context = initializeAudio();
+        if (context) {
+          isInitialized = true;
+          setAudioInitialized(true);
+          console.log('[Dictionary] Audio initialized successfully');
+
+          // For iOS, ensure the context is resumed
+          if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
+            try {
+              if (context.state === 'suspended') {
+                await context.resume();
+                console.log('[Dictionary] iOS: Audio context resumed successfully');
+              }
+            } catch (error) {
+              console.error('[Dictionary] iOS: Failed to resume audio context:', error);
+            }
+          }
+        }
+      }
+    };
+
+    // Try to initialize audio immediately for non-iOS devices
+    if (!(/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream)) {
+      initAudio();
+    }
+
+    // For iOS, initialize on first user interaction
+    const handleInteraction = () => {
+      if (!isInitialized) {
+        initAudio();
+      }
+    };
+
+    const events = ['click', 'touchstart', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, handleInteraction, { once: true });
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+  }, []);
+
   const handlePlayAudio = async (japanese: string) => {
     console.log('[Dictionary] Play audio requested for:', japanese);
     if (!audioInitialized) {
@@ -1324,6 +1282,19 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
       const context = initializeAudio();
       if (context) {
         setAudioInitialized(true);
+        // For iOS, ensure the context is resumed before playing
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
+          try {
+            if (context.state === 'suspended') {
+              await context.resume();
+              // Add a small delay to ensure the context is fully resumed
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } catch (error) {
+            console.error('[Dictionary] iOS: Failed to resume audio context:', error);
+            return;
+          }
+        }
       }
     }
     await playAudio(japanese);
@@ -2651,31 +2622,63 @@ const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
     </Box>
   );
 
-  // Initialize audio on component mount
+  // Check database readiness
   useEffect(() => {
-    const initAudio = () => {
-      const context = initializeAudio();
-      if (context) {
-        setAudioInitialized(true);
-        console.log('[Dictionary] Audio initialized successfully');
-      } else {
-        console.warn('[Dictionary] Failed to initialize audio');
+    const checkDatabase = async () => {
+      if (!db) {
+        setDbError(new Error('Database not initialized'));
+        return;
+      }
+
+      try {
+        // Verify we can access the required stores
+        const requiredStores = ['words', 'wordRelationships', 'wordEtymology', 'wordFrequency'];
+        const transaction = db.transaction(requiredStores, 'readonly');
+        
+        // Wait for transaction to complete
+        await new Promise((resolve, reject) => {
+          transaction.oncomplete = resolve;
+          transaction.onerror = () => reject(transaction.error);
+        });
+
+        setIsDbReady(true);
+        setDbError(null);
+      } catch (error) {
+        console.error('Database verification failed:', error);
+        setDbError(error instanceof Error ? error : new Error('Failed to verify database'));
+        setIsDbReady(false);
       }
     };
 
-    // Try to initialize audio immediately
-    initAudio();
+    checkDatabase();
+  }, [db]);
 
-    // Also set up click handler for iOS devices
-    const handleClick = () => {
-      if (!audioInitialized) {
-        initAudio();
-      }
-    };
-
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, [audioInitialized]);
+  // Show loading state while database is initializing
+  if (!isDbReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          {dbError ? (
+            <>
+              <h2 className="text-xl font-bold text-red-600 mb-2">Database Error</h2>
+              <p className="text-gray-600 dark:text-gray-300">{dbError.message}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Retry
+              </button>
+            </>
+          ) : (
+            <>
+              <CircularProgress />
+              <p className="mt-4 text-gray-600 dark:text-gray-300">Loading dictionary...</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Box sx={{ p: 2 }}>

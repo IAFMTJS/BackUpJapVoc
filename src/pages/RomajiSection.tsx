@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { playAudio } from '../utils/audio';
 import { romajiWords, romajiSentences, romajiStories } from '../data/romajiWords';
 import Confetti from 'react-confetti';
@@ -6,6 +6,7 @@ import VirtualTeacherPanel from '../components/VirtualTeacherPanel';
 import { useProgress } from '../context/ProgressContext';
 import { useTheme } from '../context/ThemeContext';
 import { Link } from 'react-router-dom';
+import { kuroshiroInstance } from '../utils/kuroshiro';
 
 const TABS = ['Words', 'Sentences', 'Stories', 'Practice', 'Games'] as const;
 
@@ -121,10 +122,13 @@ const RomajiSection: React.FC = () => {
   const [input, setInput] = useState('');
   const [result, setResult] = useState<null | boolean>(null);
   const [showRomaji, setShowRomaji] = useState(() => getRomajiSetting('romajiShowRomaji', true));
-  const [showKanji, setShowKanji] = useState(() => getRomajiSetting('romajiShowKanji', true));
+  const [showKanji, setShowKanji] = useState(() => getRomajiSetting('romajiShowKanji', false));
+  const [showHiragana, setShowHiragana] = useState(() => getRomajiSetting('romajiShowHiragana', true));
   const [showEnglish, setShowEnglish] = useState(() => getRomajiSetting('romajiShowEnglish', true));
   const [audioAutoPlay, setAudioAutoPlay] = useState(() => getRomajiSetting('romajiAudioAutoPlay', false));
   const [showConfetti, setShowConfetti] = useState(false);
+  const [hiraganaCache, setHiraganaCache] = useState<Record<string, string>>({});
+  const [katakanaCache, setKatakanaCache] = useState<Record<string, string>>({});
   const currentWord = romajiWords[practiceIndex % romajiWords.length];
   const currentSentence = romajiSentences[practiceIndex % romajiSentences.length];
   // For matching
@@ -297,6 +301,65 @@ const RomajiSection: React.FC = () => {
     else if (section === 'Games') setTab('Games');
   }
 
+  // Convert kanji to hiragana/katakana
+  const getHiragana = async (text: string) => {
+    if (hiraganaCache[text]) {
+      return hiraganaCache[text];
+    }
+    try {
+      const hiragana = await kuroshiroInstance.convert(text, { to: 'hiragana' });
+      setHiraganaCache(prev => ({ ...prev, [text]: hiragana }));
+      return hiragana;
+    } catch (error) {
+      console.error('Error converting to hiragana:', error);
+      return text;
+    }
+  };
+
+  const getKatakana = async (text: string) => {
+    if (katakanaCache[text]) {
+      return katakanaCache[text];
+    }
+    try {
+      const katakana = await kuroshiroInstance.convert(text, { to: 'katakana' });
+      setKatakanaCache(prev => ({ ...prev, [text]: katakana }));
+      return katakana;
+    } catch (error) {
+      console.error('Error converting to katakana:', error);
+      return text;
+    }
+  };
+
+  // Convert all words/sentences/stories to hiragana/katakana on mount
+  useEffect(() => {
+    const convertAllToKana = async () => {
+      const allTexts = [
+        ...romajiWords.map(w => w.japanese),
+        ...romajiSentences.map(s => s.japanese),
+        ...romajiStories.map(s => s.japanese)
+      ];
+      
+      const uniqueTexts = [...new Set(allTexts)];
+      const results = await Promise.all(
+        uniqueTexts.map(async text => {
+          const [hiragana, katakana] = await Promise.all([
+            getHiragana(text),
+            getKatakana(text)
+          ]);
+          return [text, hiragana, katakana];
+        })
+      );
+      
+      const hiraganaResults = Object.fromEntries(results.map(([text, hiragana]) => [text, hiragana]));
+      const katakanaResults = Object.fromEntries(results.map(([text, _, katakana]) => [text, katakana]));
+      
+      setHiraganaCache(hiraganaResults);
+      setKatakanaCache(katakanaResults);
+    };
+
+    convertAllToKana();
+  }, []);
+
   return (
     <div className="py-8 px-4 max-w-3xl mx-auto">
       {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={300} />}
@@ -330,6 +393,9 @@ const RomajiSection: React.FC = () => {
         )}
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={showKanji} onChange={() => setShowKanji(v => !v)} /> Kanji
+        </label>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={showHiragana} onChange={() => setShowHiragana(v => !v)} /> Hiragana
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={showRomaji} onChange={() => setShowRomaji(v => !v)} /> Romaji
@@ -396,6 +462,7 @@ const RomajiSection: React.FC = () => {
               <div key={i} className="p-4 border rounded flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   {showKanji && <span className="text-2xl font-bold">{word.japanese}</span>}
+                  {showHiragana && <span className="text-2xl">{hiraganaCache[word.japanese] || word.japanese}</span>}
                   <button onClick={() => playAudio(word.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
                 </div>
                 {showRomaji && <span className="text-lg text-blue-700">{word.romaji}</span>}
@@ -410,6 +477,7 @@ const RomajiSection: React.FC = () => {
               <div key={i} className="p-4 border rounded flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   {showKanji && <span className="font-bold">{sentence.japanese}</span>}
+                  {showHiragana && <span className="font-bold">{hiraganaCache[sentence.japanese] || sentence.japanese}</span>}
                   <button onClick={() => playAudio(sentence.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
                 </div>
                 {showRomaji && <span className="text-blue-700">{sentence.romaji}</span>}
@@ -428,6 +496,7 @@ const RomajiSection: React.FC = () => {
                 </div>
                 <div className="mb-2">
                   {showKanji && <span className="block font-medium">{story.japanese}</span>}
+                  {showHiragana && <span className="block font-medium">{hiraganaCache[story.japanese] || story.japanese}</span>}
                   {showRomaji && <span className="block text-blue-700">{story.romaji}</span>}
                   {showEnglish && <span className="block text-gray-600">{story.english}</span>}
                 </div>
@@ -689,6 +758,7 @@ const RomajiSection: React.FC = () => {
                     <div className="text-lg font-bold">Time Left: {timedTime}s</div>
                     <div className="flex items-center gap-2 mb-2">
                       {showKanji && <span className="text-2xl font-bold">{romajiWords[timedCurrent].japanese}</span>}
+                      {showHiragana && <span className="text-2xl">{hiraganaCache[romajiWords[timedCurrent].japanese] || romajiWords[timedCurrent].japanese}</span>}
                       <button onClick={() => playAudio(romajiWords[timedCurrent].japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
                     </div>
                     {showRomaji && <div className="text-blue-700">{romajiWords[timedCurrent].romaji}</div>}

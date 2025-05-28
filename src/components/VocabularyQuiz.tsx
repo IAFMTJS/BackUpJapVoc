@@ -1,4 +1,6 @@
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { QuizState, QuizSettings, DEFAULT_QUIZ_SETTINGS, INITIAL_WORD_STATS, QuizMode, WordComparison, PronunciationPractice, Difficulty, WordStats, WordDifficulty, QuizType, AnswerType } from '../types/quiz';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { allWords } from '../data/japaneseWords';
@@ -9,17 +11,15 @@ import { useAchievements } from '../context/AchievementContext';
 import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Button, Alert, LinearProgress, Tooltip, Card, CardContent, Checkbox, FormControlLabel, Collapse, IconButton, List, ListItem, ListItemText, Tabs, Tab, Divider } from '@mui/material';
 import { playAudio, playDynamicAudio } from '../utils/audio';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { DifficultyIndicator } from './DifficultyIndicator';
 import { ExpandMore as ExpandMoreIcon, VolumeUp as VolumeUpIcon, Mic as MicIcon, Stop as StopIcon, Info as InfoIcon, School as SchoolIcon, Brush as BrushIcon, Translate as TranslateIcon } from '@mui/icons-material';
 import { Chip } from '@mui/material';
 import { RecordVoiceOver as RecordVoiceOverIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, Timer as TimerIcon, Help as HelpIcon } from '@mui/icons-material';
+import QuizContent from './QuizContent';
 
-type Difficulty = 'easy' | 'medium' | 'hard' | 'extraHard';
 type QuizType = 'multiple-choice' | 'writing';
 type AnswerType = 'romaji' | 'english';
-type QuizMode = 'setup' | 'quiz' | 'result' | 'review' | 'learn' | 'pronunciation' | 'comparison';
 
 interface WordComparison {
   word: any;
@@ -51,78 +51,6 @@ interface KanjiInfo {
   kunyomi: string[];
 }
 
-interface QuizSettings {
-  category: string;
-  difficulty: Difficulty;
-  questionCount: number;
-  quizType: QuizType;
-  answerType: AnswerType;
-  level: number;
-  practiceMode: boolean;
-  showExamples: boolean;
-  learnMode: boolean;
-  showJLPTLevel: boolean;
-  pronunciationMode: boolean;
-  comparisonMode: boolean;
-  showSimilarWords: boolean;
-  showKanjiInfo: boolean;
-  showStrokeOrder: boolean;
-  showMnemonics: boolean;
-  showComponents: boolean;
-}
-
-interface WordStats {
-  correctAnswers: number;
-  incorrectAnswers: number;
-  lastSeen: Date | null;
-  nextReview: Date | null;
-  reviewCount: number;
-}
-
-interface QuizState {
-  mode: QuizMode;
-  currentQuestion: number;
-  selectedAnswer: number | null;
-  showFeedback: boolean;
-  isCorrect: boolean | null;
-  showCorrect: boolean;
-  currentWord: any | null;
-  questions: any[];
-  score: number;
-  totalQuestions: number;
-  completed: boolean;
-  markedForReview: Set<number>;
-  skippedQuestions: Set<number>;
-  mistakes: Array<{
-    word: any;
-    userAnswer: string;
-    correctAnswer: string;
-    questionIndex: number;
-  }>;
-  practiceMode: boolean;
-  wordStats: Record<string, WordStats>;
-  showExamples: boolean;
-  learnProgress: number;
-  currentComparison: WordComparison | null;
-  pronunciationPractice: PronunciationPractice | null;
-}
-
-interface WordDifficulty {
-  [key: string]: {
-    correct: number;
-    incorrect: number;
-    lastSeen: number;
-  };
-}
-
-const INITIAL_WORD_STATS: WordStats = {
-  correctAnswers: 0,
-  incorrectAnswers: 0,
-  lastSeen: null,
-  nextReview: null,
-  reviewCount: 0
-};
-
 const SPACED_REPETITION_INTERVALS = [
   1, // 1 day
   3, // 3 days
@@ -132,26 +60,6 @@ const SPACED_REPETITION_INTERVALS = [
   90, // 3 months
   180 // 6 months
 ];
-
-const DEFAULT_QUIZ_SETTINGS: QuizSettings = {
-  category: 'all',
-  difficulty: 'easy',
-  questionCount: 10,
-  quizType: 'multiple-choice',
-  answerType: 'romaji',
-  level: 1,
-  practiceMode: false,
-  showExamples: true,
-  learnMode: false,
-  showJLPTLevel: true,
-  pronunciationMode: false,
-  comparisonMode: false,
-  showSimilarWords: true,
-  showKanjiInfo: true,
-  showStrokeOrder: true,
-  showMnemonics: true,
-  showComponents: true
-};
 
 // Add new animation variants
 const cardVariants = {
@@ -306,9 +214,8 @@ const VocabularyQuiz: React.FC = () => {
   const themeClasses = getThemeClasses();
 
   const [settings, setSettings] = useState<QuizSettings>(DEFAULT_QUIZ_SETTINGS);
-
   const [quizState, setQuizState] = useState<QuizState>({
-    mode: 'setup',
+    mode: 'setup' as QuizMode,
     currentQuestion: 0,
     selectedAnswer: null,
     showFeedback: false,
@@ -406,9 +313,25 @@ const VocabularyQuiz: React.FC = () => {
         return false;
       }
 
+      // Filter by hiragana/katakana settings
+      if (word.category === 'hiragana' && !settings.showHiragana) {
+        return false;
+      }
+      if (word.category === 'katakana' && !settings.showKatakana) {
+        return false;
+      }
+
+      // For words that contain both hiragana and katakana
+      if (word.isHiragana && !settings.showHiragana) {
+        return false;
+      }
+      if (word.isKatakana && !settings.showKatakana) {
+        return false;
+      }
+
       return true;
     });
-  }, [settings.category, settings.level]);
+  }, [settings.category, settings.level, settings.showHiragana, settings.showKatakana]);
 
   const handleStartQuiz = useCallback(() => {
     const filteredWords = getFilteredWords();
@@ -431,31 +354,27 @@ const VocabularyQuiz: React.FC = () => {
       firstWord: selectedQuestions[0]
     });
 
-    setQuizState(prev => {
-      const newState = {
-        mode: 'quiz',
-        currentQuestion: 0,
-        selectedAnswer: null,
-        showFeedback: false,
-        isCorrect: null,
-        showCorrect: false,
-        currentWord: selectedQuestions[0],
-        questions: selectedQuestions,
-        score: 0,
-        totalQuestions: selectedQuestions.length,
-        completed: false,
-        markedForReview: new Set(),
-        skippedQuestions: new Set(),
-        mistakes: [],
-        practiceMode: settings.practiceMode,
-        wordStats: {},
-        showExamples: false,
-        learnProgress: 0,
-        currentComparison: null,
-        pronunciationPractice: null
-      };
-      console.log('Setting New Quiz State:', newState);
-      return newState;
+    setQuizState({
+      mode: 'quiz' as QuizMode,
+      currentQuestion: 0,
+      selectedAnswer: null,
+      showFeedback: false,
+      isCorrect: null,
+      showCorrect: false,
+      currentWord: selectedQuestions[0],
+      questions: selectedQuestions,
+      score: 0,
+      totalQuestions: selectedQuestions.length,
+      completed: false,
+      markedForReview: new Set(),
+      skippedQuestions: new Set(),
+      mistakes: [],
+      practiceMode: settings.practiceMode,
+      wordStats: {},
+      showExamples: false,
+      learnProgress: 0,
+      currentComparison: null,
+      pronunciationPractice: null
     });
 
     setScore(0);
@@ -547,7 +466,7 @@ const VocabularyQuiz: React.FC = () => {
     const quizWords = getRandomSubset(selectedWords, settings.questionCount);
 
     setQuizState({
-      mode: 'quiz',
+      mode: 'quiz' as QuizMode,
       currentQuestion: 0,
       selectedAnswer: null,
       showFeedback: false,
@@ -656,7 +575,7 @@ const VocabularyQuiz: React.FC = () => {
 
     // Play appropriate sound
     playSound(isCorrect ? 'correct' : 'incorrect');
-  }, [quizState, progress, checkAchievements, updateProgress, updateWordDifficulty, playSound, currentStreak, bestStreak]);
+  }, [quizState, updateWordStats, updateProgress, updateWordDifficulty, checkAchievements, playSound, currentStreak, bestStreak]);
 
   const handleNextQuestion = useCallback(() => {
     console.log('Handling Next Question:', {
@@ -680,7 +599,7 @@ const VocabularyQuiz: React.FC = () => {
       console.log('Quiz completed, showing results');
       const newState = {
         ...quizState,
-        mode: 'result',
+        mode: 'result' as QuizMode,
         completed: true
       };
       console.log('Updating state for results:', newState);
@@ -702,11 +621,11 @@ const VocabularyQuiz: React.FC = () => {
     console.log('Updating state for next question:', newState);
     setQuizState(newState);
     setUserAnswer('');
-  }, [quizState]);
+  }, [quizState, setQuizState]);
 
   const handleRestart = useCallback(() => {
     setQuizState({
-      mode: 'setup',
+      mode: 'setup' as QuizMode,
       currentQuestion: 0,
       selectedAnswer: null,
       showFeedback: false,
@@ -756,22 +675,22 @@ const VocabularyQuiz: React.FC = () => {
 
   useHotkeys('s', () => {
     if (quizState.mode === 'quiz' && !quizState.showFeedback) {
-      handleSkipQuestion();
+      handleSkipQuestion(quizState.currentQuestion);
     }
   });
 
   useHotkeys('m', () => {
     if (quizState.mode === 'quiz') {
-      toggleMarkForReview();
+      toggleMarkForReview(quizState.currentQuestion);
     }
   });
 
-  const handleSkipQuestion = useCallback(() => {
+  const handleSkipQuestion = useCallback((questionIndex: number) => {
     if (quizState.mode !== 'quiz' || quizState.showFeedback) return;
 
     setQuizState(prev => ({
       ...prev,
-      skippedQuestions: new Set([...prev.skippedQuestions, prev.currentQuestion]),
+      skippedQuestions: new Set([...prev.skippedQuestions, questionIndex]),
       showFeedback: true,
       isCorrect: false,
       showCorrect: true
@@ -781,27 +700,27 @@ const VocabularyQuiz: React.FC = () => {
     playSound('incorrect');
   }, [quizState.mode, quizState.showFeedback, playSound]);
 
-  const toggleMarkForReview = useCallback(() => {
+  const toggleMarkForReview = useCallback((questionIndex: number) => {
     if (quizState.mode !== 'quiz') return;
 
     setQuizState(prev => {
       const newMarkedForReview = new Set(prev.markedForReview);
-      if (newMarkedForReview.has(prev.currentQuestion)) {
-        newMarkedForReview.delete(prev.currentQuestion);
+      if (newMarkedForReview.has(questionIndex)) {
+        newMarkedForReview.delete(questionIndex);
       } else {
-        newMarkedForReview.add(prev.currentQuestion);
+        newMarkedForReview.add(questionIndex);
       }
       return { ...prev, markedForReview: newMarkedForReview };
     });
   }, [quizState.mode]);
 
-  const startReviewMistakes = useCallback(() => {
+  const startReviewMistakes = useCallback((questionIndex: number) => {
     if (quizState.mistakes.length === 0) return;
 
     const reviewQuestions = quizState.mistakes.map(mistake => mistake.word);
     setQuizState(prev => ({
       ...prev,
-      mode: 'review',
+      mode: 'review' as QuizMode,
       currentQuestion: 0,
       selectedAnswer: null,
       showFeedback: false,
@@ -900,7 +819,7 @@ const VocabularyQuiz: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             Example Sentences
           </Typography>
-          {word.examples.map((example, index) => (
+          {word.examples.map((example: string, index: number) => (
             <Box key={index} sx={{ mb: 2 }}>
               <Typography variant="body1" sx={{ fontFamily: 'Noto Sans JP' }}>
                 {example}
@@ -1034,14 +953,14 @@ const VocabularyQuiz: React.FC = () => {
     );
   };
 
-  const renderQuizSetup = () => (
+  const renderQuizSetup = useCallback(() => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       className={`container mx-auto px-4 py-8 ${isDarkMode ? 'bg-dark' : 'bg-dark-lighter'}`}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Main Settings */}
         <Card className={`${isDarkMode ? 'bg-dark-lighter border-dark-border' : 'bg-dark-lighter border-dark-border'} border shadow-lg`}>
           <CardContent className="p-6">
@@ -1050,6 +969,57 @@ const VocabularyQuiz: React.FC = () => {
             </Typography>
 
             <div className="space-y-6">
+              {/* Display Options */}
+              <div className="space-y-4">
+                <Typography variant="subtitle1" sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}>
+                  Display Options
+                </Typography>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={settings.showHiragana}
+                        onChange={(e) => setSettings(prev => ({
+                          ...prev,
+                          showHiragana: e.target.checked
+                        }))}
+                        sx={{ color: isDarkMode ? 'primary.main' : 'primary.main' }}
+                      />
+                    }
+                    label="Show Hiragana"
+                    sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={settings.showKatakana}
+                        onChange={(e) => setSettings(prev => ({
+                          ...prev,
+                          showKatakana: e.target.checked
+                        }))}
+                        sx={{ color: isDarkMode ? 'primary.main' : 'primary.main' }}
+                      />
+                    }
+                    label="Show Katakana"
+                    sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={settings.showRomaji}
+                        onChange={(e) => setSettings(prev => ({
+                          ...prev,
+                          showRomaji: e.target.checked
+                        }))}
+                        sx={{ color: isDarkMode ? 'primary.main' : 'primary.main' }}
+                      />
+                    }
+                    label="Show Romaji"
+                    sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}
+                  />
+                </div>
+              </div>
+
               {/* Category Selection */}
               <div className="space-y-4">
                 <Typography variant="subtitle1" sx={{ color: isDarkMode ? 'text.primary' : 'text.primary' }}>
@@ -1356,363 +1326,213 @@ const VocabularyQuiz: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Start Button */}
-          <Button
-            variant="contained"
-            fullWidth
-            size="large"
-            onClick={() => {
-              if (settings.learnMode) {
-                startLearnMode();
-              } else if (settings.pronunciationMode) {
-                setQuizState(prev => ({
-                  ...prev,
-                  mode: 'pronunciation',
-                  currentQuestion: 0,
-                  questions: getFilteredWords().slice(0, settings.questionCount),
-                  currentWord: getFilteredWords()[0]
-                }));
-              } else if (settings.comparisonMode) {
-                startComparisonMode();
-              } else {
-                handleStartQuiz();
-              }
-            }}
-            className={`py-4 text-lg font-medium transition-all duration-300 ${
-              isDarkMode 
-                ? 'bg-neon-blue hover:bg-neon-blue/90 text-white shadow-[0_0_10px_rgba(0,149,255,0.4)] hover:shadow-[0_0_20px_rgba(0,149,255,0.6)]' 
-                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
-            }`}
-          >
-            {settings.learnMode ? 'Start Learning' : 
-             settings.pronunciationMode ? 'Start Pronunciation Practice' :
-             settings.comparisonMode ? 'Start Word Comparison' :
-             'Start Quiz'}
-          </Button>
         </div>
       </div>
+
+      {/* Start Button */}
+      <Button
+        variant="contained"
+        fullWidth
+        size="large"
+        onClick={() => {
+          if (settings.learnMode) {
+            startLearnMode();
+          } else if (settings.pronunciationMode) {
+            setQuizState(prev => ({
+              ...prev,
+              mode: 'pronunciation' as QuizMode,
+              currentQuestion: 0,
+              questions: getFilteredWords().slice(0, settings.questionCount),
+              currentWord: getFilteredWords()[0]
+            }));
+          } else if (settings.comparisonMode) {
+            startComparisonMode();
+          } else {
+            handleStartQuiz();
+          }
+        }}
+        className={`py-4 text-lg font-medium transition-all duration-300 ${
+          isDarkMode 
+            ? 'bg-neon-blue hover:bg-neon-blue/90 text-white shadow-[0_0_10px_rgba(0,149,255,0.4)] hover:shadow-[0_0_20px_rgba(0,149,255,0.6)]' 
+            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
+        }`}
+      >
+        {settings.learnMode ? 'Start Learning' : 
+         settings.pronunciationMode ? 'Start Pronunciation Practice' :
+         settings.comparisonMode ? 'Start Word Comparison' :
+         'Start Quiz'}
+      </Button>
     </motion.div>
-  );
+  ), [settings, setSettings, isDarkMode, themeClasses, handleStartQuiz, startLearnMode, startPronunciationPractice, startComparisonMode]);
 
-  const renderQuizContent = () => {
+  const renderWordDisplay = useCallback((word: any) => {
+    const displayText: string[] = [];
+    
+    // Always show the main Japanese text (kanji if available, otherwise kana)
+    if (word.kanji) {
+      displayText.push(word.kanji);
+    }
+    
+    // Show hiragana if available and enabled in settings
+    if (word.hiragana && settings.showHiragana) {
+      displayText.push(`[${word.hiragana}]`);
+    }
+    
+    // Show katakana if the word contains katakana and it's enabled in settings
+    if (word.isKatakana && settings.showKatakana) {
+      displayText.push(word.japanese);
+    }
+
+    // Show romaji if enabled in settings
+    if (settings.showRomaji) {
+      displayText.push(`(${word.romaji})`);
+    }
+
+    return displayText.join(' ');
+  }, [settings]);
+
+  const renderQuizContent = useCallback(() => {
     if (!quizState.currentWord) return null;
-
-    const difficulty = calculateWordDifficulty(quizState.currentWord.japanese);
 
     return (
       <motion.div
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        variants={cardVariants}
-        className={`container mx-auto px-4 py-8 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'} min-h-screen`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="max-w-2xl mx-auto p-6"
       >
-        <div className="max-w-4xl mx-auto">
-          {/* Progress Section with enhanced visuals */}
-          <motion.div
-            ref={ref}
-            initial="hidden"
-            animate={controls}
-            variants={cardVariants}
-          >
-            <Card 
-              sx={{
-                backgroundColor: isDarkMode ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)',
-                backdropFilter: 'blur(8px)',
-                marginBottom: '2rem'
-              }}
-            >
-              <CardContent className="p-6">
-                <div className="relative mb-6">
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
-                  />
-                  {renderProgressBar()}
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                  {[
-                    { label: 'Question', value: `${quizState.currentQuestion + 1}/${quizState.questions.length}` },
-                    ...(!quizState.practiceMode ? [{ label: 'Score', value: `${score}/${quizState.currentQuestion + 1}`, highlight: true }] : []),
-                    { label: 'Current Streak', value: currentStreak, highlight: true },
-                    { label: 'Best Streak', value: bestStreak, highlight: true }
-                  ].map((stat, index) => (
-                    <motion.div
-                      key={index}
-                      whileHover={{ scale: 1.02 }}
-                      className={`text-center p-4 rounded-lg ${
-                        isDarkMode ? 'bg-dark-lighter border-dark-border' : 'bg-dark-lighter border-dark-border'
-                      } border backdrop-blur-sm`}
-                    >
-                      <Typography variant="subtitle2" className={`${themeClasses.text} mb-1`}>
-                        {stat.label}
-                      </Typography>
-                      <Typography 
-                        variant="h6" 
-                        className={`${
-                          stat.highlight 
-                            ? isDarkMode 
-                              ? 'text-neon-blue' 
-                              : 'text-blue-600'
-                            : themeClasses.text
-                        } font-bold`}
-                      >
-                        {stat.value}
-                      </Typography>
-                    </motion.div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+        <Card>
+          <CardContent>
+            <Box sx={{ mb: 3 }}>
+              <LinearProgress 
+                variant="determinate" 
+                value={((quizState.currentQuestion + 1) / quizState.questions.length) * 100}
+                sx={{ mb: 2 }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                Progress: {quizState.currentQuestion + 1} / {quizState.questions.length}
+              </Typography>
+            </Box>
 
-          {/* Question Section with enhanced animations */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <motion.div
-              key={quizState.currentQuestion}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card 
-                sx={{
-                  backgroundColor: isDarkMode ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                  borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)',
-                  backdropFilter: 'blur(8px)'
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h4" sx={{ fontFamily: 'Noto Sans JP', mb: 1 }}>
+                {renderWordDisplay(quizState.currentWord)}
+              </Typography>
+              {settings.showJLPTLevel && (
+                <Chip 
+                  label={`JLPT N${quizState.currentWord.level}`}
+                  color="primary"
+                  size="small"
+                  sx={{ mt: 1 }}
+                />
+              )}
+            </Box>
+
+            {settings.difficulty === 'easy' ? (
+              <div className="space-y-3">
+                {generateOptions(quizState.currentWord, quizState.questions).map((option, index) => (
+                  <motion.button
+                    key={index}
+                    type="button"
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    onClick={() => {
+                      if (!quizState.showFeedback) {
+                        checkAnswer(option);
+                      }
+                    }}
+                    disabled={quizState.showFeedback}
+                    style={{
+                      width: '100%',
+                      padding: '1rem',
+                      textAlign: 'left',
+                      borderRadius: '0.5rem',
+                      transition: 'all 0.3s',
+                      backgroundColor: quizState.selectedAnswer === option
+                        ? quizState.isCorrect
+                          ? isDarkMode ? 'rgba(0, 149, 255, 0.2)' : 'rgba(220, 252, 231, 1)'
+                          : isDarkMode ? 'rgba(255, 0, 128, 0.2)' : 'rgba(254, 226, 226, 1)'
+                        : isDarkMode ? 'rgba(55, 65, 81, 1)' : 'rgba(255, 255, 255, 1)',
+                      color: quizState.selectedAnswer === option
+                        ? quizState.isCorrect
+                          ? isDarkMode ? '#0095ff' : '#166534'
+                          : isDarkMode ? '#ff0080' : '#991b1b'
+                        : isDarkMode ? '#f3f4f6' : '#111827',
+                      border: `1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'}`,
+                      cursor: quizState.showFeedback ? 'not-allowed' : 'pointer',
+                      opacity: quizState.showFeedback ? 0.7 : 1
+                    }}
+                  >
+                    {option}
+                  </motion.button>
+                ))}
+              </div>
+            ) : (
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!quizState.showFeedback && userAnswer.trim()) {
+                    checkAnswer(userAnswer);
+                  }
                 }}
               >
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-6">
-                    <Typography variant="h5" className={`${themeClasses.text} font-bold`}>
-                      {settings.difficulty === 'medium' ? 'Type the romaji' : 'Type the romaji or English'}
-                    </Typography>
-                    <DifficultyIndicator difficulty={difficulty} />
-                  </div>
-
-                  <motion.div
-                    key={quizState.currentWord.japanese}
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="text-center mb-8"
-                  >
-                    <div className={`text-4xl mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''} font-bold tracking-wide`}>
-                      {quizState.currentWord.japanese}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => handlePlayAudio(quizState.currentWord.japanese)}
-                        className={`ml-2 p-2 rounded-full hover:bg-opacity-10 ${
-                          isDarkMode 
-                            ? 'hover:bg-neon-blue/20 text-neon-blue' 
-                            : 'hover:bg-gray-100 text-gray-600'
-                        }`}
-                        title="Play Audio"
-                      >
-                        🔊
-                      </motion.button>
-                    </div>
-                  </motion.div>
-
-                  {settings.difficulty === 'easy' ? (
-                    <div className="space-y-3">
-                      {generateOptions(quizState.currentWord, quizState.questions).map((option, index) => (
-                        <motion.button
-                          key={index}
-                          type="button"
-                          variants={buttonVariants}
-                          whileHover="hover"
-                          whileTap="tap"
-                          onClick={() => {
-                            if (!quizState.showFeedback) {
-                              checkAnswer(option);
-                            }
-                          }}
-                          disabled={quizState.showFeedback}
-                          style={{
-                            width: '100%',
-                            padding: '1rem',
-                            textAlign: 'left',
-                            borderRadius: '0.5rem',
-                            transition: 'all 0.3s',
-                            backgroundColor: quizState.selectedAnswer === option
-                              ? quizState.isCorrect
-                                ? isDarkMode ? 'rgba(0, 149, 255, 0.2)' : 'rgba(220, 252, 231, 1)'
-                                : isDarkMode ? 'rgba(255, 0, 128, 0.2)' : 'rgba(254, 226, 226, 1)'
-                              : isDarkMode ? 'rgba(55, 65, 81, 1)' : 'rgba(255, 255, 255, 1)',
-                            color: quizState.selectedAnswer === option
-                              ? quizState.isCorrect
-                                ? isDarkMode ? '#0095ff' : '#166534'
-                                : isDarkMode ? '#ff0080' : '#991b1b'
-                              : isDarkMode ? '#f3f4f6' : '#111827',
-                            border: `1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'}`,
-                            cursor: quizState.showFeedback ? 'not-allowed' : 'pointer',
-                            opacity: quizState.showFeedback ? 0.7 : 1
-                          }}
-                        >
-                          {option}
-                        </motion.button>
-                      ))}
-                    </div>
-                  ) : (
-                    <form 
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (!quizState.showFeedback && userAnswer.trim()) {
-                          checkAnswer(userAnswer);
-                        }
-                      }}
-                    >
-                      <motion.input
-                        type="text"
-                        value={userAnswer}
-                        onChange={(e) => setUserAnswer(e.target.value)}
-                        placeholder={settings.difficulty === 'medium' ? 'Type the romaji' : 'Type the romaji or English'}
-                        style={{
-                          width: '100%',
-                          padding: '1rem',
-                          borderRadius: '0.5rem',
-                          marginBottom: '1rem',
-                          backgroundColor: isDarkMode ? 'rgba(55, 65, 81, 1)' : 'rgba(255, 255, 255, 1)',
-                          color: isDarkMode ? '#f3f4f6' : '#111827',
-                          border: `1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'}`,
-                          outline: 'none',
-                          transition: 'all 0.3s'
-                        }}
-                        disabled={quizState.showFeedback}
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                      />
-                      <motion.button
-                        type="submit"
-                        variants={buttonVariants}
-                        whileHover="hover"
-                        whileTap="tap"
-                        disabled={quizState.showFeedback || !userAnswer.trim()}
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem',
-                          borderRadius: '0.5rem',
-                          fontWeight: 500,
-                          transition: 'all 0.3s',
-                          backgroundColor: isDarkMode ? '#ff0080' : '#2563eb',
-                          color: '#ffffff',
-                          cursor: (quizState.showFeedback || !userAnswer.trim()) ? 'not-allowed' : 'pointer',
-                          opacity: (quizState.showFeedback || !userAnswer.trim()) ? 0.5 : 1,
-                          border: 'none',
-                          boxShadow: isDarkMode 
-                            ? '0 0 10px rgba(255, 0, 128, 0.4)' 
-                            : '0 4px 6px rgba(0, 0, 0, 0.1)'
-                        }}
-                      >
-                        Check Answer
-                      </motion.button>
-                    </form>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Feedback and Examples Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
-              <AnimatePresence>
-                {quizState.showFeedback && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                  >
-                    <Card 
-                      sx={{
-                        backgroundColor: isDarkMode ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                        borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)',
-                        backdropFilter: 'blur(8px)'
-                      }}
-                    >
-                      <CardContent className="p-6">
-                        <motion.div
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          className={`text-lg font-medium mb-4 ${
-                            quizState.isCorrect 
-                              ? isDarkMode 
-                                ? 'text-neon-blue' 
-                                : 'text-green-800'
-                              : isDarkMode 
-                                ? 'text-neon-pink' 
-                                : 'text-red-800'
-                          }`}
-                        >
-                          {quizState.isCorrect ? '✓ Correct!' : '✗ Incorrect!'}
-                        </motion.div>
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.2 }}
-                          className="space-y-2"
-                        >
-                          <Typography className={themeClasses.text}>
-                            Correct Answer: {quizState.currentWord.english}
-                          </Typography>
-                          <Typography className={themeClasses.text}>
-                            Romaji: {quizState.currentWord.romaji}
-                          </Typography>
-                        </motion.div>
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.4 }}
-                        >
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              handleNextQuestion();
-                            }}
-                            fullWidth
-                            sx={{
-                              marginTop: '1rem',
-                              padding: '0.75rem',
-                              backgroundColor: isDarkMode ? '#0095ff' : '#2563eb',
-                              color: '#ffffff',
-                              '&:hover': {
-                                backgroundColor: isDarkMode ? 'rgba(0, 149, 255, 0.9)' : '#1d4ed8'
-                              },
-                              boxShadow: isDarkMode 
-                                ? '0 0 10px rgba(0, 149, 255, 0.4)' 
-                                : '0 4px 6px rgba(0, 0, 0, 0.1)'
-                            }}
-                          >
-                            {quizState.currentQuestion + 1 < quizState.questions.length ? 'Next Question' : 'Finish Quiz'}
-                          </Button>
-                        </motion.div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          </div>
-        </div>
+                <motion.input
+                  type="text"
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder={settings.difficulty === 'medium' ? 'Type the romaji' : 'Type the romaji or English'}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    borderRadius: '0.5rem',
+                    marginBottom: '1rem',
+                    backgroundColor: isDarkMode ? 'rgba(55, 65, 81, 1)' : 'rgba(255, 255, 255, 1)',
+                    color: isDarkMode ? '#f3f4f6' : '#111827',
+                    border: `1px solid ${isDarkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(209, 213, 219, 0.5)'}`,
+                    outline: 'none',
+                    transition: 'all 0.3s'
+                  }}
+                  disabled={quizState.showFeedback}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                />
+                <motion.button
+                  type="submit"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  disabled={quizState.showFeedback || !userAnswer.trim()}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    fontWeight: 500,
+                    transition: 'all 0.3s',
+                    backgroundColor: isDarkMode ? '#ff0080' : '#2563eb',
+                    color: '#ffffff',
+                    cursor: (quizState.showFeedback || !userAnswer.trim()) ? 'not-allowed' : 'pointer',
+                    opacity: (quizState.showFeedback || !userAnswer.trim()) ? 0.5 : 1,
+                    border: 'none',
+                    boxShadow: isDarkMode 
+                      ? '0 0 10px rgba(255, 0, 128, 0.4)' 
+                      : '0 4px 6px rgba(0, 0, 0, 0.1)'
+                  }}
+                >
+                  Check Answer
+                </motion.button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
       </motion.div>
     );
-  };
+  }, [quizState, settings, isDarkMode, userAnswer, setUserAnswer, checkAnswer]);
 
-  const renderResult = () => {
+  const renderResult = useCallback(() => {
     const totalQuestions = quizState.questions.length;
     const correctAnswers = quizState.score;
     const accuracy = (correctAnswers / totalQuestions) * 100;
@@ -1811,7 +1631,7 @@ const VocabularyQuiz: React.FC = () => {
                 onClick={() => {
                   setQuizState(prev => ({
                     ...prev,
-                    mode: 'quiz',
+                    mode: 'quiz' as QuizMode,
                     currentQuestion: 0,
                     score: 0,
                     mistakes: [],
@@ -1832,7 +1652,7 @@ const VocabularyQuiz: React.FC = () => {
                 onClick={() => {
                   setQuizState(prev => ({
                     ...prev,
-                    mode: 'setup',
+                    mode: 'setup' as QuizMode,
                     currentQuestion: 0,
                     score: 0,
                     mistakes: [],
@@ -1852,9 +1672,9 @@ const VocabularyQuiz: React.FC = () => {
         </Card>
       </motion.div>
     );
-  };
+  }, [quizState, setQuizState]);
 
-  const renderLearnMode = () => {
+  const renderLearnMode = useCallback(() => {
     if (!quizState.currentWord) return null;
 
     return (
@@ -1933,7 +1753,7 @@ const VocabularyQuiz: React.FC = () => {
                   } else {
                     setQuizState(prev => ({
                       ...prev,
-                      mode: 'setup'
+                      mode: 'setup' as QuizMode
                     }));
                   }
                 }}
@@ -1945,7 +1765,7 @@ const VocabularyQuiz: React.FC = () => {
                 onClick={() => {
                   setQuizState(prev => ({
                     ...prev,
-                    mode: 'quiz',
+                    mode: 'quiz' as QuizMode,
                     currentQuestion: 0,
                     score: 0,
                     questions: learnModeWords,
@@ -1960,9 +1780,9 @@ const VocabularyQuiz: React.FC = () => {
         </Card>
       </motion.div>
     );
-  };
+  }, [quizState, settings, learnModeWords, setQuizState]);
 
-  const renderPronunciationPractice = () => {
+  const renderPronunciationPractice = useCallback(() => {
     if (!quizState.currentWord) return null;
 
     // Get relevant tips based on the current word
@@ -2222,7 +2042,7 @@ const VocabularyQuiz: React.FC = () => {
                 onClick={() => {
                   setQuizState(prev => ({
                     ...prev,
-                    mode: 'setup'
+                    mode: 'setup' as QuizMode
                   }));
                 }}
                 className={`w-full py-2 sm:py-3 rounded-lg text-sm sm:text-base ${
@@ -2259,7 +2079,7 @@ const VocabularyQuiz: React.FC = () => {
         </Card>
       </motion.div>
     );
-  };
+  }, [quizState, settings, isDarkMode, themeClasses, isRecording, recording, handlePlayAudio, startPronunciationPractice]);
 
   const startLearnMode = useCallback(() => {
     const filteredWords = getFilteredWords();
@@ -2270,7 +2090,7 @@ const VocabularyQuiz: React.FC = () => {
     setLearnModeWords(selectedWords);
     setQuizState(prev => ({
       ...prev,
-      mode: 'learn',
+      mode: 'learn' as QuizMode,
       currentQuestion: 0,
       currentWord: selectedWords[0],
       learnProgress: 0
@@ -2364,7 +2184,7 @@ const VocabularyQuiz: React.FC = () => {
 
     setQuizState(prev => ({
       ...prev,
-      mode: 'comparison',
+      mode: 'comparison' as QuizMode,
       currentQuestion: 0,
       currentWord: selectedWords[0],
       questions: selectedWords,
@@ -2373,7 +2193,7 @@ const VocabularyQuiz: React.FC = () => {
   }, [getFilteredWords, settings.questionCount, findSimilarWords]);
 
   // Function to render comparison mode
-  const renderComparisonMode = () => {
+  const renderComparisonMode = useCallback(() => {
     if (!quizState.currentWord || !quizState.currentComparison) return null;
 
     const { word, similarWords, differences } = quizState.currentComparison;
@@ -2497,7 +2317,7 @@ const VocabularyQuiz: React.FC = () => {
                 onClick={() => {
                   setQuizState(prev => ({
                     ...prev,
-                    mode: 'setup'
+                    mode: 'setup' as QuizMode
                   }));
                 }}
               >
@@ -2523,7 +2343,7 @@ const VocabularyQuiz: React.FC = () => {
         </Card>
       </motion.div>
     );
-  };
+  }, [quizState, settings, findSimilarWords, handlePlayAudio, renderKanjiInfo]);
 
   // Function to extract kanji from a word
   const extractKanji = useCallback((word: string) => {
@@ -2557,6 +2377,10 @@ const VocabularyQuiz: React.FC = () => {
       onyomi: ['もく', 'ぼく'],
       kunyomi: ['き', 'こ']
     };
+  }, []);
+
+  const handleUpdateSettings = useCallback((newSettings: Partial<QuizSettings>) => {
+    setSettings(prev => ({ ...prev, ...newSettings }));
   }, []);
 
   return (

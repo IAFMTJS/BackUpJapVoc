@@ -131,14 +131,30 @@ const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children })
   const [db, setDb] = useState<IDBDatabase | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const initializeDatabase = async () => {
       try {
         console.log('Initializing main database...');
         const database = await openDB();
-        setDb(database);
-        console.log('Main database initialized successfully');
+        
+        // Verify all required stores exist
+        const requiredStores = ['words', 'progress', 'pending', 'settings', 'srsItems'];
+        const existingStores = Array.from(database.objectStoreNames);
+        const missingStores = requiredStores.filter(store => !existingStores.includes(store));
+        
+        if (missingStores.length > 0) {
+          console.error('Missing required stores:', missingStores);
+          // Close the database and delete it to force recreation
+          database.close();
+          await deleteDatabase();
+          // Retry initialization
+          const newDb = await openDB();
+          setDb(newDb);
+        } else {
+          setDb(database);
+        }
 
         // Check if we need to import words
         const tx = database.transaction('words', 'readonly');
@@ -155,6 +171,8 @@ const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children })
         } else {
           console.log(`Database already contains ${count} words`);
         }
+
+        setIsReady(true);
       } catch (err) {
         console.error('Failed to initialize main database:', err);
         setError(err instanceof Error ? err : new Error('Failed to initialize database'));
@@ -172,12 +190,18 @@ const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children })
         <div className="text-center">
           <h2 className="text-xl font-bold text-red-600 mb-2">Database Error</h2>
           <p className="text-gray-600 dark:text-gray-300">{error.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
-  if (isInitializing) {
+  if (isInitializing || !isReady) {
     return <LoadingFallback />;
   }
 
@@ -191,19 +215,45 @@ const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children })
 const App: React.FC = () => {
   // Initialize audio on first user interaction
   useEffect(() => {
-    const handleUserInteraction = () => {
-      initializeAudio();
-      // Remove listeners after first interaction
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('touchstart', handleUserInteraction);
+    let isInitialized = false;
+    const handleUserInteraction = async () => {
+      if (!isInitialized) {
+        console.log('[App] Initializing audio on user interaction...');
+        const context = initializeAudio();
+        if (context) {
+          isInitialized = true;
+          console.log('[App] Audio initialized successfully');
+          
+          // For iOS, we need to ensure the context is resumed
+          if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
+            try {
+              if (context.state === 'suspended') {
+                await context.resume();
+                console.log('[App] iOS: Audio context resumed successfully');
+              }
+            } catch (error) {
+              console.error('[App] iOS: Failed to resume audio context:', error);
+            }
+          }
+        }
+      }
     };
 
-    document.addEventListener('click', handleUserInteraction);
-    document.addEventListener('touchstart', handleUserInteraction);
+    // Add event listeners for user interaction
+    const events = ['click', 'touchstart', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, handleUserInteraction, { once: true });
+    });
+
+    // Also try to initialize on load for non-iOS devices
+    if (!(/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream)) {
+      handleUserInteraction();
+    }
 
     return () => {
-      document.removeEventListener('click', handleUserInteraction);
-      document.removeEventListener('touchstart', handleUserInteraction);
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserInteraction);
+      });
     };
   }, []);
 
