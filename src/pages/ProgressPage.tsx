@@ -20,19 +20,27 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Lazy load heavy components
-const LazyDictionary = lazy(() => import('../components/Dictionary').then(module => {
-  console.log('Dictionary module loaded:', module);
-  return module;
-}));
-const LazyLearningProgress = lazy(() => import('../components/LearningProgress').then(module => {
-  console.log('LearningProgress module loaded:', module);
-  return module;
-}));
-const LazyProgressVisuals = lazy(() => import('../components/ProgressVisuals').then(module => {
-  console.log('ProgressVisuals module loaded:', module);
-  return module;
-}));
+// Lazy load heavy components with error handling
+const LazyDictionary = lazy(() => {
+  return import('../components/Dictionary').catch(error => {
+    console.error('Error loading Dictionary component:', error);
+    return { default: () => <div>Error loading Dictionary component</div> };
+  });
+});
+
+const LazyLearningProgress = lazy(() => {
+  return import('../components/LearningProgress').catch(error => {
+    console.error('Error loading LearningProgress component:', error);
+    return { default: () => <div>Error loading LearningProgress component</div> };
+  });
+});
+
+const LazyProgressVisuals = lazy(() => {
+  return import('../components/ProgressVisuals').catch(error => {
+    console.error('Error loading ProgressVisuals component:', error);
+    return { default: () => <div>Error loading ProgressVisuals component</div> };
+  });
+});
 
 // Loading fallback component for lazy-loaded components
 const ComponentLoadingFallback = () => (
@@ -151,6 +159,30 @@ const ProgressPage: React.FC = () => {
 
   const themeClasses = getThemeClasses();
 
+  // Add error state for component loading
+  const [componentError, setComponentError] = useState<string | null>(null);
+
+  // Wrap lazy components with error boundary and suspense
+  const renderLazyComponent = (Component: React.LazyExoticComponent<any>, componentName: string) => (
+    <ErrorBoundary
+      fallback={
+        <div className="p-4 text-center">
+          <p className="text-red-500 mb-2">Error loading {componentName}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      }
+    >
+      <Suspense fallback={<ComponentLoadingFallback />}>
+        <Component />
+      </Suspense>
+    </ErrorBoundary>
+  );
+
   // Show error state if there's a critical error
   if (progressError) {
     return (
@@ -235,11 +267,7 @@ const ProgressPage: React.FC = () => {
               {isProgressLoading ? (
                 renderLoadingState('progress data')
               ) : (
-                <Suspense fallback={renderLoadingState('progress visualization')}>
-                  <ComponentErrorBoundary componentName="Progress Visualization">
-                    <LazyProgressVisuals />
-                  </ComponentErrorBoundary>
-                </Suspense>
+                renderLazyComponent(LazyProgressVisuals, 'Progress Visualization')
               )}
             </Paper>
           </div>
@@ -249,11 +277,7 @@ const ProgressPage: React.FC = () => {
             {isSettingsLoading ? (
               renderLoadingState('dictionary settings')
             ) : (
-              <Suspense fallback={<ComponentLoadingFallback />}>
-                <ComponentErrorBoundary componentName="Dictionary">
-                  <LazyDictionary mode="all" />
-                </ComponentErrorBoundary>
-              </Suspense>
+              renderLazyComponent(LazyDictionary, 'Dictionary')
             )}
           </Box>
 
@@ -263,11 +287,7 @@ const ProgressPage: React.FC = () => {
               {isProgressLoading ? (
                 renderLoadingState('learning progress')
               ) : (
-                <Suspense fallback={<ComponentLoadingFallback />}>
-                  <ComponentErrorBoundary componentName="Learning Progress">
-                    <LazyLearningProgress />
-                  </ComponentErrorBoundary>
-                </Suspense>
+                renderLazyComponent(LazyLearningProgress, 'Learning Progress')
               )}
             </Box>
           )}
