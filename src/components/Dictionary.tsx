@@ -205,7 +205,7 @@ interface SearchOptions {
 const Dictionary: React.FC<DictionaryProps> = ({ mode }) => {
   const { theme } = useTheme();
   const { progress, updateProgress } = useProgress();
-  const { wordLevel } = useWordLevel();
+  const { wordLevel, unlockedLevels } = useWordLevel();
   const { playCorrect, playIncorrect } = useSound();
   const { db } = useDatabase();
   const [isDbReady, setIsDbReady] = useState(false);
