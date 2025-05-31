@@ -4,71 +4,67 @@ const { merge } = require('webpack-merge');
 const baseConfig = require('./webpack.config.js');
 
 module.exports = (env, argv) => {
-  const devConfig = {
-    mode: 'development',
-    entry: './src/index.tsx',
-    output: {
-      path: path.resolve(__dirname, 'build'),
-      publicPath: '/',
-      filename: 'static/js/[name].js',
-      chunkFilename: 'static/js/[name].chunk.js',
-    },
+  // Ensure we're in development mode
+  const devEnv = { ...env, NODE_ENV: 'development' };
+  const devArgv = { ...argv, mode: 'development' };
+  
+  // Get base config with development settings
+  const base = baseConfig(devEnv, devArgv);
+  
+  // Only add development-specific overrides
+  return merge(base, {
     devServer: {
       static: {
         directory: path.join(__dirname, 'public'),
-        publicPath: '/',
-        watch: true
+        serveIndex: true,
       },
-      historyApiFallback: true,
-      hot: true,
+      compress: true,
       port: 3002,
-      allowedHosts: 'all',
+      hot: true,
+      historyApiFallback: {
+        disableDotRule: true,
+        rewrites: [
+          { from: /^\//, to: '/index.html' }
+        ]
+      },
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
         'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
         'Cache-Control': 'no-cache, no-store, must-revalidate'
       },
-      devMiddleware: {
-        publicPath: '/',
-        stats: 'verbose'
+      watchFiles: {
+        paths: ['src/**/*', 'public/**/*'],
+        options: {
+          usePolling: false,
+          ignored: /node_modules/
+        }
       },
-      client: {
-        overlay: {
-          errors: true,
-          warnings: true
-        },
-        progress: true,
-        logging: 'verbose',
-        reconnect: true
-      },
-      compress: true,
-      open: true,
       proxy: [{
         context: ['/api'],
         target: 'http://localhost:3000',
         secure: false,
-        changeOrigin: true,
-        timeout: 60000
+        changeOrigin: true
       }],
-      watchFiles: {
-        paths: ['src/**/*'],
-        options: {
-          ignored: /node_modules/
-        }
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false
+        },
+        progress: false
       }
     },
-    devtool: 'eval-source-map',
-    resolve: {
-      ...baseConfig(env, argv).resolve,
-      fallback: {
-        ...baseConfig(env, argv).resolve.fallback,
-        "async_hooks": false,
-        "path": require.resolve("path-browserify")
+    devtool: 'eval',
+    optimization: {
+      removeAvailableModules: false,
+      removeEmptyChunks: false,
+      splitChunks: false,
+    },
+    cache: {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [__filename]
       }
     }
-  };
-
-  // Merge with base config
-  return merge(baseConfig(env, argv), devConfig);
+  });
 }; 

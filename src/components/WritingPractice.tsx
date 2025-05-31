@@ -1,24 +1,46 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
-import { useSound } from '../context/SoundContext';
 import { useProgress } from '../context/ProgressContext';
 import { useTheme } from '../context/ThemeContext';
 import { QuizWord, quizWords } from '../data/quizData';
 import { Kanji, kanjiList } from '../data/kanjiData';
 import { playAudio, playDynamicAudio } from '../utils/audio';
 import { analyzeStrokeAdvanced, validateStrokeAdvanced, calculateStrokeOrderScoreAdvanced } from '../utils/advancedStrokeRecognition';
-import { initDatabase, savePracticeSession, getPracticeSessions, saveKanjiProgress, getKanjiProgress, saveStrokeData, getStrokeData } from '../utils/offlineSupport';
+import { 
+  initOfflineSupport as initDatabase,
+  updateKanjiProgress as saveKanjiProgress,
+  getKanjiProgress,
+  saveStrokeData,
+  getStrokeData,
+  savePracticeSession,
+  getPracticeSessions
+} from '../utils/offlineSupport';
 import { debounce, throttle, memoize, measureAsync, measureSync, caches, performanceMonitor } from '../utils/performanceOptimization';
 import { Point, StrokeData, PracticeSession, KanjiProgress } from '../types/stroke';
 import { DailyChallengeCard, CharacterDecompositionView, MasteryIndicator, PracticeGrid } from './practice';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLearning } from '../context/LearningContext';
+import { useAccessibility } from '../context/AccessibilityContext';
+import { Box, Typography, Button, Slider, IconButton, Tooltip } from '@mui/material';
+import { 
+  Undo as UndoIcon, 
+  Redo as RedoIcon, 
+  Clear as ClearIcon,
+  Check as CheckIcon,
+  VolumeUp as VolumeUpIcon,
+  Info as InfoIcon
+} from '@mui/icons-material';
+import { DictionaryItem } from '../types/dictionary';
+import WritingCanvas from './WritingCanvas';
+import { hiraganaList, katakanaList } from '../data/kanaData';
 
 // New types for enhanced features
-type PracticeMode = 'standard' | 'practice' | 'custom' | 'daily' | 'compound';
+type PracticeMode = 'standard' | 'practice' | 'custom' | 'daily' | 'compound' | 'kanji' | 'hiragana' | 'katakana';
 type MasteryLevel = 'beginner' | 'intermediate' | 'advanced' | 'master';
 type WritingMode = 'hiragana' | 'katakana' | 'kanji';
 type Difficulty = 'easy' | 'medium' | 'hard';
-type PracticeType = 'copy' | 'convert' | 'translate';
+type PracticeType = 'copy' | 'convert' | 'translate' | 'free' | 'guided' | 'quiz';
 type InputMode = 'draw' | 'type';
 type StrokeType = 'horizontal' | 'vertical' | 'diagonal' | 'curve';
 
@@ -213,23 +235,50 @@ interface WritingPracticeState {
   feedback: StrokeFeedback | null;
   practiceGrid: boolean;
   showComparison: boolean;
+  currentCharacter: string;
+  showOverlay: boolean;
+  showGrid: boolean;
+  characterList: string[];
+  currentIndex: number;
+  searchTerm: string;
+  selectedCategory: string;
+  selectedDifficulty: string;
 }
 
 const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, onComplete }) => {
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const { playSound } = useSound();
-  const { updateProgress, setTotalItems } = useProgress();
+  const { updateProgress, updateSectionProgress } = useProgress();
   const { isDarkMode, getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { updateWritingScore } = useLearning();
+  const { settings: accessibilitySettings } = useAccessibility();
 
   // Separate state for mode and settings to avoid unnecessary re-renders
-  const [mode, setMode] = useState<WritingMode>(initialMode);
+  const [mode, setMode] = useState<PracticeMode>(initialMode);
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [practiceType, setPracticeType] = useState<PracticeType>('copy');
   const [requireTranslation, setRequireTranslation] = useState(false);
-  const [inputMode, setInputMode] = useState<InputMode>('type');
+  const [inputMode, setInputMode] = useState<InputMode>('draw');
+
+  // Add new state for tracking
+  const [showTracking, setShowTracking] = useState(true);
+  const [showRomaji, setShowRomaji] = useState(true);
+  const [showMeaning, setShowMeaning] = useState(true);
+
+  // Add these state variables near the top of the component
+  const [strokes, setStrokes] = useState<Point[][]>([]);
+  const [currentStroke, setCurrentStroke] = useState<Point[]>([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [lastPoint, setLastPoint] = useState<Point | null>(null);
+
+  // Add these new state variables after the existing state declarations
+  const [showGrid, setShowGrid] = useState(true);
+  const [gridSize, setGridSize] = useState(40);
+  const [strokeWidth, setStrokeWidth] = useState(3);
+  const [currentStrokeIndex, setCurrentStrokeIndex] = useState(0);
+  const [strokeOrderGuide, setStrokeOrderGuide] = useState<{x: number, y: number, type: StrokeType}[]>([]);
 
   // Update mode when initialMode changes
   useEffect(() => {
@@ -264,8 +313,161 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     showFeedback: false,
     feedback: null,
     practiceGrid: false,
-    showComparison: false
+    showComparison: false,
+    currentCharacter: '',
+    showOverlay: false,
+    showGrid: true,
+    characterList: [],
+    currentIndex: 0,
+    searchTerm: '',
+    selectedCategory: 'all',
+    selectedDifficulty: 'all'
   }));
+
+  // Initialize character list based on mode
+  useEffect(() => {
+    const initializeCharacterList = () => {
+      let characters: string[] = [];
+      
+      switch (mode) {
+        case 'kanji':
+          let filteredKanji = kanjiList;
+          if (state.selectedCategory !== 'all') {
+            filteredKanji = filteredKanji.filter(k => k.category === state.selectedCategory);
+          }
+          if (state.selectedDifficulty !== 'all') {
+            filteredKanji = filteredKanji.filter(k => k.difficulty === state.selectedDifficulty);
+          }
+          characters = filteredKanji.map(k => k.character);
+          break;
+        case 'hiragana':
+          characters = hiraganaList.map(k => k.character);
+          break;
+        case 'katakana':
+          characters = katakanaList.map(k => k.character);
+          break;
+      }
+
+      // If no characters found, use default characters based on mode
+      if (characters.length === 0) {
+        switch (mode) {
+          case 'kanji':
+            characters = ['日', '月', '火', '水', '木', '金', '土']; // Basic kanji
+            break;
+          case 'hiragana':
+            characters = ['あ', 'い', 'う', 'え', 'お', 'か', 'き', 'く', 'け', 'こ']; // Basic hiragana
+            break;
+          case 'katakana':
+            characters = ['ア', 'イ', 'ウ', 'エ', 'オ', 'カ', 'キ', 'ク', 'ケ', 'コ']; // Basic katakana
+            break;
+        }
+      }
+
+      setState(prev => ({
+        ...prev,
+        characterList: characters,
+        currentIndex: 0,
+        currentCharacter: characters[0] || ''
+      }));
+    };
+
+    initializeCharacterList();
+  }, [mode, state.selectedCategory, state.selectedDifficulty]);
+
+  // Set current character when list or index changes
+  useEffect(() => {
+    if (state.characterList.length > 0) {
+      const newCharacter = state.characterList[state.currentIndex];
+      if (newCharacter !== state.currentCharacter) {
+        setState(prev => ({
+          ...prev,
+          currentCharacter: newCharacter
+        }));
+        // Clear canvas when character changes
+        if (canvasRef.current) {
+          const ctx = canvasRef.current.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+          }
+        }
+      }
+    }
+  }, [state.characterList, state.currentIndex]);
+
+  // Filter characters based on search term
+  useEffect(() => {
+    if (!state.searchTerm.trim()) {
+      // Reset to original list based on mode
+      switch (mode) {
+        case 'kanji':
+          let filteredKanji = kanjiList;
+          if (state.selectedCategory !== 'all') {
+            filteredKanji = filteredKanji.filter(k => k.category === state.selectedCategory);
+          }
+          if (state.selectedDifficulty !== 'all') {
+            filteredKanji = filteredKanji.filter(k => k.difficulty === state.selectedDifficulty);
+          }
+          setState(prev => ({
+            ...prev,
+            characterList: filteredKanji.map(k => k.character)
+          }));
+          break;
+        case 'hiragana':
+          setState(prev => ({
+            ...prev,
+            characterList: hiraganaList.map(k => k.character)
+          }));
+          break;
+        case 'katakana':
+          setState(prev => ({
+            ...prev,
+            characterList: katakanaList.map(k => k.character)
+          }));
+          break;
+      }
+      return;
+    }
+
+    const searchLower = state.searchTerm.toLowerCase();
+    switch (mode) {
+      case 'kanji':
+        const filteredKanji = kanjiList.filter(k => 
+          k.character.includes(state.searchTerm) ||
+          k.english.toLowerCase().includes(searchLower) ||
+          k.onyomi.some(r => r.toLowerCase().includes(searchLower)) ||
+          k.kunyomi.some(r => r.toLowerCase().includes(searchLower))
+        );
+        setState(prev => ({
+          ...prev,
+          characterList: filteredKanji.map(k => k.character)
+        }));
+        break;
+      case 'hiragana':
+        const filteredHiragana = hiraganaList.filter(k =>
+          k.character.includes(state.searchTerm) ||
+          k.romaji.toLowerCase().includes(searchLower)
+        );
+        setState(prev => ({
+          ...prev,
+          characterList: filteredHiragana.map(k => k.character)
+        }));
+        break;
+      case 'katakana':
+        const filteredKatakana = katakanaList.filter(k =>
+          k.character.includes(state.searchTerm) ||
+          k.romaji.toLowerCase().includes(searchLower)
+        );
+        setState(prev => ({
+          ...prev,
+          characterList: filteredKatakana.map(k => k.character)
+        }));
+        break;
+    }
+    setState(prev => ({
+      ...prev,
+      currentIndex: 0
+    }));
+  }, [state.searchTerm, mode, state.selectedCategory, state.selectedDifficulty]);
 
   // Memoized functions with proper dependency tracking
   const getFilteredWords = useCallback(() => {
@@ -277,7 +479,8 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
           // For kanji mode, use quiz words that contain kanji
           const kanjiWords = quizWords.filter(word => /[\u4E00-\u9FFF]/.test(word.japanese));
           items.push(...kanjiWords);
-        } else {
+        } else if (mode === 'hiragana' || mode === 'katakana') {
+          // Only access practiceContent for hiragana and katakana modes
           const content = practiceContent[mode][difficulty];
           items.push(...content);
         }
@@ -297,7 +500,7 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
 
       return items;
     });
-  }, [mode, difficulty, practiceType]); // Add proper dependencies
+  }, [mode, difficulty, practiceType]);
 
   // Initialize component
   useEffect(() => {
@@ -337,8 +540,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
   // Update total items when mode or difficulty changes
   useEffect(() => {
     const items = getFilteredWords();
-    setTotalItems(mode, items.length);
-  }, [mode, difficulty, getFilteredWords, setTotalItems]);
+    updateSectionProgress('dictionary', {
+      totalItems: items.length
+    });
+  }, [mode, difficulty, getFilteredWords, updateSectionProgress]);
 
   // Start new practice when mode, difficulty, or practice type changes
   useEffect(() => {
@@ -371,132 +576,143 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     [state.currentStroke]
   );
 
-  // Throttled mouse move handler
-  const handleMouseMove = useCallback(
-    throttle((e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!state.isDrawing || !canvasRef.current) return;
-      
-      const rect = canvasRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      const ctx = canvasRef.current.getContext('2d');
-      if (!ctx) return;
+  // Add this utility function after the state declarations
+  const getCanvasCoordinates = useCallback((clientX: number, clientY: number): Point | null => {
+    if (!canvasRef.current) return null;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = canvasRef.current.width / rect.width;
+    const scaleY = canvasRef.current.height / rect.height;
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }, []);
 
+  // Update the mouse event handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    
+    const point = getCanvasCoordinates(e.clientX, e.clientY);
+    if (!point) return;
+    
+    setIsDrawing(true);
+    setCurrentStroke([point]);
+    
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
       ctx.beginPath();
-      ctx.moveTo(state.lastX, state.lastY);
-      ctx.lineTo(x, y);
+      ctx.moveTo(point.x, point.y);
       ctx.strokeStyle = isDarkMode ? '#fff' : '#000';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = strokeWidth;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    }
+  }, [isDarkMode, strokeWidth, getCanvasCoordinates]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !canvasRef.current) return;
+    
+    const point = getCanvasCoordinates(e.clientX, e.clientY);
+    if (!point) return;
+    
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
+      ctx.lineTo(point.x, point.y);
       ctx.stroke();
+      setCurrentStroke(prev => [...prev, point]);
+    }
+  }, [isDrawing, getCanvasCoordinates]);
 
-      setState(prev => ({
-        ...prev,
-        lastX: x,
-        lastY: y,
-        strokePoints: [...(prev.strokePoints || []), { x, y, timestamp: Date.now() }]
-      }));
-    }, 16), // ~60fps
-    [state.isDrawing, state.lastX, state.lastY, isDarkMode]
-  );
+  const handleMouseUp = useCallback(() => {
+    if (!isDrawing) return;
+    
+    setIsDrawing(false);
+    if (currentStroke.length > 1) {
+      setStrokes(prev => [...prev, currentStroke]);
+      // Advance to next stroke
+      const strokeOrder = getStrokeOrder(state.currentWord);
+      if (strokeOrder) {
+        setCurrentStrokeIndex(prev => Math.min(prev + 1, strokeOrder.length - 1));
+      }
+    }
+    setCurrentStroke([]);
+  }, [isDrawing, currentStroke, state.currentWord]);
 
-  // Optimized stroke validation
-  const validateStroke = useCallback(
-    async (points: Point[], word: PracticeItem | null) => {
-      if (!word) return null;
+  const handleMouseLeave = useCallback(() => {
+    if (!canvasRef.current) return;
+    
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      drawGrid(ctx);
+      setStrokes([]);
+      setCurrentStroke([]);
+      setCurrentStrokeIndex(0);
+      
+      // Redraw tracking guide if enabled
+      if (showTracking && state.currentCharacter) {
+        ctx.globalAlpha = 0.2;
+        ctx.font = '120px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = isDarkMode ? '#fff' : '#000';
+        ctx.fillText(
+          state.currentCharacter,
+          canvasRef.current.width / 2,
+          canvasRef.current.height / 2
+        );
+        ctx.globalAlpha = 1.0;
+      }
+    }
+  }, [showTracking, state.currentCharacter, isDarkMode, drawGrid]);
 
-      return measureAsync('validateStroke', async () => {
-        // Check cache first
-        const cacheKey = `${word.japanese}-${state.currentStroke}`;
-        const cached = caches.strokeData.get(cacheKey);
-        if (cached) {
-          return cached;
-        }
+  // Update the touch event handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!canvasRef.current) return;
+    
+    const touch = e.touches[0];
+    const point = getCanvasCoordinates(touch.clientX, touch.clientY);
+    if (!point) return;
+    
+    setIsDrawing(true);
+    setCurrentStroke([point]);
+    
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
+      ctx.beginPath();
+      ctx.moveTo(point.x, point.y);
+      ctx.strokeStyle = isDarkMode ? '#fff' : '#000';
+      ctx.lineWidth = strokeWidth;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    }
+  }, [isDarkMode, strokeWidth, getCanvasCoordinates]);
 
-        const feedback = await analyzeStrokeDebounced(points, word);
-        if (feedback) {
-          caches.strokeData.set(cacheKey, feedback);
-        }
-        return feedback;
-      });
-    },
-    [analyzeStrokeDebounced, state.currentStroke]
-  );
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isDrawing || !canvasRef.current) return;
+    
+    const touch = e.touches[0];
+    const point = getCanvasCoordinates(touch.clientX, touch.clientY);
+    if (!point) return;
+    
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
+      ctx.lineTo(point.x, point.y);
+      ctx.stroke();
+      setCurrentStroke(prev => [...prev, point]);
+    }
+  }, [isDrawing, getCanvasCoordinates]);
 
-  // Optimized practice session handling
-  const savePracticeProgress = useCallback(
-    async (progress: PracticeProgress) => {
-      await measureAsync('savePracticeProgress', async () => {
-        // Save to offline storage
-        await saveKanjiProgress({
-          kanji: progress.character,
-          masteryLevel: progress.masteryLevel,
-          lastPracticed: new Date(),
-          practiceHistory: [{
-            timestamp: new Date(),
-            score: progress.correctStrokes / progress.totalStrokes,
-            mistakes: progress.mistakes
-          }],
-          compoundWordProgress: [],
-          strokeOrderProgress: []
-        });
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    handleMouseUp();
+  }, [handleMouseUp]);
 
-        // Save practice session
-        await savePracticeSession({
-          kanji: progress.character,
-          strokes: [],
-          score: progress.correctStrokes / progress.totalStrokes,
-          feedback: [],
-          timestamp: new Date(),
-          duration: 0,
-          mistakes: progress.mistakes
-        });
-      });
-    },
-    []
-  );
-
-  // Optimized practice history loading
-  const loadPracticeHistory = useCallback(
-    async () => {
-      return measureAsync('loadPracticeHistory', async () => {
-        const sessions = await getPracticeSessions();
-        return sessions.map(session => ({
-          date: session.timestamp,
-          mode: 'standard' as PracticeMode,
-          characters: [session.kanji],
-          score: session.score,
-          mistakes: session.mistakes,
-          timeSpent: session.duration
-        }));
-      });
-    },
-    []
-  );
-
-  // Optimized daily challenge generation
-  const generateDailyChallenge = useCallback(
-    () => {
-      return measureSync('generateDailyChallenge', () => {
-        const today = new Date();
-        const characters = ['日', '月', '火', '水', '木', '金', '土'];
-        const difficulty = 'medium' as Difficulty;
-        
-        return {
-          date: today,
-          characters,
-          difficulty,
-          theme: 'Days of the Week',
-          bonusPoints: 50,
-          timeLimit: 300,
-          completed: false,
-          score: 0
-        };
-      });
-    },
-    []
-  );
-
+  // Restore the getStrokeOrder function
   const getStrokeOrder = (word: PracticeItem): StrokeType[] | null => {
     if (!word) return null;
 
@@ -523,49 +739,12 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     return null;
   };
 
-  const analyzeStroke = (points: { x: number; y: number }[], word: PracticeItem | null): StrokeFeedback | null => {
-    if (!word) return null;
-    
-    const strokeOrder = getStrokeOrder(word);
-    if (!strokeOrder) return null;
+  // Restore other utility functions
+  const getDisplayMode = (): 'japanese' | 'english' => 'japanese';
 
-    // Determine stroke type based on points
-    const dx = points[points.length - 1].x - points[0].x;
-    const dy = points[points.length - 1].y - points[0].y;
-    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-    
-    let strokeType: StrokeType;
-    if (Math.abs(angle) < 30) {
-      strokeType = 'horizontal';
-    } else if (Math.abs(angle - 90) < 30 || Math.abs(angle + 90) < 30) {
-      strokeType = 'vertical';
-    } else if (Math.abs(angle - 45) < 30 || Math.abs(angle + 135) < 30) {
-      strokeType = 'diagonal';
-    } else {
-      strokeType = 'curve';
-    }
-
-    // Check if stroke matches expected order
-    const expectedStroke = strokeOrder[state.currentStroke];
-    const isCorrect = strokeType === expectedStroke;
-
-    return {
-      isCorrect,
-      message: isCorrect ? 'Correct stroke!' : `Expected ${expectedStroke} stroke`,
-      expectedStroke,
-      actualStroke: strokeType
-    };
-  };
-
-  const getDisplayMode = (): 'japanese' | 'romaji' | 'english' => {
-    // Always show Japanese characters in the question
-    return 'japanese';
-  };
-
-  const getDisplayText = (word: PracticeItem, displayMode: 'japanese' | 'romaji' | 'english'): string => {
+  const getDisplayText = (word: PracticeItem, displayMode: 'japanese' | 'english'): string => {
     if (!word) return '';
     
-    // Always show Japanese characters
     if (isQuizWord(word)) {
       return word.japanese;
     } else if (isPracticeContentItem(word)) {
@@ -574,10 +753,9 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     return '';
   };
 
-  const getExpectedInput = (word: PracticeItem, displayMode: 'japanese' | 'romaji' | 'english'): string => {
+  const getExpectedInput = (word: PracticeItem, displayMode: 'japanese' | 'english'): string => {
     if (!word) return '';
 
-    // Return both Japanese and romaji as valid answers
     if (isQuizWord(word)) {
       return `${word.japanese} (${word.romaji || ''})`;
     } else if (isPracticeContentItem(word)) {
@@ -586,23 +764,178 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     return '';
   };
 
-  const validateInput = (input: string, expected: string, displayMode: 'japanese' | 'romaji' | 'english'): boolean => {
+  const validateInput = (input: string, expected: string, displayMode: 'japanese' | 'english'): boolean => {
     const normalizedInput = input.trim().toLowerCase();
     const normalizedExpected = expected.trim().toLowerCase();
     const currentWord = state.currentWord;
 
     if (!currentWord) return false;
 
-    // Always accept both Japanese and romaji as valid answers
     return (
       normalizedInput === currentWord.japanese.toLowerCase() ||
       normalizedInput === (currentWord.romaji || '').toLowerCase()
     );
   };
 
-  const checkAnswer = () => {
+  // Add calculateStrokeAccuracy function
+  const calculateStrokeAccuracy = useCallback((drawnStroke: Point[], expectedStroke: StrokeType): number => {
+    if (!drawnStroke.length) return 0;
+
+    // Calculate the bounding box of the drawn stroke
+    const xCoords = drawnStroke.map(p => p.x);
+    const yCoords = drawnStroke.map(p => p.y);
+    const minX = Math.min(...xCoords);
+    const maxX = Math.max(...xCoords);
+    const minY = Math.min(...yCoords);
+    const maxY = Math.max(...yCoords);
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // Calculate the center point of the drawn stroke
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    // Get canvas dimensions
+    if (!canvasRef.current) return 0;
+    const canvasWidth = canvasRef.current.width;
+    const canvasHeight = canvasRef.current.height;
+    const canvasCenterX = canvasWidth / 2;
+    const canvasCenterY = canvasHeight / 2;
+
+    // Calculate various accuracy metrics
+    let accuracy = 0;
+
+    // 1. Position accuracy (how close to the center)
+    const positionAccuracy = 1 - Math.min(
+      Math.sqrt(Math.pow(centerX - canvasCenterX, 2) + Math.pow(centerY - canvasCenterY, 2)) / 
+      Math.sqrt(Math.pow(canvasWidth/2, 2) + Math.pow(canvasHeight/2, 2)),
+      1
+    );
+    accuracy += positionAccuracy * 0.3; // 30% weight
+
+    // 2. Size accuracy (appropriate size for the character)
+    const expectedSize = Math.min(canvasWidth, canvasHeight) * 0.6;
+    const actualSize = Math.max(width, height);
+    const sizeAccuracy = 1 - Math.min(Math.abs(actualSize - expectedSize) / expectedSize, 1);
+    accuracy += sizeAccuracy * 0.2; // 20% weight
+
+    // 3. Stroke type accuracy
+    const strokeAnalysis = analyzeStrokeAdvanced(drawnStroke);
+    const typeAccuracy = strokeAnalysis === expectedStroke ? 1 : 0;
+    accuracy += typeAccuracy * 0.3; // 30% weight
+
+    // 4. Smoothness (pen pressure consistency)
+    const pointDistances = [];
+    for (let i = 1; i < drawnStroke.length; i++) {
+      const dx = drawnStroke[i].x - drawnStroke[i-1].x;
+      const dy = drawnStroke[i].y - drawnStroke[i-1].y;
+      pointDistances.push(Math.sqrt(dx * dx + dy * dy));
+    }
+    const avgDistance = pointDistances.reduce((a, b) => a + b, 0) / pointDistances.length;
+    const distanceVariance = pointDistances.reduce((a, b) => a + Math.pow(b - avgDistance, 2), 0) / pointDistances.length;
+    const smoothnessAccuracy = 1 - Math.min(distanceVariance / avgDistance, 1);
+    accuracy += smoothnessAccuracy * 0.2; // 20% weight
+
+    return Math.round(accuracy * 100);
+  }, []);
+
+  // Update handleSubmit to not clear strokes immediately
+  const handleSubmit = useCallback(() => {
     if (!state.currentWord) return;
 
+    // For drawing mode, analyze the strokes
+    if (inputMode === 'draw') {
+      const strokeOrder = getStrokeOrder(state.currentWord);
+      if (!strokeOrder) return;
+
+      let totalAccuracy = 0;
+      const strokeAccuracies: number[] = [];
+
+      // Calculate accuracy for each stroke
+      strokes.forEach((stroke, index) => {
+        if (index < strokeOrder.length && stroke && stroke.length > 0) {
+          const accuracy = calculateStrokeAccuracy(stroke, strokeOrder[index]);
+          strokeAccuracies.push(accuracy);
+          totalAccuracy += accuracy;
+        }
+      });
+
+      const averageAccuracy = Math.round(totalAccuracy / Math.max(strokes.length, 1));
+      const isCorrect = averageAccuracy >= 50; // Lowered threshold from 70% to 50%
+
+      // Get the last stroke for feedback, ensuring it exists
+      const lastStroke = strokes[strokes.length - 1] || [];
+      const lastStrokeType = lastStroke.length > 0 ? analyzeStrokeAdvanced(lastStroke) : 'horizontal';
+
+      // Build detailed per-stroke feedback
+      const perStrokeFeedback = strokeAccuracies.map((acc, i) => {
+        let msg = `Stroke ${i + 1}: ${acc}%`;
+        if (acc < 50) msg += ' (needs improvement)';
+        else if (acc < 70) msg += ' (almost there)';
+        else msg += ' (good)';
+        return msg;
+      });
+
+      // Update state with feedback but don't clear strokes
+      setState(prev => ({
+        ...prev,
+        isCorrect,
+        feedback: {
+          isCorrect,
+          message: isCorrect
+            ? `Great job! Accuracy: ${averageAccuracy}%. ${strokeAccuracies.length < strokeOrder.length ? 'Complete all strokes for full credit.' : 'You can improve individual strokes for a higher score.'}`
+            : `Try again! Accuracy: ${averageAccuracy}%. ${strokeAccuracies.length < strokeOrder.length ? 'Complete all strokes.' : 'Focus on stroke shape and position.'}`,
+          expectedStroke: strokeOrder[strokes.length - 1] || 'horizontal',
+          actualStroke: lastStrokeType,
+          confidence: averageAccuracy,
+          suggestions: [
+            ...perStrokeFeedback,
+            ...strokeAccuracies.map((acc, i) => acc < 50 ? `Stroke ${i + 1} is below 50%. Try to match the direction, length, and type more closely.` : null).filter(Boolean)
+          ]
+        }
+      }));
+
+      // Update progress
+      if (isCorrect) {
+        updateProgress(mode, {
+          totalQuestions: 1,
+          correctAnswers: 1,
+          bestStreak: state.score + 1,
+          highScore: state.score + 1,
+          lastAttempt: new Date().toISOString()
+        });
+        updateWritingScore(mode, averageAccuracy);
+      } else {
+        updateProgress(mode, {
+          totalQuestions: 1,
+          correctAnswers: 0,
+          lastAttempt: new Date().toISOString()
+        });
+      }
+
+      // Play feedback sound
+      if (settings.soundEnabled) {
+        playDynamicAudio(isCorrect ? 'correct' : 'incorrect');
+      }
+
+      // Save practice session
+      savePracticeSession({
+        mode,
+        character: state.currentWord.japanese,
+        strokes: strokes.map(stroke => ({
+          points: stroke,
+          type: analyzeStrokeAdvanced(stroke)
+        })),
+        accuracy: averageAccuracy,
+        strokeAccuracies,
+        isCorrect,
+        timestamp: new Date().toISOString()
+      });
+
+      return;
+    }
+
+    // For typing mode, validate text input
     const expectedInput = getExpectedInput(state.currentWord, state.displayMode);
     const isCorrect = validateInput(state.userInput, expectedInput, state.displayMode);
     
@@ -622,428 +955,588 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
       totalAttempts: prev.totalAttempts + 1
     }));
 
+    // Update progress
     if (isCorrect && (!requireTranslation || isTranslationCorrect)) {
-      playSound('correct');
-      if (state.currentWord) {
-        updateProgress(mode, {
-          totalQuestions: 1,
-          correctAnswers: 1,
-          bestStreak: state.score + 1,
-          highScore: state.score + 1,
-          lastAttempt: new Date().toISOString()
-        });
-      }
+      updateProgress(mode, {
+        totalQuestions: 1,
+        correctAnswers: 1,
+        bestStreak: state.score + 1,
+        highScore: state.score + 1,
+        lastAttempt: new Date().toISOString()
+      });
     } else {
-      playSound('incorrect');
-      if (state.currentWord) {
-        updateProgress(mode, {
-          totalQuestions: 1,
-          correctAnswers: 0,
-          lastAttempt: new Date().toISOString()
-        });
-      }
+      updateProgress(mode, {
+        totalQuestions: 1,
+        correctAnswers: 0,
+        lastAttempt: new Date().toISOString()
+      });
     }
 
+    // Play feedback sound
+    if (settings.soundEnabled) {
+      playDynamicAudio(isCorrect ? 'correct' : 'incorrect');
+    }
+
+    // Save practice session
+    savePracticeSession({
+      mode,
+      character: state.currentWord.japanese,
+      input: state.userInput,
+      translation: state.translationInput,
+      isCorrect,
+      isTranslationCorrect,
+      timestamp: new Date().toISOString()
+    });
+
+    // Check if practice is complete
     if (state.score + (isCorrect && (!requireTranslation || isTranslationCorrect) ? 1 : 0) >= 10) {
-      playSound('complete');
       if (onComplete) onComplete();
       else navigate('/');
     }
-  };
+  }, [
+    state.currentWord,
+    state.userInput,
+    state.translationInput,
+    state.displayMode,
+    state.score,
+    inputMode,
+    strokes,
+    mode,
+    requireTranslation,
+    settings.soundEnabled,
+    updateProgress,
+    updateWritingScore,
+    navigate,
+    onComplete,
+    getExpectedInput,
+    validateInput,
+    getStrokeOrder,
+    calculateStrokeAccuracy,
+    analyzeStrokeAdvanced,
+    playDynamicAudio,
+    savePracticeSession
+  ]);
 
-  const startNewPractice = () => {
+  // Update startNewPractice to clear strokes only when moving to next question
+  const startNewPractice = useCallback(() => {
     const items = getFilteredWords();
     if (items.length === 0) {
-      setState(prev => ({ ...prev, currentWord: null }));
-      return;
-    }
-
-    const randomIndex = Math.floor(Math.random() * items.length);
-    const newWord = items[randomIndex];
-    
-    setState(prev => ({
-      ...prev,
-      currentWord: newWord,
-      userInput: '',
-      translationInput: '',
-      isCorrect: null,
-      isTranslationCorrect: null,
-      currentStroke: 0,
-      strokeFeedback: null,
-      strokePoints: undefined,
-      displayMode: getDisplayMode()
-    }));
-
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        drawStrokeGuide(ctx);
-      }
-    }
-  };
-
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setState(prev => ({
-      ...prev,
-      isDrawing: true,
-      lastX: x,
-      lastY: y,
-      strokePoints: [{ x, y, timestamp: Date.now() }]
-    }));
-  }, []);
-
-  const handleMouseUp = useCallback(async () => {
-    if (!state.isDrawing || !state.strokePoints || !canvasRef.current) return;
-    
-    const feedback = await validateStroke(state.strokePoints, state.currentWord);
-    if (feedback) {
       setState(prev => ({
         ...prev,
-        isDrawing: false,
-        strokeFeedback: feedback,
-        currentStroke: feedback.isCorrect ? prev.currentStroke + 1 : prev.currentStroke,
-        strokePoints: undefined
-      }));
-
-      if (feedback.isCorrect) {
-        playSound('correct');
-      } else {
-        playSound('incorrect');
-      }
-    }
-  }, [state.isDrawing, state.strokePoints, state.currentWord, validateStroke]);
-
-  const clearCanvas = () => {
-    if (!canvasRef.current) return;
-    
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    drawStrokeGuide(ctx);
-  };
-
-  const showStrokeGuide = () => {
-    if (!state.currentWord || !canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-
-    const char = state.currentWord && 'japanese' in state.currentWord
-      ? state.currentWord.japanese
-      : '';
-    
-    const strokeOrder = getStrokeOrder(state.currentWord);
-    if (!strokeOrder) return;
-
-    // Draw stroke order guide
-    ctx.strokeStyle = isDarkMode ? '#4a5568' : '#e2e8f0';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-    
-    // Draw each stroke's guide
-    strokeOrder.forEach((stroke, index) => {
-      if (index >= state.currentStroke) {
-        // Draw guide for current and future strokes
-        drawStrokeGuide(ctx);
-      }
-    });
-    
-    ctx.setLineDash([]);
-  };
-
-  const drawStrokeGuide = (ctx: CanvasRenderingContext2D) => {
-    if (!state.currentWord || !canvasRef.current) return;
-    
-    const strokeOrder = getStrokeOrder(state.currentWord);
-    if (!strokeOrder) return;
-
-    // Draw each stroke's guide
-    strokeOrder.forEach((stroke, index) => {
-      if (index >= state.currentStroke) {
-        // Draw guide for current and future strokes
-        ctx.strokeStyle = index === state.currentStroke ? '#4CAF50' : '#E0E0E0';
-        ctx.lineWidth = 2;
-        
-        // Draw guide based on stroke type
-        const centerX = ctx.canvas.width / 2;
-        const centerY = ctx.canvas.height / 2;
-        const size = Math.min(ctx.canvas.width, ctx.canvas.height) * 0.6;
-        
-        ctx.beginPath();
-        switch (stroke) {
-          case 'horizontal':
-            ctx.moveTo(centerX - size/2, centerY);
-            ctx.lineTo(centerX + size/2, centerY);
-            break;
-          case 'vertical':
-            ctx.moveTo(centerX, centerY - size/2);
-            ctx.lineTo(centerX, centerY + size/2);
-            break;
-          case 'diagonal':
-            ctx.moveTo(centerX - size/2, centerY - size/2);
-            ctx.lineTo(centerX + size/2, centerY + size/2);
-            break;
-          case 'curve':
-            ctx.arc(centerX, centerY, size/2, 0, Math.PI * 2);
-            break;
-        }
-        ctx.stroke();
-      }
-    });
-  };
-
-  useEffect(() => {
-    if (state.showStrokeGuide) {
-      showStrokeGuide();
-    }
-  }, [state.showStrokeGuide, state.currentStroke]);
-
-  const handleSubmit = () => {
-    if (!state.currentWord) {
-      console.warn('No current word available');
-      return;
-    }
-    
-    try {
-      checkAnswer();
-    } catch (error) {
-      console.error('Error checking answer:', error);
-      setState(prev => ({
-        ...prev,
+        currentWord: null,
         feedback: {
           isCorrect: false,
-          message: 'An error occurred while checking your answer',
+          message: 'No words available for the selected mode and difficulty',
           expectedStroke: 'horizontal',
           actualStroke: 'horizontal',
           confidence: 0
         }
       }));
+      return;
     }
-  };
 
-  const handleNext = () => {
-    try {
-      if (canvasRef.current) {
-        clearCanvas();
+    // Select a random word from the filtered list
+    const randomIndex = Math.floor(Math.random() * items.length);
+    const selectedWord = items[randomIndex];
+
+    // Reset practice state
+    setState(prev => ({
+      ...prev,
+      currentWord: selectedWord,
+      userInput: '',
+      translationInput: '',
+      isCorrect: null,
+      feedback: null,
+      currentStroke: 0,
+      showAnimation: false
+    }));
+
+    // Clear canvas and reset strokes only when moving to next question
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        drawGrid(ctx);
+        
+        // Draw tracking guide if enabled
+        if (showTracking && selectedWord) {
+          ctx.globalAlpha = 0.2;
+          ctx.font = '120px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = isDarkMode ? '#fff' : '#000';
+          ctx.fillText(
+            selectedWord.japanese,
+            canvasRef.current.width / 2,
+            canvasRef.current.height / 2
+          );
+          ctx.globalAlpha = 1.0;
+
+          // Draw stroke order guide
+          drawStrokeOrderGuide(ctx);
+        }
       }
-      startNewPractice();
-    } catch (error) {
-      console.error('Error starting new practice:', error);
-      // Reset to a safe state
-      setState(prev => ({
-        ...prev,
-        currentWord: null,
-        userInput: '',
-        translationInput: '',
-        isCorrect: null,
-        feedback: null
-      }));
     }
-  };
 
-  useEffect(() => {
-    if (settings.useTimer && state.timeRemaining > 0) {
-      const timer = setInterval(() => {
-        setState(prev => ({
-          ...prev,
-          timeRemaining: prev.timeRemaining - 1,
-        }));
-      }, 1000);
+    // Reset strokes state
+    setStrokes([]);
+    setCurrentStroke([]);
+    setCurrentStrokeIndex(0);
 
-      return () => clearInterval(timer);
+    // Play audio if enabled
+    if (settings.soundEnabled && selectedWord) {
+      playAudio(selectedWord.japanese);
     }
-  }, [settings.useTimer, state.timeRemaining]);
+  }, [
+    getFilteredWords,
+    showTracking,
+    isDarkMode,
+    drawGrid,
+    drawStrokeOrderGuide,
+    settings.soundEnabled,
+    playAudio
+  ]);
 
-  useEffect(() => {
-    if (state.timeRemaining === 0) {
-      playSound('incorrect');
-      handleNext();
+  // Add drawGrid function
+  const drawGrid = useCallback((ctx: CanvasRenderingContext2D) => {
+    if (!showGrid || !canvasRef.current) return;
+    
+    const { width, height } = canvasRef.current;
+    ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    ctx.lineWidth = 0.5;
+
+    // Draw vertical lines
+    for (let x = 0; x <= width; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
     }
-  }, [state.timeRemaining]);
 
-  const handlePlayAudio = (japanese: string) => {
-    playAudio(japanese);
-  };
-
-  // Utility functions for enhanced features
-  const calculateMasteryLevel = (progress: PracticeProgress): MasteryLevel => {
-    const accuracy = progress.correctStrokes / progress.totalStrokes;
-    const attempts = progress.attempts;
-    
-    if (accuracy >= 0.95 && attempts >= 10) return 'master';
-    if (accuracy >= 0.85 && attempts >= 5) return 'advanced';
-    if (accuracy >= 0.7 && attempts >= 3) return 'intermediate';
-    return 'beginner';
-  };
-
-  const validateStrokeAdvanced = (
-    stroke: StrokeData,
-    expectedStroke: StrokeData,
-    tolerance: number = 0.2
-  ): StrokeFeedback => {
-    const directionMatch = Math.abs(stroke.direction - expectedStroke.direction) < tolerance;
-    const lengthMatch = Math.abs(stroke.length - expectedStroke.length) / expectedStroke.length < tolerance;
-    const typeMatch = stroke.type === expectedStroke.type;
-    
-    const confidence = (directionMatch ? 0.4 : 0) + (lengthMatch ? 0.4 : 0) + (typeMatch ? 0.2 : 0);
-    
-    return {
-      isCorrect: confidence > 0.8,
-      message: confidence > 0.8 ? 'Correct stroke!' : 'Try again',
-      expectedStroke: expectedStroke.type,
-      actualStroke: stroke.type,
-      confidence,
-      suggestions: confidence < 0.8 ? getStrokeSuggestions(stroke, expectedStroke) : undefined
-    };
-  };
-
-  const getStrokeSuggestions = (stroke: StrokeData, expected: StrokeData): string[] => {
-    const suggestions: string[] = [];
-    
-    if (stroke.type !== expected.type) {
-      suggestions.push(`Try a ${expected.type} stroke instead of ${stroke.type}`);
+    // Draw horizontal lines
+    for (let y = 0; y <= height; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
     }
+
+    // Draw center lines
+    ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(width / 2, 0);
+    ctx.lineTo(width / 2, height);
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
+    ctx.stroke();
+  }, [showGrid, gridSize, isDarkMode]);
+
+  // Add drawStrokeOrderGuide function
+  const drawStrokeOrderGuide = useCallback((ctx: CanvasRenderingContext2D) => {
+    if (!canvasRef.current || !state.currentCharacter) return;
+
+    const { width, height } = canvasRef.current;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const size = Math.min(width, height) * 0.6;
     
-    if (Math.abs(stroke.direction - expected.direction) > 0.2) {
-      const direction = stroke.direction > expected.direction ? 'more' : 'less';
-      suggestions.push(`Adjust the angle to be ${direction} horizontal`);
+    const strokeOrder = getStrokeOrder(state.currentWord);
+    if (!strokeOrder) return;
+
+    // Draw each stroke's guide
+    strokeOrder.forEach((stroke, index) => {
+      // Set stroke style based on whether it's the current stroke
+      if (index === currentStrokeIndex) {
+        ctx.strokeStyle = isDarkMode ? '#FF4081' : '#D81B60';
+        ctx.lineWidth = 3;
+      } else if (index < currentStrokeIndex) {
+        ctx.strokeStyle = isDarkMode ? '#4CAF50' : '#2E7D32';
+        ctx.lineWidth = 2;
+      } else {
+        ctx.strokeStyle = isDarkMode ? 'rgba(76, 175, 80, 0.3)' : 'rgba(46, 125, 50, 0.3)';
+        ctx.lineWidth = 1;
+      }
+
+      // Draw the stroke guide
+      ctx.beginPath();
+      switch (stroke) {
+        case 'horizontal':
+          ctx.moveTo(centerX - size/2, centerY);
+          ctx.lineTo(centerX + size/2, centerY);
+          break;
+        case 'vertical':
+          ctx.moveTo(centerX, centerY - size/2);
+          ctx.lineTo(centerX, centerY + size/2);
+          break;
+        case 'diagonal':
+          ctx.moveTo(centerX - size/2, centerY - size/2);
+          ctx.lineTo(centerX + size/2, centerY + size/2);
+          break;
+        case 'curve':
+          ctx.arc(centerX, centerY, size/2, 0, Math.PI * 2);
+          break;
+      }
+      ctx.stroke();
+
+      // Draw stroke number
+      if (index === currentStrokeIndex) {
+        ctx.fillStyle = isDarkMode ? '#FF4081' : '#D81B60';
+        ctx.font = '16px sans-serif';
+        ctx.fillText((index + 1).toString(), centerX - size/2 + 10, centerY - size/2 + 20);
+      }
+    });
+  }, [state.currentCharacter, state.currentWord, currentStrokeIndex, isDarkMode]);
+
+  // Add clearCanvas function
+  const clearCanvas = useCallback(() => {
+    if (!canvasRef.current) return;
+    
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      drawGrid(ctx);
+      setStrokes([]);
+      setCurrentStroke([]);
+      
+      // Draw tracking guide and stroke order
+      if (showTracking && state.currentCharacter) {
+        // Draw character outline
+        ctx.globalAlpha = 0.2;
+        ctx.font = '120px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = isDarkMode ? '#fff' : '#000';
+        ctx.fillText(
+          state.currentCharacter,
+          canvasRef.current.width / 2,
+          canvasRef.current.height / 2
+        );
+        ctx.globalAlpha = 1.0;
+
+        // Draw stroke order guide
+        drawStrokeOrderGuide(ctx);
+      }
     }
-    
-    if (Math.abs(stroke.length - expected.length) / expected.length > 0.2) {
-      const length = stroke.length > expected.length ? 'shorter' : 'longer';
-      suggestions.push(`Make the stroke ${length}`);
-    }
-    
-    return suggestions;
+  }, [showTracking, state.currentCharacter, isDarkMode, drawGrid, drawStrokeOrderGuide]);
+
+  // Add renderModeSelector function
+  const renderModeSelector = () => {
+    return (
+      <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
+        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-neon-blue' : 'text-gray-800'}`}>
+          Practice Mode
+        </h3>
+        <div className="flex flex-wrap gap-4">
+          {['hiragana', 'katakana', 'kanji'].map((writingMode) => (
+            <button
+              key={writingMode}
+              onClick={() => setMode(writingMode as WritingMode)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                mode === writingMode
+                  ? isDarkMode 
+                    ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(0,149,255,0.4)]' 
+                    : 'bg-blue-500 text-white'
+                  : isDarkMode 
+                    ? 'bg-dark-lighter text-text-primary hover:bg-dark-border' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {writingMode.charAt(0).toUpperCase() + writingMode.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   };
 
-  const decomposeCharacter = (character: string): CharacterDecomposition => {
-    // This would typically use a kanji decomposition API or database
-    // For now, return a mock implementation
-    return {
-      character,
-      components: [],
-      meanings: [],
-      readings: [],
-      strokeCount: 0,
-      radicals: []
-    };
+  // Add renderDifficultySelector function
+  const renderDifficultySelector = () => {
+    return (
+      <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
+        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-neon-blue' : 'text-gray-800'}`}>
+          Difficulty
+        </h3>
+        <div className="flex flex-wrap gap-4">
+          {['easy', 'medium', 'hard'].map((diff) => (
+            <button
+              key={diff}
+              onClick={() => setDifficulty(diff as Difficulty)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                difficulty === diff
+                  ? isDarkMode 
+                    ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(0,149,255,0.4)]' 
+                    : 'bg-blue-500 text-white'
+                  : isDarkMode 
+                    ? 'bg-dark-lighter text-text-primary hover:bg-dark-border' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {diff.charAt(0).toUpperCase() + diff.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   };
 
-  const createCustomWordList = (name: string, description: string, characters: string[]): CustomWordList => {
-    return {
-      id: Date.now().toString(),
-      name,
-      description,
-      characters,
-      createdAt: new Date(),
-      lastModified: new Date(),
-      practiceCount: 0
-    };
-  };
+  // Add undoStroke function
+  const undoStroke = useCallback(() => {
+    if (strokes.length === 0) return;
+
+    // Remove the last stroke from the strokes array
+    const newStrokes = strokes.slice(0, -1);
+    setStrokes(newStrokes);
+
+    // Redraw the canvas with remaining strokes
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        
+        // Redraw the grid
+        drawGrid(ctx);
+
+        // Redraw all remaining strokes
+        ctx.strokeStyle = isDarkMode ? '#fff' : '#000';
+        ctx.lineWidth = strokeWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        newStrokes.forEach(stroke => {
+          if (stroke.length > 0) {
+            ctx.beginPath();
+            ctx.moveTo(stroke[0].x, stroke[0].y);
+            stroke.forEach(point => {
+              ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+          }
+        });
+
+        // Redraw tracking guide if enabled
+        if (showTracking && state.currentCharacter) {
+          ctx.globalAlpha = 0.2;
+          ctx.font = '120px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = isDarkMode ? '#fff' : '#000';
+          ctx.fillText(
+            state.currentCharacter,
+            canvasRef.current.width / 2,
+            canvasRef.current.height / 2
+          );
+          ctx.globalAlpha = 1.0;
+
+          // Redraw stroke order guide
+          drawStrokeOrderGuide(ctx);
+        }
+      }
+    }
+
+    // Update current stroke index
+    setCurrentStrokeIndex(prev => Math.max(0, prev - 1));
+  }, [strokes, isDarkMode, strokeWidth, showTracking, state.currentCharacter, drawGrid, drawStrokeOrderGuide]);
+
+  // Add getCharacterDetails function
+  const getCharacterDetails = useCallback((character: string) => {
+    if (!character) return null;
+
+    switch (mode) {
+      case 'kanji':
+        const kanjiDetails = kanjiList.find(k => k.character === character);
+        if (kanjiDetails) {
+          return {
+            readings: [...kanjiDetails.onyomi, ...kanjiDetails.kunyomi],
+            meaning: kanjiDetails.english,
+            strokeCount: kanjiDetails.strokes,
+            radicals: kanjiDetails.radicals || []
+          };
+        }
+        break;
+
+      case 'hiragana':
+        const hiraganaDetails = hiraganaList.find(k => k.character === character);
+        if (hiraganaDetails) {
+          return {
+            readings: [hiraganaDetails.romaji],
+            meaning: hiraganaDetails.english || '',
+            strokeCount: hiraganaDetails.strokes || 0,
+            radicals: []
+          };
+        }
+        break;
+
+      case 'katakana':
+        const katakanaDetails = katakanaList.find(k => k.character === character);
+        if (katakanaDetails) {
+          return {
+            readings: [katakanaDetails.romaji],
+            meaning: katakanaDetails.english || '',
+            strokeCount: katakanaDetails.strokes || 0,
+            radicals: []
+          };
+        }
+        break;
+    }
+
+    return null;
+  }, [mode]);
 
   return (
     <div className={`container mx-auto px-4 py-8 ${isDarkMode ? 'bg-dark' : 'bg-gray-50'}`}>
       <div className="max-w-4xl mx-auto">
-        {/* Practice Mode Selector */}
-        <div className="mb-6">
-          <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-neon-blue' : 'text-gray-700'}`}>
-            Practice Mode
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {(['standard', 'practice', 'custom', 'daily', 'compound'] as PracticeMode[]).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => {
-                  try {
-                    setState(prev => {
-                      const newState = { ...prev, practiceMode: mode };
-                      // Reset practice state when changing modes
-                      if (mode !== prev.practiceMode) {
-                        newState.currentWord = null;
-                        newState.userInput = '';
-                        newState.translationInput = '';
-                        newState.isCorrect = null;
-                        newState.feedback = null;
-                      }
-                      return newState;
-                    });
-                    // Start new practice after mode change
-                    startNewPractice();
-                  } catch (error) {
-                    console.error('Error changing practice mode:', error);
-                  }
-                }}
-                className={`p-3 rounded-lg transition-all duration-300 ${
-                  state.practiceMode === mode
-                    ? isDarkMode
-                      ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(0,149,255,0.4)]'
-                      : 'bg-blue-500 text-white'
-                    : isDarkMode
-                      ? 'bg-dark-lighter text-text-primary hover:bg-dark-lightest'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
+        {renderModeSelector()}
+        {renderDifficultySelector()}
+        {state.characterList.length > 0 ? (
+          <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
+            <div className="flex flex-col items-center mb-6">
+              <h2 className={`text-4xl font-bold mb-4 ${isDarkMode ? 'text-neon-blue' : 'text-gray-800'}`}>
+                {state.currentCharacter}
+              </h2>
+              {getCharacterDetails(state.currentCharacter) && (
+                <div className={`text-center ${isDarkMode ? 'text-text-primary' : 'text-gray-600'}`}>
+                  {showRomaji && (
+                    <p className="text-xl mb-2">
+                      {getCharacterDetails(state.currentCharacter)?.readings.join('・')}
+                    </p>
+                  )}
+                  {showMeaning && (
+                    <p className="text-lg">
+                      {getCharacterDetails(state.currentCharacter)?.meaning}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
-        {/* Daily Challenge Card */}
-        {state.practiceMode === 'daily' && state.dailyChallenge && (
-          <div className="mb-6">
-            <DailyChallengeCard
-              challenge={state.dailyChallenge}
-              onStart={() => {
-                // Start daily challenge logic
-                setState(prev => ({
-                  ...prev,
-                  currentWord: quizWords.find(w => state.dailyChallenge?.characters.includes(w.japanese)) || null
-                }));
-              }}
-              isDarkMode={isDarkMode}
-            />
-          </div>
-        )}
+            {/* Tracking Options */}
+            <div className="flex flex-wrap gap-4 mb-6 justify-center">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={showTracking}
+                  onChange={(e) => setShowTracking(e.target.checked)}
+                  className={`form-checkbox h-5 w-5 ${
+                    isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
+                  }`}
+                />
+                <span className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                  Show Tracking
+                </span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={showRomaji}
+                  onChange={(e) => setShowRomaji(e.target.checked)}
+                  className={`form-checkbox h-5 w-5 ${
+                    isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
+                  }`}
+                />
+                <span className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                  Show Romaji
+                </span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={showMeaning}
+                  onChange={(e) => setShowMeaning(e.target.checked)}
+                  className={`form-checkbox h-5 w-5 ${
+                    isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
+                  }`}
+                />
+                <span className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                  Show Meaning
+                </span>
+              </label>
+            </div>
 
-        {/* Main Practice Area */}
-        <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
-          {/* Character Display and Input */}
-          <div className="mb-6">
-            <h2 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-neon-blue' : 'text-gray-800'}`}>
-              {state.currentWord?.japanese || 'Practice Writing'}
-            </h2>
-          </div>
-
-          {/* Writing Canvas */}
-          {inputMode === 'draw' && (
+            {/* Writing Canvas */}
             <div className="mb-6">
-              <canvas
-                ref={canvasRef}
-                className={`w-full h-64 border-2 rounded-lg ${
-                  isDarkMode 
-                    ? 'border-neon-blue/30 bg-black/50' 
-                    : 'border-gray-300 bg-white'
-                }`}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              />
+              <div className="relative">
+                <canvas
+                  ref={canvasRef}
+                  className={`w-full h-64 border-2 rounded-lg ${
+                    isDarkMode 
+                      ? 'border-neon-blue/30 bg-black/50' 
+                      : 'border-gray-300 bg-white'
+                  } touch-none`}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseLeave}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  width={800}
+                  height={400}
+                />
+                {showTracking && state.currentCharacter && (
+                  <div 
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    style={{ opacity: 0.2 }}
+                  >
+                    <span className="text-8xl text-gray-400">
+                      {state.currentCharacter}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Canvas Controls */}
+              <div className="flex flex-wrap gap-4 mt-4 justify-center">
+                <div className="flex items-center space-x-2">
+                  <label className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                    Grid:
+                  </label>
+                  <input
+                    type="checkbox"
+                    checked={showGrid}
+                    onChange={(e) => setShowGrid(e.target.checked)}
+                    className={`form-checkbox h-5 w-5 ${
+                      isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
+                    }`}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <label className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                    Stroke Width:
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    value={strokeWidth}
+                    onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <label className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                    Grid Size:
+                  </label>
+                  <input
+                    type="range"
+                    min="20"
+                    max="80"
+                    step="10"
+                    value={gridSize}
+                    onChange={(e) => setGridSize(Number(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
               <div className="flex justify-between mt-4">
                 <button
                   onClick={clearCanvas}
                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                     isDarkMode 
-                      ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20 hover:shadow-[0_0_10px_rgba(0,149,255,0.2)]' 
+                      ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20' 
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -1053,7 +1546,7 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                   onClick={undoStroke}
                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                     isDarkMode 
-                      ? 'bg-neon-pink/10 text-neon-pink hover:bg-neon-pink/20 hover:shadow-[0_0_10px_rgba(255,0,128,0.2)]' 
+                      ? 'bg-neon-pink/10 text-neon-pink hover:bg-neon-pink/20' 
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -1061,188 +1554,118 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                 </button>
               </div>
             </div>
-          )}
 
-          {/* Text Input */}
-          {inputMode === 'type' && (
-            <div className="mb-6">
-              <input
-                type="text"
-                value={state.userInput}
-                onChange={(e) => setState(prev => ({ ...prev, userInput: e.target.value }))}
-                placeholder="Type your answer..."
-                className={`w-full p-4 rounded-lg ${
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-6">
+              <button
+                onClick={() => {
+                  setState(prev => ({
+                    ...prev,
+                    currentIndex: Math.max(0, prev.currentIndex - 1)
+                  }));
+                  clearCanvas();
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                   isDarkMode 
-                    ? 'bg-dark-lighter border-dark-border text-text-primary' 
-                    : 'bg-white border-gray-300 text-gray-800'
-                } border`}
-                disabled={state.isCorrect !== null}
-              />
-            </div>
-          )}
-
-          {/* Translation Input */}
-          {requireTranslation && (
-            <div className="mb-6">
-              <input
-                type="text"
-                value={state.translationInput}
-                onChange={(e) => setState(prev => ({ ...prev, translationInput: e.target.value }))}
-                placeholder="Enter translation..."
-                className={`w-full p-4 rounded-lg ${
+                    ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                disabled={state.currentIndex === 0}
+              >
+                Previous
+              </button>
+              <button
+                onClick={handleSubmit}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
                   isDarkMode 
-                    ? 'bg-dark-lighter border-dark-border text-text-primary' 
-                    : 'bg-white border-gray-300 text-gray-800'
-                } border`}
-                disabled={state.isCorrect !== null}
-              />
+                    ? 'bg-neon-pink hover:bg-neon-pink/90 text-white shadow-[0_0_10px_rgba(255,0,128,0.4)]' 
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                }`}
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => {
+                  setState(prev => ({
+                    ...prev,
+                    currentIndex: Math.min(prev.characterList.length - 1, prev.currentIndex + 1)
+                  }));
+                  clearCanvas();
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                  isDarkMode 
+                    ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                disabled={state.currentIndex === state.characterList.length - 1}
+              >
+                Next
+              </button>
             </div>
-          )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={handleSubmit}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-                isDarkMode 
-                  ? 'bg-neon-pink hover:bg-neon-pink/90 text-white shadow-[0_0_10px_rgba(255,0,128,0.4)]' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
-            >
-              Submit
-            </button>
-            <button
-              onClick={handleNext}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-                isDarkMode 
-                  ? 'bg-neon-blue hover:bg-neon-blue/90 text-white shadow-[0_0_10px_rgba(0,149,255,0.4)]' 
-                  : 'bg-gray-500 hover:bg-gray-600 text-white'
-              }`}
-            >
-              Next
-            </button>
-          </div>
-
-          {/* Feedback Display */}
-          {state.isCorrect !== null && (
-            <div className={`mt-6 p-4 rounded-lg ${
-              state.isCorrect 
-                ? isDarkMode 
-                  ? 'bg-neon-blue/20 border-neon-blue/30' 
-                  : 'bg-green-100 border-green-200'
-                : isDarkMode 
-                  ? 'bg-neon-pink/20 border-neon-pink/30' 
-                  : 'bg-red-100 border-red-200'
-            } border`}>
-              <div className={`text-lg font-medium mb-2 ${
+            {/* Feedback Display */}
+            {state.isCorrect !== null && (
+              <div className={`mt-6 p-4 rounded-lg ${
                 state.isCorrect 
                   ? isDarkMode 
-                    ? 'text-neon-blue' 
-                    : 'text-green-800'
+                    ? 'bg-neon-blue/20 border-neon-blue/30' 
+                    : 'bg-green-100 border-green-200'
                   : isDarkMode 
-                    ? 'text-neon-pink' 
-                    : 'text-red-800'
-              }`}>
-                {state.isCorrect ? 'Correct!' : 'Incorrect!'}
-              </div>
-              {!state.isCorrect && state.currentWord && (
-                <div className={`${isDarkMode ? 'text-text-primary' : 'text-gray-800'} mb-2`}>
-                  Correct Answer: {state.currentWord.japanese}
+                    ? 'bg-neon-pink/20 border-neon-pink/30' 
+                    : 'bg-red-100 border-red-200'
+              } border`}>
+                <div className={`text-lg font-medium mb-2 ${
+                  state.isCorrect 
+                    ? isDarkMode 
+                      ? 'text-neon-blue' 
+                      : 'text-green-800'
+                    : isDarkMode 
+                      ? 'text-neon-pink' 
+                      : 'text-red-800'
+                }`}>
+                  {state.isCorrect ? 'Correct!' : 'Try Again!'}
                 </div>
-              )}
+                {state.feedback && (
+                  <div className={`${isDarkMode ? 'text-text-primary' : 'text-gray-800'}`}>
+                    <p className="mb-2">{state.feedback.message}</p>
+                    {state.feedback.suggestions && state.feedback.suggestions.length > 0 && (
+                      <ul className="list-disc list-inside mt-2">
+                        {state.feedback.suggestions.map((suggestion, index) => (
+                          <li key={index}>{suggestion}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
+            <div className="text-center">
+              <p className={`text-lg ${isDarkMode ? 'text-text-primary' : 'text-gray-700'}`}>
+                No characters available for the selected mode and filters.
+              </p>
+              <button
+                onClick={() => {
+                  setState(prev => ({
+                    ...prev,
+                    selectedCategory: 'all',
+                    selectedDifficulty: 'all',
+                    searchTerm: ''
+                  }));
+                }}
+                className={`mt-4 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                  isDarkMode 
+                    ? 'bg-neon-blue text-white hover:bg-neon-blue/90' 
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
+              >
+                Reset Filters
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* Character Analysis */}
-        {state.characterDecomposition && (
-          <div className="mb-6">
-            <CharacterDecompositionView
-              decomposition={state.characterDecomposition}
-              isDarkMode={isDarkMode}
-            />
           </div>
         )}
-
-        {/* Mastery Progress */}
-        {state.currentProgress.length > 0 && (
-          <div className="mb-6">
-            <MasteryIndicator
-              level={state.masteryLevel}
-              progress={state.currentProgress[0]}
-              isDarkMode={isDarkMode}
-            />
-          </div>
-        )}
-
-        {/* Practice Grid */}
-        {state.practiceGrid && state.currentWord && (
-          <div className="mb-6">
-            <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-neon-blue' : 'text-gray-700'}`}>
-              Practice Similar Characters
-            </h3>
-            <PracticeGrid
-              characters={['日', '月', '火', '水', '木', '金', '土']} // Example characters
-              onSelect={(char) => {
-                setState(prev => ({
-                  ...prev,
-                  currentWord: quizWords.find(w => w.japanese === char) || null,
-                  userInput: '',
-                  isCorrect: null
-                }));
-              }}
-              isDarkMode={isDarkMode}
-            />
-          </div>
-        )}
-
-        {/* Settings Panel */}
-        <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
-          <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-neon-blue' : 'text-gray-700'}`}>
-            Settings
-          </h3>
-          <div className="space-y-4">
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                checked={state.showAnimation}
-                onChange={(e) => setState(prev => ({ ...prev, showAnimation: e.target.checked }))}
-                className={`form-checkbox h-5 w-5 ${
-                  isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
-                }`}
-              />
-              <span className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
-                Show Animation
-              </span>
-            </label>
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                checked={state.showStrokeGuide}
-                onChange={(e) => setState(prev => ({ ...prev, showStrokeGuide: e.target.checked }))}
-                className={`form-checkbox h-5 w-5 ${
-                  isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
-                }`}
-              />
-              <span className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
-                Show Stroke Guide
-              </span>
-            </label>
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                checked={state.showDecomposition}
-                onChange={(e) => setState(prev => ({ ...prev, showDecomposition: e.target.checked }))}
-                className={`form-checkbox h-5 w-5 ${
-                  isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
-                }`}
-              />
-              <span className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
-                Show Character Analysis
-              </span>
-            </label>
-          </div>
-        </div>
       </div>
     </div>
   );

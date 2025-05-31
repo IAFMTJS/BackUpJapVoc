@@ -68,11 +68,7 @@ const KanjiPractice: React.FC = () => {
   const { updateProgress, progress } = useProgress();
   const { checkAchievements } = useAchievements();
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Sound effects
-  const correctSound = new Audio('/sounds/correct.mp3');
-  const incorrectSound = new Audio('/sounds/incorrect.mp3');
-  const timeUpSound = new Audio('/sounds/time-up.mp3');
+  const [showHelp, setShowHelp] = useState(false);
 
   // Add logging for component state
   useEffect(() => {
@@ -158,7 +154,6 @@ const KanjiPractice: React.FC = () => {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
     } else if (timerActive && timeLeft === 0) {
-      timeUpSound.play();
       setTimerActive(false);
       setIsCorrect(false);
       setStreak(0);
@@ -284,12 +279,15 @@ const KanjiPractice: React.FC = () => {
   };
 
   const checkAnswer = (answer: string, correctAnswer: string | string[]): boolean => {
+    if (!answer || !correctAnswer) return false;
+    
+    const normalizedAnswer = answer.toLowerCase().trim();
     if (Array.isArray(correctAnswer)) {
       return correctAnswer.some(correct => 
-        answer.toLowerCase().trim() === correct.toLowerCase().trim()
+        correct && normalizedAnswer === correct.toLowerCase().trim()
       );
     }
-    return answer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+    return normalizedAnswer === correctAnswer.toLowerCase().trim();
   };
 
   const calculateScore = (isCorrect: boolean, streak: number): number => {
@@ -305,31 +303,36 @@ const KanjiPractice: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!timerActive) return;
+    if (!timerActive || !currentKanji) return;
 
-    const currentKanji = filteredKanji[currentIndex];
     let isAnswerCorrect = false;
+    let correctAnswer: string | string[] | undefined;
 
     switch (mode) {
       case 'meaning-quiz':
-        isAnswerCorrect = checkAnswer(userAnswer, currentKanji.meaning);
+        correctAnswer = currentKanji.english;
         break;
       case 'reading-quiz':
-        isAnswerCorrect = checkAnswer(userAnswer, readingType === 'onyomi' ? currentKanji.onyomi : currentKanji.kunyomi);
+        correctAnswer = readingType === 'onyomi' ? currentKanji.onyomi : currentKanji.kunyomi;
         break;
       case 'writing-quiz':
-        isAnswerCorrect = checkAnswer(userAnswer, writingMode === 'meaning' ? currentKanji.character : currentKanji.onyomi[0]);
+        correctAnswer = writingMode === 'meaning' ? currentKanji.character : currentKanji.onyomi[0];
         break;
     }
+
+    if (!correctAnswer) {
+      console.error('No correct answer available for current question');
+      return;
+    }
+
+    isAnswerCorrect = checkAnswer(userAnswer, correctAnswer);
 
     const pointsEarned = calculateScore(isAnswerCorrect, streak);
 
     if (isAnswerCorrect) {
-      correctSound.play();
       setScore(prev => prev + pointsEarned);
       setStreak(prev => prev + 1);
     } else {
-      incorrectSound.play();
       setStreak(0);
     }
 
@@ -516,7 +519,7 @@ const KanjiPractice: React.FC = () => {
         {mode === 'meaning-quiz' && (
           <>
             <div className="text-xl mb-4">
-              The meaning is: {currentKanji.meaning}
+              The meaning is: {currentKanji.english}
             </div>
             {settings.showKanjiGames && (
               <div className="text-8xl mb-4">{currentKanji.character}</div>
@@ -572,6 +575,89 @@ const KanjiPractice: React.FC = () => {
     );
   };
 
+  const renderQuizHelp = () => {
+    if (mode === 'flashcards') return null;
+
+    return (
+      <div className={`mb-6 ${themeClasses.card} rounded-lg p-4 border ${themeClasses.border}`}>
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className={`w-full text-left flex justify-between items-center ${themeClasses.text}`}
+        >
+          <span className="font-semibold">How does this quiz work?</span>
+          <span>{showHelp ? '▼' : '▶'}</span>
+        </button>
+        
+        {showHelp && (
+          <div className="mt-4 space-y-4">
+            {mode === 'meaning-quiz' && (
+              <div>
+                <h3 className="font-semibold mb-2">Meaning Quiz:</h3>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>You will be shown a kanji character</li>
+                  <li>Type the English meaning of the kanji</li>
+                  <li>You have {QUIZ_SETTINGS[quizDifficulty].timeLimit} seconds per question</li>
+                  <li>Build a streak of correct answers to earn bonus points</li>
+                  <li>Complete {QUIZ_SETTINGS[quizDifficulty].maxQuestions} questions to finish the quiz</li>
+                </ul>
+              </div>
+            )}
+            
+            {mode === 'reading-quiz' && (
+              <div>
+                <h3 className="font-semibold mb-2">Reading Quiz:</h3>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>You will be shown a kanji character</li>
+                  <li>Type either the onyomi (Chinese reading) or kunyomi (Japanese reading)</li>
+                  <li>You can switch between onyomi and kunyomi using the reading type selector</li>
+                  <li>You have {QUIZ_SETTINGS[quizDifficulty].timeLimit} seconds per question</li>
+                  <li>Build a streak of correct answers to earn bonus points</li>
+                  <li>Complete {QUIZ_SETTINGS[quizDifficulty].maxQuestions} questions to finish the quiz</li>
+                </ul>
+              </div>
+            )}
+            
+            {mode === 'writing-quiz' && (
+              <div>
+                <h3 className="font-semibold mb-2">Writing Quiz:</h3>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>You will be shown either the meaning or reading of a kanji</li>
+                  <li>Type the correct kanji character</li>
+                  <li>You can switch between meaning and reading prompts using the writing mode selector</li>
+                  <li>You have {QUIZ_SETTINGS[quizDifficulty].timeLimit} seconds per question</li>
+                  <li>Build a streak of correct answers to earn bonus points</li>
+                  <li>Complete {QUIZ_SETTINGS[quizDifficulty].maxQuestions} questions to finish the quiz</li>
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h3 className="font-semibold mb-2">Difficulty Levels:</h3>
+              <ul className="list-disc list-inside space-y-2">
+                <li><strong>Easy:</strong> {QUIZ_SETTINGS.easy.timeLimit}s per question, {QUIZ_SETTINGS.easy.maxQuestions} questions</li>
+                <li><strong>Medium:</strong> {QUIZ_SETTINGS.medium.timeLimit}s per question, {QUIZ_SETTINGS.medium.maxQuestions} questions</li>
+                <li><strong>Hard:</strong> {QUIZ_SETTINGS.hard.timeLimit}s per question, {QUIZ_SETTINGS.hard.maxQuestions} questions</li>
+              </ul>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h3 className="font-semibold mb-2">Scoring System:</h3>
+              <ul className="list-disc list-inside space-y-2">
+                <li>1 point for each correct answer</li>
+                <li>Bonus points when you build a streak:</li>
+                <ul className="list-disc list-inside ml-4 mt-2">
+                  <li>Easy: +{QUIZ_SETTINGS.easy.streakBonus} points after {QUIZ_SETTINGS.easy.requiredStreak} correct answers</li>
+                  <li>Medium: +{QUIZ_SETTINGS.medium.streakBonus} points after {QUIZ_SETTINGS.medium.requiredStreak} correct answers</li>
+                  <li>Hard: +{QUIZ_SETTINGS.hard.streakBonus} points after {QUIZ_SETTINGS.hard.requiredStreak} correct answers</li>
+                </ul>
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -590,7 +676,10 @@ const KanjiPractice: React.FC = () => {
             Flashcards
           </button>
           <button
-            onClick={() => setMode('meaning-quiz')}
+            onClick={() => {
+              setMode('meaning-quiz');
+              startQuiz();
+            }}
             className={`px-4 py-2 rounded-lg ${
               mode === 'meaning-quiz' 
                 ? 'bg-primary text-white' 
@@ -600,7 +689,10 @@ const KanjiPractice: React.FC = () => {
             Meaning Quiz
           </button>
           <button
-            onClick={() => setMode('reading-quiz')}
+            onClick={() => {
+              setMode('reading-quiz');
+              startQuiz();
+            }}
             className={`px-4 py-2 rounded-lg ${
               mode === 'reading-quiz' 
                 ? 'bg-primary text-white' 
@@ -610,7 +702,10 @@ const KanjiPractice: React.FC = () => {
             Reading Quiz
           </button>
           <button
-            onClick={() => setMode('writing-quiz')}
+            onClick={() => {
+              setMode('writing-quiz');
+              startQuiz();
+            }}
             className={`px-4 py-2 rounded-lg ${
               mode === 'writing-quiz' 
                 ? 'bg-primary text-white' 
@@ -620,6 +715,9 @@ const KanjiPractice: React.FC = () => {
             Writing Quiz
           </button>
         </div>
+
+        {/* Quiz Help Section */}
+        {renderQuizHelp()}
 
         {/* Filters */}
         <div className="flex gap-4 mb-6">
@@ -750,6 +848,34 @@ const KanjiPractice: React.FC = () => {
             </div>
           ) : (
             <div className={`${themeClasses.card} rounded-lg p-8 border ${themeClasses.border}`}>
+              {/* Quiz Mode Selection */}
+              {mode === 'reading-quiz' && (
+                <div className="mb-6">
+                  <select
+                    value={readingType}
+                    onChange={(e) => setReadingType(e.target.value as 'onyomi' | 'kunyomi')}
+                    className={`px-4 py-2 rounded-lg border ${themeClasses.input}`}
+                  >
+                    <option value="onyomi">Onyomi (Chinese Reading)</option>
+                    <option value="kunyomi">Kunyomi (Japanese Reading)</option>
+                  </select>
+                </div>
+              )}
+
+              {mode === 'writing-quiz' && (
+                <div className="mb-6">
+                  <select
+                    value={writingMode}
+                    onChange={(e) => setWritingMode(e.target.value as 'meaning' | 'reading')}
+                    className={`px-4 py-2 rounded-lg border ${themeClasses.input}`}
+                  >
+                    <option value="meaning">Write from Meaning</option>
+                    <option value="reading">Write from Reading</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Quiz Content */}
               {renderQuizContent()}
             </div>
           )

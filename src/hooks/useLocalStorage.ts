@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   // Get from local storage then
   // parse stored json or return initialValue
-  const readValue = () => {
+  const readValue = (): T => {
     // Prevent build error "window is undefined" but keep working
     if (typeof window === 'undefined') {
       return initialValue;
@@ -47,19 +47,17 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
   }, []);
 
   useEffect(() => {
-    const handleStorageChange = () => {
-      setStoredValue(readValue());
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === key && e.newValue) {
+        setStoredValue(JSON.parse(e.newValue));
+      }
     };
 
     // this only works for other documents, not the current one
     window.addEventListener('storage', handleStorageChange);
-    // this is a custom event, triggered in writeValueToLocalStorage
-    window.addEventListener('local-storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('local-storage', handleStorageChange);
-    };
+    
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('storage', handleStorageChange);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

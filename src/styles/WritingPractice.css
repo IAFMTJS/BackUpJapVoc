@@ -1,0 +1,261 @@
+.writing-practice {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.writing-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.writing-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.writing-canvas-container {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background: var(--card-bg);
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.writing-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.stroke-order-guide {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+.stroke-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--card-bg-secondary);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 2px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.stroke-number.current {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+.stroke-number.completed {
+  background: var(--success-color);
+  color: white;
+  border-color: var(--success-color);
+}
+
+.feedback {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+.feedback.positive {
+  background: rgba(46, 213, 115, 0.1);
+  color: var(--success-color);
+  border: 1px solid var(--success-color);
+}
+
+.feedback.negative {
+  background: rgba(255, 71, 87, 0.1);
+  color: var(--error-color);
+  border: 1px solid var(--error-color);
+}
+
+.writing-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--card-bg-secondary);
+  border-radius: 0.5rem;
+}
+
+/* Tooltip styles */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 120px;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .writing-practice {
+    padding: 1rem;
+  }
+
+  .writing-canvas-container {
+    height: 300px;
+  }
+
+  .writing-controls {
+    flex-wrap: wrap;
+  }
+
+  .stroke-order-guide {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .stroke-number {
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .writing-practice {
+    --card-bg: #1a1a1a;
+    --card-bg-secondary: #2a2a2a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --border-color: #404040;
+    --primary-color: #4a90e2;
+    --success-color: #2ed573;
+    --error-color: #ff4757;
+    --tooltip-bg: #333333;
+    --tooltip-text: #ffffff;
+  }
+}
+
+/* Light Mode Support */
+@media (prefers-color-scheme: light) {
+  .writing-practice {
+    --card-bg: #ffffff;
+    --card-bg-secondary: #f5f5f5;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --border-color: #e0e0e0;
+    --primary-color: #2196f3;
+    --success-color: #4caf50;
+    --error-color: #f44336;
+    --tooltip-bg: #333333;
+    --tooltip-text: #ffffff;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .writing-practice * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .writing-practice {
+    --card-bg: #000000;
+    --card-bg-secondary: #ffffff;
+    --text-primary: #ffffff;
+    --text-secondary: #ffffff;
+    --border-color: #ffffff;
+    --primary-color: #ffffff;
+    --success-color: #ffffff;
+    --error-color: #ffffff;
+    --tooltip-bg: #000000;
+    --tooltip-text: #ffffff;
+  }
+
+  .stroke-number {
+    border-width: 3px;
+  }
+
+  .feedback {
+    border-width: 3px;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) {
+  .writing-canvas {
+    cursor: none;
+  }
+
+  .writing-controls button {
+    padding: 12px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+} 

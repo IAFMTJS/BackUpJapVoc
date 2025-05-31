@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Button, Typography, CircularProgress, Alert } from '@mui/material';
+import { useDatabase } from '../context/DatabaseContext';
+import { DictionaryItem } from '../types/dictionary';
 import { wordsByLevel } from '../data/japaneseWords';
 
 interface DownloadProgress {
@@ -8,13 +11,37 @@ interface DownloadProgress {
   status: 'idle' | 'downloading' | 'complete' | 'error';
 }
 
-export const AudioDownloader: React.FC = () => {
+const AudioDownloader: React.FC = () => {
+  const { db } = useDatabase();
+  const [words, setWords] = useState<DictionaryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<Record<number, DownloadProgress>>({});
   const [isDownloading, setIsDownloading] = useState(false);
 
+  useEffect(() => {
+    const loadWords = async () => {
+      if (!db) return;
+      try {
+        const allWords = await db.getAll('words');
+        setWords(allWords);
+      } catch (err) {
+        setError('Failed to load words from database');
+        console.error('Error loading words:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadWords();
+  }, [db]);
+
+  const getWordsByLevel = useCallback((level: number) => {
+    return words.filter(word => word.level === level);
+  }, [words]);
+
   const downloadAudioFiles = async (level: number) => {
-    const words = wordsByLevel[level] || [];
-    const totalFiles = words.length * 3; // Each word has 1 main audio + 2 examples
+    const levelWords = getWordsByLevel(level);
+    const totalFiles = levelWords.length * 3; // Each word has 1 main audio + 2 examples
     let completedFiles = 0;
 
     setDownloadProgress(prev => ({
@@ -28,7 +55,7 @@ export const AudioDownloader: React.FC = () => {
       const audioFolder = zip.folder(`level-${level}`);
 
       // Download all audio files for this level
-      for (const word of words) {
+      for (const word of levelWords) {
         // Download main word audio
         try {
           const response = await fetch(`/audio/${word.id}.mp3`);
@@ -108,26 +135,27 @@ export const AudioDownloader: React.FC = () => {
   };
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
+    <Box sx={{ p: 2 }}>
       <h2 className="text-xl font-bold mb-4">Download Audio Files</h2>
       <p className="text-gray-600 mb-4">
         Download audio files for offline use. Files are organized by level and include both word pronunciations and example sentences.
       </p>
       
       <div className="space-y-4">
-        {Object.keys(wordsByLevel).map(level => {
-          const progress = downloadProgress[Number(level)];
-          const words = wordsByLevel[Number(level)];
+        {Object.keys([...Array(5)]).map(level => {
+          const levelNum = Number(level) + 1;
+          const levelWords = getWordsByLevel(levelNum);
+          const progress = downloadProgress[levelNum];
           
           return (
-            <div key={level} className="border rounded p-3">
+            <Box key={level} sx={{ mb: 2 }}>
+              <Typography variant="h6">Level {levelNum}</Typography>
               <div className="flex justify-between items-center mb-2">
                 <div>
-                  <h3 className="font-semibold">Level {level}</h3>
-                  <p className="text-sm text-gray-600">{words.length} words</p>
+                  <p className="text-sm text-gray-600">{levelWords.length} words</p>
                 </div>
                 <button
-                  onClick={() => downloadAudioFiles(Number(level))}
+                  onClick={() => downloadAudioFiles(levelNum)}
                   disabled={progress?.status === 'downloading'}
                   className={`px-4 py-2 rounded ${
                     progress?.status === 'downloading'
@@ -156,7 +184,7 @@ export const AudioDownloader: React.FC = () => {
               {progress?.status === 'error' && (
                 <p className="text-sm text-red-600 mt-1">Error downloading files</p>
               )}
-            </div>
+            </Box>
           );
         })}
         
@@ -172,6 +200,8 @@ export const AudioDownloader: React.FC = () => {
           {isDownloading ? 'Downloading All Levels...' : 'Download All Levels'}
         </button>
       </div>
-    </div>
+    </Box>
   );
-}; 
+};
+
+export default AudioDownloader; 

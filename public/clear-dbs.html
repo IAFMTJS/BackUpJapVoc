@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Databases</title>
+    <script src="https://unpkg.com/idb@7.1.1/build/umd.js"></script>
+</head>
+<body>
+    <h1>Database Clearing Tool</h1>
+    <button onclick="clearDatabases()">Clear All Databases</button>
+    <div id="status"></div>
+
+    <script>
+        async function clearDatabases() {
+            const status = document.getElementById('status');
+            status.innerHTML = 'Clearing databases...<br>';
+            
+            const databases = [
+                'DictionaryDB',
+                'JapVocDB',
+                'japvoc-romaji-cache'
+            ];
+
+            for (const dbName of databases) {
+                try {
+                    status.innerHTML += `Deleting ${dbName}...<br>`;
+                    await idb.deleteDB(dbName);
+                    status.innerHTML += `Successfully deleted ${dbName}<br>`;
+                } catch (error) {
+                    status.innerHTML += `Error deleting ${dbName}: ${error.message}<br>`;
+                }
+            }
+
+            status.innerHTML += '<br>Database clearing complete. You can now close this window and refresh your application.';
+        }
+    </script>
+</body>
+</html> 

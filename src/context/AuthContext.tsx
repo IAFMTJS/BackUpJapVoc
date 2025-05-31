@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { 
   auth, 
   db, 
@@ -50,51 +50,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [sessionWarning, setSessionWarning] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    console.log('AuthProvider: Starting authentication state listener...');
-    try {
-      const unsubscribe = onAuthStateChanged(auth, 
-        (user) => {
-          console.log('AuthProvider: Auth state changed:', {
-            hasUser: !!user,
-            email: user?.email,
-            emailVerified: user?.emailVerified,
-            timestamp: new Date().toISOString()
-          });
-          setCurrentUser(user);
-          setIsEmailVerified(user?.emailVerified ?? false);
-          setLoading(false);
-          setInitError(null);
-        },
-        (error) => {
-          console.error('AuthProvider: Firebase auth initialization error:', {
-            error,
-            code: error instanceof Error ? (error as AuthError).code : 'unknown',
-            message: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date().toISOString()
-          });
-          setInitError(error instanceof Error ? error.message : 'Unknown error occurred');
-          setLoading(false);
-        }
-      );
+    // Only set up the listener if it hasn't been set up yet
+    if (!unsubscribeRef.current) {
+      console.log('AuthProvider: Starting authentication state listener...');
+      try {
+        const unsubscribe = onAuthStateChanged(auth, 
+          (user) => {
+            console.log('AuthProvider: Auth state changed:', {
+              hasUser: !!user,
+              email: user?.email,
+              emailVerified: user?.emailVerified,
+              timestamp: new Date().toISOString()
+            });
+            setCurrentUser(user);
+            setIsEmailVerified(user?.emailVerified ?? false);
+            setLoading(false);
+            setInitError(null);
+          },
+          (error) => {
+            console.error('AuthProvider: Firebase auth initialization error:', {
+              error,
+              code: error instanceof Error ? (error as AuthError).code : 'unknown',
+              message: error instanceof Error ? error.message : 'Unknown error',
+              timestamp: new Date().toISOString()
+            });
+            setInitError(error instanceof Error ? error.message : 'Unknown error occurred');
+            setLoading(false);
+          }
+        );
 
-      console.log('AuthProvider: Auth state listener set up successfully');
-      return () => {
-        console.log('AuthProvider: Cleaning up auth state listener');
-        unsubscribe();
-      };
-    } catch (error) {
-      console.error('AuthProvider: Critical error setting up auth state listener:', {
-        error,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString()
-      });
-      setInitError(error instanceof Error ? error.message : 'Failed to initialize authentication');
-      setLoading(false);
+        unsubscribeRef.current = unsubscribe;
+        console.log('AuthProvider: Auth state listener set up successfully');
+      } catch (error) {
+        console.error('AuthProvider: Critical error setting up auth state listener:', {
+          error,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        setInitError(error instanceof Error ? error.message : 'Failed to initialize authentication');
+        setLoading(false);
+      }
     }
-  }, []);
+
+    // Cleanup only on unmount
+    return () => {
+      if (unsubscribeRef.current) {
+        console.log('AuthProvider: Cleaning up auth state listener');
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array since we only want to set up once
 
   const handleError = (error: unknown): never => {
     if (error instanceof Error) {

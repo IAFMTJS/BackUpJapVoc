@@ -3,7 +3,7 @@ import { ProgressItem, PendingProgressItem, Settings } from '../types';
 // Database configuration
 const DB_CONFIG = {
   name: 'JapVocDB',
-  version: 1,
+  version: 5,
   stores: {
     words: {
       name: 'words',
@@ -67,7 +67,7 @@ type Migration = {
 // Migration definitions
 const migrations: Migration[] = [
   {
-    version: 1,
+    version: 2,
     upgrade: async (db: IDBDatabase, transaction: IDBTransaction) => {
       console.log('[IndexedDB] Starting migration to version 1...');
       try {
@@ -191,43 +191,34 @@ function cleanupConnectionState() {
 }
 
 // Helper function to delete the database
-async function deleteDatabase(): Promise<void> {
-  console.log('[IndexedDB] Starting database deletion...', {
-    timestamp: new Date().toISOString()
-  });
-
-  // Close any existing connection first
-  if (dbConnection) {
-    try {
-      dbConnection.close();
-    } catch (error) {
-      console.error('[IndexedDB] Error closing connection before deletion:', error);
+export const deleteDB = async (dbName: string): Promise<void> => {
+  console.log(`Deleting database: ${dbName}`);
+  try {
+    // Close any existing connections
+    const db = await openDB();
+    if (db) {
+      db.close();
     }
-    dbConnection = null;
-  }
 
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(DB_CONFIG.name);
+    // Delete the database
+    const request = indexedDB.deleteDatabase(dbName);
     
-    request.onerror = () => {
-      const error = request.error;
-      console.error('[IndexedDB] Failed to delete database:', {
-        error,
-        message: error?.message || 'Unknown error',
-        timestamp: new Date().toISOString()
-      });
-      reject(error);
-    };
-
-    request.onsuccess = () => {
-      console.log('[IndexedDB] Database deleted successfully', {
-        timestamp: new Date().toISOString()
-      });
-      // Wait a bit before resolving to ensure cleanup is complete
-      setTimeout(resolve, 1000);
-    };
-  });
-}
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        console.log(`Database ${dbName} deleted successfully`);
+        // Add a small delay to ensure cleanup is complete
+        setTimeout(resolve, 100);
+      };
+      request.onerror = (event) => {
+        console.error('Error deleting database:', event);
+        reject(new Error('Failed to delete database'));
+      };
+    });
+  } catch (error) {
+    console.error('Error in deleteDB:', error);
+    throw error;
+  }
+};
 
 // Helper function to wait
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -309,7 +300,7 @@ export const openDB = async (retryCount = 0): Promise<IDBDatabase> => {
           
           try {
             // Try to delete the database if it's corrupted
-            await deleteDatabase();
+            await deleteDB(DB_CONFIG.name);
             await wait(RETRY_DELAY);
             // Retry the connection
             const db = await openDB(retryCount + 1);
@@ -422,7 +413,7 @@ export const openDB = async (retryCount = 0): Promise<IDBDatabase> => {
               // If we have retries left, try to recover
               if (retryCount < MAX_RETRIES) {
                 console.log(`[IndexedDB] Attempting recovery after migration failure (${retryCount + 1}/${MAX_RETRIES})...`);
-                await deleteDatabase();
+                await deleteDB(DB_CONFIG.name);
                 await wait(RETRY_DELAY);
                 const newDb = await openDB(retryCount + 1);
                 resolve(newDb);
@@ -458,7 +449,7 @@ export const openDB = async (retryCount = 0): Promise<IDBDatabase> => {
         if (retryCount < MAX_RETRIES) {
           console.log(`[IndexedDB] Attempting recovery after block (${retryCount + 1}/${MAX_RETRIES})...`);
           try {
-            await deleteDatabase();
+            await deleteDB(DB_CONFIG.name);
             await wait(RETRY_DELAY);
             const newDb = await openDB(retryCount + 1);
             resolve(newDb);
@@ -489,7 +480,7 @@ export const openDB = async (retryCount = 0): Promise<IDBDatabase> => {
         timestamp: new Date().toISOString()
       });
       try {
-        await deleteDatabase();
+        await deleteDB(DB_CONFIG.name);
         await wait(RETRY_DELAY);
         return openDB(retryCount + 1);
       } catch (retryError) {

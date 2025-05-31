@@ -16,7 +16,7 @@ interface AudioCacheEntry {
 
 class AudioGenerationManager {
   private static instance: AudioGenerationManager;
-  private audioService: AudioService;
+  private audioService: AudioService | null = null;
   private cache: Map<string, AudioCacheEntry> = new Map();
   private isGenerating: boolean = false;
   private generationQueue: AudioGenerationOptions[] = [];
@@ -24,7 +24,6 @@ class AudioGenerationManager {
   private readonly CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
 
   private constructor() {
-    this.audioService = AudioService.getInstance();
     this.loadCache();
   }
 
@@ -87,6 +86,13 @@ class AudioGenerationManager {
     this.saveCache();
   }
 
+  private getAudioService(): AudioService {
+    if (!this.audioService) {
+      this.audioService = AudioService.getInstance();
+    }
+    return this.audioService;
+  }
+
   private async generateAudio(options: AudioGenerationOptions): Promise<string> {
     const { text, voice, rate, pitch, quality = 'medium' } = options;
     const cacheKey = this.getCacheKey(text, voice, rate, pitch, quality);
@@ -102,7 +108,7 @@ class AudioGenerationManager {
       // Use Web Speech API to generate audio
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.voice = voice ? 
-        this.audioService.getAvailableVoices().find(v => v.name === voice) || null :
+        this.getAudioService().getAvailableVoices().find(v => v.name === voice) || null :
         null;
       utterance.rate = rate || 1;
       utterance.pitch = pitch || 1;

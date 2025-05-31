@@ -67,7 +67,37 @@ const Home: React.FC = () => {
               </p>
             </Link>
 
-            {/* Add more navigation links as needed */}
+            <Link 
+              to="/trivia" 
+              className={`p-6 rounded-xl ${isDarkMode ? 'bg-gradient-to-br from-neon-green/20 to-neon-yellow/20' : 'bg-gradient-to-br from-green-500 to-yellow-500'} 
+                ${isDarkMode ? 'border border-neon-green/30' : 'border-0'} 
+                ${isDarkMode ? 'text-neon-green' : 'text-white'} 
+                hover:shadow-[0_0_20px_rgba(0,255,128,0.3)] transition-all duration-300`}
+            >
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">🎯</span>
+                <h2 className={`text-lg font-semibold`}>Japanese Trivia</h2>
+              </div>
+              <p className={`mt-2 ${isDarkMode ? 'text-neon-yellow' : 'text-white/80'}`}>
+                Discover fascinating facts about Japanese culture, history, and more
+              </p>
+            </Link>
+
+            <Link 
+              to="/games" 
+              className={`p-6 rounded-xl ${isDarkMode ? 'bg-gradient-to-br from-neon-purple/20 to-neon-orange/20' : 'bg-gradient-to-br from-purple-500 to-orange-500'} 
+                ${isDarkMode ? 'border border-neon-purple/30' : 'border-0'} 
+                ${isDarkMode ? 'text-neon-purple' : 'text-white'} 
+                hover:shadow-[0_0_20px_rgba(128,0,255,0.3)] transition-all duration-300`}
+            >
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">🎮</span>
+                <h2 className={`text-lg font-semibold`}>Learning Games</h2>
+              </div>
+              <p className={`mt-2 ${isDarkMode ? 'text-neon-orange' : 'text-white/80'}`}>
+                Practice Japanese through fun interactive games
+              </p>
+            </Link>
           </div>
         </div>
       </div>

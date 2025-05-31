@@ -88,6 +88,18 @@ export interface DictionaryItem {
   emotionalContext?: EmotionalContext;
   createdAt: Date;
   updatedAt: Date;
+  isHiragana: boolean;
+  isKatakana: boolean;
+  audioUrl?: string;  // URL to the audio file
+  lastPlayed?: Date;  // When the audio was last played
+  learningStatus: {
+    isLearned: boolean;
+    lastReviewed: Date;
+    reviewCount: number;
+    correctAttempts: number;
+    incorrectAttempts: number;
+    masteryLevel: number;  // 0-5 scale, similar to levels page
+  };
 }
 
 export interface DictionarySearchOptions {
@@ -285,4 +297,38 @@ export interface DictionaryState {
   isSyncing: boolean;
   isBackingUp: boolean;
   error?: string;
+}
+
+export interface WordProgress {
+  wordId: string;
+  masteryLevel: number;
+  lastReviewed: Date;
+  reviewCount: number;
+  correctAttempts: number;
+  incorrectAttempts: number;
+  streak: number;
+  nextReviewDate: Date;
+}
+
+export interface LevelProgress {
+  level: number;
+  totalWords: number;
+  learnedWords: number;
+  masteredWords: number;
+  averageMastery: number;
+  lastUpdated: Date;
+}
+
+export interface SimpleDictionaryItem {
+  id: string;
+  japanese: string;
+  english: string;
+  hiragana: string;
+  kanji?: string;
+  romaji: string;
+  level: number;
+  category?: string;
+  jlptLevel?: string;
+  examples?: string[];
+  notes?: string;
 } 

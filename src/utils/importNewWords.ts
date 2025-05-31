@@ -89,7 +89,7 @@ export async function importNewWords(file: File): Promise<{ success: boolean; co
     const dictionaryItems = await convertToDictionaryItems(importedWords);
 
     // Open the database
-    const db = await openDB('DictionaryDB', 1);
+    const db = await openDB('DictionaryDB', 2);
 
     // Start a transaction
     const tx = db.transaction('words', 'readwrite');

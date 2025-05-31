@@ -1,24 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Switch,
+  Divider,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+  TextField,
+  Alert,
+  Snackbar,
+  Grid,
+  IconButton,
+  Tooltip,
+  CircularProgress,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
+import {
+  DarkMode as DarkModeIcon,
+  Translate as TranslateIcon,
+  Notifications as NotificationsIcon,
+  Delete as DeleteIcon,
+  Save as SaveIcon,
+  CloudDownload as ExportIcon,
+  CloudUpload as ImportIcon,
+  VolumeUp as VolumeUpIcon,
+  Accessibility as AccessibilityIcon,
+  School as SchoolIcon,
+  SportsEsports as GamesIcon,
+  Settings as SettingsIcon
+} from '@mui/icons-material';
+import { useTheme as useAppTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { useSettings } from '../context/SettingsContext';
-import type { Settings } from '../context/AppContext';
 import { useProgress } from '../context/ProgressContext';
-import { downloadOfflineData } from '../utils/offlineData';
-import AudioManager from '../components/AudioManager';
 import { useAccessibility } from '../context/AccessibilityContext';
-import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
 import { useDatabase } from '../context/DatabaseContext';
 import AudioService from '../services/AudioService';
-
-// Loading component
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-[200px]">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    <span className="ml-3 text-lg">Loading settings...</span>
-  </div>
-);
+import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
+import { getCacheStats, clearCache } from '../utils/AudioCache';
 
 interface AudioSettings {
   useTTS: boolean;
@@ -30,7 +66,9 @@ interface AudioSettings {
 }
 
 const SettingsPage: React.FC = () => {
-  const { getThemeClasses, theme } = useTheme();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { getThemeClasses, theme: appTheme } = useAppTheme();
   const { settings: appSettings, updateSettings: updateAppSettings } = useApp();
   const { 
     settings: globalSettings, 
@@ -41,6 +79,8 @@ const SettingsPage: React.FC = () => {
   const { 
     progress: progressData, 
     resetProgress, 
+    exportProgress,
+    importProgress,
     isLoading: isProgressLoading,
     error: progressError 
   } = useProgress();
@@ -49,9 +89,23 @@ const SettingsPage: React.FC = () => {
     updateSettings: updateAccessibilitySettings, 
     isLoading: isAccessibilityLoading 
   } = useAccessibility();
-  const [isDownloading, setIsDownloading] = React.useState(false);
-  const [downloadError, setDownloadError] = React.useState<string | null>(null);
-  const [downloadSuccess, setDownloadSuccess] = React.useState(false);
+  const { database } = useDatabase();
+
+  // State for dialogs and notifications
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importData, setImportData] = useState('');
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  // Audio settings state
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
     useTTS: true,
     preferredVoice: '',
@@ -62,10 +116,10 @@ const SettingsPage: React.FC = () => {
   });
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [cacheStats, setCacheStats] = useState({ size: 0, entryCount: 0 });
+  const [isClearingCache, setIsClearingCache] = useState(false);
   const audioService = AudioService.getInstance();
 
-  const themeClasses = getThemeClasses();
-
+  // Load initial data
   useEffect(() => {
     // Load available voices
     const voices = audioService.getAvailableVoices();
@@ -79,292 +133,161 @@ const SettingsPage: React.FC = () => {
         preferredVoice: japaneseVoice.name
       }));
     }
+
+    // Load cache stats
+    getCacheStats().then(stats => {
+      setCacheStats({
+        size: stats.totalSize,
+        entryCount: stats.fileCount
+      });
+    });
   }, []);
 
-  useEffect(() => {
-    // Update cache stats periodically
-    const updateCacheStats = () => {
-      const stats = audioService.getCacheStats();
-      setCacheStats(stats);
-    };
-
-    updateCacheStats();
-    const interval = setInterval(updateCacheStats, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleAudioSettingChange = (setting: keyof AudioSettings, value: any) => {
-    setAudioSettings(prev => ({
-      ...prev,
-      [setting]: value
-    }));
-    // Save to localStorage or your preferred storage
-    localStorage.setItem('audioSettings', JSON.stringify({
-      ...audioSettings,
-      [setting]: value
-    }));
+  // Handlers
+  const handlePreferenceChange = (key: string, value: any) => {
+    updateGlobalSettings({ [key]: value });
   };
 
-  const handleClearAudioCache = () => {
-    audioService.clearAudioCache();
-    setCacheStats({ size: 0, entryCount: 0 });
+  const handleResetProgress = async () => {
+    try {
+      await resetProgress();
+      setShowResetDialog(false);
+      setNotification({
+        open: true,
+        message: 'Progress has been reset successfully',
+        severity: 'success',
+      });
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to reset progress',
+        severity: 'error',
+      });
+    }
+  };
+
+  const handleExportProgress = async () => {
+    try {
+      await exportProgress();
+      setNotification({
+        open: true,
+        message: 'Progress exported successfully',
+        severity: 'success',
+      });
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to export progress',
+        severity: 'error',
+      });
+    }
+  };
+
+  const handleImportProgress = async () => {
+    try {
+      await importProgress(importData);
+      setShowImportDialog(false);
+      setImportData('');
+      setNotification({
+        open: true,
+        message: 'Progress imported successfully',
+        severity: 'success',
+      });
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to import progress',
+        severity: 'error',
+      });
+    }
+  };
+
+  const handleClearCache = async () => {
+    setIsClearingCache(true);
+    try {
+      await clearCache();
+      const stats = await getCacheStats();
+      setCacheStats({
+        size: stats.totalSize,
+        entryCount: stats.fileCount
+      });
+      setNotification({
+        open: true,
+        message: 'Audio cache cleared successfully',
+        severity: 'success',
+      });
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to clear audio cache',
+        severity: 'error',
+      });
+    } finally {
+      setIsClearingCache(false);
+    }
+  };
+
+  const handleCloseNotification = () => {
+    setNotification(prev => ({ ...prev, open: false }));
   };
 
   // Show error state if there's a critical error
   if (settingsError || progressError) {
     return (
-      <div className={themeClasses.container}>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center">
-              <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
-                ← Back to Home
-              </Link>
-              <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
-                Settings
-              </h1>
-            </div>
-          </div>
-          <div className={`p-6 rounded-lg ${themeClasses.card} ${themeClasses.error}`}>
-            <h2 className={`text-xl font-semibold mb-4 ${themeClasses.text.error}`}>
-              Error Loading Settings
-            </h2>
-            <p className={`mb-4 ${themeClasses.text.muted}`}>
-              {settingsError || progressError}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className={`px-4 py-2 rounded ${themeClasses.button.primary}`}
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+          <Link to="/" style={{ textDecoration: 'none', marginRight: 2 }}>
+            <Button startIcon={<SettingsIcon />}>Back to Home</Button>
+          </Link>
+          <Typography variant="h4" component="h1">
+            Settings
+          </Typography>
+        </Box>
+        <Paper sx={{ p: 3, bgcolor: 'error.light' }}>
+          <Typography variant="h6" color="error" gutterBottom>
+            Error Loading Settings
+          </Typography>
+          <Typography color="error" paragraph>
+            {settingsError || progressError}
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => window.location.reload()}
+            sx={{ mt: 2 }}
+          >
+            Retry
+          </Button>
+        </Paper>
+      </Container>
     );
   }
 
-  // Render the page header
-  const renderHeader = () => (
-    <div className="flex items-center justify-between mb-8">
-      <div className="flex items-center">
-        <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
-          ← Back to Home
-        </Link>
-        <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
-          Settings
-        </h1>
-      </div>
-    </div>
-  );
-
-  // Render loading states for specific sections
-  const renderLoadingState = (section: string) => (
-    <div className={`p-4 rounded-lg ${themeClasses.card} mb-4`}>
-      <div className="flex items-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-        <span className="ml-3 text-sm">Loading {section}...</span>
-      </div>
-    </div>
-  );
-
-  const renderToggle = (key: keyof Settings, label: string, description?: string) => (
-    <div className="flex items-center justify-between">
-      <div className="flex-grow">
-        <label htmlFor={key} className={`text-sm font-medium ${themeClasses.text.primary}`}>
-          {label}
-        </label>
-        {description && (
-          <p className={`mt-1 text-xs ${themeClasses.text.muted}`}>{description}</p>
-        )}
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={globalSettings[key as keyof typeof globalSettings]}
-        onClick={() => {
-          const newValue = !globalSettings[key as keyof typeof globalSettings];
-          updateGlobalSettings({ [key]: newValue });
-        }}
-        className={`${
-          globalSettings[key as keyof typeof globalSettings] ? themeClasses.toggle.active : themeClasses.toggle.default
-        } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-          themeClasses.focus.ring
-        }`}
-      >
-        <span
-          aria-hidden="true"
-          className={`${
-            globalSettings[key as keyof typeof globalSettings] ? 'translate-x-5' : 'translate-x-0'
-          } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
-        />
-      </button>
-    </div>
-  );
-
-  const renderSelect = (
-    key: keyof Settings,
-    label: string,
-    options: { value: string; label: string }[],
-    description?: string
-  ) => (
-    <div>
-      <label htmlFor={key} className={`block text-sm font-medium ${themeClasses.text.primary}`}>
-        {label}
-      </label>
-      {description && (
-        <p className={`mt-1 text-xs ${themeClasses.text.muted}`}>{description}</p>
-      )}
-      <select
-        id={key}
-        value={globalSettings[key] as string}
-        onChange={(e) => updateGlobalSettings({ [key]: e.target.value })}
-        className={`mt-1 block w-full rounded-lg ${themeClasses.select} text-sm`}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-
-  const handleDownloadOfflineData = async () => {
-    setIsDownloading(true);
-    setDownloadError(null);
-    setDownloadSuccess(false);
-    try {
-      await downloadOfflineData();
-      setDownloadSuccess(true);
-    } catch (err) {
-      setDownloadError('Er is een fout opgetreden bij het downloaden van de offline data.');
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const renderAccessibilitySettings = () => (
-    <div className={`rounded-lg shadow-md p-6 ${themeClasses.container}`}>
-      <h2 className={`text-xl font-semibold mb-6 ${themeClasses.text.primary}`}>Accessibility Settings</h2>
-      
-      <div className="space-y-4">
-        <div>
-          <label className={`block mb-2 ${themeClasses.text.primary}`}>Font Size</label>
-          <select
-            value={accessibilitySettings.fontSize}
-            onChange={(e) => updateAccessibilitySettings({ fontSize: e.target.value as 'small' | 'medium' | 'large' })}
-            className={`w-full p-2 rounded ${themeClasses.select}`}
-          >
-            <option value="small">Small</option>
-            <option value="medium">Medium</option>
-            <option value="large">Large</option>
-          </select>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="highContrast"
-            checked={accessibilitySettings.highContrast}
-            onChange={(e) => updateAccessibilitySettings({ highContrast: e.target.checked })}
-            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
-          />
-          <label htmlFor="highContrast" className={themeClasses.text.primary}>
-            High Contrast Mode
-          </label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="reducedMotion"
-            checked={accessibilitySettings.reducedMotion}
-            onChange={(e) => updateAccessibilitySettings({ reducedMotion: e.target.checked })}
-            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
-          />
-          <label htmlFor="reducedMotion" className={themeClasses.text.primary}>
-            Reduced Motion
-          </label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="screenReader"
-            checked={accessibilitySettings.screenReader}
-            onChange={(e) => updateAccessibilitySettings({ screenReader: e.target.checked })}
-            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
-          />
-          <label htmlFor="screenReader" className={themeClasses.text.primary}>
-            Screen Reader Optimizations
-          </label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="keyboardNavigation"
-            checked={accessibilitySettings.keyboardNavigation}
-            onChange={(e) => updateAccessibilitySettings({ keyboardNavigation: e.target.checked })}
-            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
-          />
-          <label htmlFor="keyboardNavigation" className={themeClasses.text.primary}>
-            Enhanced Keyboard Navigation
-          </label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="focusHighlight"
-            checked={accessibilitySettings.focusHighlight}
-            onChange={(e) => updateAccessibilitySettings({ focusHighlight: e.target.checked })}
-            className={`form-checkbox h-5 w-5 ${themeClasses.checkbox}`}
-          />
-          <label htmlFor="focusHighlight" className={themeClasses.text.primary}>
-            Focus Highlight
-          </label>
-        </div>
-
-        <button
-          onClick={() => updateAccessibilitySettings(defaultSettings)}
-          className={`mt-4 px-4 py-2 rounded ${themeClasses.button}`}
-        >
-          Reset Accessibility Settings
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderAudioCacheSettings = () => (
-    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <h3 className="text-sm font-medium mb-2">Audio Cache</h3>
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span>Cache Size:</span>
-          <span>{Math.round(cacheStats.size / 1024 / 1024)} MB</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span>Cached Items:</span>
-          <span>{cacheStats.entryCount}</span>
-        </div>
-        <button
-          onClick={handleClearAudioCache}
-          className="w-full px-3 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-        >
-          Clear Audio Cache
-        </button>
-      </div>
-    </div>
+  // Loading component
+  const LoadingSpinner = ({ text }: { text: string }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
+      <CircularProgress size={20} sx={{ mr: 2 }} />
+      <Typography variant="body2" color="text.secondary">
+        {text}
+      </Typography>
+    </Box>
   );
 
   return (
-    <div className={`${themeClasses.container} relative min-h-screen`}>
-      {/* Theme-specific cityscape background */}
-      <div className="absolute inset-0 pointer-events-none z-0 opacity-15">
-        <JapaneseCityscape 
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Background */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          opacity: 0.1,
+          pointerEvents: 'none',
+          zIndex: 0
+        }}
+      >
+        <JapaneseCityscape
           width={800}
           height={400}
           style={{
@@ -372,253 +295,382 @@ const SettingsPage: React.FC = () => {
             bottom: 0,
             left: '50%',
             transform: 'translateX(-50%)',
-            filter: theme === 'dark' 
+            filter: appTheme === 'dark' 
               ? 'brightness(0.5) saturate(0.8)' 
               : 'brightness(1.1) saturate(1.2)'
           }}
         />
-      </div>
+      </Box>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
-        {renderHeader()}
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, position: 'relative', zIndex: 1 }}>
+        <Link to="/" style={{ textDecoration: 'none', marginRight: 2 }}>
+          <Button startIcon={<SettingsIcon />}>Back to Home</Button>
+        </Link>
+        <Typography variant="h4" component="h1">
+          Settings
+        </Typography>
+      </Box>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* App Settings Section */}
-          <div className={`rounded-lg shadow-md p-4 ${themeClasses.container} lg:col-span-2`}>
-            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>App Settings</h2>
+      <Grid container spacing={3} sx={{ position: 'relative', zIndex: 1 }}>
+        {/* App Settings */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              App Settings
+            </Typography>
             {isSettingsLoading ? (
-              renderLoadingState('app settings')
+              <LoadingSpinner text="Loading app settings..." />
             ) : (
-              <div className="space-y-4">
-                <div className="py-2">
-                  <label className={`text-sm font-medium ${themeClasses.text.primary}`}>Theme</label>
-                  <select
-                    className={themeClasses.input}
-                    defaultValue="dark"
-                    disabled
-                  >
-                    <option value="dark">Dark Theme</option>
-                    <option value="light" disabled>Light Theme (Coming Soon)</option>
-                    <option value="neon" disabled>Neon Theme (Coming Soon)</option>
-                  </select>
-                  <p className={`text-sm mt-1 ${themeClasses.text.muted}`}>
-                    More themes will be available in future updates
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {renderToggle('showRomaji', 'Show Romaji', 'Display romaji for Japanese text')}
-                  {renderToggle('showHints', 'Show Hints', 'Display hints during exercises')}
-                  {renderToggle('autoPlay', 'Auto Play', 'Automatically play audio for new words')}
-                  
-                  {renderSelect(
-                    'difficulty',
-                    'Default Difficulty',
-                    [
-                      { value: 'easy', label: 'Easy' },
-                      { value: 'medium', label: 'Medium' },
-                      { value: 'hard', label: 'Hard' }
-                    ],
-                    'Set the default difficulty level for exercises'
-                  )}
-                </div>
-              </div>
+              <List>
+                <ListItem>
+                  <ListItemText
+                    primary="Dark Mode"
+                    secondary="Enable dark theme for the application"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.darkMode}
+                      onChange={(e) => handlePreferenceChange('darkMode', e.target.checked)}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Show Romaji"
+                    secondary="Display romaji for Japanese text"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.showRomaji}
+                      onChange={(e) => handlePreferenceChange('showRomaji', e.target.checked)}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Show Hints"
+                    secondary="Display hints during exercises"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.showHints}
+                      onChange={(e) => handlePreferenceChange('showHints', e.target.checked)}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Default Difficulty"
+                    secondary="Set default difficulty for exercises"
+                  />
+                  <ListItemSecondaryAction>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                      <Select
+                        value={globalSettings.difficulty || 'medium'}
+                        onChange={(e: SelectChangeEvent) =>
+                          handlePreferenceChange('difficulty', e.target.value)
+                        }
+                      >
+                        <MenuItem value="easy">Easy</MenuItem>
+                        <MenuItem value="medium">Medium</MenuItem>
+                        <MenuItem value="hard">Hard</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </List>
             )}
-          </div>
+          </Paper>
+        </Grid>
 
-          {/* Audio Settings */}
-          <div className={themeClasses.card}>
-            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Audio Settings</h2>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={audioSettings.useTTS}
-                    onChange={(e) => handleAudioSettingChange('useTTS', e.target.checked)}
-                    className="mr-2"
-                  />
-                  Use Text-to-Speech (TTS)
-                </label>
-              </div>
-
-              {audioSettings.useTTS && (
-                <>
-                  <div>
-                    <label className="block mb-2">Preferred Voice</label>
-                    <select
-                      value={audioSettings.preferredVoice}
-                      onChange={(e) => handleAudioSettingChange('preferredVoice', e.target.value)}
-                      className="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-700"
-                    >
-                      {availableVoices.map(voice => (
-                        <option key={voice.name} value={voice.name}>
-                          {voice.name} ({voice.lang})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block mb-2">Speech Rate</label>
-                    <input
-                      type="range"
-                      min="0.5"
-                      max="2"
-                      step="0.1"
-                      value={audioSettings.rate}
-                      onChange={(e) => handleAudioSettingChange('rate', parseFloat(e.target.value))}
-                      className="w-full"
-                    />
-                    <span className="text-sm">{audioSettings.rate}x</span>
-                  </div>
-
-                  <div>
-                    <label className="block mb-2">Pitch</label>
-                    <input
-                      type="range"
-                      min="0.5"
-                      max="2"
-                      step="0.1"
-                      value={audioSettings.pitch}
-                      onChange={(e) => handleAudioSettingChange('pitch', parseFloat(e.target.value))}
-                      className="w-full"
-                    />
-                    <span className="text-sm">{audioSettings.pitch}x</span>
-                  </div>
-                </>
-              )}
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={audioSettings.autoPlay}
-                    onChange={(e) => handleAudioSettingChange('autoPlay', e.target.checked)}
-                    className="mr-2"
-                  />
-                  Auto-play audio
-                </label>
-              </div>
-
-              <div>
-                <label className="block mb-2">Volume</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={audioSettings.volume}
-                  onChange={(e) => handleAudioSettingChange('volume', parseFloat(e.target.value))}
-                  className="w-full"
+        {/* Audio Settings */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Audio Settings
+            </Typography>
+            <List>
+              <ListItem>
+                <ListItemText
+                  primary="Text-to-Speech"
+                  secondary="Enable voice synthesis for Japanese text"
                 />
-                <span className="text-sm">{Math.round(audioSettings.volume * 100)}%</span>
-              </div>
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    checked={audioSettings.useTTS}
+                    onChange={(e) => setAudioSettings(prev => ({ ...prev, useTTS: e.target.checked }))}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Preferred Voice"
+                  secondary="Select voice for Japanese pronunciation"
+                />
+                <ListItemSecondaryAction>
+                  <FormControl size="small" sx={{ minWidth: 150 }}>
+                    <Select
+                      value={audioSettings.preferredVoice}
+                      onChange={(e) => setAudioSettings(prev => ({ ...prev, preferredVoice: e.target.value }))}
+                      disabled={!audioSettings.useTTS}
+                    >
+                      {availableVoices.map((voice) => (
+                        <MenuItem key={voice.name} value={voice.name}>
+                          {voice.name} ({voice.lang})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Auto Play"
+                  secondary="Automatically play audio for new words"
+                />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    checked={audioSettings.autoPlay}
+                    onChange={(e) => setAudioSettings(prev => ({ ...prev, autoPlay: e.target.checked }))}
+                    disabled={!audioSettings.useTTS}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Audio Cache"
+                  secondary={`${cacheStats.entryCount} files (${(cacheStats.size / 1024 / 1024).toFixed(2)} MB)`}
+                />
+                <ListItemSecondaryAction>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleClearCache}
+                    disabled={isClearingCache || cacheStats.entryCount === 0}
+                  >
+                    {isClearingCache ? 'Clearing...' : 'Clear Cache'}
+                  </Button>
+                </ListItemSecondaryAction>
+              </ListItem>
+            </List>
+          </Paper>
+        </Grid>
 
-              <div className="mt-4">
-                <button
-                  onClick={() => {
-                    // Test audio with current settings
-                    audioService.playAudio('こんにちは、テストです。', {
-                      useTTS: audioSettings.useTTS,
-                      voice: audioSettings.preferredVoice,
-                      rate: audioSettings.rate,
-                      pitch: audioSettings.pitch
-                    });
-                  }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                >
-                  Test Audio Settings
-                </button>
-              </div>
-
-              {renderAudioCacheSettings()}
-            </div>
-          </div>
-
-          {/* Vocabulary Settings */}
-          <div className={themeClasses.card}>
-            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Vocabulary Settings</h2>
-            
-            <div className="space-y-3">
-              {renderToggle('showRomajiVocabulary', 'Show Romaji in Vocabulary', 'Display romaji in vocabulary exercises')}
-              {renderToggle('showRomajiReading', 'Show Romaji in Reading', 'Display romaji in reading exercises')}
-            </div>
-          </div>
-
-          {/* Game Settings */}
-          <div className={themeClasses.card}>
-            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Game Settings</h2>
-            
-            <div className="space-y-3">
-              {renderToggle('showKanjiGames', 'Show Kanji in Games', 'Display kanji in game exercises')}
-              {renderToggle('showRomajiGames', 'Show Romaji in Games', 'Display romaji in game exercises')}
-              {renderToggle('useHiraganaGames', 'Use Hiragana in Games', 'Use hiragana instead of katakana in games')}
-            </div>
-          </div>
-
-          {/* Accessibility Settings */}
-          <div className={`rounded-lg shadow-md p-4 ${themeClasses.container}`}>
-            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Accessibility</h2>
+        {/* Accessibility Settings */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Accessibility
+            </Typography>
             {isAccessibilityLoading ? (
-              renderLoadingState('accessibility settings')
+              <LoadingSpinner text="Loading accessibility settings..." />
             ) : (
-              <div className="space-y-4">
-                {renderAccessibilitySettings()}
-              </div>
+              <List>
+                <ListItem>
+                  <ListItemText
+                    primary="High Contrast"
+                    secondary="Enable high contrast mode for better visibility"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={accessibilitySettings.highContrast}
+                      onChange={(e) => updateAccessibilitySettings({ highContrast: e.target.checked })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Reduced Motion"
+                    secondary="Minimize animations and transitions"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={accessibilitySettings.reducedMotion}
+                      onChange={(e) => updateAccessibilitySettings({ reducedMotion: e.target.checked })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Screen Reader"
+                    secondary="Optimize for screen readers"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={accessibilitySettings.screenReader}
+                      onChange={(e) => updateAccessibilitySettings({ screenReader: e.target.checked })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Keyboard Navigation"
+                    secondary="Enhanced keyboard controls"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={accessibilitySettings.keyboardNavigation}
+                      onChange={(e) => updateAccessibilitySettings({ keyboardNavigation: e.target.checked })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </List>
             )}
-          </div>
+          </Paper>
+        </Grid>
 
-          {/* Progress Section */}
-          <div className={`rounded-lg shadow-md p-4 ${themeClasses.container} lg:col-span-2`}>
-            <h2 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>Progress</h2>
+        {/* Progress Management */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Progress Management
+            </Typography>
             {isProgressLoading ? (
-              renderLoadingState('progress data')
+              <LoadingSpinner text="Loading progress data..." />
             ) : (
-              <div className="space-y-3">
-                {Object.entries(progressData).map(([section, stats]) => (
-                  <div key={section} className="border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0">
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm font-medium ${themeClasses.text.primary}`}>
-                        {section.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                      </span>
-                      <span className={`text-xs ${themeClasses.text.muted}`}>
-                        Last: {stats.lastAttempt ? new Date(stats.lastAttempt).toLocaleDateString() : 'Never'}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-1 text-xs">
-                      <span>Total: {stats.totalQuestions}</span>
-                      <span>Correct: {stats.correctAnswers}</span>
-                      <span>Streak: {stats.bestStreak}</span>
-                      <span>Avg: {stats.averageTime ? stats.averageTime.toFixed(1) : 0}s</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <List>
+                <ListItem>
+                  <ListItemText
+                    primary="Export Progress"
+                    secondary="Download your learning progress as a JSON file"
+                  />
+                  <ListItemSecondaryAction>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ExportIcon />}
+                      onClick={handleExportProgress}
+                    >
+                      Export
+                    </Button>
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Import Progress"
+                    secondary="Import learning progress from a JSON file"
+                  />
+                  <ListItemSecondaryAction>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ImportIcon />}
+                      onClick={() => setShowImportDialog(true)}
+                    >
+                      Import
+                    </Button>
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Reset Progress"
+                    secondary="Clear all learning progress and start fresh"
+                  />
+                  <ListItemSecondaryAction>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      onClick={() => setShowResetDialog(true)}
+                    >
+                      Reset
+                    </Button>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </List>
             )}
-            <div className="mt-4 flex justify-between items-center">
-              <button
-                onClick={handleDownloadOfflineData}
-                disabled={isDownloading}
-                className={`px-3 py-1.5 rounded-lg ${themeClasses.button.success} text-sm ${isDownloading ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                {isDownloading ? 'Downloading...' : 'Download Offline Data'}
-              </button>
-              <button
-                onClick={resetProgress}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${
-                  themeClasses.button
-                }`}
-              >
-                Reset All Progress
-              </button>
-            </div>
-            {downloadSuccess && <span className={`text-sm font-semibold mt-2 block ${themeClasses.text.success}`}>Offline data opgeslagen!</span>}
-            {downloadError && <span className={`text-sm font-semibold mt-2 block ${themeClasses.text.error}`}>{downloadError}</span>}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Reset Progress Dialog */}
+      <Dialog
+        open={showResetDialog}
+        onClose={() => setShowResetDialog(false)}
+      >
+        <DialogTitle>Reset Progress</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to reset all your learning progress? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowResetDialog(false)}>Cancel</Button>
+          <Button onClick={handleResetProgress} color="error" autoFocus>
+            Reset
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Import Progress Dialog */}
+      <Dialog
+        open={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Import Progress</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Paste your exported progress data below:
+          </DialogContentText>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            value={importData}
+            onChange={(e) => setImportData(e.target.value)}
+            placeholder="Paste JSON data here..."
+            variant="outlined"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowImportDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleImportProgress}
+            variant="contained"
+            startIcon={<SaveIcon />}
+          >
+            Import
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Notification Snackbar */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseNotification}
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
+    </Container>
   );
 };
 

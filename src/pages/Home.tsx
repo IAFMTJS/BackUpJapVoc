@@ -1,226 +1,280 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import cityscapeSvg from '../assets/cityscape.svg';
-import noiseSvg from '../assets/noise.svg';
-import toriiSvg from '../assets/torii.svg';
+import { Container, Typography, Box, Paper, Grid, Button, Card, CardContent, CardActionArea } from '@mui/material';
+import {
+  School as SchoolIcon,
+  MenuBook as MenuBookIcon,
+  Translate as TranslateIcon,
+  EmojiEmotions as MoodIcon,
+  Culture as CultureIcon,
+  SportsEsports as GamesIcon,
+  Movie as MovieIcon,
+  History as HistoryIcon,
+  Restaurant as FoodIcon,
+  TempleBuddhist as ShintoIcon,
+  PlayArrow as PlayArrowIcon
+} from '@mui/icons-material';
 import { motion } from 'framer-motion';
 
-// Feature categories for better organization
 const FEATURE_CATEGORIES = [
   {
-    title: 'Learning Tools',
+    title: 'Getting Started',
     items: [
-      { to: '/vocabulary', icon: '📚', title: 'Vocabulary', desc: 'Learn and practice Japanese words', color: 'blue' },
-      { to: '/mood', icon: '😊', title: 'Mood', desc: 'Learn words through emotional context', color: 'pink' },
-      { to: '/dictionary', icon: '📖', title: 'Dictionary', desc: 'Look up words and meanings', color: 'purple' },
-      { to: '/writing', icon: '✍️', title: 'Writing', desc: 'Practice writing Japanese characters', color: 'green' },
-      { to: '/kanji', icon: '漢字', title: 'Kanji', desc: 'Master Japanese characters', color: 'orange' },
-      { to: '/romaji', icon: 'あ', title: 'Romaji', desc: 'Learn Japanese pronunciation', color: 'yellow' }
+      {
+        title: 'Knowing Center',
+        description: 'Your central hub for learning Japanese vocabulary, culture, and more.',
+        icon: <SchoolIcon sx={{ fontSize: 32 }} />,
+        path: '/knowing',
+        color: 'primary'
+      },
+      {
+        title: 'Learning Center',
+        description: 'Master Japanese writing, kanji, and romaji through interactive lessons.',
+        icon: <MenuBookIcon sx={{ fontSize: 32 }} />,
+        path: '/learning',
+        color: 'secondary'
+      },
+      {
+        title: 'SRS Learning',
+        description: 'Optimize your learning with spaced repetition system.',
+        icon: <TranslateIcon sx={{ fontSize: 32 }} />,
+        path: '/srs',
+        color: 'success'
+      }
     ]
   },
   {
     title: 'Core Learning',
     items: [
-      { to: '/vocabulary', icon: '📚', title: 'Vocabulary', desc: 'Build your Japanese vocabulary', color: 'blue' },
-      { to: '/new-words', icon: '🆕', title: 'New Words', desc: 'Learn and track new vocabulary', color: 'green' },
-      { to: '/kanji', icon: '漢字', title: 'Kanji Study', desc: 'Master Japanese characters', color: 'purple' },
-      { to: '/writing', icon: '✍️', title: 'Writing Practice', desc: 'Practice writing Japanese characters', color: 'green' },
-      { to: '/romaji', icon: '🔤', title: 'Romaji Practice', desc: 'Learn Japanese pronunciation', color: 'orange' }
+      {
+        title: 'Dictionary',
+        description: 'Comprehensive Japanese dictionary with audio pronunciation and examples.',
+        icon: <MenuBookIcon sx={{ fontSize: 32 }} />,
+        path: '/knowing/dictionary',
+        color: 'primary'
+      },
+      {
+        title: 'Mood & Emotions',
+        description: 'Learn words through emotional context and cultural insights.',
+        icon: <MoodIcon sx={{ fontSize: 32 }} />,
+        path: '/knowing/mood',
+        color: 'secondary'
+      },
+      {
+        title: 'Culture & Rules',
+        description: 'Explore Japanese culture, customs, and language rules.',
+        icon: <CultureIcon sx={{ fontSize: 32 }} />,
+        path: '/knowing/culture',
+        color: 'success'
+      }
     ]
   },
   {
-    title: 'Practice & Games',
+    title: 'Interactive Learning',
     items: [
-      { to: '/srs', icon: '🔄', title: 'SRS Learning', desc: 'Optimize your learning with spaced repetition', color: 'pink' },
-      { to: '/games', icon: '🎮', title: 'Games', desc: 'Learn through fun interactive games', color: 'yellow' },
-      { to: '/anime', icon: '🎌', title: 'Anime & Manga', desc: 'Learn phrases from your favorite shows', color: 'red' },
-      { to: '/dictionary', icon: '📖', title: 'Dictionary', desc: 'Look up Japanese words and phrases', color: 'indigo' }
+      {
+        title: 'Learning Games',
+        description: 'Practice Japanese through fun interactive games and quizzes.',
+        icon: <GamesIcon sx={{ fontSize: 32 }} />,
+        path: '/games',
+        color: 'primary'
+      },
+      {
+        title: 'Anime & Manga',
+        description: 'Learn Japanese through popular anime and manga content.',
+        icon: <MovieIcon sx={{ fontSize: 32 }} />,
+        path: '/anime',
+        color: 'secondary'
+      },
+      {
+        title: 'Japanese Trivia',
+        description: 'Discover fascinating facts about Japanese culture, history, and mythology.',
+        icon: <HistoryIcon sx={{ fontSize: 32 }} />,
+        path: '/trivia',
+        color: 'success'
+      }
     ]
   },
   {
-    title: 'Progress & Achievements',
+    title: 'Progress & Settings',
     items: [
-      { to: '/progress', icon: '📊', title: 'Progress', desc: 'Track your learning journey', color: 'teal' },
-      { to: '/word-levels', icon: '📈', title: 'Word Levels', desc: 'Progress through vocabulary levels', color: 'cyan' },
-      { to: '/achievements', icon: '🏆', title: 'Achievements', desc: 'Earn badges and track your accomplishments', color: 'amber' }
+      {
+        title: 'Progress Tracking',
+        description: 'Monitor your learning journey and track your achievements.',
+        icon: <HistoryIcon sx={{ fontSize: 32 }} />,
+        path: '/progress',
+        color: 'primary'
+      },
+      {
+        title: 'Favorites',
+        description: 'Access your saved words, phrases, and learning materials.',
+        icon: <MoodIcon sx={{ fontSize: 32 }} />,
+        path: '/knowing/favorites',
+        color: 'secondary'
+      },
+      {
+        title: 'Settings',
+        description: 'Customize your learning experience and preferences.',
+        icon: <CultureIcon sx={{ fontSize: 32 }} />,
+        path: '/settings',
+        color: 'success'
+      }
     ]
   }
 ];
 
-// Color mapping for different themes
-const COLOR_MAPPING = {
-  blue: { light: 'bg-blue-50 text-blue-700', dark: 'bg-blue-900/20 text-blue-300', neon: 'bg-blue-500/10 text-blue-300' },
-  purple: { light: 'bg-purple-50 text-purple-700', dark: 'bg-purple-900/20 text-purple-300', neon: 'bg-purple-500/10 text-purple-300' },
-  green: { light: 'bg-green-50 text-green-700', dark: 'bg-green-900/20 text-green-300', neon: 'bg-green-500/10 text-green-300' },
-  orange: { light: 'bg-orange-50 text-orange-700', dark: 'bg-orange-900/20 text-orange-300', neon: 'bg-orange-500/10 text-orange-300' },
-  pink: { light: 'bg-pink-50 text-pink-700', dark: 'bg-pink-900/20 text-pink-300', neon: 'bg-pink-500/10 text-pink-300' },
-  yellow: { light: 'bg-yellow-50 text-yellow-700', dark: 'bg-yellow-900/20 text-yellow-300', neon: 'bg-yellow-500/10 text-yellow-300' },
-  red: { light: 'bg-red-50 text-red-700', dark: 'bg-red-900/20 text-red-300', neon: 'bg-red-500/10 text-red-300' },
-  indigo: { light: 'bg-indigo-50 text-indigo-700', dark: 'bg-indigo-900/20 text-indigo-300', neon: 'bg-indigo-500/10 text-indigo-300' },
-  teal: { light: 'bg-teal-50 text-teal-700', dark: 'bg-teal-900/20 text-teal-300', neon: 'bg-teal-500/10 text-teal-300' },
-  cyan: { light: 'bg-cyan-50 text-cyan-700', dark: 'bg-cyan-900/20 text-cyan-300', neon: 'bg-cyan-500/10 text-cyan-300' },
-  amber: { light: 'bg-amber-50 text-amber-700', dark: 'bg-amber-900/20 text-amber-300', neon: 'bg-amber-500/10 text-amber-300' }
-};
-
-const Home: React.FC = () => {
-  const { getThemeClasses, theme } = useTheme();
+const HomeContent: React.FC = () => {
+  const { getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
-  const isDarkMode = theme === 'dark';
-  const isNeonMode = theme === 'neon';
-
-  const getColorClasses = (color: string) => {
-    const mapping = COLOR_MAPPING[color as keyof typeof COLOR_MAPPING];
-    if (isNeonMode) return mapping.neon;
-    return isDarkMode ? mapping.dark : mapping.light;
-  };
 
   return (
-    <div className={`relative min-h-screen ${isNeonMode ? 'bg-neon-dark' : ''}`}>
-      {/* Background elements for neon mode */}
-      {isNeonMode && (
-        <>
-          <div className="absolute inset-0 opacity-10 pointer-events-none">
-            <img 
-              src={noiseSvg}
-              alt="" 
-              className="w-full h-full object-cover opacity-50"
-              style={{ mixBlendMode: 'overlay' }}
-            />
-          </div>
-          <div className="absolute inset-0 opacity-5 pointer-events-none">
-            <img 
-              src={cityscapeSvg}
-              alt="" 
-              className="w-full h-full object-cover"
-              style={{ 
-                transform: 'translateY(20%)',
-                filter: 'brightness(0.8) contrast(1.2)'
-              }}
-            />
-          </div>
-          {/* Decorative torii gates */}
-          <div className="absolute inset-0 pointer-events-none">
-            <img 
-              src={toriiSvg}
-              alt=""
-              className="absolute top-1/4 -left-16 w-32 h-32 transform -rotate-12 opacity-10"
-            />
-            <img 
-              src={toriiSvg}
-              alt=""
-              className="absolute bottom-1/4 -right-16 w-32 h-32 transform rotate-12 opacity-10"
-            />
-            <img 
-              src={toriiSvg}
-              alt=""
-              className="absolute top-1/2 right-1/4 w-24 h-24 transform rotate-45 opacity-8"
-            />
-            <img 
-              src={toriiSvg}
-              alt=""
-              className="absolute bottom-1/3 left-1/4 w-24 h-24 transform -rotate-45 opacity-8"
-            />
-          </div>
-        </>
-      )}
-
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80 z-10"></div>
-        <div className="container mx-auto px-4 pt-20 pb-12 relative z-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center"
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: { xs: 3, md: 6 },
+          mb: 6,
+          borderRadius: 4,
+          background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            background: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 60%)',
+            pointerEvents: 'none'
+          }}
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <SchoolIcon sx={{ fontSize: 32, mr: 2 }} />
+          <Typography 
+            variant="h4" 
+            component="h1"
+            sx={{ 
+              fontWeight: 'bold',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+            }}
           >
-            <h1 className={`text-4xl md:text-6xl font-extrabold tracking-tight mb-4 ${
-              isNeonMode 
-                ? 'text-neon-pink drop-shadow-[0_0_16px_#ff00c8]' 
-                : themeClasses.text.primary
-            }`}>
-              Japanese Vocabulary Learning
-            </h1>
-            <p className={`text-lg md:text-xl max-w-2xl mx-auto ${
-              isNeonMode 
-                ? 'text-neon-blue drop-shadow-[0_0_12px_#00f7ff]' 
-                : themeClasses.text.secondary
-            }`}>
-              Your journey to mastering Japanese starts here
-            </p>
-          </motion.div>
-        </div>
-      </div>
+            Japanese Vocabulary Learning
+          </Typography>
+        </Box>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            opacity: 0.9,
+            maxWidth: '800px',
+            mb: 4
+          }}
+        >
+          Your journey to mastering Japanese starts here. Explore vocabulary, culture, 
+          and language through interactive learning tools and engaging content.
+        </Typography>
+        <Button
+          component={Link}
+          to="/knowing"
+          variant="contained"
+          size="large"
+          endIcon={<PlayArrowIcon />}
+          sx={{
+            bgcolor: 'white',
+            color: 'primary.main',
+            '&:hover': {
+              bgcolor: 'rgba(255,255,255,0.9)'
+            }
+          }}
+        >
+          Start Learning
+        </Button>
+      </Paper>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 pb-16 relative z-20">
-        <div className="space-y-12">
-          {FEATURE_CATEGORIES.map((category, categoryIndex) => (
-            <motion.div
-              key={category.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: categoryIndex * 0.1 }}
-              className="space-y-4"
-            >
-              <h2 className={`text-2xl font-bold ${
-                isNeonMode 
-                  ? 'text-neon-pink drop-shadow-[0_0_8px_#ff00c8]' 
-                  : themeClasses.text.primary
-              }`}>
-                {category.title}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {category.items.map((item, index) => (
-                  <motion.div
-                    key={item.to}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+      {/* Feature Categories */}
+      {FEATURE_CATEGORIES.map((category, categoryIndex) => (
+        <Box key={category.title} sx={{ mb: 6 }}>
+          <Typography 
+            variant="h5" 
+            component="h2"
+            sx={{ 
+              fontWeight: 'bold',
+              mb: 3,
+              color: 'primary.main'
+            }}
+          >
+            {category.title}
+          </Typography>
+          <Grid container spacing={3}>
+            {category.items.map((item, index) => (
+              <Grid item xs={12} md={4} key={item.title}>
+                <Card 
+                  sx={{ 
+                    height: '100%',
+                    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 4
+                    }
+                  }}
+                >
+                  <CardActionArea 
+                    component={Link} 
+                    to={item.path}
+                    sx={{ height: '100%' }}
                   >
-                    <Link 
-                      to={item.to}
-                      className={`block p-6 rounded-2xl transition-all duration-300 ${
-                        isNeonMode
-                          ? 'bg-black/20 backdrop-blur-md border border-white/10 hover:border-white/20'
-                          : `${getColorClasses(item.color)} hover:shadow-lg`
-                      }`}
-                    >
-                      <div className="flex items-start space-x-4">
-                        <span className={`text-3xl ${isNeonMode ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''}`}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <Box 
+                          sx={{ 
+                            p: 1,
+                            borderRadius: 1,
+                            bgcolor: `${item.color}.light`,
+                            color: `${item.color}.contrastText`,
+                            mr: 2
+                          }}
+                        >
                           {item.icon}
-                        </span>
-                        <div>
-                          <h3 className={`text-lg font-semibold mb-1 ${
-                            isNeonMode 
-                              ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' 
-                              : ''
-                          }`}>
-                            {item.title}
-                          </h3>
-                          <p className={`text-sm ${
-                            isNeonMode 
-                              ? 'text-white/70' 
-                              : isDarkMode 
-                                ? 'text-gray-300' 
-                                : 'text-gray-600'
-                          }`}>
-                            {item.desc}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
+                        </Box>
+                        <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold' }}>
+                          {item.title}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {item.description}
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                          variant="contained"
+                          color={item.color as any}
+                          endIcon={<PlayArrowIcon />}
+                        >
+                          Explore
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      ))}
+    </Container>
+  );
+};
+
+// Main Home component with error boundary
+const Home: React.FC = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 };
 

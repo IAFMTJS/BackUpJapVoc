@@ -16,7 +16,9 @@ const CACHE_CONFIG = {
       /\.(?:js|css|png|jpg|jpeg|gif|svg|ico|webp)$/,
       /^\/icons\//,
       /^\/css\//,
-      /^\/js\//
+      /^\/js\//,
+      /fonts\.googleapis\.com/,
+      /fonts\.gstatic\.com/
     ],
     strategy: 'cache-first'
   },
@@ -50,9 +52,9 @@ const CACHE_CONFIG = {
   }
 };
 
-// Database setup
-const DB_NAME = 'japvoc-db';
-const DB_VERSION = 1;
+// Database configuration
+const DB_NAME = 'JapVocDB';
+const DB_VERSION = 5;
 
 // Import push notification handler
 importScripts('/push-handler.js');
@@ -125,210 +127,157 @@ const OfflineManager = {
   }
 };
 
-// Enhanced request handling
-async function handleRequest(request) {
-  try {
-    const url = new URL(request.url);
+// Database connection management
+let dbConnection = null;
+let connectionPromise = null;
+
+// Database helpers
+async function openDatabase() {
+  // If we already have a connection, return it
+  if (dbConnection) {
+    return dbConnection;
+  }
+
+  // If we have a pending connection, wait for it
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  // Create a new connection
+  connectionPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
     
-    // Skip non-GET requests
-    if (request.method !== 'GET') {
-      return fetch(request);
-    }
+    request.onerror = () => {
+      connectionPromise = null;
+      reject(request.error);
+    };
 
-    // Handle API requests
-    if (url.pathname.startsWith('/api/')) {
-      return await handleApiRequest(request);
-    }
-
-    // Handle static assets
-    if (CACHE_CONFIG.assets.patterns.some(pattern => pattern.test(url.pathname))) {
-      return await handleAssetRequest(request);
-    }
-
-    // Handle audio files
-    if (CACHE_CONFIG.audio.patterns.some(pattern => pattern.test(url.pathname))) {
-      return await handleAudioRequest(request);
-    }
-
-    // Default to network-first for other requests
-    return await networkFirst(request);
-  } catch (error) {
-    console.error('[Service Worker] Error handling request:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'service_worker_error',
-        message: 'An error occurred while processing your request.',
-        timestamp: Date.now()
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-  }
-}
-
-async function handleApiRequest(request) {
-  try {
-    const cache = await caches.open(DATA_CACHE_NAME);
-    const cachedResponse = await cache.match(request);
-
-    // Try network first
-    try {
-      const networkResponse = await fetch(request);
-      if (networkResponse.ok) {
-        // Cache the successful response
-        await cache.put(request, networkResponse.clone());
-        return networkResponse;
-      }
-      throw new Error(`Network response was not ok: ${networkResponse.status}`);
-    } catch (error) {
-      // If network fails and we have a cached response, use it
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      // If no cache and offline, return offline response
-      if (!navigator.onLine) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'offline',
-            message: 'You are currently offline. Please check your connection.',
-            timestamp: Date.now()
-          }),
-          {
-            status: 503,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
-      }
-      throw error;
-    }
-  } catch (error) {
-    console.error('[Service Worker] API request error:', error);
-    throw error;
-  }
-}
-
-async function handleAssetRequest(request) {
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    const cachedResponse = await cache.match(request);
-
-    if (cachedResponse) {
-      // Update cache in background if online
-      if (navigator.onLine) {
-        fetch(request).then(async response => {
-          if (response.ok) {
-            await cache.put(request, response);
-          }
-        }).catch(() => {});
-      }
-      return cachedResponse;
-    }
-
-    // If not in cache, try network
-    if (navigator.onLine) {
-      const response = await fetch(request);
-      if (response.ok) {
-        await cache.put(request, response.clone());
-        return response;
-      }
-    }
-
-    // If offline and no cache, return offline page for HTML requests
-    if (request.headers.get('accept').includes('text/html')) {
-      return await caches.match('/offline.html');
-    }
-
-    throw new Error('Asset not available offline');
-  } catch (error) {
-    console.error('[Service Worker] Asset request error:', error);
-    throw error;
-  }
-}
-
-async function handleAudioRequest(request) {
-  try {
-    const cache = await caches.open(AUDIO_CACHE_NAME);
-    const quality = await getAudioQuality();
+    request.onsuccess = () => {
+      dbConnection = request.result;
+      connectionPromise = null;
+      resolve(dbConnection);
+    };
     
-    // Try cache first
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) {
-      // Update cache in background if online
-      if (navigator.onLine) {
-        fetch(request).then(async response => {
-          if (response.ok) {
-            const blob = await response.blob();
-            const optimizedBlob = await optimizeAudio(blob, quality);
-            await cache.put(request, new Response(optimizedBlob));
-          }
-        }).catch(() => {});
-      }
-      return cachedResponse;
-    }
-
-    // If not in cache and online, fetch and optimize
-    if (navigator.onLine) {
-      const response = await fetch(request);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch audio: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const optimizedBlob = await optimizeAudio(blob, quality);
-      const optimizedResponse = new Response(optimizedBlob);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
       
-      await cache.put(request, optimizedResponse.clone());
-      return optimizedResponse;
-    }
-
-    // If offline and not in cache, return fallback
-    return new Response(
-      JSON.stringify({ 
-        error: 'offline',
-        message: 'Audio not available offline. Using text-to-speech as fallback.',
-        timestamp: Date.now()
-      }),
-      {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
+      // Create stores if they don't exist
+      if (!db.objectStoreNames.contains('pendingChanges')) {
+        db.createObjectStore('pendingChanges', { keyPath: 'id', autoIncrement: true });
       }
-    );
-  } catch (error) {
-    console.error('[Service Worker] Audio request error:', error);
-    throw error;
-  }
+      if (!db.objectStoreNames.contains('settings')) {
+        db.createObjectStore('settings', { keyPath: 'userId' });
+      }
+    };
+
+    // Handle connection close
+    request.result.onclose = () => {
+      dbConnection = null;
+      connectionPromise = null;
+    };
+  });
+
+  return connectionPromise;
 }
 
-async function networkFirst(request) {
-  try {
-    if (navigator.onLine) {
-      const networkResponse = await fetch(request);
-      if (networkResponse.ok) {
-        const cache = await caches.open(CACHE_NAME);
-        await cache.put(request, networkResponse.clone());
-        return networkResponse;
-      }
-    }
-
-    // If network fails or offline, try cache
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    // If no cache and HTML request, return offline page
-    if (request.headers.get('accept').includes('text/html')) {
-      return await caches.match('/offline.html');
-    }
-
-    throw new Error('Resource not available');
-  } catch (error) {
-    console.error('[Service Worker] Network-first request error:', error);
-    throw error;
-  }
+// Get pending changes
+async function getPendingChanges(db) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['pendingChanges'], 'readonly');
+    const store = transaction.objectStore('pendingChanges');
+    const request = store.getAll();
+    
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
 }
+
+// Mark change as synced
+async function markChangeAsSynced(db, id) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['pendingChanges'], 'readwrite');
+    const store = transaction.objectStore('pendingChanges');
+    const request = store.delete(id);
+    
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Cache management
+const CACHE_URLS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/static/js/main.js',
+  '/static/css/main.css',
+  '/static/media/logo.svg'
+];
+
+// Install event
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(CACHE_URLS))
+      .then(() => self.skipWaiting())
+  );
+});
+
+// Activate event
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames
+          .filter(name => name !== CACHE_NAME)
+          .map(name => caches.delete(name))
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch event
+self.addEventListener('fetch', (event) => {
+  // Skip cross-origin requests
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        if (response) {
+          return response;
+        }
+
+        return fetch(event.request)
+          .then(response => {
+            // Don't cache if not a success response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          });
+      })
+      .catch(error => {
+        console.error('Fetch failed:', error);
+        // Return a fallback response if available
+        return caches.match('/offline.html');
+      })
+  );
+});
 
 // Add a function to notify clients about updates
 const notifyClientsAboutUpdate = async () => {
@@ -342,71 +291,113 @@ const notifyClientsAboutUpdate = async () => {
   });
 };
 
-// Modify the install event handler
-self.addEventListener('install', (event) => {
+// Update the main install event listener
+self.addEventListener('install', event => {
   console.log('Service worker installing...');
-  // Skip waiting to activate immediately
   event.waitUntil(
     Promise.all([
+      // Skip waiting to activate immediately
       self.skipWaiting(),
-      // Clear old caches
-      caches.keys().then(cacheNames => 
-        Promise.all(cacheNames.map(name => caches.delete(name)))
-      )
+      // Preload critical assets
+      CacheManager.preloadCriticalAssets(),
+      // Update cache version
+      CacheManager.updateCacheVersion()
     ]).then(() => {
-      console.log('Service worker installed and caches cleared');
-      notifyClientsAboutUpdate();
+      console.log('Service worker installed successfully');
+    }).catch(error => {
+      console.error('Service worker installation failed:', error);
     })
   );
 });
 
-// Modify the activate event handler
-self.addEventListener('activate', (event) => {
+// Update the main activate event listener
+self.addEventListener('activate', event => {
   console.log('Service worker activating...');
   event.waitUntil(
     Promise.all([
       // Take control of all clients immediately
       self.clients.claim(),
-      // Clear old caches again to be sure
-      caches.keys().then(cacheNames => 
-        Promise.all(cacheNames.map(name => caches.delete(name)))
-      )
+      // Clean up old caches
+      CacheManager.cleanupOldCaches()
     ]).then(() => {
-      console.log('Service worker activated and claimed clients');
+      console.log('Service worker activated successfully');
+      // Notify clients about the update
       notifyClientsAboutUpdate();
+    }).catch(error => {
+      console.error('Service worker activation failed:', error);
     })
   );
 });
 
-// Add error handling for fetch events
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    (async () => {
-      try {
-        // Try network first
-        const networkResponse = await fetch(event.request);
-        if (networkResponse.ok) {
-          // Cache the successful response
-          const cache = await caches.open(CACHE_NAME);
-          await cache.put(event.request, networkResponse.clone());
-          return networkResponse;
-        }
-        throw new Error('Network response was not ok');
-      } catch (error) {
-        console.log('Network request failed, trying cache:', error);
-        // Try cache if network fails
-        const cachedResponse = await caches.match(event.request);
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        // If both network and cache fail, return a fallback
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-        throw error;
+// Add a function to handle font fetching with retries
+const fetchFontWithRetry = async (url, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, {
+        credentials: 'omit',
+        mode: 'cors',
+        cache: 'no-cache'
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return response;
+    } catch (error) {
+      console.warn(`Font fetch attempt ${i + 1} failed for ${url}:`, error);
+      if (i === retries - 1) {
+        // On last retry, return null instead of throwing
+        console.warn(`All font fetch attempts failed for ${url}`);
+        return null;
       }
-    })()
-  );
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+  return null;
+};
+
+// Update the font caching strategy
+self.addEventListener('fetch', (event) => {
+  if (event.request.url.includes('fonts.googleapis.com') || 
+      event.request.url.includes('fonts.gstatic.com')) {
+    event.respondWith(
+      (async () => {
+        try {
+          // Try to get from cache first
+          const cachedResponse = await caches.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          // If not in cache, fetch with retry
+          const response = await fetchFontWithRetry(event.request.url);
+          if (!response) {
+            // If font fetch fails, return a fallback response
+            return new Response('', {
+              status: 200,
+              headers: new Headers({
+                'Content-Type': 'text/css',
+                'Cache-Control': 'no-cache'
+              })
+            });
+          }
+
+          // Cache the successful response
+          const cache = await caches.open('font-cache');
+          await cache.put(event.request, response.clone());
+          return response;
+        } catch (error) {
+          console.warn('Font fetch error:', error);
+          // Return a fallback response instead of throwing
+          return new Response('', {
+            status: 200,
+            headers: new Headers({
+              'Content-Type': 'text/css',
+              'Cache-Control': 'no-cache'
+            })
+          });
+        }
+      })()
+    );
+  }
 });
 
 // Add message handling
@@ -438,156 +429,37 @@ self.addEventListener('unhandledrejection', (event) => {
 });
 
 // Background sync
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-data') {
-    event.waitUntil(syncData());
+self.addEventListener('sync', async (event) => {
+  if (event.tag === 'sync-changes') {
+    try {
+      const db = await openDatabase();
+      const changes = await getPendingChanges(db);
+      
+      for (const change of changes) {
+        try {
+          // Attempt to sync the change
+          const response = await fetch('/api/sync', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(change.data)
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Sync failed with status ${response.status}`);
+          }
+          
+          await markChangeAsSynced(db, change.id);
+        } catch (error) {
+          console.error('Error syncing change:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error in background sync:', error);
+    }
   }
 });
-
-// Sync data with server
-async function syncData() {
-  try {
-    const db = await openDatabase();
-    const pendingChanges = await getPendingChanges(db);
-    
-    for (const change of pendingChanges) {
-      try {
-        await fetch(change.url, {
-          method: change.method,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await getAuthToken()}`
-          },
-          body: JSON.stringify(change.data)
-        });
-        
-        await markChangeAsSynced(db, change.id);
-      } catch (error) {
-        console.error('Error syncing change:', error);
-      }
-    }
-  } catch (error) {
-    console.error('Error in background sync:', error);
-  }
-}
-
-// Database connection management
-let dbConnection = null;
-let connectionPromise = null;
-
-// Database helpers
-async function openDatabase() {
-  // If we already have a connection, return it
-  if (dbConnection) {
-    return dbConnection;
-  }
-
-  // If we have a pending connection, wait for it
-  if (connectionPromise) {
-    return connectionPromise;
-  }
-
-  // Create a new connection
-  connectionPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open('JapVocDB', 1);
-    
-    request.onerror = () => {
-      connectionPromise = null;
-      reject(request.error);
-    };
-
-    request.onsuccess = () => {
-      dbConnection = request.result;
-      connectionPromise = null;
-      resolve(dbConnection);
-    };
-    
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      
-      // Create stores if they don't exist
-      if (!db.objectStoreNames.contains('pendingChanges')) {
-        db.createObjectStore('pendingChanges', { keyPath: 'id', autoIncrement: true });
-      }
-      if (!db.objectStoreNames.contains('settings')) {
-        db.createObjectStore('settings');
-      }
-    };
-
-    // Handle connection close
-    request.result.onclose = () => {
-      dbConnection = null;
-      connectionPromise = null;
-    };
-  });
-
-  return connectionPromise;
-}
-
-async function getPendingChanges(db) {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['pendingChanges'], 'readonly');
-    const store = transaction.objectStore('pendingChanges');
-    const request = store.getAll();
-    
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function markChangeAsSynced(db, id) {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['pendingChanges'], 'readwrite');
-    const store = transaction.objectStore('pendingChanges');
-    const request = store.delete(id);
-    
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function getAuthToken() {
-  return new Promise((resolve) => {
-    const request = indexedDB.open('JapVocDB', 1);
-    
-    request.onsuccess = (event) => {
-      const db = event.target.result;
-      const transaction = db.transaction(['settings'], 'readonly');
-      const store = transaction.objectStore('settings');
-      const getRequest = store.get('authToken');
-      
-      getRequest.onsuccess = () => resolve(getRequest.result || '');
-      getRequest.onerror = () => resolve('');
-    };
-    
-    request.onerror = () => resolve('');
-  });
-}
-
-// Open IndexedDB
-async function openDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      
-      // Create object stores
-      if (!db.objectStoreNames.contains('pendingVocabulary')) {
-        db.createObjectStore('pendingVocabulary', { keyPath: 'id', autoIncrement: true });
-      }
-      if (!db.objectStoreNames.contains('pendingProgress')) {
-        db.createObjectStore('pendingProgress', { keyPath: 'id', autoIncrement: true });
-      }
-      if (!db.objectStoreNames.contains('pendingSettings')) {
-        db.createObjectStore('pendingSettings', { keyPath: 'id', autoIncrement: true });
-      }
-    };
-  });
-}
 
 // Audio conversion utilities
 function audioBufferToWav(buffer) {
@@ -801,7 +673,7 @@ self.addEventListener('sync', (event) => {
 });
 
 async function syncVocabulary() {
-  const db = await openDB();
+  const db = await openDatabase();
   const pendingItems = await db.getAll('pendingVocabulary');
   
   for (const item of pendingItems) {
@@ -825,7 +697,7 @@ async function syncVocabulary() {
 
 // Sync progress data
 async function syncProgress() {
-  const db = await openDB();
+  const db = await openDatabase();
   const pendingProgress = await db.getAll('pendingProgress');
   
   for (const item of pendingProgress) {
@@ -859,7 +731,7 @@ async function syncProgress() {
 
 // Sync settings
 async function syncSettings() {
-  const db = await openDB();
+  const db = await openDatabase();
   const pendingSettings = await db.getAll('pendingSettings');
   
   for (const item of pendingSettings) {

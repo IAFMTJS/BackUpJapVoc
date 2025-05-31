@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { useProgress } from '../context/ProgressContext';
-import { useSound } from '../context/SoundContext';
 import { useAchievements } from '../context/AchievementContext';
 import { Kanji, kanjiList } from '../data/kanjiData';
 import { playAudio, playDynamicAudio } from '../utils/audio';
@@ -122,7 +121,6 @@ const KanjiQuiz: React.FC = () => {
   const { settings } = useApp();
   const { updateProgress, progress } = useProgress();
   const { checkAchievements } = useAchievements();
-  const { playCorrect, playIncorrect } = useSound();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [quizState, setQuizState] = useState<QuizState>({
     mode: 'setup',
@@ -230,35 +228,19 @@ const KanjiQuiz: React.FC = () => {
       currentStroke: []
     }));
 
-    // Validate stroke if in stroke mode
+    // Only validate stroke if in stroke mode, but don't show feedback yet
     if (quizSettings.mode === 'stroke' && currentKanji) {
       const expectedStroke = currentKanji.strokes[prev.strokes.length];
       const validationResult = validateStrokeEnhanced(strokeData, expectedStroke);
       setStrokeValidationResult(validationResult);
       
       if (validationResult.isCorrect) {
-        playCorrect();
         setStreak(prev => prev + 1);
         // Gradually reduce stroke guide opacity as user improves
         setStrokeGuideOpacity(prev => Math.max(0.1, prev - 0.05));
       } else {
-        playIncorrect();
-        setStreak(0);
         // Increase stroke guide opacity when user makes mistakes
         setStrokeGuideOpacity(prev => Math.min(0.5, prev + 0.1));
-      }
-
-      // Show feedback
-      setQuizState(prev => ({
-        ...prev,
-        showFeedback: true,
-        isCorrect: validationResult.isCorrect
-      }));
-
-      // Check if kanji is complete
-      if (prev.strokes.length + 1 === currentKanji.strokes.length) {
-        const score = calculateStrokeOrderScore([...prev.strokes, strokeData], currentKanji.strokes);
-        handleQuizComplete(score);
       }
     }
   };
@@ -453,7 +435,7 @@ const KanjiQuiz: React.FC = () => {
           )}
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             variant="outlined"
             onClick={() => setShowStrokeGuide(!showStrokeGuide)}
@@ -476,9 +458,17 @@ const KanjiQuiz: React.FC = () => {
           >
             Clear
           </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={quizState.strokes.length === 0}
+            startIcon={<Check />}
+          >
+            Submit
+          </Button>
         </Box>
 
-        {strokeValidationResult && (
+        {quizState.showFeedback && (
           <AnimatePresence>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -488,22 +478,20 @@ const KanjiQuiz: React.FC = () => {
               <Paper
                 sx={{
                   p: 2,
-                  bgcolor: strokeValidationResult.isCorrect ? 'success.light' : 'error.light',
-                  color: 'white',
-                  maxWidth: 400
+                  bgcolor: quizState.isCorrect ? 'success.light' : 'error.light',
+                  color: 'white'
                 }}
               >
                 <Typography>
-                  {strokeValidationResult.isCorrect ? 'Correct stroke!' : 'Try again!'}
+                  {quizState.isCorrect
+                    ? 'Correct!'
+                    : `Incorrect. Try again!`}
                 </Typography>
-                {!strokeValidationResult.isCorrect && (
+                {strokeValidationResult && (
                   <Box sx={{ mt: 1 }}>
-                    <Typography variant="body2">
-                      Accuracy: {Math.round(strokeValidationResult.accuracy * 100)}%
-                    </Typography>
                     {strokeValidationResult.suggestions.map((suggestion, index) => (
-                      <Typography key={index} variant="body2" sx={{ mt: 0.5 }}>
-                        • {suggestion}
+                      <Typography key={index} variant="body2">
+                        {suggestion}
                       </Typography>
                     ))}
                   </Box>
@@ -512,27 +500,6 @@ const KanjiQuiz: React.FC = () => {
             </motion.div>
           </AnimatePresence>
         )}
-
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="h6">Progress</Typography>
-          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-            {currentKanji.strokes.map((_, index) => (
-              <Tooltip key={index} title={`Stroke ${index + 1}`}>
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    bgcolor: index < quizState.strokes.length
-                      ? 'success.main'
-                      : 'grey.300',
-                    transition: 'background-color 0.3s ease'
-                  }}
-                />
-              </Tooltip>
-            ))}
-          </Box>
-        </Box>
       </Box>
     );
   };
@@ -565,10 +532,8 @@ const KanjiQuiz: React.FC = () => {
                   setQuizState(prev => ({ ...prev, selectedAnswer: index }));
                   const isCorrect = option === currentExercise.answer;
                   if (isCorrect) {
-                    playCorrect();
                     setStreak(prev => prev + 1);
                   } else {
-                    playIncorrect();
                     setStreak(0);
                   }
                   setQuizState(prev => ({
@@ -676,10 +641,8 @@ const KanjiQuiz: React.FC = () => {
                 setQuizState(prev => ({ ...prev, selectedAnswer: index }));
                 const isCorrect = option === currentKanji.meanings[0];
                 if (isCorrect) {
-                  playCorrect();
                   setStreak(prev => prev + 1);
                 } else {
-                  playIncorrect();
                   setStreak(0);
                 }
                 setQuizState(prev => ({
@@ -770,10 +733,8 @@ const KanjiQuiz: React.FC = () => {
                 setQuizState(prev => ({ ...prev, selectedAnswer: index }));
                 const isCorrect = option === currentKanji.readings.onyomi[0];
                 if (isCorrect) {
-                  playCorrect();
                   setStreak(prev => prev + 1);
                 } else {
-                  playIncorrect();
                   setStreak(0);
                 }
                 setQuizState(prev => ({

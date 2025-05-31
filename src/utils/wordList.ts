@@ -1,19 +1,36 @@
-import { Word } from '../types/word';
+import { DictionaryItem } from '../types/dictionary';
 
 // Basic word list for testing
-const basicWords: Word[] = [
+const basicWords: DictionaryItem[] = [
   {
+    id: 'watashi',
     japanese: '私',
     english: 'I, me',
     romaji: 'watashi',
-    type: 'pronoun',
+    category: 'pronoun',
+    level: 1,
+    jlptLevel: 'N5',
     examples: [
       {
         japanese: '私は学生です。',
         english: 'I am a student.',
         romaji: 'Watashi wa gakusei desu.'
       }
-    ]
+    ],
+    mastery: {
+      level: 0,
+      lastReviewed: new Date(),
+      correctAttempts: 0,
+      incorrectAttempts: 0
+    },
+    frequency: {
+      rank: 1,
+      source: 'common-words'
+    },
+    tags: ['pronoun', 'basic'],
+    lastViewed: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     japanese: 'あなた',
@@ -109,10 +126,10 @@ const basicWords: Word[] = [
 ];
 
 /**
- * Get the list of words for the quiz
- * @returns Array of words
+ * Get the list of words for the dictionary
+ * @returns Array of dictionary items
  */
-export const getWordList = (): Word[] => {
+export const getWordList = (): DictionaryItem[] => {
   // In the future, this could load from a database or API
   return basicWords;
 }; 

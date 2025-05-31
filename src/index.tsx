@@ -1,5 +1,6 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM from 'react-dom';
+import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App, { ThemeWrapper } from './App';
 import { ThemeProvider } from './context/ThemeContext';
@@ -8,105 +9,99 @@ import { AppProvider } from './context/AppContext';
 import { ProgressProvider } from './context/ProgressContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
+import { WordProvider } from './context/WordContext';
 import { WordLevelProvider } from './context/WordLevelContext';
-import { SoundProvider } from './context/SoundContext';
+import { LearningProvider } from './context/LearningContext';
 import { AchievementProvider } from './context/AchievementContext';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
-root.render(
+ReactDOM.render(
   <React.StrictMode>
-    <ErrorBoundary>
+    <BrowserRouter>
       <ThemeProvider>
         <ThemeWrapper>
           <ErrorBoundary>
             <AuthProvider>
               <AppProvider>
                 <ProgressProvider>
-                  <WordLevelProvider>
-                    <AchievementProvider>
-                      <SettingsProvider>
-                        <SoundProvider>
+                  <WordProvider>
+                    <WordLevelProvider>
+                      <AchievementProvider>
+                        <LearningProvider>
                           <AccessibilityProvider>
-                            <App />
+                            <SettingsProvider>
+                              <App />
+                            </SettingsProvider>
                           </AccessibilityProvider>
-                        </SoundProvider>
-                      </SettingsProvider>
-                    </AchievementProvider>
-                  </WordLevelProvider>
+                        </LearningProvider>
+                      </AchievementProvider>
+                    </WordLevelProvider>
+                  </WordProvider>
                 </ProgressProvider>
               </AppProvider>
             </AuthProvider>
           </ErrorBoundary>
         </ThemeWrapper>
       </ThemeProvider>
-    </ErrorBoundary>
-  </React.StrictMode>
+    </BrowserRouter>
+  </React.StrictMode>,
+  document.getElementById('root')
 );
 
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
-  // Delay service worker registration until after initial render and theme initialization
   const registerServiceWorker = async () => {
     try {
-      // Wait for theme initialization
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
       console.log('Starting service worker registration process...');
-      const clientId = await getClientId();
       
-      // Always unregister existing service worker in production
-      if (process.env.NODE_ENV === 'production') {
-        const existingRegistration = await navigator.serviceWorker.getRegistration();
-        if (existingRegistration) {
-          console.log('Unregistering existing service worker for update...');
-          await existingRegistration.unregister();
-        }
-
-        try {
-          // Clear caches before registering new service worker
-          if ('caches' in window) {
-            const cacheNames = await caches.keys();
-            await Promise.all(cacheNames.map(name => caches.delete(name)));
-            console.log('Cleared all caches before service worker registration');
-          }
-
-          console.log('Registering new service worker...');
-          const newRegistration = await navigator.serviceWorker.register('/service-worker.js', {
-            scope: '/',
-            updateViaCache: 'none'
-          });
-
-          // Handle service worker updates more gracefully
-          newRegistration.addEventListener('updatefound', () => {
-            const newWorker = newRegistration.installing;
-            if (!newWorker) return;
-
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // Instead of immediate reload, show a notification to the user
-                console.log('New version available. Please refresh to update.');
-                // You could show a notification to the user here
-              }
-            });
-          });
-
-          console.log('ServiceWorker registration successful with scope:', newRegistration.scope);
-        } catch (error) {
-          console.error('ServiceWorker registration failed:', error);
-          // Don't clear caches on registration failure to prevent data loss
-        }
+      // Get existing registration
+      const existingRegistration = await navigator.serviceWorker.getRegistration();
+      
+      // Only unregister in production if there's an existing registration
+      if (process.env.NODE_ENV === 'production' && existingRegistration) {
+        console.log('Unregistering existing service worker for update...');
+        await existingRegistration.unregister();
       }
+
+      console.log('Registering new service worker...');
+      const registration = await navigator.serviceWorker.register('/service-worker.js', {
+        scope: '/',
+        updateViaCache: 'none'
+      });
+
+      // Handle service worker updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('New version available. Please refresh to update.');
+            // Show a notification to the user
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Update Available', {
+                body: 'A new version is available. Please refresh to update.',
+                icon: '/icons/icon-192x192.png'
+              });
+            }
+          }
+        });
+      });
+
+      // Handle controller change
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('Service worker controller changed');
+        window.location.reload();
+      });
+
+      console.log('ServiceWorker registration successful with scope:', registration.scope);
     } catch (error) {
-      console.error('Service worker initialization failed:', error);
+      console.error('ServiceWorker registration failed:', error);
     }
   };
 
-  // Register service worker after window load
-  window.addEventListener('load', registerServiceWorker);
+  // Register service worker immediately
+  registerServiceWorker();
 }
 
 // Modify the global error handler to be more specific

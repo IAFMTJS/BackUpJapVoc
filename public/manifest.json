@@ -1,37 +1,12 @@
 {
   "short_name": "JapVoc",
-  "name": "Japanese Vocabulary by Section",
-  "description": "Learn Japanese vocabulary organized by sections, with hiragana, katakana, and kanji support",
+  "name": "Japanese Vocabulary Learning",
+  "description": "A comprehensive Japanese vocabulary learning application with SRS, dictionary, and cultural insights",
   "icons": [
     {
-      "src": "icons/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
     },
     {
       "src": "icons/icon-192x192.png",
@@ -40,64 +15,54 @@
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
       "src": "icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#1976d2",
-  "background_color": "#ffffff",
+  "theme_color": "#1a237e",
+  "background_color": "#181830",
   "orientation": "portrait",
   "categories": ["education", "language", "productivity"],
   "screenshots": [
     {
-      "src": "screenshots/screen1.png",
+      "src": "screenshot1.png",
       "sizes": "1280x720",
       "type": "image/png",
       "platform": "wide",
-      "label": "Homescreen of JapVoc"
+      "label": "Dictionary View"
+    },
+    {
+      "src": "screenshot2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Learning Interface"
     }
   ],
   "shortcuts": [
     {
-      "name": "Hiragana Quiz",
-      "short_name": "Hiragana",
-      "description": "Start a hiragana quiz",
-      "url": "/quiz?mode=hiragana",
-      "icons": [{ "src": "icons/hiragana-96x96.png", "sizes": "96x96" }]
+      "name": "Dictionary",
+      "short_name": "Dictionary",
+      "description": "Open the Japanese dictionary",
+      "url": "/knowing/dictionary",
+      "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Katakana Quiz",
-      "short_name": "Katakana",
-      "description": "Start a katakana quiz",
-      "url": "/quiz?mode=katakana",
-      "icons": [{ "src": "icons/katakana-96x96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Kanji Quiz",
-      "short_name": "Kanji",
-      "description": "Start a kanji quiz",
-      "url": "/quiz?mode=kanji",
-      "icons": [{ "src": "icons/kanji-96x96.png", "sizes": "96x96" }]
+      "name": "SRS Review",
+      "short_name": "SRS",
+      "description": "Start your daily SRS review",
+      "url": "/srs",
+      "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }]
     }
-  ]
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "scope": "/",
+  "dir": "ltr",
+  "lang": "en-US",
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7"
 } 

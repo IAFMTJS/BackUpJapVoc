@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import { useSettings } from '../context/SettingsContext';
-import { useProgress } from '../context/ProgressContext';
-import { useAccessibility } from '../context/AccessibilityContext';
-import KanjiPractice from '../components/Kanji';
+import { useTheme } from '../../context/ThemeContext';
+import { useSettings } from '../../context/SettingsContext';
+import { useProgress } from '../../context/ProgressContext';
+import { useAccessibility } from '../../context/AccessibilityContext';
+import KanjiPractice from '../../components/Kanji';
 
 // Loading component
 const LoadingSpinner = () => (

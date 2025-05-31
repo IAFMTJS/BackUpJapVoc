@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
   WordLevel, 
   JapaneseWord, 
@@ -12,8 +12,32 @@ import {
   calculateWordMastery,
   WordMasteryStatus
 } from '../data/wordLevels';
+import { useWords } from './WordContext';
+import { DictionaryItem } from '../types/dictionary';
 
-interface WordLevelContextType {
+// Convert DictionaryItem to JapaneseWord
+const convertToJapaneseWord = (word: DictionaryItem): JapaneseWord => ({
+  id: word.id,
+  japanese: word.japanese,
+  english: word.english,
+  romaji: word.romaji,
+  hiragana: word.readings?.[0] || word.japanese,
+  kanji: word.kanji?.[0],
+  level: word.level,
+  category: word.category || 'general',
+  examples: word.examples?.map(ex => ({
+    japanese: ex.japanese,
+    english: ex.english,
+    romaji: ex.romaji || ''
+  })) || [],
+  notes: word.notes,
+  difficulty: word.level <= 3 ? 'beginner' : word.level <= 6 ? 'intermediate' : 'advanced',
+  jlptLevel: word.jlptLevel,
+  isHiragana: word.isHiragana,
+  isKatakana: word.isKatakana
+});
+
+export interface WordLevelContextType {
   currentLevel: number;
   unlockedLevels: number[];
   userProgress: UserProgress;
@@ -35,9 +59,66 @@ interface WordLevelContextType {
   canAdvanceLevel: () => boolean;
   getCurrentLevelData: () => WordLevel | null;
   getWordMasteryForLevel: (level: number) => WordMasteryStatus;
+  setCurrentLevel: (level: number) => void;
+  getWordsByCategory: (category: string) => JapaneseWord[];
+  getWordsByJLPTLevel: (jlptLevel: string) => JapaneseWord[];
+  getAllWords: () => JapaneseWord[];
+  calculateWordDifficulty: (word: JapaneseWord) => string;
 }
 
-const WordLevelContext = createContext<WordLevelContextType | undefined>(undefined);
+export const WordLevelContext = createContext<WordLevelContextType>({
+  currentLevel: 1,
+  unlockedLevels: [],
+  userProgress: {
+    currentLevel: 1,
+    levels: [],
+    wordProgress: {},
+    quizHistory: [],
+    jlptTests: [],
+    readingPractice: [],
+    totalScore: 0,
+    lastUpdated: new Date()
+  },
+  settings: {
+    unlockedLevels: [],
+    autoUnlock: true,
+    showRomaji: true,
+    showHiragana: true,
+    showKanji: true
+  },
+  getWordsForCurrentLevel: () => [],
+  updateWordProgress: () => {},
+  unlockLevel: () => {},
+  updateSettings: () => {},
+  getLevelProgress: () => undefined,
+  getWordProgress: () => undefined,
+  updateQuizProgress: () => {},
+  updateJLPTProgress: () => {},
+  updateReadingProgress: () => {},
+  canAdvanceToNextLevel: () => false,
+  getLevelRequirements: () => [],
+  getWordMastery: () => ({
+    masteredWords: 0,
+    totalWords: 0,
+    masteryPercentage: 0,
+    meetsRequirements: false
+  }),
+  updateUserProgress: () => {},
+  advanceLevel: () => {},
+  canAdvanceLevel: () => false,
+  getCurrentLevelData: () => null,
+  getWordMasteryForLevel: () => ({
+    masteredWords: 0,
+    totalWords: 0,
+    masteryPercentage: 0,
+    meetsRequirements: false
+  }),
+  setCurrentLevel: () => {},
+  getWordsByCategory: () => [],
+  getWordsByJLPTLevel: () => [],
+  getAllWords: () => [],
+  calculateWordDifficulty: () => 'medium'
+});
 
 const STORAGE_KEYS = {
   PROGRESS: 'japanese_word_progress',
@@ -87,6 +168,12 @@ export const WordLevelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return saved ? JSON.parse(saved) : initialSettings;
   });
 
+  const [currentLevel, setCurrentLevel] = useState(userProgress.currentLevel);
+  const { quizWords } = useWords();
+
+  // Convert quizWords to JapaneseWord format
+  const words = React.useMemo(() => quizWords.map(convertToJapaneseWord), [quizWords]);
+
   // Save progress and settings to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(userProgress));
@@ -96,9 +183,38 @@ export const WordLevelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   }, [settings]);
 
-  const getWordsForCurrentLevel = () => {
-    return getWordsForLevel(userProgress.currentLevel);
-  };
+  const getWordsForCurrentLevel = useCallback(() => {
+    return words.filter(word => word.level === currentLevel);
+  }, [words, currentLevel]);
+
+  const getWordsByCategory = useCallback((category: string) => {
+    if (category === 'all') return words;
+    return words.filter(word => word.category === category);
+  }, [words]);
+
+  const getWordsByJLPTLevel = useCallback((jlptLevel: string) => {
+    return words.filter(word => word.jlptLevel === jlptLevel);
+  }, [words]);
+
+  const getAllWords = useCallback(() => {
+    return words;
+  }, [words]);
+
+  const calculateWordDifficulty = useCallback((word: JapaneseWord): string => {
+    const masteryLevel = word.learningStatus?.masteryLevel || 0;
+    const reviewCount = word.learningStatus?.reviewCount || 0;
+    const correctAttempts = word.learningStatus?.correctAttempts || 0;
+    const incorrectAttempts = word.learningStatus?.incorrectAttempts || 0;
+    
+    // Calculate difficulty based on mastery and performance
+    if (masteryLevel >= 0.8 && correctAttempts > incorrectAttempts * 2) {
+      return 'easy';
+    } else if (masteryLevel >= 0.5 && correctAttempts > incorrectAttempts) {
+      return 'medium';
+    } else {
+      return 'hard';
+    }
+  }, []);
 
   const updateWordProgress = (wordId: string, isCorrect: boolean) => {
     setUserProgress(prev => {
@@ -391,7 +507,7 @@ export const WordLevelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const value = {
-    currentLevel: userProgress.currentLevel,
+    currentLevel,
     unlockedLevels: settings.unlockedLevels,
     userProgress,
     settings,
@@ -411,7 +527,12 @@ export const WordLevelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     advanceLevel,
     canAdvanceLevel,
     getCurrentLevelData,
-    getWordMasteryForLevel
+    getWordMasteryForLevel,
+    setCurrentLevel,
+    getWordsByCategory,
+    getWordsByJLPTLevel,
+    getAllWords,
+    calculateWordDifficulty
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useState, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider, createTheme, Theme } from '@mui/material/styles';
 import { useTheme } from './context/ThemeContext';
 import Navigation from './components/Navigation';
@@ -7,44 +7,55 @@ import ThemeToggle from './components/ThemeToggle';
 import ErrorBoundary from './components/ErrorBoundary';
 import OfflineStatus from './components/OfflineStatus';
 import PushNotifications from './components/PushNotifications';
-import { initDictionaryDB } from './utils/dictionaryOfflineSupport';
 import './App.css';
-import { openDB } from './utils/indexedDB';
-import GamesPage from './pages/GamesPage';
+import { openDB, deleteDB, DB_CONFIG } from './utils/indexedDB';
 import { initializeAudioCache } from './utils/audio';
 import { importWords } from './utils/importWords';
 import { initializeMoodWords } from './utils/initMoodWords';
+import { importDictionaryData } from './utils/importDictionaryData';
 import { ThemeProvider } from './context/ThemeContext';
 import { ProgressProvider } from './context/ProgressContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
-import { DatabaseProvider } from './context/DatabaseContext';
+import { DatabaseProvider, useDatabase } from './context/DatabaseContext';
 import { AudioProvider } from './context/AudioContext';
 import { WordLevelProvider } from './context/WordLevelContext';
+import { WordProvider } from './context/WordContext';
+import { DictionaryProvider } from './context/DictionaryContext';
+import { LearningProvider } from './context/LearningContext';
+import LoadingSpinner from './components/LoadingSpinner';
+import WritingPractice from './components/WritingPractice';
+import { databasePromise, initializeDatabase, forceDatabaseReset } from './utils/databaseConfig';
+import { CircularProgress, Box } from '@mui/material';
+import { KnowingNavigation } from './components/KnowingNavigation';
 
 // Lazy load all route components
 const Home = lazy(() => import('./pages/Home'));
 const Settings = lazy(() => import('./pages/Settings'));
-const Vocabulary = lazy(() => import('./pages/VocabularySection'));
+const LearningLayout = lazy(() => import('./pages/learning/LearningLayout'));
+const Writing = lazy(() => import('./pages/learning/Writing'));
+const Kanji = lazy(() => import('./pages/learning/Kanji'));
+const Romaji = lazy(() => import('./pages/learning/Romaji'));
+const QuizPage = lazy(() => import('./pages/learning/QuizPage'));
 const Dictionary = lazy(() => import('./pages/Dictionary'));
-const Writing = lazy(() => import('./pages/WritingPracticePage'));
-const Kanji = lazy(() => import('./pages/Kanji'));
-const Romaji = lazy(() => import('./pages/RomajiSection'));
-const SRS = lazy(() => import('./pages/SRSPage'));
-const Anime = lazy(() => import('./pages/AnimeSection'));
-const Progress = lazy(() => import('./pages/ProgressPage'));
-const Achievements = lazy(() => import('./pages/Achievements'));
-const WordLevels = lazy(() => import('./pages/WordLevelsPage'));
-const Mood = lazy(() => import('./pages/MoodPage'));
+const KnowingDictionary = lazy(() => import('./pages/KnowingDictionary'));
+const SRSPage = lazy(() => import('./pages/SRSPage'));
+const GamesPage = lazy(() => import('./pages/GamesPage'));
+const Progress = lazy(() => import('./pages/Progress'));
+const KnowingCenter = lazy(() => import('./pages/KnowingCenter'));
+const CultureAndRules = lazy(() => import('./pages/CultureAndRules'));
+const MoodPage = lazy(() => import('./pages/MoodPage'));
+const ProgressPage = lazy(() => import('./pages/ProgressPage'));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
+const SettingsPage = lazy(() => import('./pages/Settings'));
+const TriviaSection = lazy(() => import('./pages/TriviaSection'));
+const AnimeSection = lazy(() => import('./pages/AnimeSection'));
 
 // Loading component with better visual feedback
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-      <p className="text-lg text-gray-600 dark:text-gray-300">Loading page...</p>
-    </div>
-  </div>
+  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <CircularProgress />
+  </Box>
 );
 
 // Theme wrapper component to handle Material-UI theme
@@ -122,218 +133,265 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 const App: React.FC = () => {
-  // Initialize audio on first user interaction
-  useEffect(() => {
-    let isInitialized = false;
-    const handleUserInteraction = async () => {
-      if (!isInitialized) {
-        try {
-          console.log('[App] Initializing audio on user interaction...');
-          // Don't wait for audio initialization to complete
-          initializeAudioCache().then(success => {
-            if (success) {
-              isInitialized = true;
-              console.log('[App] Audio initialized successfully');
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
+  const [initProgress, setInitProgress] = useState<string>('Initializing...');
+  const { db } = useDatabase();
+
+  // Function to initialize audio cache
+  const initAudioCache = async (): Promise<void> => {
+    if (!db) {
+      console.warn('[App] Database not available for audio cache initialization');
+      return;
+    }
+
+    try {
+      const transaction = db.transaction(['audioFiles'], 'readwrite');
+      const store = transaction.objectStore('audioFiles');
+      
+      // Get all words from the database
+      const words = await db.getAll('words');
+      console.log(`[App] Starting audio cache for ${words.length} words`);
+      
+      // Process words in smaller batches with delays
+      const BATCH_SIZE = 10;
+      const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
+      
+      for (let i = 0; i < words.length; i += BATCH_SIZE) {
+        const batch = words.slice(i, i + BATCH_SIZE);
+        console.log(`[App] Processing audio batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(words.length / BATCH_SIZE)}`);
+        
+        // Process batch
+        await Promise.all(batch.map(async (word) => {
+          try {
+            if (word.audioUrl) {
+              const response = await fetch(word.audioUrl);
+              if (response.ok) {
+                const blob = await response.blob();
+                await store.put({
+                  id: word.id,
+                  blob,
+                  type: 'word',
+                  text: word.japanese
+                });
+              }
             }
-          }).catch(error => {
-            console.error('[App] Audio initialization failed:', error);
-            // Continue even if audio initialization fails
-            isInitialized = true;
-          });
-        } catch (error) {
-          console.error('[App] Error in audio initialization:', error);
-          // Continue even if audio initialization fails
-          isInitialized = true;
+          } catch (error) {
+            console.warn(`[App] Failed to cache audio for ${word.id}:`, error);
+          }
+        }));
+
+        // Add delay between batches
+        if (i + BATCH_SIZE < words.length) {
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
         }
       }
-    };
+      
+      console.log('[App] Audio cache initialization completed');
+    } catch (error) {
+      console.error('[App] Error initializing audio cache:', error);
+      throw error;
+    }
+  };
 
-    // Add event listeners for user interaction
-    const events = ['click', 'touchstart', 'keydown'];
-    events.forEach(event => {
-      document.addEventListener(event, handleUserInteraction, { once: true });
-    });
+  const handleForceReset = async () => {
+    try {
+      setInitProgress('Resetting database...');
+      await forceDatabaseReset();
+      setInitError(null);
+      initializeApp();
+    } catch (error) {
+      console.error('[App] Error during force reset:', error);
+      setInitError('Failed to reset database. Please try clearing your browser data manually.');
+    }
+  };
 
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, handleUserInteraction);
-      });
-    };
-  }, []);
+  const initializeApp = async () => {
+    setIsInitializing(true);
+    setInitError(null);
+    setInitProgress('Initializing database...');
 
-  // Loading state for context initialization
-  const [isContextsReady, setIsContextsReady] = useState(false);
-  const [initError, setInitError] = useState<Error | null>(null);
+    try {
+      console.log('[App] Starting application initialization');
+      
+      // Initialize database through the DatabaseContext
+      setInitProgress('Initializing database...');
+      await databasePromise; // Wait for the database promise from DatabaseContext
+      console.log('[App] Database initialized successfully');
 
-  // Check if all contexts are ready with better error handling
-  useEffect(() => {
-    const checkContextsReady = async () => {
+      // Import words
+      setInitProgress('Importing words...');
+      const importResult = await importWords();
+      if (!importResult.success) {
+        console.warn('[App] Word import warning:', importResult.error);
+      }
+      console.log('[App] Word import completed');
+
+      // Import dictionary data
+      setInitProgress('Importing dictionary data...');
       try {
-        // Initialize database first
-        await initDictionaryDB();
-        
-        // Initialize mood words
-        console.log('Initializing mood words...');
-        await initializeMoodWords().catch(error => {
-          console.error('Mood words initialization failed:', error);
-          // Continue even if mood words initialization fails
-        });
-        
-        // Set theme context
-        const root = document.getElementById('root');
-        if (root && !root.getAttribute('data-theme')) {
-          root.setAttribute('data-theme', 'dark');
+        const dictResult = await importDictionaryData();
+        if (!dictResult.success) {
+          console.warn('[App] Dictionary import warning:', dictResult.error);
+        } else {
+          console.log(`[App] Dictionary import completed with ${dictResult.count} words`);
         }
-        
-        setIsContextsReady(true);
       } catch (error) {
-        console.error('Context initialization failed:', error);
-        // Set error but don't prevent app from loading
-        setInitError(error instanceof Error ? error : new Error('Some features may not be available'));
-        setIsContextsReady(true);
+        console.warn('[App] Dictionary import warning:', error);
       }
-    };
 
-    checkContextsReady();
+      // Initialize mood words
+      setInitProgress('Initializing mood words...');
+      try {
+        await initializeMoodWords();
+        console.log('[App] Mood words initialized');
+      } catch (error) {
+        console.warn('[App] Mood words initialization warning:', error);
+      }
+
+      // Mark initialization as complete
+      console.log('[App] Core initialization completed');
+      setIsInitializing(false);
+
+      // Start audio cache initialization in the background
+      console.log('[App] Starting background audio cache initialization...');
+      initAudioCache().catch(error => {
+        console.warn('[App] Audio cache initialization warning:', error);
+      });
+
+    } catch (error) {
+      console.error('[App] Initialization error:', error);
+      setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
+      setIsInitializing(false);
+    }
+  };
+
+  useEffect(() => {
+    initializeApp();
   }, []);
 
-  // Show error message but allow app to continue
-  if (initError) {
-    console.error('Initialization error:', initError);
+  if (isInitializing) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-700">{initProgress}</p>
+        </div>
+      </div>
+    );
   }
 
-  // Show loading state only if contexts are not ready
-  if (!isContextsReady) {
-    return <LoadingFallback />;
+  if (initError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-semibold text-red-600 mb-4">Initialization Error</h2>
+          <p className="text-gray-700 mb-4">{initError}</p>
+          <div className="space-y-3">
+            <button
+              onClick={initializeApp}
+              className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+            >
+              Retry Initialization
+            </button>
+            <button
+              onClick={handleForceReset}
+              className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+            >
+              Force Reset Database
+            </button>
+          </div>
+          <p className="mt-4 text-sm text-gray-500">
+            If the error persists, try clearing your browser data or using a different browser.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <Router>
-      <ErrorBoundary
-        fallback={
-          <div className="flex items-center justify-center min-h-screen bg-[#181830]">
-            <div className="text-center p-6 bg-white/10 backdrop-blur-lg rounded-lg">
-              <h2 className="text-xl font-bold text-red-400 mb-2">Application Error</h2>
-              <p className="text-gray-300 mb-4">An error occurred while loading the application.</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              >
-                Reload Application
-              </button>
-            </div>
-          </div>
-        }
-      >
-        <ThemeProvider>
-          <DatabaseProvider>
-            <AudioProvider>
-              <ProgressProvider>
-                <WordLevelProvider>
-                  <SettingsProvider>
-                    <AccessibilityProvider>
-                      <div className="min-h-screen" data-theme="dark">
-                        {initError && (
-                          <div className="fixed top-0 left-0 right-0 bg-yellow-500/90 text-black p-2 text-center z-50">
-                            Some features may not be available. Please try reloading the page.
-                          </div>
-                        )}
-                        <Navigation />
-                        <main className="pt-16">
-                          <ErrorBoundary>
-                            <Suspense fallback={<LoadingFallback />}>
-                              <Routes>
-                                <Route path="/" element={
-                                  <ErrorBoundary>
-                                    <Home />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/settings" element={
-                                  <ErrorBoundary>
-                                    <Settings />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/vocabulary" element={
-                                  <ErrorBoundary>
-                                    <Vocabulary />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/dictionary" element={
-                                  <ErrorBoundary>
-                                    <Dictionary />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/writing" element={
-                                  <ErrorBoundary>
-                                    <Writing />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/kanji" element={
-                                  <ErrorBoundary>
-                                    <Kanji />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/romaji" element={
-                                  <ErrorBoundary>
-                                    <Romaji />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/srs" element={
-                                  <ErrorBoundary>
-                                    <SRS />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/games" element={
-                                  <ErrorBoundary>
-                                    <GamesPage />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/anime" element={
-                                  <ErrorBoundary>
-                                    <Anime />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/progress" element={
-                                  <ErrorBoundary>
-                                    <Progress />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/achievements" element={
-                                  <ErrorBoundary>
-                                    <Achievements />
-                                  </ErrorBoundary>
-                                } />
-                                <Route path="/word-levels" element={
-                                  <ErrorBoundary>
-                                    <WordLevels />
-                                  </ErrorBoundary>
-                                } />
-                                <Route
-                                  path="/mood"
-                                  element={
-                                    <ErrorBoundary>
-                                      <Suspense fallback={<LoadingFallback />}>
-                                        <Mood />
-                                      </Suspense>
-                                    </ErrorBoundary>
-                                  }
-                                />
-                              </Routes>
-                            </Suspense>
-                          </ErrorBoundary>
-                        </main>
-                        <OfflineStatus />
-                        <PushNotifications />
-                      </div>
-                    </AccessibilityProvider>
-                  </SettingsProvider>
-                </WordLevelProvider>
-              </ProgressProvider>
-            </AudioProvider>
-          </DatabaseProvider>
-        </ThemeProvider>
-      </ErrorBoundary>
-    </Router>
+    <ErrorBoundary>
+      <WordProvider>
+        <DictionaryProvider>
+          <LearningProvider>
+            <ThemeWrapper>
+              <Navigation />
+              <Suspense fallback={<LoadingSpinner />}>
+                <Routes>
+                  <Route path="/" element={
+                    <ErrorBoundary>
+                      <Home />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/settings" element={
+                    <ErrorBoundary>
+                      <Settings />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/learning" element={
+                    <ErrorBoundary>
+                      <LearningLayout />
+                    </ErrorBoundary>
+                  }>
+                    <Route index element={<Navigate to="/learning/writing-practice" replace />} />
+                    <Route path="writing-practice" element={<WritingPractice />} />
+                    <Route path="writing" element={<Writing />} />
+                    <Route path="kanji" element={<Kanji />} />
+                    <Route path="romaji" element={<Romaji />} />
+                    <Route path="quiz" element={<QuizPage />} />
+                  </Route>
+                  <Route path="/srs" element={
+                    <ErrorBoundary>
+                      <SRSPage />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/games" element={
+                    <ErrorBoundary>
+                      <GamesPage />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/anime" element={
+                    <ErrorBoundary>
+                      <AnimeSection />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/progress" element={
+                    <ErrorBoundary>
+                      <Progress />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/knowing/*" element={
+                    <ErrorBoundary>
+                      <ProgressProvider>
+                        <KnowingNavigation>
+                          <Suspense fallback={<LoadingFallback />}>
+                            <Routes>
+                              <Route index element={<KnowingCenter />} />
+                              <Route path="dictionary" element={<KnowingDictionary />} />
+                              <Route path="mood" element={<MoodPage />} />
+                              <Route path="culture" element={<CultureAndRules />} />
+                              <Route path="progress" element={<ProgressPage />} />
+                              <Route path="favorites" element={<FavoritesPage />} />
+                              <Route path="settings" element={<SettingsPage />} />
+                              <Route path="*" element={<Navigate to="/knowing" replace />} />
+                            </Routes>
+                          </Suspense>
+                        </KnowingNavigation>
+                      </ProgressProvider>
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/trivia" element={
+                    <ErrorBoundary>
+                      <TriviaSection />
+                    </ErrorBoundary>
+                  } />
+                </Routes>
+              </Suspense>
+            </ThemeWrapper>
+          </LearningProvider>
+        </DictionaryProvider>
+      </WordProvider>
+    </ErrorBoundary>
   );
 };
 

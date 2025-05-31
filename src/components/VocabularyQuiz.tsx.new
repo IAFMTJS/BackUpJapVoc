@@ -1,0 +1,305 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { QuizState, QuizSettings, DEFAULT_QUIZ_SETTINGS, INITIAL_WORD_STATS, QuizMode, Difficulty, WordStats, WordDifficulty } from '../types/quiz';
+import { useTheme } from '../context/ThemeContext';
+import { useApp } from '../context/AppContext';
+import { useProgress } from '../context/ProgressContext';
+import { useSound } from '../context/SoundContext';
+import { useWordLevel } from '../context/WordLevelContext';
+import { useAchievements } from '../context/AchievementContext';
+import { useWords } from '../context/WordContext';
+import { DictionaryItem } from '../types/dictionary';
+import { Achievement } from '../types/achievements';
+import { KanjiComponent } from '../types/quiz';
+import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Button, Alert, LinearProgress, Tooltip, Card, CardContent, Checkbox, FormControlLabel, Collapse, IconButton, List, ListItem, ListItemText, Tabs, Tab, Divider, CircularProgress } from '@mui/material';
+import { playAudio, playDynamicAudio } from '../utils/audio';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { useInView } from 'react-intersection-observer';
+import { DifficultyIndicator } from './DifficultyIndicator';
+import { ExpandMore as ExpandMoreIcon, VolumeUp as VolumeUpIcon, Mic as MicIcon, Stop as StopIcon, Info as InfoIcon, School as SchoolIcon, Brush as BrushIcon, Translate as TranslateIcon } from '@mui/icons-material';
+import { Chip } from '@mui/material';
+import { RecordVoiceOver as RecordVoiceOverIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, Timer as TimerIcon, Help as HelpIcon } from '@mui/icons-material';
+import QuizContent from './QuizContent';
+import { openDB } from 'idb';
+import { DictionaryItem as DictionaryItemType } from '../types/dictionary';
+import { IDBPDatabase } from 'idb';
+import { importDictionaryData } from '../utils/importDictionaryData';
+import { KanjiComponent as KanjiComponentType } from '../types/quiz';
+import { QuizState as ImportedQuizState } from '../types/quiz';
+import { useLearning } from '../context/LearningContext';
+
+// Define local types to avoid conflicts
+type WordComparison = {
+  word: DictionaryItem;
+  similarWords: DictionaryItem[];
+  differences: string[];
+};
+
+type PronunciationPractice = {
+  word: DictionaryItem;
+  userRecording: string;
+  isCorrect: boolean;
+  feedback: string;
+};
+
+type QuizType = 'multiple-choice' | 'writing';
+type AnswerType = 'multiple-choice' | 'text' | 'audio';
+
+// Add new types for quiz options
+type QuizOption = {
+  text: string;
+  isCorrect: boolean;
+  hint?: string;
+};
+
+const SPACED_REPETITION_INTERVALS = [
+  1, // 1 day
+  3, // 3 days
+  7, // 1 week
+  14, // 2 weeks
+  30, // 1 month
+  90, // 3 months
+  180 // 6 months
+];
+
+// Add new animation variants
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    y: -20,
+    transition: {
+      duration: 0.3,
+      ease: "easeIn"
+    }
+  }
+};
+
+const buttonVariants = {
+  hover: { 
+    scale: 1.02,
+    transition: { duration: 0.2 }
+  },
+  tap: { 
+    scale: 0.98,
+    transition: { duration: 0.1 }
+  }
+};
+
+const progressVariants = {
+  initial: { width: 0 },
+  animate: { 
+    width: "100%",
+    transition: { duration: 0.5, ease: "easeInOut" }
+  }
+};
+
+// Add new animation variants for pronunciation practice
+const pronunciationVariants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  },
+  pulse: {
+    scale: [1, 1.1, 1],
+    transition: {
+      duration: 1.5,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  },
+  recording: {
+    scale: [1, 1.2, 1],
+    transition: {
+      duration: 1,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+};
+
+// Add new types for pronunciation tips
+interface PronunciationTip {
+  title: string;
+  description: string;
+  examples: string[];
+  commonMistakes: string[];
+}
+
+// Add pronunciation tips data
+const pronunciationTips: Record<string, PronunciationTip> = {
+  vowels: {
+    title: "Vowel Length",
+    description: "Japanese vowels can be short or long. Long vowels are held for approximately twice the duration of short vowels.",
+    examples: [
+      "おばさん (obasan) - aunt",
+      "おばあさん (obaasan) - grandmother",
+      "えき (eki) - station",
+      "ええ (ee) - yes"
+    ],
+    commonMistakes: [
+      "Shortening long vowels (おばあさん → おばさん)",
+      "Not holding long vowels long enough",
+      "Confusing similar vowel sounds (え vs い)"
+    ]
+  },
+  pitch: {
+    title: "Pitch Accent",
+    description: "Japanese uses pitch accent rather than stress accent. The pitch of your voice should rise and fall in specific patterns.",
+    examples: [
+      "はし (hashi) - bridge (high-low)",
+      "はし (hashi) - chopsticks (low-high)",
+      "あめ (ame) - rain (high-low)",
+      "あめ (ame) - candy (low-high)"
+    ],
+    commonMistakes: [
+      "Using English stress patterns",
+      "Not maintaining consistent pitch",
+      "Over-emphasizing pitch changes"
+    ]
+  },
+  consonants: {
+    title: "Consonant Sounds",
+    description: "Japanese consonants are generally softer than English ones. Pay special attention to the 'r' sound and double consonants.",
+    examples: [
+      "ら (ra) - softer than English 'r'",
+      "っ (small tsu) - creates a pause",
+      "き (ki) - sharper than English 'key'",
+      "し (shi) - between 'she' and 'see'"
+    ],
+    commonMistakes: [
+      "Using English 'r' sound",
+      "Not pausing for double consonants",
+      "Over-aspirating consonants"
+    ]
+  }
+};
+
+// Add Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+// Add function to get random subset without replacement
+const getRandomSubset = <T,>(array: T[], count: number): T[] => {
+  if (count >= array.length) return shuffleArray(array);
+  const shuffled = shuffleArray(array);
+  return shuffled.slice(0, count);
+};
+
+// Add missing type definitions
+type AchievementData = {
+  type: 'quiz_completion';
+  data: {
+    score: number;
+    streak: number;
+    totalQuestions: number;
+  };
+};
+
+type KanjiInfo = {
+  components: KanjiComponent[];
+  mnemonics: string[];
+  strokeOrder: string[];
+  usageContext: string[];
+  radicals: string[];
+  onyomi: string[];
+  kunyomi: string[];
+};
+
+// Rename our local QuizState to avoid conflict
+type LocalQuizState = {
+  mode: QuizMode;
+  currentQuestion: number;
+  selectedAnswer: QuizOption | null;
+  showFeedback: boolean;
+  isCorrect: boolean | null;
+  showCorrect: boolean;
+  currentWord: DictionaryItem | null;
+  questions: DictionaryItem[];
+  score: number;
+  totalQuestions: number;
+  completed: boolean;
+  markedForReview: Set<string>; // Change from Set<number> to Set<string>
+  skippedQuestions: Set<number>;
+  mistakes: Array<{ word: DictionaryItem; userAnswer: string }>;
+  practiceMode: boolean;
+  wordStats: Record<string, WordStats>;
+  showExamples: boolean;
+  learnProgress: number;
+  currentComparison: {
+    word: DictionaryItem;
+    similarWords: DictionaryItem[];
+    differences: string[][];
+  } | null;
+  pronunciationPractice: {
+    word: DictionaryItem;
+    userRecording: string;
+    isCorrect: boolean;
+    feedback: string;
+  } | null;
+};
+
+// Update theme classes type
+interface ThemeClasses {
+  container: string;
+  text: {
+    primary: string;
+    secondary: string;
+    muted: string;
+  };
+  card: string;
+  button: {
+    primary: string;
+    secondary: string;
+  };
+  input: string;
+  nav: {
+    background: string;
+    link: {
+      default: string;
+      active: string;
+    };
+  };
+  checkbox: string;
+  subtitle: string;
+}
+
+// Add proper type definitions
+type WordUsage = {
+  example: string;
+  translation: string;
+};
+
+// Fix checkAchievements type
+const checkAchievements = (type: 'vocabulary' | 'grammar' | 'kanji', data: AchievementData) => {
+  // ... existing implementation ...
+};
+
+interface VocabularyQuizProps {
+  onQuizComplete?: (wordId: string, isCorrect: boolean) => void;
+  initialLevel?: number; // Optional initial level to start with
+}
+
+// ... rest of the component implementation ...
+// ... existing code ...
+
+export default VocabularyQuiz; 

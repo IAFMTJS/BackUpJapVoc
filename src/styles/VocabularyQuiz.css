@@ -1,0 +1,249 @@
+.vocabulary-quiz {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.quiz-content {
+  background: var(--card-bg);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.progress-info {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.streak {
+  color: #ff6b6b;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.word-card {
+  background: var(--card-bg-secondary);
+  padding: 2rem;
+  border-radius: 0.75rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.word {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.reading {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.pronunciation-section,
+.writing-section,
+.examples-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--card-bg-secondary);
+  border-radius: 0.5rem;
+}
+
+.pronunciation-section button,
+.writing-section button {
+  margin-right: 1rem;
+}
+
+.examples-section {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.feedback {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+.feedback.correct {
+  background: rgba(46, 213, 115, 0.1);
+  color: #2ed573;
+  border: 1px solid #2ed573;
+}
+
+.feedback.incorrect {
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
+  border: 1px solid #ff4757;
+}
+
+.feedback.hint {
+  background: rgba(255, 159, 67, 0.1);
+  color: #ff9f43;
+  border: 1px solid #ff9f43;
+}
+
+.feedback.achievement {
+  background: rgba(255, 159, 67, 0.1);
+  color: #ff9f43;
+  border: 1px solid #ff9f43;
+  animation: bounce 0.5s ease;
+}
+
+.answer-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.answer-option {
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--card-bg-secondary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.answer-option:hover {
+  background: var(--hover-bg);
+  transform: translateY(-2px);
+}
+
+.answer-option:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.answer-option.correct {
+  background: rgba(46, 213, 115, 0.1);
+  border-color: #2ed573;
+  color: #2ed573;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .vocabulary-quiz {
+    padding: 1rem;
+  }
+
+  .quiz-content {
+    padding: 1.5rem;
+  }
+
+  .word {
+    font-size: 2rem;
+  }
+
+  .answer-options {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-info {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .vocabulary-quiz {
+    --card-bg: #1a1a1a;
+    --card-bg-secondary: #2a2a2a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --border-color: #404040;
+    --hover-bg: #333333;
+  }
+}
+
+/* Light Mode Support */
+@media (prefers-color-scheme: light) {
+  .vocabulary-quiz {
+    --card-bg: #ffffff;
+    --card-bg-secondary: #f5f5f5;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --border-color: #e0e0e0;
+    --hover-bg: #f0f0f0;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .vocabulary-quiz * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .vocabulary-quiz {
+    --card-bg: #000000;
+    --card-bg-secondary: #ffffff;
+    --text-primary: #ffffff;
+    --text-secondary: #ffffff;
+    --border-color: #ffffff;
+    --hover-bg: #ffffff;
+  }
+
+  .feedback.correct,
+  .feedback.incorrect,
+  .feedback.hint,
+  .feedback.achievement {
+    border-width: 3px;
+  }
+} 

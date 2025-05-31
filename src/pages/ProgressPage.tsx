@@ -10,7 +10,17 @@ import { kanjiList } from '../data/kanjiData';
 import { beginnerPhrases } from './AnimeSection';
 import { romajiWords, romajiSentences, romajiStories } from '../data/romajiWords';
 import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
-import { Paper, Box } from '@mui/material';
+import { Paper, Box, Container, Typography, Grid, LinearProgress, Card, CardContent, Divider, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
+import {
+  Timeline as TimelineIcon,
+  Star as StarIcon,
+  School as SchoolIcon,
+  EmojiEmotions as MoodIcon,
+  Book as DictionaryIcon,
+  AccessTime as TimeIcon,
+  TrendingUp as TrendingUpIcon,
+  CalendarToday as CalendarIcon,
+} from '@mui/icons-material';
 
 // Loading component
 const LoadingSpinner = () => (
@@ -22,7 +32,7 @@ const LoadingSpinner = () => (
 
 // Lazy load heavy components with error handling
 const LazyDictionary = lazy(() => {
-  return import('../components/Dictionary').catch(error => {
+  return import('../components/DictionaryList').catch(error => {
     console.error('Error loading Dictionary component:', error);
     return { default: () => <div>Error loading Dictionary component</div> };
   });
@@ -92,13 +102,6 @@ const ComponentErrorBoundary: React.FC<{ children: React.ReactNode; componentNam
 type TabType = 'progress' | 'dictionary';
 
 const sections = [
-  { 
-    id: 'vocabulary', 
-    name: 'Vocabulary Quiz', 
-    icon: '📝', 
-    total: quizWords.filter(item => item.isHiragana || item.isKatakana).length,
-    description: 'Test your knowledge of Japanese vocabulary'
-  },
   { 
     id: 'dictionary', 
     name: 'Dictionary', 
@@ -239,6 +242,55 @@ const ProgressPage: React.FC = () => {
     </div>
   );
 
+  const calculateMasteryDistribution = () => {
+    const distribution = {
+      mastered: 0,
+      learning: 0,
+      notStarted: 0,
+    };
+
+    Object.values(progress.words).forEach((word) => {
+      if (word.mastery >= 0.8) distribution.mastered++;
+      else if (word.mastery > 0) distribution.learning++;
+      else distribution.notStarted++;
+    });
+
+    return distribution;
+  };
+
+  const masteryDistribution = calculateMasteryDistribution();
+  const totalWords = Object.keys(progress.words).length;
+  const totalStudyTime = progress.statistics.totalStudyTime || 0;
+  const currentStreak = progress.statistics.currentStreak || 0;
+  const longestStreak = progress.statistics.longestStreak || 0;
+
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  const StatCard: React.FC<{
+    title: string;
+    value: string | number;
+    icon: React.ReactNode;
+    color?: string;
+  }> = ({ title, value, icon, color = 'primary.main' }) => (
+    <Card>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ color, mr: 1 }}>{icon}</Box>
+          <Typography variant="h6" component="div">
+            {title}
+          </Typography>
+        </Box>
+        <Typography variant="h4" component="div" sx={{ color }}>
+          {value}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className={themeClasses.container}>
       {/* Decorative cityscape background */}
@@ -300,6 +352,148 @@ const ProgressPage: React.FC = () => {
               </p>
             </div>
           )}
+
+          {/* Overview Stats */}
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={4}>
+              <StatCard
+                title="Total Study Time"
+                value={formatTime(totalStudyTime)}
+                icon={<TimeIcon />}
+                color="info.main"
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <StatCard
+                title="Current Streak"
+                value={`${currentStreak} days`}
+                icon={<TrendingUpIcon />}
+                color="success.main"
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <StatCard
+                title="Longest Streak"
+                value={`${longestStreak} days`}
+                icon={<CalendarIcon />}
+                color="warning.main"
+              />
+            </Grid>
+          </Grid>
+
+          {/* Section Progress */}
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Section Progress
+              </Typography>
+              <Grid container spacing={2}>
+                {sections.map((section) => (
+                  <Grid item xs={12} sm={6} md={4} key={section.id}>
+                    <Box sx={{ mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        {section.id === 'dictionary' && <DictionaryIcon sx={{ mr: 1 }} />}
+                        {section.id === 'mood' && <MoodIcon sx={{ mr: 1 }} />}
+                        {section.id === 'culture' && <SchoolIcon sx={{ mr: 1 }} />}
+                        <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>
+                          {section.name}
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={(progress.sections[section.id] || 0) * 100}
+                        sx={{ height: 10, borderRadius: 5 }}
+                      />
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        {Math.round((progress.sections[section.id] || 0) * 100)}% Complete
+                      </Typography>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            </Paper>
+          </Grid>
+
+          {/* Word Mastery Distribution */}
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Word Mastery
+              </Typography>
+              <List>
+                <ListItem>
+                  <ListItemIcon>
+                    <StarIcon color="success" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Mastered"
+                    secondary={`${masteryDistribution.mastered} words (${Math.round(
+                      (masteryDistribution.mastered / totalWords) * 100
+                    )}%)`}
+                  />
+                  <LinearProgress
+                    variant="determinate"
+                    value={(masteryDistribution.mastered / totalWords) * 100}
+                    sx={{ width: 100, ml: 2 }}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <TimelineIcon color="primary" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Learning"
+                    secondary={`${masteryDistribution.learning} words (${Math.round(
+                      (masteryDistribution.learning / totalWords) * 100
+                    )}%)`}
+                  />
+                  <LinearProgress
+                    variant="determinate"
+                    value={(masteryDistribution.learning / totalWords) * 100}
+                    sx={{ width: 100, ml: 2 }}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <SchoolIcon color="action" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Not Started"
+                    secondary={`${masteryDistribution.notStarted} words (${Math.round(
+                      (masteryDistribution.notStarted / totalWords) * 100
+                    )}%)`}
+                  />
+                  <LinearProgress
+                    variant="determinate"
+                    value={(masteryDistribution.notStarted / totalWords) * 100}
+                    sx={{ width: 100, ml: 2 }}
+                  />
+                </ListItem>
+              </List>
+            </Paper>
+          </Grid>
+
+          {/* Recent Activity */}
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Recent Activity
+              </Typography>
+              <List>
+                {progress.statistics.recentActivity?.slice(0, 5).map((activity, index) => (
+                  <React.Fragment key={index}>
+                    <ListItem>
+                      <ListItemText
+                        primary={activity.description}
+                        secondary={new Date(activity.timestamp).toLocaleDateString()}
+                      />
+                    </ListItem>
+                    {index < progress.statistics.recentActivity.length - 1 && <Divider />}
+                  </React.Fragment>
+                ))}
+              </List>
+            </Paper>
+          </Grid>
         </div>
       </div>
     </div>

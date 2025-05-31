@@ -27,12 +27,9 @@ const MoodStats: React.FC<MoodStatsProps> = ({ words, className }) => {
 
   // Calculate mood statistics
   const moodStats = React.useMemo(() => {
-    const stats: Record<EmotionalCategory, MoodStat> = {} as Record<EmotionalCategory, MoodStat>;
-    const totalWords = words.length;
-
-    // Initialize stats for all categories
-    Object.keys(EMOTIONAL_CATEGORIES).forEach(category => {
-      stats[category as EmotionalCategory] = {
+    // Initialize stats for all categories with default values
+    const stats: Record<EmotionalCategory, MoodStat> = Object.keys(EMOTIONAL_CATEGORIES).reduce((acc, category) => {
+      acc[category as EmotionalCategory] = {
         category: category as EmotionalCategory,
         count: 0,
         mastered: 0,
@@ -40,46 +37,61 @@ const MoodStats: React.FC<MoodStatsProps> = ({ words, className }) => {
         averageIntensity: 0,
         relatedEmotions: {} as Record<EmotionalCategory, number>
       };
-    });
+      return acc;
+    }, {} as Record<EmotionalCategory, MoodStat>);
 
     // Calculate stats
     words.forEach(word => {
-      if (word.emotionalContext) {
-        const { category, intensity, relatedEmotions } = word.emotionalContext;
+      if (word.emotionalContext?.category && EMOTIONAL_CATEGORIES[word.emotionalContext.category]) {
+        const { category, intensity = 0, relatedEmotions = [] } = word.emotionalContext;
         const stat = stats[category];
         
-        stat.count++;
-        if (word.mastered) {
-          stat.mastered++;
-        } else {
-          stat.learning++;
-        }
-        stat.averageIntensity = (stat.averageIntensity * (stat.count - 1) + intensity) / stat.count;
+        if (stat) {  // Add safety check
+          stat.count++;
+          if (word.mastered) {
+            stat.mastered++;
+          } else {
+            stat.learning++;
+          }
+          stat.averageIntensity = (stat.averageIntensity * (stat.count - 1) + intensity) / stat.count;
 
-        // Track related emotions
-        relatedEmotions?.forEach(related => {
-          stat.relatedEmotions[related as EmotionalCategory] = (stat.relatedEmotions[related as EmotionalCategory] || 0) + 1;
-        });
+          // Track related emotions
+          relatedEmotions?.forEach(related => {
+            if (EMOTIONAL_CATEGORIES[related as EmotionalCategory]) {
+              stat.relatedEmotions[related as EmotionalCategory] = (stat.relatedEmotions[related as EmotionalCategory] || 0) + 1;
+            }
+          });
+        }
       }
     });
 
     return stats;
   }, [words]);
 
-  // Sort categories by count
-  const sortedCategories = Object.values(moodStats).sort((a, b) => b.count - a.count);
+  // Sort categories by count, filtering out any undefined stats
+  const sortedCategories = React.useMemo(() => {
+    return Object.values(moodStats)
+      .filter(stat => stat && typeof stat.count === 'number')
+      .sort((a, b) => b.count - a.count);
+  }, [moodStats]);
 
-  // Calculate mood cloud data
+  // Calculate mood cloud data with safety checks
   const moodCloudData = React.useMemo(() => {
     return sortedCategories
-      .filter(stat => stat.count > 0)
-      .map(stat => ({
-        category: stat.category,
-        count: stat.count,
-        intensity: stat.averageIntensity,
-        mastered: stat.mastered,
-        color: EMOTIONAL_CATEGORIES[stat.category].emoji
-      }));
+      .filter(stat => stat && typeof stat.count === 'number' && stat.count > 0)
+      .map(stat => {
+        if (!stat || !EMOTIONAL_CATEGORIES[stat.category]) {
+          return null;
+        }
+        return {
+          category: stat.category,
+          count: stat.count || 0,
+          intensity: stat.averageIntensity || 0,
+          mastered: stat.mastered || 0,
+          color: EMOTIONAL_CATEGORIES[stat.category]?.emoji || '❓'
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }, [sortedCategories]);
 
   return (
@@ -99,7 +111,7 @@ const MoodStats: React.FC<MoodStatsProps> = ({ words, className }) => {
         // Detailed statistics view
         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
           {sortedCategories
-            .filter(stat => stat.count > 0)
+            .filter(stat => stat && typeof stat.count === 'number' && stat.count > 0 && EMOTIONAL_CATEGORIES[stat.category])
             .map(stat => (
               <Paper
                 key={stat.category}

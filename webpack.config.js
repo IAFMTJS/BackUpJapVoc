@@ -6,14 +6,15 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+// const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
 const BrotliPlugin = require('brotli-webpack-plugin');
 const { SubresourceIntegrityPlugin } = require('webpack-subresource-integrity');
 
+// Base configuration that can be extended by dev and prod configs
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
-  const analyzeBundle = env.analyze === 'true';
+  // const analyzeBundle = env.analyze === 'true';  // Comment out bundle analyzer flag
 
   return {
     mode: isProduction ? 'production' : 'development',
@@ -97,11 +98,18 @@ module.exports = (env, argv) => {
           type: 'asset',
           parser: {
             dataUrlCondition: {
-              maxSize: 4 * 1024 // Reduced to 4kb for better performance
+              maxSize: 4 * 1024
             }
           },
           generator: {
             filename: 'static/media/[name].[hash][ext]'
+          }
+        },
+        {
+          test: /\.(mp3|wav|ogg)$/i,
+          type: 'asset/resource',
+          generator: {
+            filename: 'static/sounds/[name][ext]'
           }
         },
         {
@@ -150,22 +158,9 @@ module.exports = (env, argv) => {
             },
             mangle: true
           },
-          extractComments: false
-        }),
-        /* Temporarily commenting out image optimization
-        new ImageMinimizerPlugin({
-          minimizer: {
-            implementation: ImageMinimizerPlugin.imageminMinify,
-            options: {
-              plugins: [
-                ['imagemin-mozjpeg', { quality: 60, progressive: true }],
-                ['imagemin-pngquant', { quality: [0.6, 0.8], speed: 4 }],
-                ['imagemin-gifsicle', { interlaced: true, optimizationLevel: 3 }],
-              ]
-            }
-          }
+          extractComments: false,
+          parallel: true
         })
-        */
       ],
       splitChunks: {
         chunks: 'all',
@@ -182,11 +177,8 @@ module.exports = (env, argv) => {
             reuseExistingChunk: true
           },
           vendor: {
-            test: /[\\/]node_modules[\\/](?!@mui)[\\/]/,
-            name(module) {
-              const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
-              return `vendor.${packageName.replace('@', '')}`;
-            },
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendor',
             chunks: 'all',
             priority: 20,
             reuseExistingChunk: true
@@ -214,6 +206,9 @@ module.exports = (env, argv) => {
         process: 'process/browser.js',
         Buffer: ['buffer', 'Buffer']
       }),
+      new webpack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development')
+      }),
       new CopyPlugin({
         patterns: [
           {
@@ -233,6 +228,14 @@ module.exports = (env, argv) => {
             }
           },
           {
+            from: 'public/sounds',
+            to: 'static/sounds',
+            noErrorOnMissing: true,
+            globOptions: {
+              ignore: ['**/.DS_Store']
+            }
+          },
+          {
             from: 'public/dict',
             to: 'dict',
             noErrorOnMissing: true
@@ -246,7 +249,7 @@ module.exports = (env, argv) => {
             from: 'public',
             to: '.',
             globOptions: {
-              ignore: ['**/index.html', '**/.DS_Store', '**/dict/**', '**/assets/**']
+              ignore: ['**/.DS_Store', '**/dict/**', '**/assets/**', '**/index.html']
             }
           },
           { from: 'src/data/romaji-data.json', to: 'romaji-data.json' }
@@ -296,9 +299,6 @@ module.exports = (env, argv) => {
           'frame-src': "'none'"
         } : undefined
       }),
-      new webpack.DefinePlugin({
-        'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development')
-      }),
       ...(isProduction ? [
         new CompressionPlugin({
           test: /\.(js|css|html|svg|json)$/,
@@ -321,7 +321,14 @@ module.exports = (env, argv) => {
         new SubresourceIntegrityPlugin({
           hashFuncNames: ['sha384']
         }),
-        ...(analyzeBundle ? [new BundleAnalyzerPlugin()] : []),
+        // Comment out BundleAnalyzerPlugin
+        // analyzeBundle && new BundleAnalyzerPlugin({
+        //   analyzerMode: 'server',
+        //   analyzerPort: 8888,
+        //   openAnalyzer: true,
+        //   generateStatsFile: true,
+        //   statsFilename: 'bundle-stats.json'
+        // }),
       ] : [])
     ],
     devServer: {
@@ -382,7 +389,11 @@ module.exports = (env, argv) => {
       maxAssetSize: 512000
     },
     stats: {
-      errorDetails: true
+      errorDetails: true,
+      logging: 'info',
+      loggingDebug: ['webpack'],
+      loggingTrace: true,
+      children: true
     }
   };
 }; 

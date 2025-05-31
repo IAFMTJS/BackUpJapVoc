@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import WritingPractice from '../components/WritingPractice';
+import WritingPractice from '../../components/WritingPractice';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 type WritingMode = 'hiragana' | 'katakana' | 'kanji';
 
-const WritingPracticePage: React.FC = () => {
+const Writing: React.FC = () => {
   const navigate = useNavigate();
   const { getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
@@ -44,4 +44,4 @@ const WritingPracticePage: React.FC = () => {
   );
 };
 
-export default WritingPracticePage; 
+export default Writing; 

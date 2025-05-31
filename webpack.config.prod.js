@@ -6,15 +6,20 @@ const fs = require('fs');
 const logStream = fs.createWriteStream('webpack-build.log', { flags: 'a' });
 
 module.exports = (env, argv) => {
-  const common = commonConfig(env, argv);
+  // Ensure we're in production mode
+  const prodEnv = { ...env, NODE_ENV: 'production' };
+  const prodArgv = { ...argv, mode: 'production' };
+  
+  // Get base config with production settings
+  const common = commonConfig(prodEnv, prodArgv);
   
   // Log the configuration
   logStream.write('Starting webpack build...\n');
-  logStream.write('Environment: ' + JSON.stringify(env) + '\n');
-  logStream.write('Arguments: ' + JSON.stringify(argv) + '\n');
+  logStream.write('Environment: ' + JSON.stringify(prodEnv) + '\n');
+  logStream.write('Arguments: ' + JSON.stringify(prodArgv) + '\n');
   
+  // Only add production-specific overrides
   const config = merge(common, {
-    mode: 'production',
     devtool: 'source-map',
     stats: {
       logging: 'verbose',
@@ -23,20 +28,7 @@ module.exports = (env, argv) => {
       errorDetails: true,
       children: true
     },
-    resolve: {
-      ...common.resolve,
-      fallback: {
-        ...common.resolve?.fallback,
-        "async_hooks": false,
-        "path": require.resolve("path-browserify")
-      }
-    },
-    optimization: {
-      ...common.optimization,
-      minimize: true
-    },
     plugins: [
-      ...common.plugins,
       {
         apply: (compiler) => {
           compiler.hooks.done.tap('LogPlugin', (stats) => {

@@ -1,123 +1,71 @@
-import { openDB } from 'idb';
 import { MoodWord, EmotionalCategory } from '../types/mood';
-import { generateMoodWordAudio } from './audio';
+import { MOOD_WORDS } from '../data/moodWords';
+import { getDatabase, addToStore, clearStore, getAllFromStore, updateInStore, deleteFromStore } from './databaseConfig';
 
-// Category mapping from JSON categories to UI categories
-const categoryMapping: Record<string, EmotionalCategory> = {
-  // Positive Feelings
-  'romantic': 'love',
-  'playful': 'happiness',
-  'positive': 'happiness',
-  'happy': 'happiness',
-  'joyful': 'happiness',
-  
-  // Challenging Emotions
-  'angry': 'anger',
-  'annoyed': 'anger',
-  'frustrated': 'anger',
-  'indifferent': 'neutral',
-  'disappointed': 'sadness',
-  
-  // Social Emotions
-  'respect': 'respect',
-  'empathetic': 'empathy',
-  'grateful': 'gratitude',
-  
-  // Complex Feelings
-  'motivational': 'determination',
-  'determined': 'determination',
-  'focused': 'determination'
-};
-
-// Default category for unmapped emotions
-const DEFAULT_CATEGORY: EmotionalCategory = 'neutral';
-
-// Database name and version
-const DB_NAME = 'MoodWordsDB';
-const DB_VERSION = 2;
 const STORE_NAME = 'moodWords';
 
-// Initialize the database
-export async function initMoodWordsDB() {
+// Map JSON categories to application categories
+const CATEGORY_MAP: Record<string, EmotionalCategory> = {
+  'romantic': 'love',
+  'angry': 'anger',
+  'happy': 'happiness',
+  'sad': 'sadness',
+  'scared': 'fear',
+  'annoyed': 'anger',
+  'indifferent': 'neutral',
+  'motivational': 'determination',
+  'empathetic': 'empathy',
+  'respect': 'respect',
+  'flirting': 'love',
+  'gratitude': 'gratitude',
+  'pride': 'happiness',
+  'embarrassment': 'neutral',
+  'excitement': 'happiness',
+  'loneliness': 'sadness',
+  'nostalgia': 'sadness',
+  'determination': 'determination',
+  'relief': 'happiness'
+};
+
+// Load additional mood words from JSON file
+async function loadAdditionalMoodWords(): Promise<MoodWord[]> {
   try {
-    const db = await openDB(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion, newVersion) {
-        console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
-        
-        if (oldVersion < 1) {
-          // Initial database creation
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-            store.createIndex('category', 'emotionalContext.category');
-            store.createIndex('mastered', 'mastered');
-            store.createIndex('lastReviewed', 'lastReviewed');
-          }
-        }
-        
-        if (oldVersion < 2) {
-          // Migration to version 2: Remove audioUrl field
-          console.log('Migrating to version 2: Removing audioUrl field');
-          if (db.objectStoreNames.contains(STORE_NAME)) {
-            // Delete the old store
-            db.deleteObjectStore(STORE_NAME);
-            // Create new store without audioUrl
-            const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-            store.createIndex('category', 'emotionalContext.category');
-            store.createIndex('mastered', 'mastered');
-            store.createIndex('lastReviewed', 'lastReviewed');
-          }
-        }
-      },
+    const response = await fetch('/data/mood_words.json');
+    if (!response.ok) {
+      throw new Error('Failed to fetch mood words JSON');
+    }
+    const jsonWords = await response.json();
+    
+    // Convert JSON format to MoodWord format
+    return jsonWords.map((word: any, index: number) => {
+      // Map the category to our application's categories
+      const mappedCategory = CATEGORY_MAP[word.category] || 'neutral';
+      
+      return {
+        id: `${mappedCategory}-${index + 1}`,
+        japanese: word.japanese,
+        romaji: word.romaji,
+        english: word.english,
+        emotionalContext: {
+          category: mappedCategory,
+          emoji: getEmojiForCategory(mappedCategory),
+          intensity: getIntensityValue(word.intensity),
+          usageNotes: Array.isArray(word.usage_notes) ? word.usage_notes.join('. ') : word.usage_notes,
+          relatedEmotions: word.related_emotions || []
+        },
+        mastered: false,
+        lastReviewed: new Date(),
+        formality: determineFormality(word),
+        commonResponses: word.common_responses || []
+      };
     });
-    console.log('Mood words database initialized successfully');
-    return db;
   } catch (error) {
-    console.error('Error initializing mood words database:', error);
-    throw error;
+    console.error('Error loading additional mood words:', error);
+    return [];
   }
 }
 
-// Convert JSON mood word to our MoodWord type
-async function convertToMoodWord(jsonWord: any): Promise<MoodWord> {
-  if (!jsonWord || typeof jsonWord !== 'object') {
-    throw new Error('Invalid mood word data: word is not an object');
-  }
-
-  if (!jsonWord.category) {
-    throw new Error(`Invalid mood word data: missing category for word "${jsonWord.japanese || 'unknown'}"`);
-  }
-
-  const category = categoryMapping[jsonWord.category.toLowerCase()] || DEFAULT_CATEGORY;
-  
-  // Convert intensity string to number
-  const intensityMap: Record<string, number> = {
-    'low': 1,
-    'medium': 2,
-    'high': 3,
-    'very high': 4
-  };
-  
-  return {
-    id: crypto.randomUUID(),
-    japanese: jsonWord.japanese || '',
-    romaji: jsonWord.romaji || '',
-    english: jsonWord.english || '',
-    emotionalContext: {
-      category,
-      originalCategory: jsonWord.category,
-      intensity: intensityMap[jsonWord.intensity?.toLowerCase()] || 1,
-      relatedEmotions: jsonWord.related_emotions || [],
-      emoji: getEmojiForCategory(category),
-      usageNotes: jsonWord.usage_notes || []
-    },
-    mastered: false,
-    lastReviewed: new Date(),
-    formality: jsonWord.formality || 'polite',
-    commonResponses: jsonWord.common_responses || []
-  };
-}
-
-// Get emoji for category
+// Helper function to get emoji for category
 function getEmojiForCategory(category: EmotionalCategory): string {
   const emojiMap: Record<EmotionalCategory, string> = {
     'happiness': '😊',
@@ -129,146 +77,162 @@ function getEmojiForCategory(category: EmotionalCategory): string {
     'disgust': '🤢',
     'neutral': '😐',
     'gratitude': '🙏',
-    'empathy': '🤗',
+    'empathy': '🤝',
     'respect': '🙇',
     'determination': '💪'
   };
   return emojiMap[category] || '😐';
 }
 
-// Import mood words from JSON
-export async function importMoodWords(jsonData: any[]): Promise<void> {
-  let db;
+// Helper function to convert intensity string to number
+function getIntensityValue(intensity: string): number {
+  const intensityMap: Record<string, number> = {
+    'low': 2,
+    'medium': 5,
+    'high': 8
+  };
+  return intensityMap[intensity] || 5;
+}
+
+// Helper function to determine formality
+function determineFormality(word: any): 'formal' | 'neutral' | 'casual' {
+  if (word.japanese.includes('です') || word.japanese.includes('ます')) {
+    return 'formal';
+  }
+  if (word.japanese.includes('だ') || word.japanese.includes('だよ')) {
+    return 'casual';
+  }
+  return 'neutral';
+}
+
+// Initialize mood words in the database
+export async function initializeMoodWords(): Promise<void> {
   try {
-    if (!Array.isArray(jsonData)) {
-      throw new Error('Invalid mood words data: expected an array');
-    }
-
-    db = await initMoodWordsDB();
+    const db = await getDatabase();
     
-    // Convert all words first
-    console.log(`Converting ${jsonData.length} mood words...`);
-    const moodWords = await Promise.all(jsonData.map(async (word, index) => {
-      try {
-        return await convertToMoodWord(word);
-      } catch (error) {
-        console.error(`Error converting word at index ${index}:`, error);
-        throw error;
-      }
-    }));
-
-    // Then store all words in a single transaction
-    console.log('Storing converted words in database...');
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-
-    // Clear existing words first
-    await store.clear();
-
-    // Add all words in parallel but within the same transaction
-    await Promise.all(moodWords.map(word => store.add(word)));
+    // Clear existing words
+    await clearStore(STORE_NAME);
     
-    // Wait for transaction to complete
-    await tx.done;
+    // Load additional words from JSON
+    const additionalWords = await loadAdditionalMoodWords();
+    console.log(`Loaded ${additionalWords.length} additional mood words from JSON`);
     
-    console.log(`Successfully imported ${moodWords.length} mood words`);
+    // Combine hardcoded and additional words
+    const allWords = [...MOOD_WORDS, ...additionalWords];
+    
+    // Add all words to the database
+    await Promise.all(allWords.map(word => addToStore(STORE_NAME, word)));
+    
+    console.log(`Successfully initialized ${allWords.length} total mood words`);
   } catch (error) {
-    console.error('Error importing mood words:', error);
+    console.error('Error initializing mood words:', error);
     throw error;
-  } finally {
-    if (db) {
-      db.close();
-    }
   }
 }
 
-// Update word mastery status
-export async function updateWordMastery(wordId: string, mastered: boolean): Promise<void> {
-  let db;
+// Get all mood words
+export async function getAllMoodWords(): Promise<MoodWord[]> {
   try {
-    db = await openDB(DB_NAME, DB_VERSION);
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
+    const db = await getDatabase();
+    const words = await getAllFromStore<MoodWord>(db, STORE_NAME);
     
-    const word = await store.get(wordId);
+    // If no words in database, initialize them
+    if (words.length === 0) {
+      await initializeMoodWords();
+      return MOOD_WORDS;
+    }
+    
+    return words;
+  } catch (error) {
+    console.error('Error getting all mood words:', error);
+    // Fallback to built-in data if database fails
+    return MOOD_WORDS;
+  }
+}
+
+// Get mood words by category
+export async function getMoodWordsByCategory(category: EmotionalCategory): Promise<MoodWord[]> {
+  try {
+    const db = await getDatabase();
+    const allWords = await getAllFromStore<MoodWord>(db, STORE_NAME);
+    return allWords.filter(word => word.emotionalContext.category === category);
+  } catch (error) {
+    console.error('Error getting mood words by category:', error);
+    // Fallback to built-in data
+    return MOOD_WORDS.filter(word => word.emotionalContext.category === category);
+  }
+}
+
+// Update mood word
+export async function updateMoodWord(word: MoodWord): Promise<void> {
+  try {
+    const db = await getDatabase();
+    await updateInStore(STORE_NAME, word);
+  } catch (error) {
+    console.error('Error updating mood word:', error);
+    throw error;
+  }
+}
+
+// Delete mood word
+export async function deleteMoodWord(id: string): Promise<void> {
+  try {
+    const db = await getDatabase();
+    await deleteFromStore(STORE_NAME, id);
+  } catch (error) {
+    console.error('Error deleting mood word:', error);
+    throw error;
+  }
+}
+
+// Mark word as mastered
+export async function markWordAsMastered(id: string, mastered: boolean = true): Promise<void> {
+  try {
+    const db = await getDatabase();
+    const words = await getAllFromStore<MoodWord>(db, STORE_NAME);
+    const word = words.find(w => w.id === id);
+    
     if (word) {
-      word.mastered = mastered;
-      word.lastReviewed = new Date();
-      await store.put(word);
+      await updateInStore(STORE_NAME, { 
+        ...word, 
+        mastered,
+        lastReviewed: new Date()
+      });
     }
-    
-    await tx.done;
   } catch (error) {
-    console.error('Error updating word mastery:', error);
+    console.error('Error marking word as mastered:', error);
     throw error;
-  } finally {
-    if (db) {
-      db.close();
-    }
   }
 }
 
-// Load all mood words from database
-export async function loadAllMoodWords(): Promise<MoodWord[]> {
-  let db;
+// Get mastered words
+export async function getMasteredWords(): Promise<MoodWord[]> {
   try {
-    db = await openDB(DB_NAME, DB_VERSION);
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const words = await store.getAll();
-    await tx.done;
-    return words;
+    const db = await getDatabase();
+    const allWords = await getAllFromStore<MoodWord>(db, STORE_NAME);
+    return allWords.filter(word => word.mastered);
   } catch (error) {
-    console.error('Error loading mood words:', error);
-    throw error;
-  } finally {
-    if (db) {
-      db.close();
-    }
+    console.error('Error getting mastered words:', error);
+    // Fallback to built-in data
+    return MOOD_WORDS.filter(word => word.mastered);
   }
 }
 
-// Get words by category
-export async function getWordsByCategory(category: EmotionalCategory): Promise<MoodWord[]> {
-  let db;
+// Get words by last reviewed date
+export async function getWordsByLastReviewed(startDate: Date, endDate: Date): Promise<MoodWord[]> {
   try {
-    db = await openDB(DB_NAME, DB_VERSION);
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const index = store.index('category');
-    const words = await index.getAll(category);
-    await tx.done;
-    return words;
+    const db = await getDatabase();
+    const allWords = await getAllFromStore<MoodWord>(db, STORE_NAME);
+    return allWords.filter(word => {
+      const reviewedDate = new Date(word.lastReviewed);
+      return reviewedDate >= startDate && reviewedDate <= endDate;
+    });
   } catch (error) {
-    console.error('Error getting words by category:', error);
-    throw error;
-  } finally {
-    if (db) {
-      db.close();
-    }
-  }
-}
-
-// Get mastery statistics
-export async function getMasteryStats(): Promise<{ total: number; mastered: number }> {
-  let db;
-  try {
-    db = await openDB(DB_NAME, DB_VERSION);
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const allWords = await store.getAll();
-    await tx.done;
-    
-    return {
-      total: allWords.length,
-      mastered: allWords.filter(word => word.mastered).length
-    };
-  } catch (error) {
-    console.error('Error getting mastery stats:', error);
-    throw error;
-  } finally {
-    if (db) {
-      db.close();
-    }
+    console.error('Error getting words by last reviewed date:', error);
+    // Fallback to built-in data
+    return MOOD_WORDS.filter(word => {
+      const reviewedDate = new Date(word.lastReviewed);
+      return reviewedDate >= startDate && reviewedDate <= endDate;
+    });
   }
 } 

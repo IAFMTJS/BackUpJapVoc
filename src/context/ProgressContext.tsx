@@ -48,63 +48,122 @@ import {
   type QueryDocumentSnapshot,
   type Firestore
 } from '../utils/firebase';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 // Progress tracking types
-export interface ProgressItem {
+export interface WordProgress {
   id: string;
-  userId: string;
-  section: string;
-  itemId: string;
-  correct: number;
-  incorrect: number;
-  total?: number;  // Optional total property for tracking total items
-  lastAttempted: number;
-  timestamp: number;
-  version: string;
+  lastReviewed: number;
+  reviewCount: number;
+  masteryLevel: number; // 0-5
+  nextReviewDate: number;
+  notes?: string;
+  favorite: boolean;
+  difficulty: 'easy' | 'medium' | 'hard';
+  category: string;
+  section: 'dictionary' | 'mood' | 'culture';
 }
 
+export interface SectionProgress {
+  totalItems: number;
+  masteredItems: number;
+  inProgressItems: number;
+  notStartedItems: number;
+  lastStudied: number;
+  streak: number;
+  averageMastery: number;
+}
+
+export interface ProgressState {
+  words: { [key: string]: WordProgress };
+  sections: {
+    dictionary: SectionProgress;
+    mood: SectionProgress;
+    culture: SectionProgress;
+  };
+  preferences: {
+    showRomaji: boolean;
+    showEnglish: boolean;
+    autoPlayAudio: boolean;
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    dailyGoal: number;
+    theme: 'light' | 'dark' | 'system';
+  };
+  statistics: {
+    totalStudyTime: number;
+    wordsLearned: number;
+    currentStreak: number;
+    longestStreak: number;
+    lastStudyDate: number;
+    dailyProgress: { [date: string]: number };
+  };
+}
+
+const defaultProgress: ProgressState = {
+  words: {},
+  sections: {
+    dictionary: {
+      totalItems: 0,
+      masteredItems: 0,
+      inProgressItems: 0,
+      notStartedItems: 0,
+      lastStudied: 0,
+      streak: 0,
+      averageMastery: 0
+    },
+    mood: {
+      totalItems: 0,
+      masteredItems: 0,
+      inProgressItems: 0,
+      notStartedItems: 0,
+      lastStudied: 0,
+      streak: 0,
+      averageMastery: 0
+    },
+    culture: {
+      totalItems: 0,
+      masteredItems: 0,
+      inProgressItems: 0,
+      notStartedItems: 0,
+      lastStudied: 0,
+      streak: 0,
+      averageMastery: 0
+    }
+  },
+  preferences: {
+    showRomaji: true,
+    showEnglish: true,
+    autoPlayAudio: false,
+    difficulty: 'beginner',
+    dailyGoal: 20,
+    theme: 'system'
+  },
+  statistics: {
+    totalStudyTime: 0,
+    wordsLearned: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastStudyDate: 0,
+    dailyProgress: {}
+  }
+};
+
 interface ProgressContextType {
-  // Progress state
-  progress: Record<string, ProgressItem>;
-  pendingProgress: PendingProgressItem[];
-  isLoading: boolean;
-  error: string | null;
-  
-  // Settings state
-  settings: Settings | null;
-  isSettingsLoading: boolean;
-  settingsError: string | null;
-  
-  // Progress actions
-  updateProgress: (section: string, itemId: string, correct: boolean) => Promise<void>;
-  setTotalItems: (section: string, total: number) => void;
-  syncProgress: () => Promise<void>;
-  clearProgress: () => Promise<void>;
-  
-  // Settings actions
-  updateSettings: (settings: Partial<Settings>) => Promise<void>;
-  
-  // Backup actions
-  createDataBackup: () => Promise<{
-    progress: ProgressItem[];
-    pending: PendingProgressItem[];
-    settings: Settings[];
-  }>;
-  restoreDataBackup: (backup: {
-    progress: ProgressItem[];
-    pending: PendingProgressItem[];
-    settings: Settings[];
-  }) => Promise<void>;
-  
-  // Status
-  isOnline: boolean;
-  isSyncing: boolean;
-  lastSyncTime: number | null;
-  
-  // Streak tracking
-  currentStreak: number;
-  bestStreak: number;
-  lastStudyDate: Date | null;
+  progress: ProgressState;
+  updateWordProgress: (wordId: string, progress: Partial<WordProgress>) => void;
+  updateSectionProgress: (section: keyof ProgressState['sections'], progress: Partial<SectionProgress>) => void;
+  updatePreferences: (preferences: Partial<ProgressState['preferences']>) => void;
+  updateStatistics: (stats: Partial<ProgressState['statistics']>) => void;
+  resetProgress: () => void;
+  exportProgress: () => string;
+  importProgress: (data: string) => void;
+  getWordProgress: (wordId: string) => WordProgress | undefined;
+  getSectionProgress: (section: keyof ProgressState['sections']) => SectionProgress;
+  getMasteryLevel: (wordId: string) => number;
+  getNextReviewDate: (wordId: string) => number;
+  toggleFavorite: (wordId: string) => void;
+  addStudyTime: (minutes: number) => void;
+  updateStreak: () => void;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -113,8 +172,7 @@ const DEFAULT_USER_ID = 'default';
 
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [progress, setProgress] = useState<Record<string, ProgressItem>>({});
-  const [pendingProgress, setPendingProgress] = useState<PendingProgressItem[]>([]);
+  const [progress, setProgress] = useLocalStorage<ProgressState>('progress', defaultProgress);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -128,16 +186,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
   
-  // Streak tracking
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [bestStreak, setBestStreak] = useState(0);
-  const [lastStudyDate, setLastStudyDate] = useState<Date | null>(null);
-
   // Track loading states for each data type
   const [loadingStates, setLoadingStates] = useState({
     settings: true,
     progress: true,
-    pendingProgress: true,
     streakData: true
   });
 
@@ -173,77 +225,6 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     loadSettings();
   }, []);
 
-  // Load progress independently
-  useEffect(() => {
-    const loadProgress = async () => {
-      try {
-        updateLoadingState('progress', true);
-        setError(null);
-        const userProgress = await getProgress(DEFAULT_USER_ID);
-        const progressMap = userProgress.reduce((acc, item) => {
-          acc[`${item.section}-${item.itemId}`] = item;
-          return acc;
-        }, {} as Record<string, ProgressItem>);
-        setProgress(progressMap);
-      } catch (err) {
-        console.error('[ProgressContext] Failed to load progress:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load progress data');
-      } finally {
-        updateLoadingState('progress', false);
-      }
-    };
-    
-    loadProgress();
-  }, []);
-
-  // Load pending progress independently
-  useEffect(() => {
-    const loadPendingProgress = async () => {
-      try {
-        updateLoadingState('pendingProgress', true);
-        const pending = await getPendingProgress(DEFAULT_USER_ID);
-        setPendingProgress(pending);
-      } catch (err) {
-        console.error('[ProgressContext] Failed to load pending progress:', err);
-        // Don't set error state for pending progress as it's not critical
-      } finally {
-        updateLoadingState('pendingProgress', false);
-      }
-    };
-    
-    loadPendingProgress();
-  }, []);
-
-  // Load streak data independently when user is available
-  useEffect(() => {
-    const loadStreakData = async () => {
-      if (!user) {
-        updateLoadingState('streakData', false);
-        return;
-      }
-
-      try {
-        updateLoadingState('streakData', true);
-        const userProgressRef = doc(db, 'users', user.uid, 'progress', 'data');
-        const docSnap = await getDoc(userProgressRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setCurrentStreak(data.currentStreak || 0);
-          setBestStreak(data.bestStreak || 0);
-          setLastStudyDate(data.lastStudyDate?.toDate() || null);
-        }
-      } catch (err) {
-        console.error('[ProgressContext] Failed to load streak data:', err);
-        // Don't set error state for streak data as it's not critical
-      } finally {
-        updateLoadingState('streakData', false);
-      }
-    };
-    
-    loadStreakData();
-  }, [user]);
-  
   // Handle online/offline status
   useEffect(() => {
     const handleOnline = () => {
@@ -271,107 +252,143 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   // Update streak when progress is made
   const updateStreak = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = new Date().toISOString().split('T')[0];
+    const lastStudyDate = new Date(progress.statistics.lastStudyDate).toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-    if (!lastStudyDate) {
-      // First study session
-      setCurrentStreak(1);
-      setBestStreak(1);
-      setLastStudyDate(today);
-      return;
-    }
+    setProgress(prev => {
+      let newStreak = prev.statistics.currentStreak;
+      
+      if (lastStudyDate === yesterday) {
+        newStreak += 1;
+      } else if (lastStudyDate !== today) {
+        newStreak = 1;
+      }
 
-    const lastDate = new Date(lastStudyDate);
-    lastDate.setHours(0, 0, 0, 0);
-
-    const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      // Already studied today, streak remains the same
-      return;
-    } else if (diffDays === 1) {
-      // Studied yesterday, increment streak
-      const newStreak = currentStreak + 1;
-      setCurrentStreak(newStreak);
-      setBestStreak(Math.max(bestStreak, newStreak));
-      setLastStudyDate(today);
-    } else {
-      // Streak broken
-      setCurrentStreak(1);
-      setLastStudyDate(today);
-    }
+      return {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          currentStreak: newStreak,
+          longestStreak: Math.max(newStreak, prev.statistics.longestStreak),
+          lastStudyDate: Date.now()
+        }
+      };
+    });
   };
   
   // Update progress with offline support
-  const updateProgress = useCallback(async (section: string, itemId: string, correct: boolean) => {
-    const key = `${section}-${itemId}`;
-    const timestamp = Date.now();
-    
-    try {
-      // Create or update progress item
-      const existingProgress = progress[key];
-      const updatedProgress: ProgressItem = {
-        id: existingProgress?.id ?? uuidv4(),
-        userId: DEFAULT_USER_ID,
-        section,
-        itemId,
-        // If correct is false (unmarking), reset to 0, otherwise increment
-        correct: correct ? (existingProgress?.correct ?? 0) + 1 : 0,
-        incorrect: existingProgress?.incorrect ?? 0,
-        lastAttempted: timestamp,
-        timestamp: existingProgress?.timestamp ?? timestamp,
-        version: '1.0.0' // TODO: Get from app version
-      };
-      
-      // Update local state
-      setProgress(prev => ({
-        ...prev,
-        [key]: updatedProgress
-      }));
-      
-      if (isOnline) {
-        // Try to save directly if online
-        try {
-          await saveProgress(updatedProgress);
-        } catch (err) {
-          console.error('[ProgressContext] Failed to save progress online:', err);
-          // Fall back to pending if direct save fails
-          throw err;
+  const updateWordProgress = (wordId: string, newProgress: Partial<WordProgress>) => {
+    setProgress(prev => ({
+      ...prev,
+      words: {
+        ...prev.words,
+        [wordId]: {
+          ...prev.words[wordId],
+          ...newProgress,
+          lastReviewed: Date.now()
         }
-      } else {
-        // Save as pending if offline
-        const pendingItem: PendingProgressItem = {
-          id: updatedProgress.id,
-          userId: updatedProgress.userId,
-          section: updatedProgress.section,
-          itemId: updatedProgress.itemId,
-          correct: updatedProgress.correct,
-          incorrect: updatedProgress.incorrect,
-          lastAttempted: updatedProgress.lastAttempted,
-          timestamp: updatedProgress.timestamp,
-          version: updatedProgress.version,
-          status: 'pending',
-          retryCount: 0,
-          lastAttempt: timestamp
-        };
-        
-        await savePendingProgress(pendingItem);
-        setPendingProgress(prev => [...prev, pendingItem]);
       }
-      
-      // Update streak
-      updateStreak();
-    } catch (err) {
-      console.error('[ProgressContext] Failed to update progress:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update progress');
-      throw err;
+    }));
+  };
+
+  const updateSectionProgress = (section: keyof ProgressState['sections'], newProgress: Partial<SectionProgress>) => {
+    setProgress(prev => ({
+      ...prev,
+      sections: {
+        ...prev.sections,
+        [section]: {
+          ...prev.sections[section],
+          ...newProgress
+        }
+      }
+    }));
+  };
+
+  const updatePreferences = (newPreferences: Partial<ProgressState['preferences']>) => {
+    setProgress(prev => ({
+      ...prev,
+      preferences: {
+        ...prev.preferences,
+        ...newPreferences
+      }
+    }));
+  };
+
+  const updateStatistics = (newStats: Partial<ProgressState['statistics']>) => {
+    setProgress(prev => ({
+      ...prev,
+      statistics: {
+        ...prev.statistics,
+        ...newStats
+      }
+    }));
+  };
+
+  const resetProgress = () => {
+    setProgress(defaultProgress);
+  };
+
+  const exportProgress = () => {
+    return JSON.stringify(progress);
+  };
+
+  const importProgress = (data: string) => {
+    try {
+      const importedProgress = JSON.parse(data);
+      setProgress(importedProgress);
+    } catch (error) {
+      console.error('Error importing progress:', error);
     }
-  }, [progress, isOnline]);
-  
+  };
+
+  const getWordProgress = (wordId: string) => {
+    return progress.words[wordId];
+  };
+
+  const getSectionProgress = (section: keyof ProgressState['sections']) => {
+    return progress.sections[section];
+  };
+
+  const getMasteryLevel = (wordId: string) => {
+    return progress.words[wordId]?.masteryLevel || 0;
+  };
+
+  const getNextReviewDate = (wordId: string) => {
+    return progress.words[wordId]?.nextReviewDate || 0;
+  };
+
+  const toggleFavorite = (wordId: string) => {
+    setProgress(prev => ({
+      ...prev,
+      words: {
+        ...prev.words,
+        [wordId]: {
+          ...prev.words[wordId],
+          favorite: !prev.words[wordId]?.favorite
+        }
+      }
+    }));
+  };
+
+  const addStudyTime = (minutes: number) => {
+    setProgress(prev => ({
+      ...prev,
+      statistics: {
+        ...prev.statistics,
+        totalStudyTime: prev.statistics.totalStudyTime + minutes,
+        dailyProgress: {
+          ...prev.statistics.dailyProgress,
+          [new Date().toISOString().split('T')[0]]: 
+            (prev.statistics.dailyProgress[new Date().toISOString().split('T')[0]] || 0) + minutes
+        }
+      }
+    }));
+  };
+
   // Sync progress with server
   const syncProgress = useCallback(async () => {
-    if (!isOnline || isSyncing || pendingProgress.length === 0) {
+    if (!isOnline || isSyncing) {
       return;
     }
     
@@ -379,16 +396,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsSyncing(true);
       setError(null);
       
-      // Group pending items by status
-      const pendingItems = pendingProgress.filter(item => item.status === 'pending');
-      if (pendingItems.length === 0) {
-        return;
-      }
-      
       // Prepare sync request
       const syncRequest: SyncRequest = {
         userId: DEFAULT_USER_ID,
-        progress: pendingItems,
+        progress: Object.values(progress.words),
         version: '1.0.0' // TODO: Get from app version
       };
       
@@ -416,23 +427,42 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const { synced, failed, conflicts } = result.data;
         
         // Update synced items
-        const syncedItems = pendingItems.filter((_, index) => index < synced);
-        await Promise.all(syncedItems.map(item => 
-          saveProgress({ ...item, status: 'synced' })
-        ));
+        const syncedWords = Object.entries(progress.words).filter(([wordId, word]) => 
+          synced.includes(wordId)
+        ).map(([wordId, word]) => ({
+          ...word,
+          status: 'synced'
+        }));
+        setProgress(prev => ({
+          ...prev,
+          words: {
+            ...prev.words,
+            ...syncedWords.reduce((acc, word) => ({
+              ...acc,
+              [word.id]: word
+            }), {} as Record<string, WordProgress>)
+          }
+        }));
         
         // Update failed items
-        const failedItems = pendingItems.filter((_, index) => 
-          index >= synced && index < synced + failed
-        );
-        await Promise.all(failedItems.map(item => 
-          savePendingProgress({
-            ...item,
-            status: 'failed',
-            retryCount: item.retryCount + 1,
-            lastAttempt: Date.now()
-          })
-        ));
+        const failedWords = Object.entries(progress.words).filter(([wordId, word]) => 
+          !synced.includes(wordId)
+        ).map(([wordId, word]) => ({
+          ...word,
+          status: 'failed',
+          retryCount: word.retryCount + 1,
+          lastAttempt: Date.now()
+        }));
+        setProgress(prev => ({
+          ...prev,
+          words: {
+            ...prev.words,
+            ...failedWords.reduce((acc, word) => ({
+              ...acc,
+              [word.id]: word
+            }), {} as Record<string, WordProgress>)
+          }
+        }));
         
         // Handle conflicts
         if (conflicts.length > 0) {
@@ -448,11 +478,6 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         await saveSettings(newSettings);
         setSettings(newSettings);
         setLastSyncTime(newSettings.lastSync);
-        
-        // Update local state
-        setPendingProgress(prev => 
-          prev.filter(item => !syncedItems.some(synced => synced.id === item.id))
-        );
       }
     } catch (err) {
       console.error('[ProgressContext] Sync failed:', err);
@@ -461,175 +486,24 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsSyncing(false);
     }
-  }, [isOnline, isSyncing, pendingProgress, settings]);
-  
-  // Clear all progress
-  const clearProgress = useCallback(async () => {
-    try {
-      setError(null);
-      
-      // Clear from IndexedDB
-      await Promise.all([
-        clearPendingProgress(DEFAULT_USER_ID),
-        // TODO: Add clearProgress function to IndexedDB utils
-      ]);
-      
-      // Clear local state
-      setProgress({});
-      setPendingProgress([]);
-      
-      // Update settings
-      if (settings) {
-        const newSettings: Settings = {
-          ...settings,
-          lastSync: Date.now()
-        };
-        await saveSettings(newSettings);
-        setSettings(newSettings);
-        setLastSyncTime(newSettings.lastSync);
-      }
-    } catch (err) {
-      console.error('[ProgressContext] Failed to clear progress:', err);
-      setError(err instanceof Error ? err.message : 'Failed to clear progress');
-      throw err;
-    }
-  }, [settings]);
-  
-  // Update settings
-  const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
-    if (!settings) {
-      throw new Error('Settings not initialized');
-    }
-    
-    try {
-      setSettingsError(null);
-      
-      const updatedSettings: Settings = {
-        ...settings,
-        ...newSettings,
-        lastSync: Date.now()
-      };
-      
-      await saveSettings(updatedSettings);
-      setSettings(updatedSettings);
-      setLastSyncTime(updatedSettings.lastSync);
-    } catch (err) {
-      console.error('[ProgressContext] Failed to update settings:', err);
-      setSettingsError(err instanceof Error ? err.message : 'Failed to update settings');
-      throw err;
-    }
-  }, [settings]);
-  
-  // Create data backup
-  const createDataBackup = useCallback(async () => {
-    try {
-      return await createBackup();
-    } catch (err) {
-      console.error('[ProgressContext] Failed to create backup:', err);
-      throw err;
-    }
-  }, []);
-  
-  // Restore data backup
-  const restoreDataBackup = useCallback(async (backup: {
-    progress: ProgressItem[];
-    pending: PendingProgressItem[];
-    settings: Settings[];
-  }) => {
-    try {
-      setError(null);
-      setSettingsError(null);
-      
-      // Restore from backup
-      await restoreBackup(backup);
-      
-      // Update local state
-      const progressMap = backup.progress.reduce((acc, item) => {
-        acc[`${item.section}-${item.itemId}`] = item;
-        return acc;
-      }, {} as Record<string, ProgressItem>);
-      
-      setProgress(progressMap);
-      setPendingProgress(backup.pending);
-      
-      if (backup.settings.length > 0) {
-        const userSettings = backup.settings.find(s => s.userId === DEFAULT_USER_ID);
-        if (userSettings) {
-          setSettings(userSettings);
-          setLastSyncTime(userSettings.lastSync);
-        }
-      }
-    } catch (err) {
-      console.error('[ProgressContext] Failed to restore backup:', err);
-      setError(err instanceof Error ? err.message : 'Failed to restore backup');
-      throw err;
-    }
-  }, []);
-  
-  // Add setTotalItems function
-  const setTotalItems = useCallback((section: string, total: number) => {
-    setProgress(prev => {
-      const sectionKey = `${section}-total`;
-      const existingProgress = prev[sectionKey];
-      
-      if (existingProgress && existingProgress.total === total) {
-        return prev;
-      }
-
-      const updatedProgress: ProgressItem = {
-        id: existingProgress?.id ?? uuidv4(),
-        userId: DEFAULT_USER_ID,
-        section,
-        itemId: 'total',
-        correct: existingProgress?.correct ?? 0,
-        incorrect: existingProgress?.incorrect ?? 0,
-        total,
-        lastAttempted: Date.now(),
-        timestamp: existingProgress?.timestamp ?? Date.now(),
-        version: '1.0.0'
-      };
-
-      return {
-        ...prev,
-        [sectionKey]: updatedProgress
-      };
-    });
-  }, []);
+  }, [isOnline, isSyncing, progress.words, settings]);
   
   const value: ProgressContextType = {
-    // Progress state
     progress,
-    pendingProgress,
-    isLoading,
-    error,
-    
-    // Settings state
-    settings,
-    isSettingsLoading,
-    settingsError,
-    
-    // Progress actions
-    updateProgress,
-    setTotalItems,
-    syncProgress,
-    clearProgress,
-    
-    // Settings actions
-    updateSettings,
-    
-    // Backup actions
-    createDataBackup,
-    restoreDataBackup,
-    
-    // Status
-    isOnline,
-    isSyncing,
-    lastSyncTime,
-    
-    // Streak tracking
-    currentStreak,
-    bestStreak,
-    lastStudyDate
+    updateWordProgress,
+    updateSectionProgress,
+    updatePreferences,
+    updateStatistics,
+    resetProgress,
+    exportProgress,
+    importProgress,
+    getWordProgress,
+    getSectionProgress,
+    getMasteryLevel,
+    getNextReviewDate,
+    toggleFavorite,
+    addStudyTime,
+    updateStreak
   };
   
   return (

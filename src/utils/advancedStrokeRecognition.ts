@@ -82,31 +82,38 @@ const smoothPoints = (points: Point[]): Point[] => {
 };
 
 // Calculate stroke characteristics with improved accuracy
-export const analyzeStrokeAdvanced = (points: Point[]): StrokeData => {
-  const processedPoints = preprocessPoints(points);
-  
-  // Calculate basic stroke properties
-  const startPoint = processedPoints[0];
-  const endPoint = processedPoints[processedPoints.length - 1];
-  const dx = endPoint.x - startPoint.x;
-  const dy = endPoint.y - startPoint.y;
-  const length = Math.sqrt(dx * dx + dy * dy);
-  const direction = Math.atan2(dy, dx) * (180 / Math.PI);
+export function analyzeStrokeAdvanced(points: Point[]): StrokeType {
+  // Validate input
+  if (!Array.isArray(points) || points.length === 0) {
+    console.warn('[StrokeAnalysis] Invalid points array provided');
+    return 'horizontal'; // Default to horizontal stroke for invalid input
+  }
 
-  // Calculate curvature using Bézier curve approximation
-  const curvature = calculateCurvature(processedPoints);
-  
-  // Determine stroke type with improved accuracy
-  const type = determineStrokeTypeAdvanced(direction, length, curvature, processedPoints);
+  // Filter out any invalid points
+  const validPoints = points.filter(point => 
+    point && 
+    typeof point.x === 'number' && 
+    typeof point.y === 'number' && 
+    !isNaN(point.x) && 
+    !isNaN(point.y)
+  );
 
-  return {
-    type,
-    direction,
-    length,
-    curvature,
-    points: processedPoints
-  };
-};
+  if (validPoints.length < 2) {
+    console.warn('[StrokeAnalysis] Not enough valid points for analysis');
+    return 'horizontal'; // Default to horizontal stroke for insufficient points
+  }
+
+  // Preprocess points
+  const processedPoints = preprocessPoints(validPoints);
+  
+  // Calculate stroke characteristics
+  const characteristics = calculateStrokeCharacteristics(processedPoints);
+  
+  // Determine stroke type based on characteristics
+  const strokeType = determineStrokeType(characteristics);
+  
+  return strokeType;
+}
 
 // Calculate curvature using Bézier curve approximation
 const calculateCurvature = (points: Point[]): number => {

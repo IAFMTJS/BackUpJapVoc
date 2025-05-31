@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { playAudio } from '../utils/audio';
-import { romajiWords, romajiSentences, romajiStories } from '../data/romajiWords';
+import React, { useState, useEffect, useCallback } from 'react';
+import { playAudio } from '../../utils/audio';
+import { romajiWords, romajiSentences, romajiStories } from '../../data/romajiWords';
 import Confetti from 'react-confetti';
-import VirtualTeacherPanel from '../components/VirtualTeacherPanel';
-import { useProgress } from '../context/ProgressContext';
-import { useTheme } from '../context/ThemeContext';
+import VirtualTeacherPanel from '../../components/VirtualTeacherPanel';
+import { useProgress } from '../../context/ProgressContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useSettings } from '../../context/SettingsContext';
+import { useAccessibility } from '../../context/AccessibilityContext';
 import { Link } from 'react-router-dom';
-import { kuroshiroInstance } from '../utils/kuroshiro';
+import { convertToRomaji } from '../../utils/kuroshiro';
 
 const TABS = ['Words', 'Sentences', 'Stories', 'Practice', 'Games'] as const;
 
@@ -307,7 +309,7 @@ const RomajiSection: React.FC = () => {
       return hiraganaCache[text];
     }
     try {
-      const hiragana = await kuroshiroInstance.convert(text, { to: 'hiragana' });
+      const hiragana = await convertToRomaji(text, { to: 'hiragana' });
       setHiraganaCache(prev => ({ ...prev, [text]: hiragana }));
       return hiragana;
     } catch (error) {
@@ -321,7 +323,7 @@ const RomajiSection: React.FC = () => {
       return katakanaCache[text];
     }
     try {
-      const katakana = await kuroshiroInstance.convert(text, { to: 'katakana' });
+      const katakana = await convertToRomaji(text, { to: 'katakana' });
       setKatakanaCache(prev => ({ ...prev, [text]: katakana }));
       return katakana;
     } catch (error) {

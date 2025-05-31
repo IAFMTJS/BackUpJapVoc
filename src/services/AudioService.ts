@@ -26,9 +26,6 @@ class AudioService {
           this.loadVoices();
           window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
         }
-
-        // Initialize AudioContext only when needed
-        this.audioGenerator = AudioGenerationManager.getInstance();
         this.isInitialized = true;
       }
     } catch (error) {
@@ -36,6 +33,13 @@ class AudioService {
       // Continue with limited functionality
       this.isInitialized = true;
     }
+  }
+
+  private getAudioGenerator(): AudioGenerationManager {
+    if (!this.audioGenerator) {
+      this.audioGenerator = AudioGenerationManager.getInstance();
+    }
+    return this.audioGenerator;
   }
 
   private loadVoices() {
@@ -149,37 +153,32 @@ class AudioService {
       await this.initializeAudioContext();
 
       // Try to get pre-recorded audio first
-      if (this.audioGenerator) {
-        const audioUrl = await this.audioGenerator.getAudio({
-          text,
-          voice: options.voice,
-          rate: options.rate,
-          pitch: options.pitch
-        });
+      const audioUrl = await this.getAudioGenerator().getAudio({
+        text,
+        voice: options.voice,
+        rate: options.rate,
+        pitch: options.pitch
+      });
 
-        // Create and play audio element
-        const audio = new Audio(audioUrl);
-        this.currentAudio = audio;
-        
-        return new Promise<void>((resolve, reject) => {
-          audio.onended = () => {
-            this.currentAudio = null;
-            resolve();
-          };
-          audio.onerror = (error) => {
-            this.currentAudio = null;
-            reject(error);
-          };
-          audio.play().catch(error => {
-            // If playback fails, fall back to TTS
-            console.log('Falling back to TTS for:', text);
-            this.playTTS(text, options).then(resolve).catch(reject);
-          });
+      // Create and play audio element
+      const audio = new Audio(audioUrl);
+      this.currentAudio = audio;
+      
+      return new Promise<void>((resolve, reject) => {
+        audio.onended = () => {
+          this.currentAudio = null;
+          resolve();
+        };
+        audio.onerror = (error) => {
+          this.currentAudio = null;
+          reject(error);
+        };
+        audio.play().catch(error => {
+          // If playback fails, fall back to TTS
+          console.log('Falling back to TTS for:', text);
+          this.playTTS(text, options).then(resolve).catch(reject);
         });
-      } else {
-        // If audio generator is not available, use TTS
-        return this.playTTS(text, options);
-      }
+      });
     } catch (error) {
       // Fallback to TTS if pre-recorded audio generation fails
       console.log('Falling back to TTS for:', text);
@@ -224,19 +223,14 @@ class AudioService {
   }
 
   public getCacheStats() {
-    if (!this.audioGenerator) {
-      return { size: 0, entryCount: 0 };
-    }
     return {
-      size: this.audioGenerator.getCacheSize(),
-      entryCount: this.audioGenerator.getCacheEntryCount()
+      size: this.getAudioGenerator().getCacheSize(),
+      entryCount: this.getAudioGenerator().getCacheEntryCount()
     };
   }
 
   public clearAudioCache() {
-    if (this.audioGenerator) {
-      this.audioGenerator.clearCache();
-    }
+    this.getAudioGenerator().clearCache();
   }
 }
 

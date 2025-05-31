@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { 
+  initializeDatabase, 
+  getDatabase, 
+  isDatabaseReady, 
+  databasePromise,
+  JapVocDB, 
+  IDBPDatabase 
+} from '../utils/databaseConfig';
 
 // Define the database schema
 interface JapVocDB extends DBSchema {
@@ -67,63 +74,49 @@ interface JapVocDB extends DBSchema {
 
 // Create the context
 interface DatabaseContextType {
-  db: IDBPDatabase<JapVocDB> | null;
+  database: IDBPDatabase<JapVocDB> | null;
   isReady: boolean;
-  error: Error | null;
+  error: string | null;
 }
 
 const DatabaseContext = createContext<DatabaseContextType>({
-  db: null,
+  database: null,
   isReady: false,
   error: null
 });
 
 // Create the provider component
 export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [db, setDb] = useState<IDBPDatabase<JapVocDB> | null>(null);
+  const [database, setDatabase] = useState<IDBPDatabase<JapVocDB> | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    console.log('[DatabaseContext] Starting database initialization...');
+
     const initDatabase = async () => {
       try {
-        // Open the database
-        const database = await openDB<JapVocDB>('JapVocDB', 1, {
-          upgrade(db) {
-            // Create object stores
-            if (!db.objectStoreNames.contains('words')) {
-              const wordStore = db.createObjectStore('words', { keyPath: 'id' });
-              wordStore.createIndex('by-japanese', 'japanese');
-              wordStore.createIndex('by-level', 'level');
-              wordStore.createIndex('by-category', 'category');
-            }
+        // Initialize database
+        console.log('[DatabaseContext] Initializing database...');
+        const db = await initializeDatabase();
+        
+        // Verify database is ready
+        const ready = await isDatabaseReady();
+        if (!ready) {
+          throw new Error('Database not ready after initialization');
+        }
 
-            if (!db.objectStoreNames.contains('wordRelationships')) {
-              const relationshipStore = db.createObjectStore('wordRelationships', { keyPath: 'id' });
-              relationshipStore.createIndex('by-word', 'wordId');
-              relationshipStore.createIndex('by-relationship', 'relationshipType');
-            }
-
-            if (!db.objectStoreNames.contains('wordEtymology')) {
-              const etymologyStore = db.createObjectStore('wordEtymology', { keyPath: 'id' });
-              etymologyStore.createIndex('by-word', 'wordId');
-            }
-
-            if (!db.objectStoreNames.contains('wordFrequency')) {
-              const frequencyStore = db.createObjectStore('wordFrequency', { keyPath: 'id' });
-              frequencyStore.createIndex('by-word', 'wordId');
-              frequencyStore.createIndex('by-frequency', 'frequency');
-            }
-          },
-        });
-
-        setDb(database);
-        setIsReady(true);
-        setError(null);
+        if (isMounted) {
+          setDatabase(db);
+          setIsReady(true);
+        }
       } catch (err) {
-        console.error('Failed to initialize database:', err);
-        setError(err instanceof Error ? err : new Error('Failed to initialize database'));
-        setIsReady(false);
+        console.error('[DatabaseContext] Failed to initialize database:', err);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to initialize database');
+          setIsReady(false);
+        }
       }
     };
 
@@ -131,14 +124,25 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Cleanup function
     return () => {
-      if (db) {
-        db.close();
+      isMounted = false;
+      if (database) {
+        console.log('[DatabaseContext] Closing database connection...');
+        database.close();
       }
     };
   }, []);
 
+  // Debug logging for state changes
+  useEffect(() => {
+    console.log('[DatabaseContext] State updated:', {
+      hasDatabase: !!database,
+      isReady,
+      error
+    });
+  }, [database, isReady, error]);
+
   return (
-    <DatabaseContext.Provider value={{ db, isReady, error }}>
+    <DatabaseContext.Provider value={{ database, isReady, error }}>
       {children}
     </DatabaseContext.Provider>
   );

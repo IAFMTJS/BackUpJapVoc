@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Dictionary from '../components/Dictionary';
+import DictionaryList from '../components/DictionaryList';
 import SettingsPanel from '../components/Settings';
 import { useTheme } from '../context/ThemeContext';
 
@@ -42,7 +42,7 @@ const Section2: React.FC = () => {
               <p className={`mb-8 ${themeClasses.text.secondary}`}>
                 Search and learn Japanese vocabulary. Filter by category and difficulty level.
               </p>
-              <Dictionary mode={dictionaryMode} />
+              <DictionaryList mode={dictionaryMode} />
             </div>
           </div>
           <div>

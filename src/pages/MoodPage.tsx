@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { 
   Card, Typography, Button, TextField, IconButton, Box, Grid, 
@@ -13,9 +13,18 @@ import { playAudio } from '../utils/audio';
 import { EmotionalCategory, MoodWord, EMOTIONAL_CATEGORIES } from '../types/mood';
 import MoodSelector from '../components/MoodSelector';
 import MoodStats from '../components/MoodStats';
-import { loadAllMoodWords, updateWordMastery } from '../utils/moodWordOperations';
+import {
+  getAllMoodWords as loadAllMoodWords,
+  markWordAsMastered as updateWordMastery,
+  getMoodWordsByCategory,
+  getMasteredWords,
+  updateMoodWord,
+  deleteMoodWord
+} from '../utils/moodWordOperations';
 import { generateMoodWordAudio } from '../utils/audio';
 import { openDB } from '../utils/indexedDB';
+import { initializeMoodWords, getMoodWordsStatus } from '../utils/initMoodWords';
+import { forceDatabaseReset } from '../utils/forceDatabaseReset';
 
 const MoodPage: React.FC = () => {
   const { theme } = useTheme();
@@ -26,28 +35,56 @@ const MoodPage: React.FC = () => {
   const [selectedMoods, setSelectedMoods] = useState<EmotionalCategory[]>([]);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [currentPlayingWord, setCurrentPlayingWord] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load mood words from IndexedDB
+  // Initialize and load mood words
   useEffect(() => {
-    const loadWords = async () => {
+    const initializeAndLoadWords = async () => {
       try {
+        setLoading(true);
         console.log('Loading mood words...');
+        
+        // Load the words - this will automatically initialize if needed
         const moodWords = await loadAllMoodWords();
         console.log(`Loaded ${moodWords.length} mood words`);
         setWords(moodWords);
       } catch (error) {
         console.error('Error loading mood words:', error);
+        // Even if there's an error, we can still show the built-in words
+        setWords(MOOD_WORDS);
       } finally {
         setLoading(false);
       }
     };
 
-    loadWords();
+    initializeAndLoadWords();
   }, []);
 
   const handlePlayAudio = async (word: MoodWord) => {
+    // If already playing this word, do nothing
+    if (isPlayingAudio && currentPlayingWord === word.japanese) {
+      return;
+    }
+
+    // If playing a different word, stop it first
+    if (isPlayingAudio) {
+      try {
+        await playAudio(currentPlayingWord);
+      } catch (error) {
+        console.error('Error stopping previous audio:', error);
+      }
+    }
+
+    // Clear any existing timeout
+    if (audioTimeoutRef.current) {
+      clearTimeout(audioTimeoutRef.current);
+    }
+
     try {
       setIsPlayingAudio(true);
+      setCurrentPlayingWord(word.japanese);
       setAudioError(null);
       
       // Always use the Japanese text to play audio
@@ -57,7 +94,11 @@ const MoodPage: React.FC = () => {
       console.error('Error playing audio:', error);
       setAudioError(error instanceof Error ? error.message : 'Failed to play audio');
     } finally {
-      setIsPlayingAudio(false);
+      // Add a small delay before allowing next playback
+      audioTimeoutRef.current = setTimeout(() => {
+        setIsPlayingAudio(false);
+        setCurrentPlayingWord(null);
+      }, 100);
     }
   };
 
@@ -77,11 +118,43 @@ const MoodPage: React.FC = () => {
     }
   };
 
+  const handleReset = async () => {
+    try {
+      setLoading(true);
+      setResetError(null);
+      console.log('Resetting mood words...');
+      
+      // Force reset the database
+      await forceDatabaseReset();
+      console.log('Database reset complete');
+      
+      // Reinitialize mood words
+      await initializeMoodWords();
+      console.log('Mood words reinitialized');
+      
+      // Reload words
+      const moodWords = await loadAllMoodWords();
+      console.log(`Loaded ${moodWords.length} mood words`);
+      setWords(moodWords);
+    } catch (error) {
+      console.error('Error resetting mood words:', error);
+      setResetError(error instanceof Error ? error.message : 'Failed to reset mood words');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredWords = words.filter(word => {
+    // Safely handle potentially undefined or non-string values
+    const searchTermLower = searchTerm.toLowerCase();
+    const japaneseLower = (word.japanese || '').toLowerCase();
+    const romajiLower = (word.romaji || '').toLowerCase();
+    const englishLower = (word.english || '').toLowerCase();
+
     const matchesSearch = 
-      word.japanese.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      word.romaji.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      word.english.toLowerCase().includes(searchTerm.toLowerCase());
+      japaneseLower.includes(searchTermLower) ||
+      romajiLower.includes(searchTermLower) ||
+      englishLower.includes(searchTermLower);
     
     const matchesFilter = 
       filter === 'all' ||
@@ -90,21 +163,65 @@ const MoodPage: React.FC = () => {
 
     const matchesMoods =
       selectedMoods.length === 0 ||
-      selectedMoods.includes(word.emotionalContext.category);
+      (word.emotionalContext?.category && selectedMoods.includes(word.emotionalContext.category));
 
     return matchesSearch && matchesFilter && matchesMoods;
   });
 
+  // Helper function to safely get category color
+  const getCategoryColor = (word: MoodWord) => {
+    const category = word.emotionalContext?.category;
+    return category && EMOTIONAL_CATEGORIES[category]?.color || '#ccc';
+  };
+
+  // Helper function to safely get category emoji
+  const getCategoryEmoji = (word: MoodWord) => {
+    const category = word.emotionalContext?.category;
+    return category && EMOTIONAL_CATEGORIES[category]?.emoji || '❓';
+  };
+
+  // Helper function to safely get category name
+  const getCategoryName = (word: MoodWord) => {
+    const category = word.emotionalContext?.category;
+    return category && EMOTIONAL_CATEGORIES[category]?.name || 'Unknown';
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioTimeoutRef.current) {
+        clearTimeout(audioTimeoutRef.current);
+      }
+    };
+  }, []);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen">
         <CircularProgress />
+        {resetError && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {resetError}
+          </Alert>
+        )}
       </div>
     );
   }
 
   return (
     <Container maxWidth="xl" className="py-8">
+      {/* Add reset button */}
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={handleReset}
+          disabled={loading}
+        >
+          Reset Mood Words
+        </Button>
+      </Box>
+
       {/* Hero Section with Mood Focus */}
       <Box 
         sx={{ 
@@ -237,7 +354,7 @@ const MoodPage: React.FC = () => {
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  borderLeft: `4px solid ${EMOTIONAL_CATEGORIES[word.emotionalContext.category].color}`,
+                  borderLeft: `4px solid ${getCategoryColor(word)}`,
                   transition: 'transform 0.2s, box-shadow 0.2s',
                   '&:hover': {
                     transform: 'translateY(-4px)',
@@ -251,31 +368,33 @@ const MoodPage: React.FC = () => {
                       {word.japanese}
                     </Typography>
                     <Box className="flex gap-1">
-                      <Tooltip 
-                        title={
-                          <Box>
-                            <Typography variant="subtitle2">
-                              {word.emotionalContext.category} (Intensity: {word.emotionalContext.intensity}/5)
-                            </Typography>
-                            {word.emotionalContext.relatedEmotions && (
-                              <Typography variant="caption" display="block">
-                                Related: {word.emotionalContext.relatedEmotions.join(', ')}
+                      {word.emotionalContext && (
+                        <Tooltip 
+                          title={
+                            <Box>
+                              <Typography variant="subtitle2">
+                                {getCategoryName(word)} (Intensity: {word.emotionalContext.intensity || 1}/5)
                               </Typography>
-                            )}
-                          </Box>
-                        }
-                      >
-                        <Chip
-                          icon={<span>{word.emotionalContext.emoji}</span>}
-                          label={word.emotionalContext.category}
-                          size="small"
-                          sx={{
-                            backgroundColor: EMOTIONAL_CATEGORIES[word.emotionalContext.category].color,
-                            color: 'white',
-                            cursor: 'help'
-                          }}
-                        />
-                      </Tooltip>
+                              {word.emotionalContext.relatedEmotions?.length > 0 && (
+                                <Typography variant="caption" display="block">
+                                  Related: {word.emotionalContext.relatedEmotions.join(', ')}
+                                </Typography>
+                              )}
+                            </Box>
+                          }
+                        >
+                          <Chip
+                            icon={<span>{getCategoryEmoji(word)}</span>}
+                            label={getCategoryName(word)}
+                            size="small"
+                            sx={{
+                              backgroundColor: getCategoryColor(word),
+                              color: 'white',
+                              cursor: 'help'
+                            }}
+                          />
+                        </Tooltip>
+                      )}
                       <IconButton
                         onClick={() => handleMarkAsMastered(word.id)}
                         color={word.mastered ? 'success' : 'default'}
@@ -290,14 +409,14 @@ const MoodPage: React.FC = () => {
                   <Typography variant="body1" className="mt-2">
                     {word.english}
                   </Typography>
-                  {word.emotionalContext.usageNotes && (
+                  {word.emotionalContext?.usageNotes && (
                     <Typography 
                       variant="caption" 
                       color="textSecondary" 
                       className="mt-2 block"
                       sx={{
                         fontStyle: 'italic',
-                        borderLeft: `2px solid ${EMOTIONAL_CATEGORIES[word.emotionalContext.category].color}`,
+                        borderLeft: `2px solid ${getCategoryColor(word)}`,
                         pl: 1,
                         ml: 1
                       }}
@@ -309,9 +428,9 @@ const MoodPage: React.FC = () => {
                     onClick={() => handlePlayAudio(word)}
                     className="mt-2"
                     color="primary"
-                    disabled={isPlayingAudio}
+                    disabled={isPlayingAudio && currentPlayingWord === word.japanese}
                   >
-                    {isPlayingAudio ? (
+                    {isPlayingAudio && currentPlayingWord === word.japanese ? (
                       <CircularProgress size={24} />
                     ) : (
                       <VolumeUpIcon />
