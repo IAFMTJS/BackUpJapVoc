@@ -16,6 +16,7 @@ import {
   PlayArrow as PlayArrowIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { ThemeWrapper } from '../App';
 
 const FEATURE_CATEGORIES = [
   {
@@ -273,18 +274,20 @@ const HomeContent: React.FC = () => {
 
 const Home: React.FC = () => {
   return (
-    <Suspense fallback={
-      <Box sx={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center' 
-      }}>
-        <Typography variant="h6">Loading...</Typography>
-      </Box>
-    }>
-      <HomeContent />
-    </Suspense>
+    <ThemeWrapper>
+      <Suspense fallback={
+        <Box sx={{ 
+          minHeight: '100vh', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center' 
+        }}>
+          <Typography variant="h6">Loading...</Typography>
+        </Box>
+      }>
+        <HomeContent />
+      </Suspense>
+    </ThemeWrapper>
   );
 };
 
