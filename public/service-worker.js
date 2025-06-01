@@ -236,47 +236,62 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event
-self.addEventListener('fetch', (event) => {
+// Request handling function
+async function handleRequest(request) {
   // Skip cross-origin requests
-  if (!event.request.url.startsWith(self.location.origin)) {
-    return;
+  if (!request.url.startsWith(self.location.origin)) {
+    return fetch(request);
   }
 
   // Skip non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
+  if (request.method !== 'GET') {
+    return fetch(request);
   }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
+  try {
+    // Check cache first
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
 
-        return fetch(event.request)
-          .then(response => {
-            // Don't cache if not a success response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
+    // Try network request
+    const networkResponse = await fetch(request);
+    
+    // Don't cache if not a success response
+    if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+      return networkResponse;
+    }
 
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
+    // Cache the response
+    const responseToCache = networkResponse.clone();
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, responseToCache);
 
-            return response;
-          });
-      })
-      .catch(error => {
-        console.error('Fetch failed:', error);
-        // Return a fallback response if available
-        return caches.match('/offline.html');
-      })
-  );
+    return networkResponse;
+  } catch (error) {
+    console.error('Fetch failed:', error);
+    // Return offline page for navigation requests
+    if (request.mode === 'navigate') {
+      return caches.match('/offline.html');
+    }
+    // Return offline response for API requests
+    if (request.url.includes('/api/')) {
+      return new Response(JSON.stringify({
+        error: 'offline',
+        message: 'You are currently offline. Please check your connection.',
+        timestamp: Date.now()
+      }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    throw error;
+  }
+}
+
+// Update fetch event listener
+self.addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request));
 });
 
 // Add a function to notify clients about updates

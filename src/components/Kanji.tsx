@@ -1,891 +1,583 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Kanji, kanjiList } from '../data/kanjiData';
-import { useTheme } from '../context/ThemeContext';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  IconButton,
+  Tooltip,
+  useTheme,
+  useMediaQuery,
+  Grid,
+  Alert,
+  LinearProgress,
+} from '@mui/material';
+import {
+  Undo as UndoIcon,
+  Delete as DeleteIcon,
+  VolumeUp as VolumeIcon,
+  Check as CheckIcon,
+  PlayArrow as PlayArrowIcon,
+  Pause as PauseIcon,
+} from '@mui/icons-material';
+import { useAudio } from '../context/AudioContext';
 import { useProgress } from '../context/ProgressContext';
-import { useApp } from '../context/AppContext';
-import { kuroshiroInstance } from '../utils/kuroshiro';
-import { ProgressItem } from '../types';
-import { useAchievements } from '../context/AchievementContext';
+import { useDictionary } from '../context/DictionaryContext';
+import { DictionaryItem } from '../types/dictionary';
 
-type Mode = 'flashcards' | 'meaning-quiz' | 'reading-quiz' | 'writing-quiz';
-type QuizDifficulty = 'easy' | 'medium' | 'hard';
-
-interface QuizSettings {
-  timeLimit: number;
-  streakBonus: number;
-  requiredStreak: number;
-  maxQuestions: number;
+interface KanjiPracticeProps {
+  initialKanji?: string;
+  jlptLevel?: string;
 }
 
-const QUIZ_SETTINGS: Record<QuizDifficulty, QuizSettings> = {
-  easy: {
-    timeLimit: 45,
-    streakBonus: 1,
-    requiredStreak: 3,
-    maxQuestions: 10
-  },
-  medium: {
-    timeLimit: 30,
-    streakBonus: 2,
-    requiredStreak: 5,
-    maxQuestions: 15
-  },
-  hard: {
-    timeLimit: 20,
-    streakBonus: 3,
-    requiredStreak: 7,
-    maxQuestions: 20
-  }
-};
+interface Stroke {
+  points: { x: number; y: number }[];
+  color: string;
+}
 
-const KanjiPractice: React.FC = () => {
-  const { theme, isDarkMode } = useTheme();
-  const { settings } = useApp();
-  const [mode, setMode] = useState<Mode>('flashcards');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [showMeaning, setShowMeaning] = useState(false);
-  const [showReadings, setShowReadings] = useState(false);
-  const [showExamples, setShowExamples] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [filteredKanji, setFilteredKanji] = useState<Kanji[]>(kanjiList);
-  const [userAnswer, setUserAnswer] = useState('');
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [score, setScore] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(0);
-  const [showResult, setShowResult] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [timerActive, setTimerActive] = useState(false);
-  const [streak, setStreak] = useState(0);
-  const [averageTime, setAverageTime] = useState(0);
-  const [readingType, setReadingType] = useState<'onyomi' | 'kunyomi'>('onyomi');
-  const [writingMode, setWritingMode] = useState<'meaning' | 'reading'>('meaning');
-  const [quizDifficulty, setQuizDifficulty] = useState<QuizDifficulty>('medium');
-  const [questionsRemaining, setQuestionsRemaining] = useState(0);
-  const [quizComplete, setQuizComplete] = useState(false);
-  const [romajiMap, setRomajiMap] = useState<Record<string, string>>({});
-  const inputRef = useRef<HTMLInputElement>(null);
-  const { updateProgress, progress } = useProgress();
-  const { checkAchievements } = useAchievements();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showHelp, setShowHelp] = useState(false);
+interface KanjiStrokeData {
+  kanji: string;
+  readings: {
+    onyomi: string[];
+    kunyomi: string[];
+  };
+  meanings: string[];
+  strokes: number;
+  jlpt: string;
+  referencePoints: { x: number; y: number }[];
+  strokeOrder: number[][];
+  keyFeatures: {
+    center: { x: number; y: number };
+    width: number;
+    height: number;
+    radicals: { x: number; y: number; type: string }[];
+  };
+}
 
-  // Add logging for component state
+const KanjiPractice: React.FC<KanjiPracticeProps> = ({ initialKanji, jlptLevel }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { playAudio } = useAudio();
+  const { updateWordProgress } = useProgress();
+  const { words } = useDictionary();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [currentKanji, setCurrentKanji] = useState<DictionaryItem | null>(null);
+  const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [currentStroke, setCurrentStroke] = useState<Stroke | null>(null);
+  const [showHint, setShowHint] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<{
+    isCorrect: boolean;
+    message: string;
+    accuracy: number;
+  } | null>(null);
+  const [practiceMode, setPracticeMode] = useState<'practice' | 'free'>('practice');
+  const [selectedJLPT, setSelectedJLPT] = useState(jlptLevel || 'N5');
+  const [availableKanji, setAvailableKanji] = useState<DictionaryItem[]>([]);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentStrokeIndex, setCurrentStrokeIndex] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+
+  // Initialize available kanji based on JLPT level
   useEffect(() => {
-    console.log('KanjiPractice State:', {
-      mode,
-      currentIndex,
-      filteredKanjiCount: filteredKanji.length,
-      currentKanji: filteredKanji[currentIndex],
-      settings: {
-        showKanjiGames: settings.showKanjiGames,
-        showRomajiGames: settings.showRomajiGames
-      }
-    });
-  }, [mode, currentIndex, filteredKanji, settings]);
+    const filteredKanji = words.filter(word => 
+      word.kanji && 
+      word.jlpt === selectedJLPT
+    );
+    setAvailableKanji(filteredKanji);
+    if (filteredKanji.length > 0 && !currentKanji) {
+      setCurrentKanji(filteredKanji[0]);
+    }
+  }, [selectedJLPT, words]);
 
-  // Initialize filtered kanji
+  // Initialize canvas
   useEffect(() => {
-    console.log('Initializing filtered kanji...');
-    let filtered = kanjiList;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    // Apply difficulty filter only if explicitly set
-    if (selectedDifficulty !== 'all') {
-      filtered = filtered.filter(kanji => kanji.difficulty === selectedDifficulty);
-      console.log(`Filtered by difficulty ${selectedDifficulty}:`, filtered.length);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    // Set canvas style
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3;
+
+    // Draw grid
+    drawGrid(ctx, canvas.width, canvas.height);
+  }, []);
+
+  const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.strokeStyle = theme.palette.divider;
+    ctx.lineWidth = 0.5;
+
+    // Draw vertical lines
+    for (let x = 0; x <= width; x += width / 8) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
     }
 
-    // Apply category filter only if explicitly set
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(kanji => kanji.category === selectedCategory);
-      console.log(`Filtered by category ${selectedCategory}:`, filtered.length);
-    }
-
-    setFilteredKanji(filtered);
-    console.log('Final filtered kanji count:', filtered.length);
-  }, [selectedDifficulty, selectedCategory]);
-
-  // Ensure kanji are displayed by default
-  useEffect(() => {
-    if (settings.showKanjiGames === undefined) {
-      console.log('Setting showKanjiGames to true by default');
-      settings.showKanjiGames = true;
-    }
-  }, [settings]);
-
-  // Function to get romaji for a given text
-  const getRomaji = async (text: string) => {
-    if (romajiMap[text]) return romajiMap[text];
-    try {
-      const romaji = await kuroshiroInstance.convert(text);
-      setRomajiMap(prev => ({ ...prev, [text]: romaji }));
-      return romaji;
-    } catch (error) {
-      console.error('Error converting to romaji:', error);
-      return text;
+    // Draw horizontal lines
+    for (let y = 0; y <= height; y += height / 8) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
     }
   };
 
-  // Update romaji when settings change
-  useEffect(() => {
-    if (settings.showRomajiGames) {
-      const updateRomaji = async () => {
-        const currentKanji = filteredKanji[currentIndex];
-        if (!romajiMap[currentKanji.character]) {
-          await getRomaji(currentKanji.character);
-        }
-        // Update romaji for examples
-        for (const example of currentKanji.examples) {
-          if (!romajiMap[example.word]) {
-            await getRomaji(example.word);
-          }
-        }
-      };
-      updateRomaji();
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    setIsDrawing(true);
+    const newStroke: Stroke = {
+      points: [{ x, y }],
+      color: theme.palette.primary.main
+    };
+    setCurrentStroke(newStroke);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !currentStroke) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    currentStroke.points.push({ x, y });
+
+    // Redraw everything
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid(ctx, canvas.width, canvas.height);
+
+    // Draw completed strokes
+    strokes.forEach(stroke => {
+      drawStroke(ctx, stroke);
+    });
+
+    // Draw current stroke
+    drawStroke(ctx, currentStroke);
+  };
+
+  const drawStroke = (ctx: CanvasRenderingContext2D, stroke: Stroke) => {
+    if (stroke.points.length < 2) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = stroke.color;
+    ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+    
+    for (let i = 1; i < stroke.points.length; i++) {
+      ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
     }
-  }, [currentIndex, settings.showRomajiGames, filteredKanji]);
+    
+    ctx.stroke();
+  };
 
-  useEffect(() => {
-    filterKanji();
-  }, [searchTerm, selectedDifficulty, selectedCategory]);
+  const verifyDrawing = (drawnStrokes: Stroke[]) => {
+    if (!currentKanji) return;
 
-  useEffect(() => {
-    if (timerActive && timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (timerActive && timeLeft === 0) {
-      setTimerActive(false);
-      setIsCorrect(false);
-      setStreak(0);
-      setShowResult(true);
-    }
-  }, [timeLeft, timerActive]);
+    // Basic verification for now - can be enhanced with more sophisticated stroke order validation
+    const isCorrect = drawnStrokes.length > 0;
+    const accuracy = 0.8; // Placeholder - implement actual stroke order validation
 
-  const filterKanji = () => {
-    let filtered = kanjiList;
+    const result = {
+      isCorrect,
+      message: isCorrect 
+        ? 'Good job! The character looks correct!' 
+        : 'Try again, focus on the stroke order and proportions',
+      accuracy
+    };
 
-    // Apply difficulty filter only if explicitly set
-    if (selectedDifficulty !== 'all') {
-      filtered = filtered.filter(kanji => kanji.difficulty === selectedDifficulty);
-    }
+    setVerificationResult(result);
 
-    // Apply category filter only if explicitly set
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(kanji => kanji.category === selectedCategory);
-    }
-
-    // Apply search filter if search term exists
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(kanji => {
-        // Search in character
-        if (kanji.character.toLowerCase().includes(searchLower)) return true;
-
-        // Search in meaning
-        if (kanji.meaning.toLowerCase().includes(searchLower)) return true;
-
-        // Search in readings
-        if (kanji.onyomi.some(reading => reading.toLowerCase().includes(searchLower))) return true;
-        if (kanji.kunyomi.some(reading => reading.toLowerCase().includes(searchLower))) return true;
-
-        // Search in examples
-        if (kanji.examples.some(example => 
-          example.word.toLowerCase().includes(searchLower) ||
-          example.reading.toLowerCase().includes(searchLower) ||
-          example.meaning.toLowerCase().includes(searchLower)
-        )) return true;
-
-        return false;
+    if (isCorrect) {
+      updateWordProgress(currentKanji.kanji!, {
+        masteryLevel: 1,
+        lastReviewed: Date.now(),
+        reviewCount: 1,
+        nextReviewDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        category: 'kanji',
+        section: 'writing',
+        difficulty: selectedJLPT,
+        consecutiveCorrect: 1,
+        lastAnswerCorrect: true
       });
     }
-
-    setFilteredKanji(filtered);
-    setCurrentIndex(0);
-    setShowMeaning(false);
-    setShowReadings(false);
-    setShowExamples(false);
   };
 
-  const getThemeClasses = () => {
-    if (isDarkMode) {
-      return {
-        container: 'bg-dark-lighter',
-        text: 'text-text-primary',
-        input: 'bg-dark-lighter border-dark-border text-text-primary',
-        card: 'bg-dark-hover',
-        border: 'border-dark-border',
-      };
-    }
+  const endDrawing = () => {
+    if (!isDrawing || !currentStroke) return;
 
-    switch (theme) {
-      case 'blue':
-        return {
-          container: 'bg-blue-card',
-          text: 'text-blue-text',
-          input: 'bg-white border-blue-border text-blue-text',
-          card: 'bg-blue-hover',
-          border: 'border-blue-border',
-        };
-      case 'green':
-        return {
-          container: 'bg-green-card',
-          text: 'text-green-text',
-          input: 'bg-white border-green-border text-green-text',
-          card: 'bg-green-hover',
-          border: 'border-green-border',
-        };
-      default:
-        return {
-          container: 'bg-white',
-          text: 'text-gray-800',
-          input: 'bg-white border-gray-200 text-gray-800',
-          card: 'bg-gray-50',
-          border: 'border-gray-200',
-        };
+    setIsDrawing(false);
+    const newStrokes = [...strokes, currentStroke];
+    setStrokes(newStrokes);
+    setCurrentStroke(null);
+
+    if (practiceMode === 'practice') {
+      verifyDrawing(newStrokes);
     }
   };
 
-  const themeClasses = getThemeClasses();
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % filteredKanji.length);
-    setShowMeaning(false);
-    setShowReadings(false);
-    setShowExamples(false);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid(ctx, canvas.width, canvas.height);
+    setStrokes([]);
+    setCurrentStroke(null);
+    setVerificationResult(null);
   };
 
-  const handlePrevious = () => {
-    setCurrentIndex((prev) => (prev - 1 + filteredKanji.length) % filteredKanji.length);
-    setShowMeaning(false);
-    setShowReadings(false);
-    setShowExamples(false);
-  };
+  const undoLastStroke = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  const startQuiz = () => {
-    const settings = QUIZ_SETTINGS[quizDifficulty];
-    setScore(0);
-    setTotalQuestions(0);
-    setShowResult(false);
-    setUserAnswer('');
-    setIsCorrect(null);
-    setTimeLeft(settings.timeLimit);
-    setTimerActive(true);
-    setStreak(0);
-    setQuestionsRemaining(settings.maxQuestions);
-    setQuizComplete(false);
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  };
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  const checkAnswer = (answer: string, correctAnswer: string | string[]): boolean => {
-    if (!answer || !correctAnswer) return false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid(ctx, canvas.width, canvas.height);
     
-    const normalizedAnswer = answer.toLowerCase().trim();
-    if (Array.isArray(correctAnswer)) {
-      return correctAnswer.some(correct => 
-        correct && normalizedAnswer === correct.toLowerCase().trim()
-      );
-    }
-    return normalizedAnswer === correctAnswer.toLowerCase().trim();
-  };
+    const newStrokes = strokes.slice(0, -1);
+    setStrokes(newStrokes);
 
-  const calculateScore = (isCorrect: boolean, streak: number): number => {
-    const settings = QUIZ_SETTINGS[quizDifficulty];
-    let points = isCorrect ? 1 : 0;
-    
-    if (isCorrect && streak >= settings.requiredStreak) {
-      points += settings.streakBonus;
-    }
-    
-    return points;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!timerActive || !currentKanji) return;
-
-    let isAnswerCorrect = false;
-    let correctAnswer: string | string[] | undefined;
-
-    switch (mode) {
-      case 'meaning-quiz':
-        correctAnswer = currentKanji.english;
-        break;
-      case 'reading-quiz':
-        correctAnswer = readingType === 'onyomi' ? currentKanji.onyomi : currentKanji.kunyomi;
-        break;
-      case 'writing-quiz':
-        correctAnswer = writingMode === 'meaning' ? currentKanji.character : currentKanji.onyomi[0];
-        break;
-    }
-
-    if (!correctAnswer) {
-      console.error('No correct answer available for current question');
-      return;
-    }
-
-    isAnswerCorrect = checkAnswer(userAnswer, correctAnswer);
-
-    const pointsEarned = calculateScore(isAnswerCorrect, streak);
-
-    if (isAnswerCorrect) {
-      setScore(prev => prev + pointsEarned);
-      setStreak(prev => prev + 1);
-    } else {
-      setStreak(0);
-    }
-
-    setTotalQuestions(prev => prev + 1);
-    setQuestionsRemaining(prev => prev - 1);
-    setIsCorrect(isAnswerCorrect);
-    setShowResult(true);
-    setTimerActive(false);
-    setUserAnswer('');
-
-    // Update progress
-    updateProgress('kanji', {
-      totalQuestions: totalQuestions + 1,
-      correctAnswers: isAnswerCorrect ? (score + 1) : score,
-      bestStreak: Math.max(streak, streak + (isAnswerCorrect ? 1 : 0)),
-      averageTime: ((averageTime * totalQuestions) + (30 - timeLeft)) / (totalQuestions + 1)
+    // Redraw remaining strokes
+    newStrokes.forEach(stroke => {
+      drawStroke(ctx, stroke);
     });
 
-    // Check achievements for kanji progress
-    const masteredKanji = Object.values(progress)
-      .filter(p => p.section === 'kanji' && p.correct >= 3)
-      .length;
-    checkAchievements('kanji', masteredKanji);
-
-    if (questionsRemaining <= 1) {
-      setQuizComplete(true);
+    if (practiceMode === 'practice' && newStrokes.length > 0) {
+      verifyDrawing(newStrokes);
+    } else {
+      setVerificationResult(null);
     }
   };
 
-  const nextQuestion = () => {
-    if (quizComplete) {
-      setMode('flashcards');
-      return;
-    }
-
-    const settings = QUIZ_SETTINGS[quizDifficulty];
-    setCurrentIndex(prev => (prev + 1) % filteredKanji.length);
-    setShowResult(false);
-    setIsCorrect(null);
-    setUserAnswer('');
-    setTimeLeft(settings.timeLimit);
-    setTimerActive(true);
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
+  const handleKanjiChange = (kanji: DictionaryItem) => {
+    setCurrentKanji(kanji);
+    clearCanvas();
   };
 
-  const currentKanji = filteredKanji[currentIndex];
-
-  // --- Progress tracking for Kanji section ---
-  const kanjiProgressItems = kanjiList.map(kanji => {
-    const key = `kanji-${kanji.character}`;
-    return progress[key] as ProgressItem | undefined;
-  });
-  const totalKanji = kanjiList.length;
-  const mastered = kanjiProgressItems.filter(item => item && item.correct >= 3).length;
-  const inProgress = kanjiProgressItems.filter(item => item && item.correct > 0 && item.correct < 3).length;
-  const notStarted = kanjiProgressItems.filter(item => !item || item.correct === 0).length;
-  const kanjiProgressPercent = totalKanji > 0 ? Math.round((mastered / totalKanji) * 100) : 0;
-
-  const renderQuizContent = () => {
-    if (quizComplete) {
-      return (
-        <div className="text-center">
-          <div className={`text-3xl mb-6 ${themeClasses.text}`}>Quiz Complete! 🎉</div>
-          <div className={`text-2xl mb-4 ${themeClasses.text}`}>
-            Final Score: {score} / {totalQuestions}
-          </div>
-          <div className={`text-xl mb-4 ${themeClasses.text}`}>
-            Difficulty: {quizDifficulty.charAt(0).toUpperCase() + quizDifficulty.slice(1)}
-          </div>
-          <div className={`text-lg mb-6 ${themeClasses.text}`}>
-            {score === totalQuestions ? 'Perfect Score! 🌟' : 
-             score >= totalQuestions * 0.8 ? 'Great Job! 🎯' :
-             score >= totalQuestions * 0.6 ? 'Good Work! 👍' :
-             'Keep Practicing! 💪'}
-          </div>
-          <button
-            onClick={() => setMode('flashcards')}
-            className={`px-6 py-3 rounded-lg ${themeClasses.card} ${themeClasses.text}`}
-          >
-            Return to Flashcards
-          </button>
-        </div>
-      );
-    }
-
-    if (!showResult) {
-      return (
-        <>
-          <div className="text-center mb-8">
-            {mode === 'meaning-quiz' && (
-              <>
-                {settings.showKanjiGames ? (
-                  <div className="text-8xl mb-4">{currentKanji.character}</div>
-                ) : (
-                  <div className="text-8xl mb-4">{currentKanji.kunyomi[0]}</div>
-                )}
-                {settings.showRomajiGames && (
-                  <div className={`text-xl mb-4 ${themeClasses.text}`}>
-                    {romajiMap[currentKanji.character] || 'Loading...'}
-                  </div>
-                )}
-                <div className="text-2xl mb-4">What is the meaning of this kanji?</div>
-              </>
-            )}
-            {mode === 'reading-quiz' && (
-              <>
-                {settings.showKanjiGames ? (
-                  <div className="text-8xl mb-4">{currentKanji.character}</div>
-                ) : (
-                  <div className="text-8xl mb-4">{currentKanji.meaning}</div>
-                )}
-                {settings.showRomajiGames && (
-                  <div className={`text-xl mb-4 ${themeClasses.text}`}>
-                    {romajiMap[currentKanji.character] || 'Loading...'}
-                  </div>
-                )}
-                <div className="text-2xl mb-4">
-                  What is the {readingType === 'onyomi' ? 'onyomi' : 'kunyomi'} reading?
-                </div>
-              </>
-            )}
-            {mode === 'writing-quiz' && (
-              <>
-                <div className="text-2xl mb-4">
-                  {writingMode === 'meaning' 
-                    ? `Write the kanji for: ${currentKanji.meaning}`
-                    : `Write the kanji for the reading: ${currentKanji.onyomi[0]}`
-                  }
-                </div>
-                {settings.showRomajiGames && writingMode === 'reading' && (
-                  <div className={`text-xl mb-4 ${themeClasses.text}`}>
-                    {romajiMap[currentKanji.onyomi[0]] || 'Loading...'}
-                  </div>
-                )}
-              </>
-            )}
-            <div className="text-xl mb-4">Time left: {timeLeft}s</div>
-            <div className="text-lg mb-4">
-              Questions remaining: {questionsRemaining}
-            </div>
-            {streak > 0 && (
-              <div className="text-lg text-green-600 mb-4">
-                Streak: {streak} 🔥
-                {streak >= QUIZ_SETTINGS[quizDifficulty].requiredStreak && (
-                  <span className="ml-2">(+{QUIZ_SETTINGS[quizDifficulty].streakBonus} bonus points!)</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              ref={inputRef}
-              type="text"
-              value={userAnswer}
-              onChange={(e) => setUserAnswer(e.target.value)}
-              placeholder={mode === 'writing-quiz' ? "Enter the kanji..." : "Enter your answer..."}
-              className={`w-full p-4 rounded-lg ${themeClasses.input}`}
-              disabled={!timerActive}
-            />
-            <button
-              type="submit"
-              className={`w-full p-4 rounded-lg ${
-                timerActive
-                  ? 'bg-primary text-white'
-                  : `${themeClasses.card} ${themeClasses.text}`
-              }`}
-              disabled={!timerActive}
-            >
-              Submit
-            </button>
-          </form>
-        </>
-      );
-    }
-
-    return (
-      <div className="text-center">
-        <div className={`text-2xl mb-4 ${themeClasses.text}`}>
-          {isCorrect ? 'Correct! 🎉' : 'Incorrect 😕'}
-        </div>
-        {mode === 'meaning-quiz' && (
-          <>
-            <div className="text-xl mb-4">
-              The meaning is: {currentKanji.english}
-            </div>
-            {settings.showKanjiGames && (
-              <div className="text-8xl mb-4">{currentKanji.character}</div>
-            )}
-            {settings.showRomajiGames && (
-              <div className={`text-xl mb-4 ${themeClasses.text}`}>
-                {romajiMap[currentKanji.character] || 'Loading...'}
-              </div>
-            )}
-            <div className="text-lg mb-4">
-              Onyomi: {currentKanji.onyomi.join(', ')}
-            </div>
-            <div className="text-lg mb-4">
-              Kunyomi: {currentKanji.kunyomi.join(', ')}
-            </div>
-          </>
-        )}
-        {mode === 'reading-quiz' && (
-          <>
-            <div className="text-xl mb-4">
-              {readingType === 'onyomi' ? 'Onyomi' : 'Kunyomi'} readings: {
-                readingType === 'onyomi' ? currentKanji.onyomi.join(', ') : currentKanji.kunyomi.join(', ')
-              }
-            </div>
-            <div className="text-lg mb-4">
-              Meaning: {currentKanji.meaning}
-            </div>
-          </>
-        )}
-        {mode === 'writing-quiz' && (
-          <>
-            <div className="text-xl mb-4">
-              The kanji is: {currentKanji.character}
-            </div>
-            <div className="text-lg mb-4">
-              Meaning: {currentKanji.meaning}
-            </div>
-            <div className="text-lg mb-4">
-              Readings: {currentKanji.onyomi.join(', ')} / {currentKanji.kunyomi.join(', ')}
-            </div>
-          </>
-        )}
-        <div className="text-lg mb-4">
-          Score: {score} / {totalQuestions}
-        </div>
-        <button
-          onClick={nextQuestion}
-          className={`px-6 py-3 rounded-lg ${themeClasses.card} ${themeClasses.text}`}
-        >
-          {questionsRemaining > 0 ? 'Next Question' : 'Finish Quiz'}
-        </button>
-      </div>
-    );
+  const handlePracticeModeChange = () => {
+    setPracticeMode(prev => prev === 'practice' ? 'free' : 'practice');
+    clearCanvas();
   };
 
-  const renderQuizHelp = () => {
-    if (mode === 'flashcards') return null;
+  const playStrokeAnimation = () => {
+    if (!currentKanji) return;
 
-    return (
-      <div className={`mb-6 ${themeClasses.card} rounded-lg p-4 border ${themeClasses.border}`}>
-        <button
-          onClick={() => setShowHelp(!showHelp)}
-          className={`w-full text-left flex justify-between items-center ${themeClasses.text}`}
-        >
-          <span className="font-semibold">How does this quiz work?</span>
-          <span>{showHelp ? '▼' : '▶'}</span>
-        </button>
-        
-        {showHelp && (
-          <div className="mt-4 space-y-4">
-            {mode === 'meaning-quiz' && (
-              <div>
-                <h3 className="font-semibold mb-2">Meaning Quiz:</h3>
-                <ul className="list-disc list-inside space-y-2">
-                  <li>You will be shown a kanji character</li>
-                  <li>Type the English meaning of the kanji</li>
-                  <li>You have {QUIZ_SETTINGS[quizDifficulty].timeLimit} seconds per question</li>
-                  <li>Build a streak of correct answers to earn bonus points</li>
-                  <li>Complete {QUIZ_SETTINGS[quizDifficulty].maxQuestions} questions to finish the quiz</li>
-                </ul>
-              </div>
-            )}
-            
-            {mode === 'reading-quiz' && (
-              <div>
-                <h3 className="font-semibold mb-2">Reading Quiz:</h3>
-                <ul className="list-disc list-inside space-y-2">
-                  <li>You will be shown a kanji character</li>
-                  <li>Type either the onyomi (Chinese reading) or kunyomi (Japanese reading)</li>
-                  <li>You can switch between onyomi and kunyomi using the reading type selector</li>
-                  <li>You have {QUIZ_SETTINGS[quizDifficulty].timeLimit} seconds per question</li>
-                  <li>Build a streak of correct answers to earn bonus points</li>
-                  <li>Complete {QUIZ_SETTINGS[quizDifficulty].maxQuestions} questions to finish the quiz</li>
-                </ul>
-              </div>
-            )}
-            
-            {mode === 'writing-quiz' && (
-              <div>
-                <h3 className="font-semibold mb-2">Writing Quiz:</h3>
-                <ul className="list-disc list-inside space-y-2">
-                  <li>You will be shown either the meaning or reading of a kanji</li>
-                  <li>Type the correct kanji character</li>
-                  <li>You can switch between meaning and reading prompts using the writing mode selector</li>
-                  <li>You have {QUIZ_SETTINGS[quizDifficulty].timeLimit} seconds per question</li>
-                  <li>Build a streak of correct answers to earn bonus points</li>
-                  <li>Complete {QUIZ_SETTINGS[quizDifficulty].maxQuestions} questions to finish the quiz</li>
-                </ul>
-              </div>
-            )}
+    setIsPlaying(true);
+    let strokeIndex = 0;
 
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <h3 className="font-semibold mb-2">Difficulty Levels:</h3>
-              <ul className="list-disc list-inside space-y-2">
-                <li><strong>Easy:</strong> {QUIZ_SETTINGS.easy.timeLimit}s per question, {QUIZ_SETTINGS.easy.maxQuestions} questions</li>
-                <li><strong>Medium:</strong> {QUIZ_SETTINGS.medium.timeLimit}s per question, {QUIZ_SETTINGS.medium.maxQuestions} questions</li>
-                <li><strong>Hard:</strong> {QUIZ_SETTINGS.hard.timeLimit}s per question, {QUIZ_SETTINGS.hard.maxQuestions} questions</li>
-              </ul>
-            </div>
+    const animate = () => {
+      if (strokeIndex >= (currentKanji.strokes || 0)) {
+        setIsPlaying(false);
+        return;
+      }
 
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <h3 className="font-semibold mb-2">Scoring System:</h3>
-              <ul className="list-disc list-inside space-y-2">
-                <li>1 point for each correct answer</li>
-                <li>Bonus points when you build a streak:</li>
-                <ul className="list-disc list-inside ml-4 mt-2">
-                  <li>Easy: +{QUIZ_SETTINGS.easy.streakBonus} points after {QUIZ_SETTINGS.easy.requiredStreak} correct answers</li>
-                  <li>Medium: +{QUIZ_SETTINGS.medium.streakBonus} points after {QUIZ_SETTINGS.medium.requiredStreak} correct answers</li>
-                  <li>Hard: +{QUIZ_SETTINGS.hard.streakBonus} points after {QUIZ_SETTINGS.hard.requiredStreak} correct answers</li>
-                </ul>
-              </ul>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+      setCurrentStrokeIndex(strokeIndex);
+      strokeIndex++;
+
+      setTimeout(animate, 1000 / playbackSpeed);
+    };
+
+    animate();
+  };
+
+  const pauseAnimation = () => {
+    setIsPlaying(false);
+  };
+
+  // Touch event handlers for mobile
+  const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    setIsDrawing(true);
+    const newStroke: Stroke = {
+      points: [{ x, y }],
+      color: theme.palette.primary.main
+    };
+    setCurrentStroke(newStroke);
+  };
+
+  const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !currentStroke) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    currentStroke.points.push({ x, y });
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid(ctx, canvas.width, canvas.height);
+    strokes.forEach(stroke => {
+      drawStroke(ctx, stroke);
+    });
+    drawStroke(ctx, currentStroke);
+  };
+
+  const endDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !currentStroke) return;
+    setIsDrawing(false);
+    const newStrokes = [...strokes, currentStroke];
+    setStrokes(newStrokes);
+    setCurrentStroke(null);
+    if (practiceMode === 'practice') {
+      verifyDrawing(newStrokes);
+    }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Kanji Practice</h1>
-        
-        {/* Mode Selection */}
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setMode('flashcards')}
-            className={`px-4 py-2 rounded-lg ${
-              mode === 'flashcards' 
-                ? 'bg-primary text-white' 
-                : `${themeClasses.card} ${themeClasses.text}`
-            }`}
-          >
-            Flashcards
-          </button>
-          <button
-            onClick={() => {
-              setMode('meaning-quiz');
-              startQuiz();
-            }}
-            className={`px-4 py-2 rounded-lg ${
-              mode === 'meaning-quiz' 
-                ? 'bg-primary text-white' 
-                : `${themeClasses.card} ${themeClasses.text}`
-            }`}
-          >
-            Meaning Quiz
-          </button>
-          <button
-            onClick={() => {
-              setMode('reading-quiz');
-              startQuiz();
-            }}
-            className={`px-4 py-2 rounded-lg ${
-              mode === 'reading-quiz' 
-                ? 'bg-primary text-white' 
-                : `${themeClasses.card} ${themeClasses.text}`
-            }`}
-          >
-            Reading Quiz
-          </button>
-          <button
-            onClick={() => {
-              setMode('writing-quiz');
-              startQuiz();
-            }}
-            className={`px-4 py-2 rounded-lg ${
-              mode === 'writing-quiz' 
-                ? 'bg-primary text-white' 
-                : `${themeClasses.card} ${themeClasses.text}`
-            }`}
-          >
-            Writing Quiz
-          </button>
-        </div>
-
-        {/* Quiz Help Section */}
-        {renderQuizHelp()}
-
-        {/* Filters */}
-        <div className="flex gap-4 mb-6">
-          <select
-            value={selectedDifficulty}
-            onChange={(e) => setSelectedDifficulty(e.target.value)}
-            className={`px-4 py-2 rounded-lg border ${themeClasses.input}`}
-          >
-            <option value="all">All Difficulties</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className={`px-4 py-2 rounded-lg border ${themeClasses.input}`}
-          >
-            <option value="all">All Categories</option>
-            <option value="nature">Nature</option>
-            <option value="people">People</option>
-            <option value="body">Body</option>
-            <option value="numbers">Numbers</option>
-            <option value="time">Time</option>
-            <option value="position">Position</option>
-            <option value="size">Size</option>
-            <option value="currency">Currency</option>
-          </select>
-        </div>
-
-        {/* Content */}
-        {filteredKanji.length > 0 ? (
-          mode === 'flashcards' ? (
-            <div className={`${themeClasses.card} rounded-lg p-8 border ${themeClasses.border} text-center`}>
-              {settings.showKanjiGames ? (
-                <div className="text-8xl mb-8 font-japanese">{currentKanji.character}</div>
-              ) : (
-                <div className="text-8xl mb-8 font-japanese">{currentKanji.kunyomi[0]}</div>
-              )}
-              {settings.showRomajiGames && (
-                <div className={`text-xl mb-4 ${themeClasses.text}`}>
-                  {romajiMap[currentKanji.character] || 'Loading...'}
-                </div>
-              )}
-              
-              <div className="space-y-4">
-                <button
-                  onClick={() => setShowMeaning(!showMeaning)}
-                  className={`w-full p-4 rounded-lg ${
-                    showMeaning 
-                      ? 'bg-primary text-white' 
-                      : `${themeClasses.card} ${themeClasses.text}`
-                  }`}
-                >
-                  {showMeaning ? currentKanji.english : 'Show Meaning'}
-                </button>
-
-                <button
-                  onClick={() => setShowReadings(!showReadings)}
-                  className={`w-full p-4 rounded-lg ${
-                    showReadings 
-                      ? 'bg-primary text-white' 
-                      : `${themeClasses.card} ${themeClasses.text}`
-                  }`}
-                >
-                  {showReadings ? (
-                    <div>
-                      <div>Onyomi: {currentKanji.onyomi.join(', ')}</div>
-                      <div>Kunyomi: {currentKanji.kunyomi.join(', ')}</div>
-                    </div>
-                  ) : (
-                    'Show Readings'
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setShowExamples(!showExamples)}
-                  className={`w-full p-4 rounded-lg ${
-                    showExamples 
-                      ? 'bg-primary text-white' 
-                      : `${themeClasses.card} ${themeClasses.text}`
-                  }`}
-                >
-                  {showExamples ? (
-                    <div className="space-y-2">
-                      {currentKanji.examples?.map((example, index) => (
-                        <div key={index}>
-                          {settings.showKanjiGames ? example.word : example.reading} 
-                          {settings.showRomajiGames && (
-                            <span className={`${themeClasses.text} ml-2`}>
-                              ({romajiMap[example.word] || 'Loading...'})
-                            </span>
-                          )}
-                          {' - '}{example.meaning}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    'Show Examples'
-                  )}
-                </button>
-
-                {currentKanji.hint && (
-                  <div className={`mt-4 text-sm ${themeClasses.text}`}>
-                    Hint: {currentKanji.hint}
-                  </div>
+    <Box sx={{ width: '100%' }}>
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 3,
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+        }}
+      >
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={8}>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6" component="h2">
+                Practice Writing Kanji
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Tooltip title={practiceMode === 'practice' ? 'Switch to Free Practice' : 'Switch to Practice Mode'}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handlePracticeModeChange}
+                  >
+                    {practiceMode === 'practice' ? 'Free Practice' : 'Practice Mode'}
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Show/Hide Hint">
+                  <IconButton onClick={() => setShowHint(!showHint)}>
+                    <CheckIcon />
+                  </IconButton>
+                </Tooltip>
+                {currentKanji?.readings?.onyomi?.[0] && (
+                  <Tooltip title="Listen to Onyomi">
+                    <IconButton onClick={() => playAudio(currentKanji.readings.onyomi[0])}>
+                      <VolumeIcon />
+                    </IconButton>
+                  </Tooltip>
                 )}
-              </div>
+                <Tooltip title={isPlaying ? 'Pause Animation' : 'Play Stroke Order'}>
+                  <IconButton onClick={isPlaying ? pauseAnimation : playStrokeAnimation}>
+                    {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
 
-              <div className="flex justify-between mt-8">
-                <button
-                  onClick={handlePrevious}
-                  className={`px-4 py-2 rounded-lg ${themeClasses.card} ${themeClasses.text}`}
+            {verificationResult && (
+              <Alert 
+                severity={verificationResult.isCorrect ? 'success' : 'warning'}
+                sx={{ mb: 2 }}
+              >
+                {verificationResult.message}
+                {!verificationResult.isCorrect && (
+                  <Typography variant="caption" display="block">
+                    Accuracy: {Math.round(verificationResult.accuracy * 100)}%
+                  </Typography>
+                )}
+              </Alert>
+            )}
+
+            <Box
+              sx={{
+                position: 'relative',
+                width: '100%',
+                height: isMobile ? '300px' : '400px',
+                bgcolor: 'background.default',
+                borderRadius: 1,
+                overflow: 'hidden',
+              }}
+            >
+              <canvas
+                ref={canvasRef}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  touchAction: 'none',
+                }}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={endDrawing}
+                onMouseLeave={endDrawing}
+                onTouchStart={startDrawingTouch}
+                onTouchMove={drawTouch}
+                onTouchEnd={endDrawingTouch}
+              />
+              {showHint && practiceMode === 'practice' && currentKanji && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                  }}
                 >
-                  Previous
-                </button>
-                <div className={themeClasses.text}>
-                  {currentIndex + 1} / {filteredKanji.length}
-                </div>
-                <button
-                  onClick={handleNext}
-                  className={`px-4 py-2 rounded-lg ${themeClasses.card} ${themeClasses.text}`}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className={`${themeClasses.card} rounded-lg p-8 border ${themeClasses.border}`}>
-              {/* Quiz Mode Selection */}
-              {mode === 'reading-quiz' && (
-                <div className="mb-6">
-                  <select
-                    value={readingType}
-                    onChange={(e) => setReadingType(e.target.value as 'onyomi' | 'kunyomi')}
-                    className={`px-4 py-2 rounded-lg border ${themeClasses.input}`}
-                  >
-                    <option value="onyomi">Onyomi (Chinese Reading)</option>
-                    <option value="kunyomi">Kunyomi (Japanese Reading)</option>
-                  </select>
-                </div>
+                  <Typography variant="h1" component="div">
+                    {currentKanji.kanji}
+                  </Typography>
+                </Box>
               )}
+            </Box>
 
-              {mode === 'writing-quiz' && (
-                <div className="mb-6">
-                  <select
-                    value={writingMode}
-                    onChange={(e) => setWritingMode(e.target.value as 'meaning' | 'reading')}
-                    className={`px-4 py-2 rounded-lg border ${themeClasses.input}`}
+            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<UndoIcon />}
+                onClick={undoLastStroke}
+                disabled={strokes.length === 0}
+              >
+                Undo
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={clearCanvas}
+                disabled={strokes.length === 0}
+              >
+                Clear
+              </Button>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            {currentKanji && (
+              <>
+                <Typography variant="subtitle1" gutterBottom>
+                  Current Kanji: {currentKanji.kanji}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  JLPT Level: {currentKanji.jlpt}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Strokes: {currentKanji.strokes}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Meanings: {currentKanji.meanings.join(', ')}
+                </Typography>
+                {currentKanji.readings.onyomi.length > 0 && (
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Onyomi: {currentKanji.readings.onyomi.join(', ')}
+                  </Typography>
+                )}
+                {currentKanji.readings.kunyomi.length > 0 && (
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Kunyomi: {currentKanji.readings.kunyomi.join(', ')}
+                  </Typography>
+                )}
+              </>
+            )}
+
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                JLPT Level:
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                {['N5', 'N4', 'N3', 'N2', 'N1'].map((level) => (
+                  <Button
+                    key={level}
+                    variant={selectedJLPT === level ? 'contained' : 'outlined'}
+                    size="small"
+                    onClick={() => setSelectedJLPT(level)}
                   >
-                    <option value="meaning">Write from Meaning</option>
-                    <option value="reading">Write from Reading</option>
-                  </select>
-                </div>
-              )}
+                    {level}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
 
-              {/* Quiz Content */}
-              {renderQuizContent()}
-            </div>
-          )
-        ) : (
-          <div className={`text-center ${themeClasses.text}`}>
-            No kanji found matching the selected filters.
-          </div>
-        )}
-      </div>
-    </div>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Available Kanji:
+              </Typography>
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 1,
+                maxHeight: '200px',
+                overflowY: 'auto',
+                p: 1,
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 1
+              }}>
+                {availableKanji.map((kanji) => (
+                  <Button
+                    key={kanji.kanji}
+                    variant={currentKanji?.kanji === kanji.kanji ? 'contained' : 'outlined'}
+                    size="small"
+                    onClick={() => handleKanjiChange(kanji)}
+                    sx={{ minWidth: '40px' }}
+                  >
+                    {kanji.kanji}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
+
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Practice Tips:
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                • Pay attention to stroke order
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                • Use the grid to maintain proper proportions
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                • Practice both writing and reading
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Learn the radicals to understand kanji structure
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+    </Box>
   );
 };
 

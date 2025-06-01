@@ -1,5 +1,7 @@
 // Unified Audio Cache Utility using IndexedDB
 
+import { getDatabase } from './databaseConfig';
+
 const DB_NAME = 'JapaneseAudioDB';
 const STORE_NAME = 'audioFiles';
 const DB_VERSION = 1;
@@ -76,4 +78,38 @@ export async function getCacheStats(): Promise<{ fileCount: number; totalSize: n
     };
     req.onerror = () => resolve({ fileCount: 0, totalSize: 0 });
   });
+}
+
+export class AudioCache {
+  private static instance: AudioCache;
+  private cache: Map<string, Blob> = new Map();
+  private db: IDBDatabase | null = null;
+
+  private constructor() {
+    this.initializeCache();
+  }
+
+  static getInstance(): AudioCache {
+    if (!AudioCache.instance) {
+      AudioCache.instance = new AudioCache();
+    }
+    return AudioCache.instance;
+  }
+
+  private async initializeCache() {
+    try {
+      this.db = await getDatabase();
+      // Load cached audio files from IndexedDB
+      const tx = this.db.transaction('audioCache', 'readonly');
+      const store = tx.objectStore('audioCache');
+      const cachedFiles = await store.getAll();
+      
+      // Convert cached files to Blobs and store in memory
+      for (const file of cachedFiles) {
+        this.cache.set(file.key, new Blob([file.data], { type: 'audio/mpeg' }));
+      }
+    } catch (error) {
+      console.error('Error initializing audio cache:', error);
+    }
+  }
 } 

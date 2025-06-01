@@ -1,16 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { openDB } from 'idb';
 import { DictionaryItem } from '../types/dictionary';
+import { databasePromise, getDatabase, StoreName } from '../utils/databaseConfig';
 import { quizWords } from '../data/quizData';
-
-// Database configuration
-const DB_CONFIG = {
-  name: 'japanese-quiz',
-  version: 1,
-  stores: {
-    quizWords: { keyPath: 'id' }
-  }
-};
 
 interface WordContextType {
   quizWords: DictionaryItem[];
@@ -27,10 +18,10 @@ interface WordContextType {
 
 const WordContext = createContext<WordContextType | undefined>(undefined);
 
-export const useWords = () => {
+export const useWord = () => {
   const context = useContext(WordContext);
   if (!context) {
-    throw new Error('useWords must be used within a WordProvider');
+    throw new Error('useWord must be used within a WordProvider');
   }
   return context;
 };
@@ -42,18 +33,7 @@ export const WordProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const initializeDatabase = async () => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version, {
-        upgrade(db) {
-          if (!db.objectStoreNames.contains('quizWords')) {
-            const store = db.createObjectStore('quizWords', { keyPath: 'id' });
-            store.createIndex('by-level', 'level');
-            store.createIndex('by-category', 'category');
-            store.createIndex('by-jlpt', 'jlptLevel');
-          }
-        }
-      });
-
-      // Check if we need to initialize the database
+      const db = await databasePromise;
       const tx = db.transaction('quizWords', 'readonly');
       const store = tx.objectStore('quizWords');
       const count = await store.count();
@@ -115,7 +95,7 @@ export const WordProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await initializeDatabase();
 
       // Then load words
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('quizWords', 'readonly');
       const store = tx.objectStore('quizWords');
       const wordsData = await store.getAll();
@@ -149,7 +129,7 @@ export const WordProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addQuizWord = async (wordData: Omit<DictionaryItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('quizWords', 'readwrite');
       const store = tx.objectStore('quizWords');
 
@@ -170,7 +150,7 @@ export const WordProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateQuizWord = async (word: DictionaryItem) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('quizWords', 'readwrite');
       const store = tx.objectStore('quizWords');
 
@@ -189,7 +169,7 @@ export const WordProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteQuizWord = async (id: string) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('quizWords', 'readwrite');
       const store = tx.objectStore('quizWords');
 

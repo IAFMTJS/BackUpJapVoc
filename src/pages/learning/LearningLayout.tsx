@@ -29,39 +29,39 @@ const LearningLayout: React.FC = () => {
 
   const learningPages = [
     {
-      path: '/learning/writing-practice',
-      label: 'Writing Practice',
-      icon: <EditIcon sx={{ fontSize: 32 }} />,
-      description: 'Practice writing Japanese characters with interactive stroke order and feedback.',
-      color: theme.palette.primary.main
-    },
-    {
-      path: '/learning/writing',
-      label: 'Writing',
-      icon: <MenuBookIcon sx={{ fontSize: 32 }} />,
-      description: 'Learn to write Japanese characters with step-by-step guidance and examples.',
-      color: theme.palette.secondary.main
+      path: '/learning/kana',
+      label: 'Kana',
+      icon: <TranslateIcon />,
+      description: 'Learn hiragana and katakana',
+      color: '#3b82f6'
     },
     {
       path: '/learning/kanji',
       label: 'Kanji',
-      icon: <TranslateIcon sx={{ fontSize: 32 }} />,
-      description: 'Master kanji characters with meanings, readings, and example compounds.',
-      color: theme.palette.success.main
+      icon: <SchoolIcon />,
+      description: 'Master Japanese characters',
+      color: '#8b5cf6'
+    },
+    {
+      path: '/learning/kanji-dictionary',
+      label: 'Kanji Dictionary',
+      icon: <MenuBookIcon />,
+      description: 'Learn kanji meanings, readings, and usage',
+      color: '#10b981'
     },
     {
       path: '/learning/romaji',
       label: 'Romaji',
-      icon: <MenuBookIcon sx={{ fontSize: 32 }} />,
-      description: 'Learn Japanese pronunciation through romaji and audio practice.',
-      color: theme.palette.info.main
+      icon: <TranslateIcon />,
+      description: 'Learn romanized Japanese',
+      color: '#10b981'
     },
     {
       path: '/learning/quiz',
       label: 'Quiz',
-      icon: <QuizIcon sx={{ fontSize: 32 }} />,
-      description: 'Test your knowledge with interactive quizzes and track your progress.',
-      color: theme.palette.warning.main
+      icon: <QuizIcon />,
+      description: 'Test your knowledge',
+      color: '#f59e0b'
     }
   ];
 

@@ -232,7 +232,31 @@
   }
 }
 
-/* Dark mode adjustments */
+/* Light theme styles */
+.calendar-heatmap rect {
+  stroke: rgba(0, 0, 0, 0.1);
+}
+
+.color-empty {
+  fill: rgba(0, 0, 0, 0.05);
+}
+
+.graph-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1f2937;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-item::before {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.timeline-dot {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark theme adjustments */
 [data-theme="dark"] .calendar-heatmap rect {
   stroke: rgba(255, 255, 255, 0.1);
 }
@@ -242,13 +266,14 @@
 }
 
 [data-theme="dark"] .graph-tooltip {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(35, 35, 58, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
   color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 [data-theme="dark"] .timeline-item::before {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 [data-theme="dark"] .timeline-dot {

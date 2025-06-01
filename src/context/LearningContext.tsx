@@ -1,15 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { openDB } from 'idb';
 import { DictionaryItem } from '../types/dictionary';
-
-// Database configuration
-const DB_CONFIG = {
-  name: 'japanese-learning',
-  version: 1,
-  stores: {
-    learningWords: { keyPath: 'id' }
-  }
-};
+import { databasePromise, getDatabase, StoreName } from '../utils/databaseConfig';
 
 interface LearningProgress {
   wordId: string;
@@ -52,15 +43,15 @@ interface LearningContextType {
   learningProgress: Record<string, LearningProgress>;
   isLoading: boolean;
   error: string | null;
-  refreshLearningWords: () => Promise<void>;
+  refreshLearningData: () => Promise<void>;
   addLearningWord: (word: Omit<DictionaryItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateLearningWord: (word: DictionaryItem) => Promise<void>;
   deleteLearningWord: (id: string) => Promise<void>;
-  updateProgress: (wordId: string, isCorrect: boolean) => Promise<void>;
+  updateProgress: (wordId: string, progress: Partial<LearningProgress>) => Promise<void>;
   getWordsByLevel: (level: number) => DictionaryItem[];
   getWordsByCategory: (category: string) => DictionaryItem[];
   getWordsByJLPT: (level: string) => DictionaryItem[];
-  getWordsDueForReview: () => DictionaryItem[];
+  getWordsForReview: () => DictionaryItem[];
   getMasteredWords: () => DictionaryItem[];
   getWordsNeedingReview: () => DictionaryItem[];
   learningSettings: LearningSettings;
@@ -112,21 +103,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setError(null);
 
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version, {
-        upgrade(db) {
-          if (!db.objectStoreNames.contains('learningWords')) {
-            const store = db.createObjectStore('learningWords', { keyPath: 'id' });
-            store.createIndex('by-level', 'level');
-            store.createIndex('by-category', 'category');
-            store.createIndex('by-jlpt', 'jlptLevel');
-          }
-          if (!db.objectStoreNames.contains('learningProgress')) {
-            const store = db.createObjectStore('learningProgress', { keyPath: 'wordId' });
-            store.createIndex('by-next-review', 'nextReview');
-            store.createIndex('by-mastery', 'masteryLevel');
-          }
-        }
-      });
+      const db = await getDatabase();
 
       // Load learning words
       const wordsTx = db.transaction('learningWords', 'readonly');
@@ -172,31 +149,32 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return learningWords.filter(word => word.jlptLevel === level);
   };
 
-  const getWordsDueForReview = (): DictionaryItem[] => {
+  const getWordsForReview = (): DictionaryItem[] => {
     const now = new Date();
     return learningWords.filter(word => {
       const progress = learningProgress[word.id];
-      return !progress || progress.nextReview <= now;
+      return progress && progress.nextReview <= now;
     });
   };
 
   const getMasteredWords = (): DictionaryItem[] => {
     return learningWords.filter(word => {
       const progress = learningProgress[word.id];
-      return progress && progress.masteryLevel >= 5;
+      return progress && progress.masteryLevel >= 0.8; // 80% mastery threshold
     });
   };
 
   const getWordsNeedingReview = (): DictionaryItem[] => {
+    const now = new Date();
     return learningWords.filter(word => {
       const progress = learningProgress[word.id];
-      return progress && progress.mistakes > progress.correctAnswers;
+      return progress && progress.masteryLevel < 0.8 && progress.nextReview <= now;
     });
   };
 
   const addLearningWord = async (wordData: Omit<DictionaryItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('learningWords', 'readwrite');
       const store = tx.objectStore('learningWords');
 
@@ -215,12 +193,19 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const progressStore = progressTx.objectStore('learningProgress');
       const initialProgress: LearningProgress = {
         wordId: newWord.id,
-        lastReviewed: new Date(),
-        reviewCount: 0,
         masteryLevel: 0,
+        lastReviewed: new Date(),
         nextReview: new Date(),
+        correctAnswers: 0,
         mistakes: 0,
-        correctAnswers: 0
+        streak: 0,
+        difficulty: 1,
+        reviewHistory: [],
+        tags: [],
+        notes: '',
+        examples: [],
+        pronunciationScore: 0,
+        writingScore: 0
       };
       await progressStore.add(initialProgress);
       setLearningProgress(prev => ({
@@ -235,7 +220,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateLearningWord = async (word: DictionaryItem) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('learningWords', 'readwrite');
       const store = tx.objectStore('learningWords');
 
@@ -254,7 +239,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const deleteLearningWord = async (id: string) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       
       // Delete word
       const wordTx = db.transaction('learningWords', 'readwrite');
@@ -277,30 +262,21 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const updateProgress = async (wordId: string, isCorrect: boolean) => {
+  const updateProgress = async (wordId: string, progress: Partial<LearningProgress>) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('learningProgress', 'readwrite');
       const store = tx.objectStore('learningProgress');
 
-      const currentProgress = learningProgress[wordId] || {
-        wordId,
-        lastReviewed: new Date(),
-        reviewCount: 0,
-        masteryLevel: 0,
-        nextReview: new Date(),
-        mistakes: 0,
-        correctAnswers: 0
-      };
+      const currentProgress = learningProgress[wordId];
+      if (!currentProgress) {
+        throw new Error(`No progress found for word ${wordId}`);
+      }
 
-      const updatedProgress: LearningProgress = {
+      const updatedProgress = {
         ...currentProgress,
-        lastReviewed: new Date(),
-        reviewCount: currentProgress.reviewCount + 1,
-        mistakes: isCorrect ? currentProgress.mistakes : currentProgress.mistakes + 1,
-        correctAnswers: isCorrect ? currentProgress.correctAnswers + 1 : currentProgress.correctAnswers,
-        masteryLevel: Math.min(5, Math.floor((currentProgress.correctAnswers + (isCorrect ? 1 : 0)) / 3)),
-        nextReview: new Date(Date.now() + (24 * 60 * 60 * 1000 * Math.pow(2, currentProgress.masteryLevel)))
+        ...progress,
+        lastReviewed: new Date()
       };
 
       await store.put(updatedProgress);
@@ -309,7 +285,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         [wordId]: updatedProgress
       }));
     } catch (err) {
-      console.error('[LearningContext] Error updating learning progress:', err);
+      console.error('[LearningContext] Error updating progress:', err);
       throw err;
     }
   };
@@ -380,7 +356,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     learningProgress,
     isLoading,
     error,
-    refreshLearningWords: loadLearningData,
+    refreshLearningData: loadLearningData,
     addLearningWord,
     updateLearningWord,
     deleteLearningWord,
@@ -388,7 +364,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     getWordsByLevel,
     getWordsByCategory,
     getWordsByJLPT,
-    getWordsDueForReview,
+    getWordsForReview,
     getMasteredWords,
     getWordsNeedingReview,
     learningSettings,

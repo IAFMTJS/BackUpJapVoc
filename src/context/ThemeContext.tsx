@@ -140,43 +140,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, [theme, setThemeWithValidation]);
 
   const getThemeClasses = React.useCallback(() => {
-    if (theme === 'neon') {
-      return {
-        container: 'bg-[#0a0a23] min-h-screen',
-        text: {
-          primary: 'neon-blue',
-          secondary: 'neon-pink',
-          muted: 'text-gray-400',
-        },
-        card: 'neon-card',
-        button: {
-          primary: 'neon-btn',
-          secondary: 'neon-btn blue',
-        },
-        input: 'bg-[#181830] border border-[#00f7ff] text-[#00f7ff] focus:ring-2 focus:ring-[#ff3afc] rounded-lg',
-        nav: {
-          background: 'bg-transparent',
-          link: {
-            default: 'neon-blue',
-            active: 'neon-pink underline',
-          },
-        },
-        progress: {
-          background: 'bg-[#181830]',
-          bar: 'bg-neon-pink',
-        },
-        toggle: {
-          active: 'bg-neon-pink',
-          default: 'bg-[#181830]',
-        },
-        focus: {
-          ring: 'focus:ring-[#00f7ff] focus:ring-2',
-        },
-        selection: 'selection:bg-[#ff00c8] selection:text-[#00f7ff]',
-        title: 'neon-blue',
-        subtitle: 'neon-pink',
-      };
-    }
     if (theme === 'dark') {
       return {
         container: 'bg-[#181830] min-h-screen',
@@ -216,27 +179,27 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
     // Light theme
     return {
-      container: 'bg-white min-h-screen',
+      container: 'bg-gray-50 min-h-screen',
       text: {
         primary: 'text-gray-900',
         secondary: 'text-gray-600',
         muted: 'text-gray-400',
       },
-      card: 'bg-white border border-gray-200 rounded-2xl p-6 shadow',
+      card: 'bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow',
       button: {
-        primary: 'bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition',
-        secondary: 'bg-gray-100 text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-200 transition',
+        primary: 'bg-white text-gray-900 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 hover:border-gray-300 transition-colors',
+        secondary: 'bg-gray-50 text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-100 hover:border-gray-300 transition-colors',
       },
-      input: 'bg-white border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 rounded-lg',
+      input: 'bg-white border border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-500 rounded-lg hover:border-gray-300 transition-colors',
       nav: {
-        background: 'bg-white',
+        background: 'bg-white border-b border-gray-200',
         link: {
-          default: 'text-gray-700 hover:text-gray-900',
-          active: 'text-gray-900 underline',
+          default: 'text-gray-600 hover:text-gray-900 transition-colors',
+          active: 'text-gray-900 font-medium',
         },
       },
       progress: {
-        background: 'bg-gray-200',
+        background: 'bg-gray-100',
         bar: 'bg-blue-500',
       },
       toggle: {
@@ -261,7 +224,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   return (
     <ThemeContext.Provider value={value}>
-      <div className={`theme-${theme} ${theme === 'neon' ? 'theme-neon' : ''}`}>
+      <div className={`theme-${theme}`}>
         {children}
       </div>
     </ThemeContext.Provider>

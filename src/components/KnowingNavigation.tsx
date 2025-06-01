@@ -22,8 +22,10 @@ import {
   Star as StarIcon,
   Timeline as ProgressIcon,
   Settings as SettingsIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { useProgress } from '../context/ProgressContext';
+import ProfileToggle from './navigation/ProfileToggle';
 
 interface KnowingNavigationProps {
   children: React.ReactNode;
@@ -88,6 +90,12 @@ export const KnowingNavigation: React.FC<KnowingNavigationProps> = ({ children }
       path: '/knowing/settings',
       progress: 0,
     },
+    {
+      text: 'Profile',
+      icon: <PersonIcon />,
+      path: '/profile',
+      requiresAuth: true
+    }
   ];
 
   return (
@@ -175,10 +183,12 @@ export const KnowingNavigation: React.FC<KnowingNavigationProps> = ({ children }
           flexGrow: 1,
           p: 3,
           width: '100%',
+          pb: { xs: 8, sm: 3 },
         }}
       >
         {children}
       </Box>
+      <ProfileToggle />
     </Box>
   );
 }; 

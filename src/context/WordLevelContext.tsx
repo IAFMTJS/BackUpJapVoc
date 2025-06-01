@@ -12,7 +12,7 @@ import {
   calculateWordMastery,
   WordMasteryStatus
 } from '../data/wordLevels';
-import { useWords } from './WordContext';
+import { useWord } from './WordContext';
 import { DictionaryItem } from '../types/dictionary';
 
 // Convert DictionaryItem to JapaneseWord
@@ -169,7 +169,7 @@ export const WordLevelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   });
 
   const [currentLevel, setCurrentLevel] = useState(userProgress.currentLevel);
-  const { quizWords } = useWords();
+  const { quizWords } = useWord();
 
   // Convert quizWords to JapaneseWord format
   const words = React.useMemo(() => quizWords.map(convertToJapaneseWord), [quizWords]);

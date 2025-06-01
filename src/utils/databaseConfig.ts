@@ -13,7 +13,7 @@ let forceReset = false;
 // Database configuration
 export const DB_CONFIG = {
   name: 'JapVocDB',
-  version: 5,
+  version: 7,
   stores: {
     words: {
       keyPath: 'id',
@@ -28,6 +28,38 @@ export const DB_CONFIG = {
         'by-mastery': { keyPath: 'mastery.level' },
         'by-last-viewed': { keyPath: 'lastViewed' },
         'by-emotional-context': { keyPath: 'emotionalContext.category' }
+      }
+    },
+    quizWords: {
+      keyPath: 'id',
+      indexes: {
+        'by-japanese': { keyPath: 'japanese' },
+        'by-english': { keyPath: 'english' },
+        'by-romaji': { keyPath: 'romaji' },
+        'by-level': { keyPath: 'level' },
+        'by-category': { keyPath: 'category' },
+        'by-jlpt': { keyPath: 'jlptLevel' }
+      }
+    },
+    learningWords: {
+      keyPath: 'id',
+      indexes: {
+        'by-japanese': { keyPath: 'japanese' },
+        'by-english': { keyPath: 'english' },
+        'by-romaji': { keyPath: 'romaji' },
+        'by-level': { keyPath: 'level' },
+        'by-category': { keyPath: 'category' },
+        'by-jlpt': { keyPath: 'jlptLevel' },
+        'by-mastery': { keyPath: 'mastery' }
+      }
+    },
+    learningProgress: {
+      keyPath: 'wordId',
+      indexes: {
+        'by-mastery': { keyPath: 'masteryLevel' },
+        'by-next-review': { keyPath: 'nextReview' },
+        'by-last-reviewed': { keyPath: 'lastReviewed' },
+        'by-difficulty': { keyPath: 'difficulty' }
       }
     },
     audioFiles: {
@@ -120,10 +152,13 @@ export const DB_CONFIG = {
       }
     },
     kanjiProgress: {
-      keyPath: 'kanji',
+      keyPath: 'kanjiId',
       indexes: {
         'by-mastery': { keyPath: 'masteryLevel' },
-        'by-last-practiced': { keyPath: 'lastPracticed' }
+        'by-next-review': { keyPath: 'nextReview' },
+        'by-last-reviewed': { keyPath: 'lastReviewed' },
+        'by-writing-score': { keyPath: 'writingScore' },
+        'by-reading-score': { keyPath: 'readingScore' }
       }
     },
     strokeData: {
@@ -145,6 +180,33 @@ export const DB_CONFIG = {
       indexes: {
         'by-category': { keyPath: 'category' },
         'by-emotion': { keyPath: 'emotion' }
+      }
+    },
+    kanji: {
+      keyPath: 'id',
+      indexes: {
+        'by-character': { keyPath: 'character' },
+        'by-level': { keyPath: 'level' },
+        'by-jlpt': { keyPath: 'jlptLevel' },
+        'by-frequency': { keyPath: 'frequency' },
+        'by-radical': { keyPath: 'radicals' },
+        'by-stroke-count': { keyPath: 'strokeCount' },
+        'by-reading': { keyPath: 'readings.type' }
+      }
+    },
+    kanjiStrokes: {
+      keyPath: 'kanjiId',
+      indexes: {
+        'by-stroke-count': { keyPath: 'strokeCount' },
+        'by-difficulty': { keyPath: 'difficulty' }
+      }
+    },
+    kanjiExamples: {
+      keyPath: 'id',
+      indexes: {
+        'by-kanji': { keyPath: 'kanjiId' },
+        'by-word': { keyPath: 'wordId' },
+        'by-frequency': { keyPath: 'frequency' }
       }
     }
   }

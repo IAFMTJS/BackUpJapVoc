@@ -1,28 +1,45 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, TouchEvent } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { useProgress } from '../context/ProgressContext';
 import { useAchievements } from '../context/AchievementContext';
+import { useAudio } from '../context/AudioContext';
 import { Kanji, kanjiList } from '../data/kanjiData';
 import { playAudio, playDynamicAudio } from '../utils/audio';
 import { analyzeStroke, validateStroke, calculateStrokeOrderScore } from '../utils/strokeValidation';
 import { generatePracticeSets, generateWordExercises, calculatePracticeScore, DIFFICULTY_LEVELS } from '../utils/compoundWordPractice';
 import { Point, StrokeData, StrokeFeedback, CompoundWordData, KanjiStrokeData } from '../types/stroke';
-import { Box, Button, Card, CardContent, Typography, Tabs, Tab, Grid, Paper, List, ListItem, ListItemText, CircularProgress, Tooltip, IconButton } from '@mui/material';
+import { Box, Button, Card, CardContent, Typography, Tabs, Tab, Grid, Paper, List, ListItem, ListItemText, CircularProgress, Tooltip, IconButton, TextField } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brush, School, Translate, Info, Help, Check, Close, Replay, Timer, EmojiEvents } from '@mui/icons-material';
+import { Brush, School, Translate, Info, Help, Check, Close, Replay, Timer, EmojiEvents, VolumeUp, Undo, Redo } from '@mui/icons-material';
 
 type QuizMode = 'stroke' | 'compound' | 'meaning' | 'reading';
 type QuizDifficulty = 'easy' | 'medium' | 'hard' | 'all';
 
+// Add new question types
+type QuestionType = 'multiple-choice' | 'fill-in-blank' | 'matching' | 'context';
+
+interface Question {
+  type: QuestionType;
+  question: string;
+  correctAnswer: string;
+  options?: string[];
+  context?: string;
+  hint?: string;
+  audioUrl?: string;
+}
+
 interface QuizState {
   mode: 'setup' | 'quiz' | 'result' | 'review';
-  currentQuestion: number;
-  selectedAnswer: number | null;
+  currentQuestion: string;
+  correctAnswer: string;
+  selectedAnswer: string | null;
+  options?: string[];
+  userInput: string;
+  context?: string;
+  hint?: string;
   showFeedback: boolean;
   isCorrect: boolean | null;
-  showCorrect: boolean;
-  userInput: string;
   strokes: StrokeData[];
   currentStroke: Point[];
   compoundWordProgress: { [word: string]: { attempts: number; successes: number } };
@@ -59,9 +76,15 @@ interface CompoundWordExercise {
   relatedWords?: string[];
 }
 
-const QUIZ_SETTINGS: Record<QuizDifficulty, QuizSettings> = {
+interface KanjiQuizProps {
+  kanji: Kanji[];
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+// Update quiz settings to match the difficulty levels
+const QUIZ_SETTINGS: Record<'easy' | 'medium' | 'hard', QuizSettings> = {
   easy: {
-    mode: 'stroke',
+    mode: 'meaning',
     difficulty: 'easy',
     questionCount: 10,
     useTimer: true,
@@ -70,13 +93,13 @@ const QUIZ_SETTINGS: Record<QuizDifficulty, QuizSettings> = {
     requireStrokeOrder: false
   },
   medium: {
-    mode: 'compound',
+    mode: 'reading',
     difficulty: 'medium',
     questionCount: 15,
     useTimer: true,
     timeLimit: 30,
     showHints: true,
-    requireStrokeOrder: true
+    requireStrokeOrder: false
   },
   hard: {
     mode: 'compound',
@@ -86,15 +109,6 @@ const QUIZ_SETTINGS: Record<QuizDifficulty, QuizSettings> = {
     timeLimit: 20,
     showHints: false,
     requireStrokeOrder: true
-  },
-  all: {
-    mode: 'all',
-    difficulty: 'all',
-    questionCount: 0,
-    useTimer: false,
-    timeLimit: 0,
-    showHints: false,
-    requireStrokeOrder: false
   }
 };
 
@@ -115,40 +129,53 @@ const getRandomSubset = <T,>(array: T[], count: number): T[] => {
   return shuffled.slice(0, count);
 };
 
-const KanjiQuiz: React.FC = () => {
+const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
   const { getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
   const { settings } = useApp();
   const { updateProgress, progress } = useProgress();
   const { checkAchievements } = useAchievements();
+  const { playAudio } = useAudio();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [quizState, setQuizState] = useState<QuizState>({
     mode: 'setup',
-    currentQuestion: 0,
+    currentQuestion: '',
+    correctAnswer: '',
     selectedAnswer: null,
+    options: [],
+    userInput: '',
+    context: undefined,
+    hint: undefined,
     showFeedback: false,
     isCorrect: null,
-    showCorrect: false,
-    userInput: '',
     strokes: [],
     currentStroke: [],
     compoundWordProgress: {},
     questions: []
   });
   const [quizSettings, setQuizSettings] = useState<QuizSettings>(QUIZ_SETTINGS.medium);
-  const [currentKanji, setCurrentKanji] = useState<KanjiStrokeData | null>(null);
+  const [currentKanji, setCurrentKanji] = useState<Kanji | null>(null);
   const [compoundWords, setCompoundWords] = useState<CompoundWordData[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [streak, setStreak] = useState(0);
   const [showStrokeGuide, setShowStrokeGuide] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-  const [strokeValidationResult, setStrokeValidationResult] = useState<StrokeValidationResult | null>(null);
+  const [strokeValidationResult, setStrokeValidationResult] = useState<StrokeFeedback | null>(null);
   const [strokeGuideOpacity, setStrokeGuideOpacity] = useState(0.3);
-  const [currentExercise, setCurrentExercise] = useState<CompoundWordExercise | null>(null);
-  const [exerciseHistory, setExerciseHistory] = useState<CompoundWordExercise[]>([]);
+  const [currentExercise, setCurrentExercise] = useState<CompoundWordData | null>(null);
+  const [exerciseHistory, setExerciseHistory] = useState<CompoundWordData[]>([]);
   const [learningContext, setLearningContext] = useState<string[]>([]);
   const [options, setOptions] = useState<string[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const strokeHistory = useRef<StrokeData[][]>([]);
+  const historyIndex = useRef(-1);
+  const [showContext, setShowContext] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [questionType, setQuestionType] = useState<QuestionType>('multiple-choice');
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   // Initialize canvas for stroke input
   useEffect(() => {
@@ -168,6 +195,31 @@ const KanjiQuiz: React.FC = () => {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
   }, [themeClasses]);
+
+  // Timer effect
+  useEffect(() => {
+    if (quizState.mode === 'quiz' && quizSettings.useTimer && timeLeft > 0) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            // Time's up - handle quiz completion
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+            handleQuizComplete(score);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [quizState.mode, quizSettings.useTimer, timeLeft]);
 
   // Handle stroke input
   const handleStrokeStart = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -222,121 +274,341 @@ const KanjiQuiz: React.FC = () => {
     if (quizState.currentStroke.length < 2) return;
 
     const strokeData = analyzeStroke(quizState.currentStroke);
+    const newStrokes = [...quizState.strokes, strokeData];
+    
+    // Update history
+    historyIndex.current++;
+    strokeHistory.current = strokeHistory.current.slice(0, historyIndex.current);
+    strokeHistory.current.push(newStrokes);
+    setCanUndo(true);
+    setCanRedo(false);
+
     setQuizState(prev => ({
       ...prev,
-      strokes: [...prev.strokes, strokeData],
+      strokes: newStrokes,
       currentStroke: []
     }));
 
-    // Only validate stroke if in stroke mode, but don't show feedback yet
+    // Validate stroke
     if (quizSettings.mode === 'stroke' && currentKanji) {
-      const expectedStroke = currentKanji.strokes[prev.strokes.length];
+      const expectedStroke = currentKanji.strokes[quizState.strokes.length];
       const validationResult = validateStrokeEnhanced(strokeData, expectedStroke);
       setStrokeValidationResult(validationResult);
       
       if (validationResult.isCorrect) {
         setStreak(prev => prev + 1);
-        // Gradually reduce stroke guide opacity as user improves
         setStrokeGuideOpacity(prev => Math.max(0.1, prev - 0.05));
       } else {
-        // Increase stroke guide opacity when user makes mistakes
         setStrokeGuideOpacity(prev => Math.min(0.5, prev + 0.1));
       }
     }
   };
 
-  // Load question
-  const loadQuestion = (index: number) => {
-    // Get all available kanji
-    let availableKanji = kanjiList;
+  // Add touch support
+  const handleTouchStart = (e: TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    // Apply difficulty filter only if explicitly set
-    if (quizSettings.difficulty !== 'all') {
-      availableKanji = availableKanji.filter(k => {
-        const progress = getKanjiProgress(k.character);
-        const requiredLevel = quizSettings.difficulty === 'easy' ? 0 :
-                             quizSettings.difficulty === 'medium' ? 1 : 2;
-        return progress.masteryLevel >= requiredLevel;
-      });
-    }
+    const rect = canvas.getBoundingClientRect();
+    const point = {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+      timestamp: Date.now()
+    };
 
-    // If no kanji available after filtering, show all kanji
-    if (availableKanji.length === 0) {
-      availableKanji = kanjiList;
-    }
+    handleStrokeStart({ clientX: touch.clientX, clientY: touch.clientY } as React.MouseEvent<HTMLCanvasElement>);
+  };
 
-    // Use improved randomization instead of modulo
-    const shuffledKanji = shuffleArray(availableKanji);
-    const kanji = shuffledKanji[index % shuffledKanji.length];
+  const handleTouchMove = (e: TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleStrokeMove({ clientX: touch.clientX, clientY: touch.clientY } as React.MouseEvent<HTMLCanvasElement>);
+  };
 
-    // Generate options using improved randomization
-    const otherKanji = availableKanji.filter(k => k.character !== kanji.character);
-    const options = getRandomSubset(otherKanji, 3).map(k => k.character);
-    const allOptions = shuffleArray([...options, kanji.character]);
+  const handleTouchEnd = (e: TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    handleStrokeEnd();
+  };
 
-    setCurrentKanji(kanji);
-    setOptions(allOptions);
-    setUserInput('');
-    setStrokes([]);
-    setCurrentStroke([]);
-
-    // Generate compound words for practice
-    if (quizSettings.mode === 'compound') {
-      const words = generatePracticeSets(
-        [{
-          character: kanji.character,
-          strokes: [], // We'll need to implement stroke order data separately
-          compoundWords: kanji.examples?.map(e => ({
-            word: e.word,
-            reading: e.reading,
-            meaning: e.meaning,
-            kanji: [kanji.character],
-            difficulty: calculateWordDifficulty(e),
-            examples: [],
-            relatedWords: []
-          })) || [],
-          difficulty: calculateKanjiDifficulty(kanji),
-          radicals: kanji.radicals,
-          meanings: [kanji.english], // Using english instead of meaning
-          readings: {
-            onyomi: kanji.onyomi,
-            kunyomi: kanji.kunyomi
-          }
-        }],
-        { [kanji.character]: getKanjiProgress(kanji.character).masteryLevel },
-        DIFFICULTY_LEVELS[quizSettings.difficulty.toUpperCase()]
-      );
-      setCompoundWords(words);
+  // Add undo/redo functionality
+  const handleUndo = () => {
+    if (historyIndex.current > 0) {
+      historyIndex.current--;
+      const previousStrokes = strokeHistory.current[historyIndex.current];
+      setQuizState(prev => ({ ...prev, strokes: previousStrokes }));
+      setCanUndo(historyIndex.current > 0);
+      setCanRedo(true);
+      redrawCanvas(previousStrokes);
     }
   };
 
-  // Start quiz
-  const startQuiz = () => {
-    const settings = QUIZ_SETTINGS[quizSettings.difficulty];
-    // Shuffle all questions at the start
-    const shuffledQuestions = shuffleArray(kanjiList);
+  const handleRedo = () => {
+    if (historyIndex.current < strokeHistory.current.length - 1) {
+      historyIndex.current++;
+      const nextStrokes = strokeHistory.current[historyIndex.current];
+      setQuizState(prev => ({ ...prev, strokes: nextStrokes }));
+      setCanUndo(true);
+      setCanRedo(historyIndex.current < strokeHistory.current.length - 1);
+      redrawCanvas(nextStrokes);
+    }
+  };
+
+  const redrawCanvas = (strokes: StrokeData[]) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    strokes.forEach(stroke => {
+      if (stroke.points.length > 0) {
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        stroke.points.forEach(point => {
+          ctx.lineTo(point.x, point.y);
+        });
+        ctx.stroke();
+      }
+    });
+  };
+
+  // Helper function to generate compound word exercises
+  const generateCompoundExercise = useCallback((word: CompoundWordData, difficulty: number) => {
+    const exerciseType = Math.random() < 0.5 ? 'reading' : 'meaning';
+    const options = exerciseType === 'reading' 
+      ? generateReadingOptions(word, difficulty)
+      : generateMeaningOptions(word, difficulty);
+
+    // Generate context based on difficulty
+    let context = '';
+    if (difficulty <= 2) {
+      // Easy: Simple sentence with the word
+      context = `この${word.word}は${word.meaning}です。`;
+    } else if (difficulty <= 4) {
+      // Medium: More complex sentence with additional context
+      const relatedWords = word.relatedWords?.slice(0, 2) || [];
+      context = `${word.word}は${relatedWords.map(w => w.word).join('や')}などと${word.meaning}を表します。`;
+    } else {
+      // Hard: Complex sentence with multiple related words
+      const relatedWords = word.relatedWords?.slice(0, 3) || [];
+      const example = word.examples?.[0] || '';
+      context = example || `${word.word}は${relatedWords.map(w => w.word).join('、')}などの${word.meaning}に関連する言葉です。`;
+    }
+
+    return {
+      type: exerciseType,
+      question: exerciseType === 'reading' ? word.word : word.meaning,
+      correctAnswer: exerciseType === 'reading' ? word.reading : word.word,
+      options: shuffleArray(options),
+      context,
+      hint: exerciseType === 'reading' 
+        ? `Hint: This word is read as "${word.reading}" and means "${word.meaning}"`
+        : `Hint: This word is written as "${word.word}" and read as "${word.reading}"`
+    };
+  }, []);
+
+  // Helper function to generate meaning/reading questions
+  const generateQuestion = useCallback((kanji: Kanji, mode: 'meaning' | 'reading'): Question => {
+    const types: QuestionType[] = ['multiple-choice', 'fill-in-blank', 'matching', 'context'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    
+    switch (type) {
+      case 'multiple-choice':
+        return {
+          type: 'multiple-choice',
+          question: mode === 'meaning' ? kanji.character : kanji.english,
+          correctAnswer: mode === 'meaning' ? kanji.english : (kanji.onyomi[0] || kanji.kunyomi[0]),
+          options: generateOptions(kanji, mode),
+          hint: mode === 'meaning' 
+            ? `This kanji is read as "${kanji.onyomi[0] || kanji.kunyomi[0]}"`
+            : `This kanji means "${kanji.english}"`
+        };
+
+      case 'fill-in-blank':
+        const context = generateContext(kanji, mode);
+        return {
+          type: 'fill-in-blank',
+          question: context.text.replace('___', '_____'),
+          correctAnswer: context.answer,
+          hint: context.hint
+        };
+
+      case 'matching':
+        const pairs = generateMatchingPairs(kanji, mode);
+        return {
+          type: 'matching',
+          question: 'Match the kanji with their meanings/readings:',
+          correctAnswer: JSON.stringify(pairs.correct),
+          options: pairs.options
+        };
+
+      case 'context':
+        const contextQuestion = generateContextQuestion(kanji, mode);
+        return {
+          type: 'context',
+          question: contextQuestion.text,
+          correctAnswer: contextQuestion.answer,
+          options: contextQuestion.options,
+          context: contextQuestion.context,
+          hint: contextQuestion.hint,
+          audioUrl: mode === 'reading' ? kanji.audioUrl : undefined
+        };
+    }
+  }, [quizState.questions]);
+
+  // Helper functions for question generation
+  const generateOptions = (kanji: Kanji, mode: 'meaning' | 'reading'): string[] => {
+    const otherKanji = quizState.questions.filter(k => k.character !== kanji.character);
+    const options = getRandomSubset(otherKanji, 3).map(k => 
+      mode === 'meaning' ? k.english : (k.onyomi[0] || k.kunyomi[0])
+    );
+    return shuffleArray([...options, mode === 'meaning' ? kanji.english : (kanji.onyomi[0] || kanji.kunyomi[0])]);
+  };
+
+  const generateContext = (kanji: Kanji, mode: 'meaning' | 'reading'): { text: string; answer: string; hint: string } => {
+    const examples = kanji.examples || [];
+    if (examples.length > 0) {
+      const example = examples[Math.floor(Math.random() * examples.length)];
+      const words = example.word.split('');
+      const index = words.findIndex(char => char === kanji.character);
+      if (index !== -1) {
+        words[index] = '___';
+        return {
+          text: words.join(''),
+          answer: mode === 'meaning' ? kanji.english : (kanji.onyomi[0] || kanji.kunyomi[0]),
+          hint: `The missing ${mode === 'meaning' ? 'meaning' : 'reading'} is used in this word: ${example.word}`
+        };
+      }
+    }
+    // Fallback to simple sentence
+    return {
+      text: `この${kanji.character}は___です。`,
+      answer: mode === 'meaning' ? kanji.english : (kanji.onyomi[0] || kanji.kunyomi[0]),
+      hint: `Complete the sentence with the ${mode === 'meaning' ? 'meaning' : 'reading'} of ${kanji.character}`
+    };
+  };
+
+  const generateMatchingPairs = (current: Kanji, mode: 'meaning' | 'reading'): { correct: [string, string][]; options: string[] } => {
+    const pairs: [string, string][] = [[current.character, mode === 'meaning' ? current.english : (current.onyomi[0] || current.kunyomi[0])]];
+    const otherKanji = quizState.questions.filter(k => k.character !== current.character);
+    const randomOthers = getRandomSubset(otherKanji, 2);
+    randomOthers.forEach(k => {
+      pairs.push([k.character, mode === 'meaning' ? k.english : (k.onyomi[0] || k.kunyomi[0])]);
+    });
+    return {
+      correct: pairs,
+      options: shuffleArray(pairs.map(([char, value]) => `${char} - ${value}`))
+    };
+  };
+
+  const generateContextQuestion = (kanji: Kanji, mode: 'meaning' | 'reading'): {
+    text: string;
+    answer: string;
+    options: string[];
+    context: string;
+    hint: string;
+  } => {
+    const examples = kanji.examples || [];
+    const example = examples[Math.floor(Math.random() * examples.length)] || {
+      word: kanji.character,
+      reading: kanji.onyomi[0] || kanji.kunyomi[0],
+      meaning: kanji.english
+    };
+
+    return {
+      text: `What is the ${mode === 'meaning' ? 'meaning' : 'reading'} of ${kanji.character} in this context?`,
+      answer: mode === 'meaning' ? kanji.english : (kanji.onyomi[0] || kanji.kunyomi[0]),
+      options: generateOptions(kanji, mode),
+      context: `${example.word} (${example.reading}) - ${example.meaning}`,
+      hint: `Look at how ${kanji.character} is used in the word "${example.word}"`
+    };
+  };
+
+  // Initialize quiz settings based on difficulty prop
+  useEffect(() => {
+    setQuizSettings(QUIZ_SETTINGS[difficulty]);
+  }, [difficulty]);
+
+  // Update startQuiz to use the current quiz settings
+  const startQuiz = useCallback(() => {
+    if (kanji.length === 0) return;
+    
+    const settings = QUIZ_SETTINGS[difficulty];
+    const shuffledQuestions = shuffleArray(kanji).slice(0, settings.questionCount);
     
     setQuizState({
       mode: 'quiz',
-      currentQuestion: 0,
+      currentQuestion: '',
+      correctAnswer: '',
       selectedAnswer: null,
+      options: [],
+      userInput: '',
+      context: undefined,
+      hint: undefined,
       showFeedback: false,
       isCorrect: null,
-      showCorrect: false,
-      userInput: '',
       strokes: [],
       currentStroke: [],
       compoundWordProgress: {},
-      questions: shuffledQuestions // Store shuffled questions
+      questions: shuffledQuestions
     });
+    
+    setCurrentQuestionIndex(0);
+    setCurrentKanji(shuffledQuestions[0]);
     setScore(0);
     setStreak(0);
     setTimeLeft(settings.timeLimit);
     setShowStrokeGuide(false);
+    setActiveTab(settings.mode === 'stroke' ? 0 : 
+                 settings.mode === 'compound' ? 1 :
+                 settings.mode === 'meaning' ? 2 : 3);
+  }, [kanji, difficulty]);
 
-    // Load first question
-    loadQuestion(0);
-  };
+  // Auto-start quiz when component mounts or difficulty changes
+  useEffect(() => {
+    startQuiz();
+  }, [startQuiz]);
+
+  // Load question for the current index
+  useEffect(() => {
+    if (quizState.mode !== 'quiz' || !quizState.questions.length) return;
+    const kanjiItem = quizState.questions[currentQuestionIndex];
+    setCurrentKanji(kanjiItem);
+    let exercise;
+    if (quizSettings.mode === 'compound') {
+      const availableWords = kanjiItem.compoundWords?.filter(word => 
+        calculateWordDifficulty(word) <= quizSettings.difficulty
+      ) || [];
+      if (availableWords.length === 0) {
+        const word = kanjiItem.compoundWords?.[0];
+        if (word) exercise = generateCompoundExercise(word, 1);
+      } else {
+        const word = availableWords[Math.floor(Math.random() * availableWords.length)];
+        exercise = generateCompoundExercise(word, calculateWordDifficulty(word));
+      }
+    } else if (quizSettings.mode === 'meaning' || quizSettings.mode === 'reading') {
+      exercise = generateQuestion(kanjiItem, quizSettings.mode);
+    }
+    if (exercise) {
+      setQuizState(prev => ({
+        ...prev,
+        currentQuestion: exercise.question,
+        correctAnswer: exercise.correctAnswer,
+        options: exercise.options,
+        context: exercise.context,
+        hint: exercise.hint,
+        userInput: '',
+        selectedAnswer: null,
+        showFeedback: false,
+        isCorrect: null
+      }));
+      setQuestionType(exercise.type);
+      setShowContext(false);
+      setHintUsed(false);
+    }
+  }, [quizState.mode, quizState.questions, currentQuestionIndex, quizSettings]);
 
   // Handle quiz completion
   const handleQuizComplete = (finalScore: number) => {
@@ -345,11 +617,13 @@ const KanjiQuiz: React.FC = () => {
 
     // Update progress
     if (currentKanji) {
-      updateProgress('kanji', {
-        kanji: currentKanji.character,
-        score: finalScore,
-        strokes: quizState.strokes,
-        timestamp: Date.now()
+      updateWordProgress(currentKanji.character, {
+        masteryLevel: finalScore / 100, // Convert score to 0-1 range
+        reviewCount: (progress.words[currentKanji.character]?.reviewCount || 0) + 1,
+        lastReviewed: Date.now(),
+        nextReviewDate: Date.now() + (24 * 60 * 60 * 1000), // Review in 24 hours
+        consecutiveCorrect: streak,
+        lastAnswerCorrect: finalScore >= 70 // Consider 70% or higher as correct
       });
 
       // Check achievements
@@ -362,22 +636,107 @@ const KanjiQuiz: React.FC = () => {
     }
   };
 
+  // Play audio for readings
+  const playKanjiReading = (reading: string) => {
+    if (reading) {
+      playAudio(reading);
+    }
+  };
+
   // Render quiz content based on mode
   const renderQuizContent = () => {
     if (!currentKanji) return null;
 
-    switch (quizSettings.mode) {
-      case 'stroke':
-        return renderStrokeQuiz();
-      case 'compound':
-        return renderCompoundQuiz();
-      case 'meaning':
-        return renderMeaningQuiz();
-      case 'reading':
-        return renderReadingQuiz();
-      default:
-        return null;
-    }
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {quizSettings.useTimer && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Timer color="primary" />
+            <Typography variant="h6" color={timeLeft <= 10 ? 'error' : 'text.primary'}>
+              {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+            </Typography>
+          </Box>
+        )}
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h4" sx={{ fontFamily: 'Noto Sans JP' }}>
+            {currentKanji.character}
+          </Typography>
+          {quizSettings.mode === 'reading' && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {currentKanji.onyomi.map((reading, index) => (
+                <Tooltip key={`onyomi-${index}`} title={`Play ${reading}`}>
+                  <IconButton 
+                    size="small"
+                    onClick={() => playKanjiReading(reading)}
+                  >
+                    <VolumeUp fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              ))}
+              {currentKanji.kunyomi.map((reading, index) => (
+                <Tooltip key={`kunyomi-${index}`} title={`Play ${reading}`}>
+                  <IconButton 
+                    size="small"
+                    onClick={() => playKanjiReading(reading)}
+                  >
+                    <VolumeUp fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              ))}
+            </Box>
+          )}
+        </Box>
+
+        {(() => {
+          switch (quizSettings.mode) {
+            case 'stroke':
+              return renderStrokeQuiz();
+            case 'compound':
+              return renderCompoundQuiz();
+            case 'meaning':
+              return renderMeaningQuiz();
+            case 'reading':
+              return renderReadingQuiz();
+            default:
+              return null;
+          }
+        })()}
+
+        {quizState.showFeedback && (
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <Paper
+                sx={{
+                  p: 2,
+                  bgcolor: quizState.isCorrect ? 'success.light' : 'error.light',
+                  color: 'white'
+                }}
+              >
+                <Typography>
+                  {quizState.isCorrect
+                    ? 'Correct!'
+                    : `Incorrect. ${quizSettings.mode === 'reading' ? 'The correct reading is: ' + currentKanji.onyomi[0] : 
+                       quizSettings.mode === 'meaning' ? 'The correct meaning is: ' + currentKanji.english :
+                       'Try again!'}`}
+                </Typography>
+                {quizState.isCorrect && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2">
+                      Current streak: {streak}
+                    </Typography>
+                  </Box>
+                )}
+              </Paper>
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </Box>
+    );
   };
 
   // Render stroke practice quiz
@@ -400,6 +759,9 @@ const KanjiQuiz: React.FC = () => {
             onMouseMove={handleStrokeMove}
             onMouseUp={handleStrokeEnd}
             onMouseLeave={handleStrokeEnd}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
           
           {showStrokeGuide && (
@@ -415,22 +777,24 @@ const KanjiQuiz: React.FC = () => {
                 transition: 'opacity 0.3s ease'
               }}
             >
-              {/* Render stroke guide overlay with current stroke highlighted */}
-              {currentKanji.strokes.map((stroke, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    opacity: index === quizState.strokes.length ? 1 : 0.3
-                  }}
-                >
-                  {/* Render stroke guide SVG */}
-                </Box>
-              ))}
+              <svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                {currentKanji.strokes.map((stroke, index) => (
+                  <path
+                    key={index}
+                    d={stroke.path}
+                    fill="none"
+                    stroke={themeClasses.text.primary}
+                    strokeWidth={2}
+                    opacity={index === quizState.strokes.length ? 1 : 0.3}
+                    strokeDasharray={index === quizState.strokes.length ? "none" : "5,5"}
+                  />
+                ))}
+              </svg>
             </Box>
           )}
         </Box>
@@ -445,6 +809,22 @@ const KanjiQuiz: React.FC = () => {
           </Button>
           <Button
             variant="outlined"
+            onClick={handleUndo}
+            disabled={!canUndo}
+            startIcon={<Undo />}
+          >
+            Undo
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleRedo}
+            disabled={!canRedo}
+            startIcon={<Redo />}
+          >
+            Redo
+          </Button>
+          <Button
+            variant="outlined"
             onClick={() => {
               const canvas = canvasRef.current;
               if (!canvas) return;
@@ -453,6 +833,10 @@ const KanjiQuiz: React.FC = () => {
               ctx.clearRect(0, 0, canvas.width, canvas.height);
               setQuizState(prev => ({ ...prev, strokes: [] }));
               setStrokeValidationResult(null);
+              strokeHistory.current = [[]];
+              historyIndex.current = 0;
+              setCanUndo(false);
+              setCanRedo(false);
             }}
             startIcon={<Replay />}
           >
@@ -460,7 +844,7 @@ const KanjiQuiz: React.FC = () => {
           </Button>
           <Button
             variant="contained"
-            onClick={handleSubmit}
+            onClick={handleAnswer}
             disabled={quizState.strokes.length === 0}
             startIcon={<Check />}
           >
@@ -468,37 +852,17 @@ const KanjiQuiz: React.FC = () => {
           </Button>
         </Box>
 
-        {quizState.showFeedback && (
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <Paper
-                sx={{
-                  p: 2,
-                  bgcolor: quizState.isCorrect ? 'success.light' : 'error.light',
-                  color: 'white'
-                }}
-              >
-                <Typography>
-                  {quizState.isCorrect
-                    ? 'Correct!'
-                    : `Incorrect. Try again!`}
-                </Typography>
-                {strokeValidationResult && (
-                  <Box sx={{ mt: 1 }}>
-                    {strokeValidationResult.suggestions.map((suggestion, index) => (
-                      <Typography key={index} variant="body2">
-                        {suggestion}
-                      </Typography>
-                    ))}
-                  </Box>
-                )}
-              </Paper>
-            </motion.div>
-          </AnimatePresence>
+        {strokeValidationResult && (
+          <Paper sx={{ p: 2, mt: 2, bgcolor: 'background.paper' }}>
+            <Typography variant="body1" color={strokeValidationResult.isCorrect ? 'success.main' : 'error.main'}>
+              {strokeValidationResult.isCorrect ? 'Correct stroke!' : 'Try again'}
+            </Typography>
+            {strokeValidationResult.suggestions.map((suggestion, index) => (
+              <Typography key={index} variant="body2" color="text.secondary">
+                • {suggestion}
+              </Typography>
+            ))}
+          </Paper>
         )}
       </Box>
     );
@@ -506,119 +870,123 @@ const KanjiQuiz: React.FC = () => {
 
   // Render compound word quiz
   const renderCompoundQuiz = () => {
-    if (!currentExercise) return null;
-
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <Typography variant="h5">
-          {currentExercise.question}
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <Typography variant="h4" sx={{ fontFamily: 'Noto Sans JP' }}>
+          {quizState.currentQuestion}
         </Typography>
 
-        {currentExercise.context && (
-          <Paper sx={{ p: 2, bgcolor: 'background.paper' }}>
-            <Typography variant="body2" color="text.secondary">
-              {currentExercise.context}
+        {quizState.context && (
+          <Paper sx={{ p: 2, width: '100%', maxWidth: 600, bgcolor: 'background.paper' }}>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+              Context:
             </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                fontFamily: 'Noto Sans JP',
+                opacity: showContext ? 1 : 0.3,
+                transition: 'opacity 0.3s ease'
+              }}
+            >
+              {quizState.context}
+            </Typography>
+            <Button
+              size="small"
+              onClick={() => setShowContext(!showContext)}
+              sx={{ mt: 1 }}
+            >
+              {showContext ? 'Hide Context' : 'Show Context'}
+            </Button>
           </Paper>
         )}
 
-        {currentExercise.type === 'reading' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {options.map((option, index) => (
+        <Grid container spacing={2} sx={{ width: '100%', maxWidth: 600 }}>
+          {quizState.options.map((option, index) => (
+            <Grid item xs={12} sm={6} key={index}>
               <Button
-                key={index}
-                variant={quizState.selectedAnswer === index ? 'contained' : 'outlined'}
-                onClick={() => {
-                  setQuizState(prev => ({ ...prev, selectedAnswer: index }));
-                  const isCorrect = option === currentExercise.answer;
-                  if (isCorrect) {
-                    setStreak(prev => prev + 1);
-                  } else {
-                    setStreak(0);
-                  }
-                  setQuizState(prev => ({
-                    ...prev,
-                    showFeedback: true,
-                    isCorrect
-                  }));
+                fullWidth
+                variant="outlined"
+                onClick={() => handleAnswer(option)}
+                disabled={quizState.selectedAnswer !== null}
+                sx={{
+                  height: 60,
+                  fontFamily: 'Noto Sans JP',
+                  fontSize: '1.2rem',
+                  position: 'relative'
                 }}
-                disabled={quizState.showFeedback}
               >
                 {option}
+                {quizState.selectedAnswer === option && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      right: 8,
+                      color: option === quizState.correctAnswer ? 'success.main' : 'error.main'
+                    }}
+                  >
+                    {option === quizState.correctAnswer ? <Check /> : <Close />}
+                  </Box>
+                )}
               </Button>
-            ))}
-          </Box>
-        )}
+            </Grid>
+          ))}
+        </Grid>
 
-        {quizState.showFeedback && (
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <Paper
-                sx={{
-                  p: 2,
-                  bgcolor: quizState.isCorrect ? 'success.light' : 'error.light',
-                  color: 'white'
-                }}
-              >
-                <Typography>
-                  {quizState.isCorrect
-                    ? 'Correct!'
-                    : `Incorrect. The correct answer is: ${currentExercise.answer}`}
-                </Typography>
-                {!quizState.isCorrect && currentExercise.hints && (
-                  <Box sx={{ mt: 1 }}>
-                    {currentExercise.hints.map((hint, index) => (
-                      <Typography key={index} variant="body2">
-                        • {hint}
-                      </Typography>
-                    ))}
-                  </Box>
-                )}
-                {currentExercise.relatedWords && (
-                  <Box sx={{ mt: 1 }}>
-                    <Typography variant="body2">
-                      Related words: {currentExercise.relatedWords.join(', ')}
-                    </Typography>
-                  </Box>
-                )}
-              </Paper>
-            </motion.div>
-          </AnimatePresence>
-        )}
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-          <Typography>
-            Question {quizState.currentQuestion + 1} of {compoundWords.length}
-          </Typography>
-          <Typography>
-            Score: {score}
-          </Typography>
-        </Box>
-
-        {quizState.showFeedback && (
+        {quizState.hint && !hintUsed && (
           <Button
-            variant="contained"
+            variant="text"
             onClick={() => {
-              if (quizState.currentQuestion + 1 < compoundWords.length) {
-                setQuizState(prev => ({
-                  ...prev,
-                  currentQuestion: prev.currentQuestion + 1,
-                  selectedAnswer: null,
-                  showFeedback: false,
-                  isCorrect: null
-                }));
-                loadQuestion(quizState.currentQuestion + 1);
-              } else {
-                handleQuizComplete(score);
+              setHintUsed(true);
+              // Play audio for the word if it's a reading question
+              if (quizState.correctAnswer.includes('[')) {
+                playAudio(quizState.correctAnswer);
               }
             }}
+            startIcon={<Help />}
           >
-            {quizState.currentQuestion + 1 < compoundWords.length ? 'Next Question' : 'Finish Quiz'}
+            Need a hint?
           </Button>
+        )}
+
+        {hintUsed && quizState.hint && (
+          <Paper sx={{ p: 2, width: '100%', maxWidth: 600, bgcolor: 'background.paper' }}>
+            <Typography variant="body1" color="text.secondary">
+              {quizState.hint}
+            </Typography>
+            {quizState.correctAnswer.includes('[') && (
+              <IconButton
+                onClick={() => playAudio(quizState.correctAnswer)}
+                sx={{ mt: 1 }}
+              >
+                <VolumeUp />
+              </IconButton>
+            )}
+          </Paper>
+        )}
+
+        {quizState.selectedAnswer && (
+          <Paper
+            sx={{
+              p: 2,
+              width: '100%',
+              maxWidth: 600,
+              bgcolor: quizState.selectedAnswer === quizState.correctAnswer
+                ? 'success.light'
+                : 'error.light'
+            }}
+          >
+            <Typography variant="body1" color="text.primary">
+              {quizState.selectedAnswer === quizState.correctAnswer
+                ? 'Correct!'
+                : `Incorrect. The correct answer is: ${quizState.correctAnswer}`}
+            </Typography>
+            {quizState.selectedAnswer === quizState.correctAnswer && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {quizState.context}
+              </Typography>
+            )}
+          </Paper>
         )}
       </Box>
     );
@@ -626,183 +994,194 @@ const KanjiQuiz: React.FC = () => {
 
   // Render meaning quiz
   const renderMeaningQuiz = () => {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <Typography variant="h4" sx={{ fontFamily: 'Noto Sans JP' }}>
-          {currentKanji.character}
-        </Typography>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {options.map((option, index) => (
-            <Button
-              key={index}
-              variant={quizState.selectedAnswer === index ? 'contained' : 'outlined'}
-              onClick={() => {
-                setQuizState(prev => ({ ...prev, selectedAnswer: index }));
-                const isCorrect = option === currentKanji.meanings[0];
-                if (isCorrect) {
-                  setStreak(prev => prev + 1);
-                } else {
-                  setStreak(0);
-                }
-                setQuizState(prev => ({
-                  ...prev,
-                  showFeedback: true,
-                  isCorrect
-                }));
-              }}
-              disabled={quizState.showFeedback}
-            >
-              {option}
-            </Button>
-          ))}
-        </Box>
-
-        {quizState.showFeedback && (
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <Paper
-                sx={{
-                  p: 2,
-                  bgcolor: quizState.isCorrect ? 'success.light' : 'error.light',
-                  color: 'white'
-                }}
-              >
-                <Typography>
-                  {quizState.isCorrect
-                    ? 'Correct!'
-                    : `Incorrect. The correct meaning is: ${currentKanji.meanings[0]}`}
-                </Typography>
-              </Paper>
-            </motion.div>
-          </AnimatePresence>
-        )}
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-          <Typography>
-            Question {quizState.currentQuestion + 1} of {quizSettings.questionCount}
-          </Typography>
-          <Typography>
-            Score: {score}
-          </Typography>
-        </Box>
-
-        {quizState.showFeedback && (
-          <Button
-            variant="contained"
-            onClick={() => {
-              if (quizState.currentQuestion + 1 < quizSettings.questionCount) {
-                setQuizState(prev => ({
-                  ...prev,
-                  currentQuestion: prev.currentQuestion + 1,
-                  selectedAnswer: null,
-                  showFeedback: false,
-                  isCorrect: null
-                }));
-                loadQuestion(quizState.currentQuestion + 1);
-              } else {
-                handleQuizComplete(score);
-              }
-            }}
-          >
-            {quizState.currentQuestion + 1 < quizSettings.questionCount ? 'Next Question' : 'Finish Quiz'}
-          </Button>
-        )}
-      </Box>
-    );
+    return renderQuestion('meaning');
   };
 
   // Render reading quiz
   const renderReadingQuiz = () => {
+    return renderQuestion('reading');
+  };
+
+  const renderQuestion = (mode: 'meaning' | 'reading') => {
+    if (!quizState.currentQuestion) {
+      return <Typography color="text.secondary">No question available.</Typography>;
+    }
+    if (questionType === 'multiple-choice' && (!quizState.options || quizState.options.length === 0)) {
+      return <Typography color="text.secondary">No answer options available.</Typography>;
+    }
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
         <Typography variant="h4" sx={{ fontFamily: 'Noto Sans JP' }}>
-          {currentKanji.character}
+          {quizState.currentQuestion}
         </Typography>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {options.map((option, index) => (
-            <Button
-              key={index}
-              variant={quizState.selectedAnswer === index ? 'contained' : 'outlined'}
-              onClick={() => {
-                setQuizState(prev => ({ ...prev, selectedAnswer: index }));
-                const isCorrect = option === currentKanji.readings.onyomi[0];
-                if (isCorrect) {
-                  setStreak(prev => prev + 1);
-                } else {
-                  setStreak(0);
-                }
-                setQuizState(prev => ({
-                  ...prev,
-                  showFeedback: true,
-                  isCorrect
-                }));
+        {quizState.context && (
+          <Paper sx={{ p: 2, width: '100%', maxWidth: 600, bgcolor: 'background.paper' }}>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+              Context:
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                fontFamily: 'Noto Sans JP',
+                opacity: showContext ? 1 : 0.3,
+                transition: 'opacity 0.3s ease'
               }}
-              disabled={quizState.showFeedback}
             >
-              {option}
+              {quizState.context}
+            </Typography>
+            <Button
+              size="small"
+              onClick={() => setShowContext(!showContext)}
+              sx={{ mt: 1 }}
+            >
+              {showContext ? 'Hide Context' : 'Show Context'}
             </Button>
-          ))}
-        </Box>
-
-        {quizState.showFeedback && (
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <Paper
-                sx={{
-                  p: 2,
-                  bgcolor: quizState.isCorrect ? 'success.light' : 'error.light',
-                  color: 'white'
-                }}
-              >
-                <Typography>
-                  {quizState.isCorrect
-                    ? 'Correct!'
-                    : `Incorrect. The correct reading is: ${currentKanji.readings.onyomi[0]}`}
-                </Typography>
-              </Paper>
-            </motion.div>
-          </AnimatePresence>
+          </Paper>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-          <Typography>
-            Question {quizState.currentQuestion + 1} of {quizSettings.questionCount}
-          </Typography>
-          <Typography>
-            Score: {score}
-          </Typography>
-        </Box>
+        {questionType === 'multiple-choice' && (
+          <Grid container spacing={2} sx={{ width: '100%', maxWidth: 600 }}>
+            {quizState.options?.map((option, index) => (
+              <Grid item xs={12} sm={6} key={index}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => handleAnswer(option)}
+                  disabled={quizState.selectedAnswer !== null}
+                  sx={{
+                    height: 60,
+                    fontFamily: mode === 'reading' ? 'Noto Sans JP' : 'inherit',
+                    fontSize: '1.2rem',
+                    position: 'relative'
+                  }}
+                >
+                  {option}
+                  {quizState.selectedAnswer === option && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        right: 8,
+                        color: option === quizState.correctAnswer ? 'success.main' : 'error.main'
+                      }}
+                    >
+                      {option === quizState.correctAnswer ? <Check /> : <Close />}
+                    </Box>
+                  )}
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
+        )}
 
-        {quizState.showFeedback && (
+        {questionType === 'fill-in-blank' && (
+          <Box sx={{ width: '100%', maxWidth: 600 }}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              value={quizState.userInput}
+              onChange={(e) => setQuizState(prev => ({ ...prev, userInput: e.target.value }))}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleAnswer(quizState.userInput);
+                }
+              }}
+              disabled={quizState.selectedAnswer !== null}
+              sx={{ mb: 2 }}
+            />
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => handleAnswer(quizState.userInput)}
+              disabled={!quizState.userInput || quizState.selectedAnswer !== null}
+            >
+              Submit
+            </Button>
+          </Box>
+        )}
+
+        {questionType === 'matching' && (
+          <Box sx={{ width: '100%', maxWidth: 600 }}>
+            <List>
+              {quizState.options?.map((option, index) => (
+                <ListItem key={index}>
+                  <ListItemText primary={option} />
+                </ListItem>
+              ))}
+            </List>
+            <TextField
+              fullWidth
+              variant="outlined"
+              value={quizState.userInput}
+              onChange={(e) => setQuizState(prev => ({ ...prev, userInput: e.target.value }))}
+              placeholder="Enter your matches (e.g., '1-2, 3-4')"
+              disabled={quizState.selectedAnswer !== null}
+              sx={{ mb: 2 }}
+            />
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => handleAnswer(quizState.userInput)}
+              disabled={!quizState.userInput || quizState.selectedAnswer !== null}
+            >
+              Submit
+            </Button>
+          </Box>
+        )}
+
+        {quizState.hint && !hintUsed && (
           <Button
-            variant="contained"
+            variant="text"
             onClick={() => {
-              if (quizState.currentQuestion + 1 < quizSettings.questionCount) {
-                setQuizState(prev => ({
-                  ...prev,
-                  currentQuestion: prev.currentQuestion + 1,
-                  selectedAnswer: null,
-                  showFeedback: false,
-                  isCorrect: null
-                }));
-                loadQuestion(quizState.currentQuestion + 1);
-              } else {
-                handleQuizComplete(score);
+              setHintUsed(true);
+              if (mode === 'reading' && currentKanji?.audioUrl) {
+                playAudio(currentKanji.audioUrl);
               }
             }}
+            startIcon={<Help />}
           >
-            {quizState.currentQuestion + 1 < quizSettings.questionCount ? 'Next Question' : 'Finish Quiz'}
+            Need a hint?
           </Button>
+        )}
+
+        {hintUsed && quizState.hint && (
+          <Paper sx={{ p: 2, width: '100%', maxWidth: 600, bgcolor: 'background.paper' }}>
+            <Typography variant="body1" color="text.secondary">
+              {quizState.hint}
+            </Typography>
+            {mode === 'reading' && currentKanji?.audioUrl && (
+              <IconButton
+                onClick={() => playAudio(currentKanji.audioUrl)}
+                sx={{ mt: 1 }}
+              >
+                <VolumeUp />
+              </IconButton>
+            )}
+          </Paper>
+        )}
+
+        {quizState.selectedAnswer && (
+          <Paper
+            sx={{
+              p: 2,
+              width: '100%',
+              maxWidth: 600,
+              bgcolor: quizState.selectedAnswer === quizState.correctAnswer
+                ? 'success.light'
+                : 'error.light'
+            }}
+          >
+            <Typography variant="body1" color="text.primary">
+              {quizState.selectedAnswer === quizState.correctAnswer
+                ? 'Correct!'
+                : `Incorrect. The correct answer is: ${quizState.correctAnswer}`}
+            </Typography>
+            {quizState.selectedAnswer === quizState.correctAnswer && quizState.context && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {quizState.context}
+              </Typography>
+            )}
+          </Paper>
         )}
       </Box>
     );
@@ -813,6 +1192,9 @@ const KanjiQuiz: React.FC = () => {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <Typography variant="h5">Quiz Settings</Typography>
+        <Typography variant="subtitle1" color="text.secondary">
+          Current Difficulty: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+        </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Tabs
@@ -820,10 +1202,10 @@ const KanjiQuiz: React.FC = () => {
             onChange={(_, newValue) => setActiveTab(newValue)}
             sx={{ borderBottom: 1, borderColor: 'divider' }}
           >
-            <Tab icon={<Brush />} label="Stroke Practice" />
-            <Tab icon={<School />} label="Compound Words" />
-            <Tab icon={<Translate />} label="Meaning Quiz" />
-            <Tab icon={<Info />} label="Reading Quiz" />
+            <Tab icon={<Brush />} label="Stroke Practice" disabled={difficulty === 'easy'} />
+            <Tab icon={<School />} label="Compound Words" disabled={difficulty !== 'hard'} />
+            <Tab icon={<Translate />} label="Meaning Quiz" disabled={difficulty === 'hard'} />
+            <Tab icon={<Info />} label="Reading Quiz" disabled={difficulty === 'easy'} />
           </Tabs>
 
           <Box sx={{ mt: 2 }}>
@@ -836,6 +1218,7 @@ const KanjiQuiz: React.FC = () => {
                     setQuizSettings(prev => ({ ...prev, mode: 'stroke' }));
                     startQuiz();
                   }}
+                  disabled={difficulty === 'easy'}
                 >
                   Start Stroke Practice
                 </Button>
@@ -851,6 +1234,7 @@ const KanjiQuiz: React.FC = () => {
                     setQuizSettings(prev => ({ ...prev, mode: 'compound' }));
                     startQuiz();
                   }}
+                  disabled={difficulty !== 'hard'}
                 >
                   Start Compound Word Practice
                 </Button>
@@ -866,6 +1250,7 @@ const KanjiQuiz: React.FC = () => {
                     setQuizSettings(prev => ({ ...prev, mode: 'meaning' }));
                     startQuiz();
                   }}
+                  disabled={difficulty === 'hard'}
                 >
                   Start Meaning Quiz
                 </Button>
@@ -881,6 +1266,7 @@ const KanjiQuiz: React.FC = () => {
                     setQuizSettings(prev => ({ ...prev, mode: 'reading' }));
                     startQuiz();
                   }}
+                  disabled={difficulty === 'easy'}
                 >
                   Start Reading Quiz
                 </Button>
@@ -932,13 +1318,72 @@ const KanjiQuiz: React.FC = () => {
     );
   };
 
+  // Update handleAnswer to advance to the next question
+  const handleAnswer = (answer: string) => {
+    let isCorrect = false;
+    if (questionType === 'matching') {
+      try {
+        const userMatches = JSON.parse(answer);
+        const correctMatches = JSON.parse(quizState.correctAnswer);
+        isCorrect = JSON.stringify(userMatches.sort()) === JSON.stringify(correctMatches.sort());
+      } catch {
+        isCorrect = false;
+      }
+    } else {
+      isCorrect = answer === quizState.correctAnswer;
+    }
+    setQuizState(prev => ({
+      ...prev,
+      selectedAnswer: answer,
+      showFeedback: true,
+      isCorrect
+    }));
+    if (isCorrect) {
+      setStreak(prev => prev + 1);
+      if (quizSettings.mode === 'reading' && currentKanji?.audioUrl) {
+        playAudio(currentKanji.audioUrl);
+      }
+    } else {
+      setStreak(0);
+    }
+    setTimeout(() => {
+      if (currentQuestionIndex + 1 < quizSettings.questionCount && currentQuestionIndex + 1 < quizState.questions.length) {
+        setCurrentQuestionIndex(idx => idx + 1);
+      } else {
+        handleQuizComplete(score);
+      }
+    }, 2000);
+  };
+
+  if (!kanji || !Array.isArray(kanji) || kanji.length === 0) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Card sx={{ maxWidth: 800, mx: 'auto' }}>
+          <CardContent>
+            <Typography variant="h6" color="text.secondary" align="center">
+              No kanji available for quiz. Please select some kanji first.
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: 3 }}>
       <Card sx={{ maxWidth: 800, mx: 'auto' }}>
         <CardContent>
-          {quizState.mode === 'setup' && renderQuizSetup()}
-          {quizState.mode === 'quiz' && renderQuizContent()}
-          {quizState.mode === 'result' && renderQuizResult()}
+          {kanji.length === 0 ? (
+            <Typography variant="h6" color="text.secondary" align="center">
+              No kanji available for quiz. Please select some kanji first.
+            </Typography>
+          ) : (
+            <>
+              {quizState.mode === 'setup' && renderQuizSetup()}
+              {quizState.mode === 'quiz' && renderQuizContent()}
+              {quizState.mode === 'result' && renderQuizResult()}
+            </>
+          )}
         </CardContent>
       </Card>
     </Box>
@@ -946,23 +1391,28 @@ const KanjiQuiz: React.FC = () => {
 };
 
 // Helper functions
-const calculateKanjiDifficulty = (kanji: Kanji): number => {
-  // Calculate difficulty based on stroke count, frequency, and JLPT level
-  const strokeCount = kanji.strokeOrder.length;
-  const jlptLevel = kanji.jlptLevel === 'N5' ? 1 :
-                   kanji.jlptLevel === 'N4' ? 2 :
-                   kanji.jlptLevel === 'N3' ? 3 :
-                   kanji.jlptLevel === 'N2' ? 4 : 5;
+const calculateWordDifficulty = (word: CompoundWordData): number => {
+  let difficulty = 1; // Base difficulty
   
-  return (strokeCount * 0.3) + (jlptLevel * 0.7);
-};
-
-const calculateWordDifficulty = (example: { word: string; reading: string; meaning: string }): number => {
-  // Calculate difficulty based on word length, kanji count, and reading complexity
-  const kanjiCount = (example.word.match(/[\u4E00-\u9FAF]/g) || []).length;
-  const readingLength = example.reading.length;
+  // Increase difficulty based on word length
+  difficulty += word.word.length * 0.2;
   
-  return (kanjiCount * 0.4) + (readingLength * 0.2) + (example.meaning.split(' ').length * 0.4);
+  // Increase difficulty if word has multiple readings
+  if (word.reading.includes('・')) {
+    difficulty += 0.5;
+  }
+  
+  // Increase difficulty based on kanji complexity
+  word.kanji.forEach(char => {
+    const kanjiData = kanjiList.find(k => k.character === char);
+    if (kanjiData) {
+      difficulty += kanjiData.strokes * 0.1;
+      if (kanjiData.jlptLevel >= 3) difficulty += 0.3;
+    }
+  });
+  
+  // Normalize difficulty to a scale of 1-5
+  return Math.min(5, Math.max(1, Math.round(difficulty)));
 };
 
 const getKanjiProgress = (character: string) => {
@@ -1002,7 +1452,7 @@ const getKanjiProgress = (character: string) => {
 };
 
 // Enhance stroke validation
-const validateStrokeEnhanced = (stroke: StrokeData, expectedStroke: StrokeData): StrokeValidationResult => {
+const validateStrokeEnhanced = (stroke: StrokeData, expectedStroke: StrokeData): StrokeFeedback => {
   const basicValidation = validateStroke(stroke, expectedStroke);
   const accuracy = calculateStrokeAccuracy(stroke, expectedStroke);
   const suggestions = generateStrokeSuggestions(stroke, expectedStroke);
@@ -1018,26 +1468,30 @@ const validateStrokeEnhanced = (stroke: StrokeData, expectedStroke: StrokeData):
 
 // Add new helper functions for stroke validation
 const calculateStrokeAccuracy = (stroke: StrokeData, expectedStroke: StrokeData): number => {
-  const directionMatch = Math.abs(stroke.direction - expectedStroke.direction) < 0.2;
-  const lengthMatch = Math.abs(stroke.length - expectedStroke.length) / expectedStroke.length < 0.3;
+  // Calculate direction accuracy (25% weight) - more lenient threshold
+  const directionMatch = Math.abs(stroke.direction - expectedStroke.direction) < 0.6;
+  const directionAccuracy = directionMatch ? 1 : 0.6; // More partial credit for close matches
+
+  // Calculate length accuracy (25% weight) - more lenient threshold
+  const lengthMatch = Math.abs(stroke.length - expectedStroke.length) / expectedStroke.length < 0.7;
+  const lengthAccuracy = lengthMatch ? 1 : 0.6; // More partial credit for close matches
+
+  // Calculate type accuracy (50% weight) - most important but still forgiving
   const typeMatch = stroke.type === expectedStroke.type;
-  
-  let accuracy = 0;
-  if (directionMatch) accuracy += 0.4;
-  if (lengthMatch) accuracy += 0.3;
-  if (typeMatch) accuracy += 0.3;
-  
-  return accuracy;
+  const typeAccuracy = typeMatch ? 1 : 0.4; // More credit even for wrong type
+
+  // Calculate weighted average
+  return (directionAccuracy * 0.25) + (lengthAccuracy * 0.25) + (typeAccuracy * 0.5);
 };
 
 const generateStrokeSuggestions = (stroke: StrokeData, expectedStroke: StrokeData): string[] => {
   const suggestions: string[] = [];
   
-  if (Math.abs(stroke.direction - expectedStroke.direction) >= 0.2) {
+  if (Math.abs(stroke.direction - expectedStroke.direction) >= 0.6) {
     suggestions.push(`Try to draw the stroke more ${stroke.direction > expectedStroke.direction ? 'horizontally' : 'vertically'}`);
   }
   
-  if (Math.abs(stroke.length - expectedStroke.length) / expectedStroke.length >= 0.3) {
+  if (Math.abs(stroke.length - expectedStroke.length) / expectedStroke.length >= 0.7) {
     suggestions.push(`The stroke should be ${stroke.length > expectedStroke.length ? 'shorter' : 'longer'}`);
   }
   
@@ -1088,6 +1542,93 @@ const generateEnhancedExercises = (word: CompoundWordData, kanji: KanjiStrokeDat
   }
   
   return exercises;
+};
+
+// Helper functions for compound word exercises
+const generateReadingOptions = (word: CompoundWordData, kanji: KanjiStrokeData): string[] => {
+  const options = [word.reading];
+  const allReadings = new Set<string>();
+  
+  // Add readings from the kanji
+  kanji.onyomi.forEach(reading => allReadings.add(reading));
+  kanji.kunyomi.forEach(reading => allReadings.add(reading));
+  
+  // Add readings from related words
+  word.relatedWords?.forEach(relatedWord => {
+    if (relatedWord.reading) allReadings.add(relatedWord.reading);
+  });
+  
+  // Convert to array and filter out the correct answer
+  const availableReadings = Array.from(allReadings).filter(r => r !== word.reading);
+  
+  // Add random readings until we have 4 options
+  while (options.length < 4 && availableReadings.length > 0) {
+    const randomIndex = Math.floor(Math.random() * availableReadings.length);
+    const reading = availableReadings.splice(randomIndex, 1)[0];
+    options.push(reading);
+  }
+  
+  // If we still need more options, generate similar readings
+  while (options.length < 4) {
+    const baseReading = word.reading;
+    const modifiedReading = baseReading.replace(/[あ-ん]/g, char => {
+      const similarChars = {
+        'あ': ['い', 'お'],
+        'い': ['あ', 'う'],
+        'う': ['い', 'え'],
+        'え': ['う', 'お'],
+        'お': ['あ', 'え'],
+        // Add more similar characters as needed
+      }[char] || [char];
+      return similarChars[Math.floor(Math.random() * similarChars.length)];
+    });
+    if (!options.includes(modifiedReading)) {
+      options.push(modifiedReading);
+    }
+  }
+  
+  return shuffleArray(options);
+};
+
+const generateMeaningOptions = (word: CompoundWordData): string[] => {
+  const options = [word.meaning];
+  const allMeanings = new Set<string>();
+  
+  // Add meanings from related words
+  word.relatedWords?.forEach(relatedWord => {
+    if (relatedWord.meaning) allMeanings.add(relatedWord.meaning);
+  });
+  
+  // Add meanings from example sentences
+  word.examples?.forEach(example => {
+    if (example.meaning) allMeanings.add(example.meaning);
+  });
+  
+  // Convert to array and filter out the correct answer
+  const availableMeanings = Array.from(allMeanings).filter(m => m !== word.meaning);
+  
+  // Add random meanings until we have 4 options
+  while (options.length < 4 && availableMeanings.length > 0) {
+    const randomIndex = Math.floor(Math.random() * availableMeanings.length);
+    const meaning = availableMeanings.splice(randomIndex, 1)[0];
+    options.push(meaning);
+  }
+  
+  // If we still need more options, generate similar meanings
+  while (options.length < 4) {
+    const similarMeanings = [
+      'similar concept',
+      'related idea',
+      'opposite meaning',
+      'different context'
+    ];
+    const randomMeaning = similarMeanings[Math.floor(Math.random() * similarMeanings.length)];
+    if (!options.includes(randomMeaning)) {
+      options.push(randomMeaning);
+    }
+  }
+  
+  return shuffleArray(options);
 };
 
 export default KanjiQuiz; 

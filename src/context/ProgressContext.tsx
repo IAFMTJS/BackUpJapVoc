@@ -62,6 +62,21 @@ export interface WordProgress {
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
   section: 'dictionary' | 'mood' | 'culture';
+  consecutiveCorrect: number;
+  lastAnswerCorrect: boolean;
+  correctAnswers: number; // Total number of correct answers
+  incorrectAnswers: number; // Total number of incorrect answers
+  strokeOrderProgress?: {
+    correctStrokes: number;
+    totalStrokes: number;
+    lastScore: number;
+  };
+  lastPracticeDate?: number;
+  practiceHistory?: Array<{
+    date: number;
+    score: number;
+    type: 'writing' | 'reading' | 'meaning' | 'quiz';
+  }>;
 }
 
 export interface SectionProgress {
@@ -96,6 +111,13 @@ export interface ProgressState {
     longestStreak: number;
     lastStudyDate: number;
     dailyProgress: { [date: string]: number };
+    studySessions: {
+      timestamp: number;
+      duration: number;
+      wordsLearned: number;
+      accuracy: number;
+      averageMastery: number;
+    }[];
   };
 }
 
@@ -144,16 +166,28 @@ const defaultProgress: ProgressState = {
     currentStreak: 0,
     longestStreak: 0,
     lastStudyDate: 0,
-    dailyProgress: {}
+    dailyProgress: {},
+    studySessions: []
   }
 };
 
 interface ProgressContextType {
   progress: ProgressState;
+  isLoading: boolean;
+  error: string | null;
+  isSyncing: boolean;
+  lastSyncTime: number | null;
   updateWordProgress: (wordId: string, progress: Partial<WordProgress>) => void;
   updateSectionProgress: (section: keyof ProgressState['sections'], progress: Partial<SectionProgress>) => void;
   updatePreferences: (preferences: Partial<ProgressState['preferences']>) => void;
   updateStatistics: (stats: Partial<ProgressState['statistics']>) => void;
+  addStudySession: (session: {
+    timestamp: number;
+    duration: number;
+    wordsLearned: number;
+    accuracy: number;
+    averageMastery: number;
+  }) => void;
   resetProgress: () => void;
   exportProgress: () => string;
   importProgress: (data: string) => void;
@@ -171,10 +205,13 @@ const ProgressContext = createContext<ProgressContextType | undefined>(undefined
 const DEFAULT_USER_ID = 'default';
 
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  const [progress, setProgress] = useLocalStorage<ProgressState>('progress', defaultProgress);
+  const { currentUser } = useAuth();
+  const [localProgress, setLocalProgress] = useLocalStorage<ProgressState>('progress', defaultProgress);
+  const [progress, setProgress] = useState<ProgressState>(defaultProgress);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
   
   // Settings state
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -183,8 +220,6 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   // Sync state
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
   
   // Track loading states for each data type
   const [loadingStates, setLoadingStates] = useState({
@@ -250,84 +285,268 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, []);
   
-  // Update streak when progress is made
-  const updateStreak = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const lastStudyDate = new Date(progress.statistics.lastStudyDate).toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  // Load progress from Firebase when user is authenticated
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
 
-    setProgress(prev => {
-      let newStreak = prev.statistics.currentStreak;
-      
-      if (lastStudyDate === yesterday) {
-        newStreak += 1;
-      } else if (lastStudyDate !== today) {
-        newStreak = 1;
+    const loadProgress = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        if (!currentUser) {
+          console.log('[ProgressContext] No user, using local progress');
+          setProgress(localProgress);
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('[ProgressContext] Loading progress for user:', {
+          userId: currentUser.uid,
+          email: currentUser.email,
+          path: `users/${currentUser.uid}/progress/data`
+        });
+        
+        const userProgressRef = doc(db, 'users', currentUser.uid, 'progress', 'data');
+        
+        // Set up real-time listener for progress updates
+        unsubscribe = onSnapshot(userProgressRef, 
+          (doc) => {
+            try {
+              if (doc.exists()) {
+                console.log('[ProgressContext] Progress data found in Firebase');
+                const firebaseProgress = doc.data() as ProgressState;
+                setProgress(firebaseProgress);
+                // Update local storage as backup
+                setLocalProgress(firebaseProgress);
+              } else {
+                console.log('[ProgressContext] No progress in Firebase, initializing with local data');
+                // If no progress exists in Firebase, initialize with local progress
+                setDoc(userProgressRef, localProgress).catch(err => {
+                  console.error('[ProgressContext] Failed to initialize Firebase progress:', err);
+                  setError('Failed to initialize progress data. Using local backup.');
+                });
+                setProgress(localProgress);
+              }
+              setLastSyncTime(Date.now());
+            } catch (err) {
+              console.error('[ProgressContext] Error processing progress data:', err);
+              setError('Error processing progress data. Using local backup.');
+              setProgress(localProgress);
+            } finally {
+              setIsLoading(false);
+            }
+          },
+          (error) => {
+            console.error('[ProgressContext] Firebase listener error:', error);
+            setError('Failed to load progress data. Using local backup.');
+            setProgress(localProgress);
+            setIsLoading(false);
+          }
+        );
+      } catch (error) {
+        console.error('[ProgressContext] Error setting up progress listener:', error);
+        setError('Failed to connect to progress database. Using local backup.');
+        setProgress(localProgress);
+        setIsLoading(false);
       }
+    };
+
+    loadProgress();
+
+    return () => {
+      if (unsubscribe) {
+        console.log('[ProgressContext] Cleaning up progress listener');
+        unsubscribe();
+      }
+    };
+  }, [currentUser]);
+
+  // Update progress in Firebase when it changes
+  const updateProgress = useCallback(async (newProgress: ProgressState) => {
+    if (!currentUser) {
+      // For unauthenticated users, only update local storage
+      setLocalProgress(newProgress);
+      setProgress(newProgress);
+      return;
+    }
+
+    try {
+      setIsSyncing(true);
+      const userProgressRef = doc(db, 'users', currentUser.uid, 'progress', 'data');
+      await updateDoc(userProgressRef, newProgress);
+      setProgress(newProgress);
+      setLocalProgress(newProgress);
+      setLastSyncTime(Date.now());
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      setError('Failed to save progress. Changes are stored locally.');
+      // Still update local state
+      setProgress(newProgress);
+      setLocalProgress(newProgress);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [currentUser, setLocalProgress]);
+
+  // Update word progress
+  const updateWordProgress = useCallback((wordId: string, progress: Partial<WordProgress>) => {
+    setProgress(prev => {
+      const currentProgress = prev.words[wordId] || {
+        id: wordId,
+        lastReviewed: Date.now(),
+        reviewCount: 0,
+        masteryLevel: 0,
+        nextReviewDate: Date.now(),
+        favorite: false,
+        difficulty: 'medium',
+        category: 'dictionary',
+        section: 'dictionary',
+        consecutiveCorrect: 0,
+        lastAnswerCorrect: false,
+        correctAnswers: 0,
+        incorrectAnswers: 0,
+        practiceHistory: []
+      };
+
+      // Calculate new mastery level based on correct/incorrect answers and streak
+      let newMasteryLevel = currentProgress.masteryLevel;
+      if (progress.correctAnswers !== undefined || progress.incorrectAnswers !== undefined) {
+        const totalAnswers = (progress.correctAnswers || currentProgress.correctAnswers) + 
+                            (progress.incorrectAnswers || currentProgress.incorrectAnswers);
+        const correctRatio = (progress.correctAnswers || currentProgress.correctAnswers) / totalAnswers;
+        
+        // Base mastery on correct ratio and consecutive correct answers
+        const streakBonus = Math.min((progress.consecutiveCorrect || currentProgress.consecutiveCorrect) * 0.1, 0.5);
+        newMasteryLevel = Math.min(5, Math.max(0, (correctRatio * 4) + streakBonus));
+      }
+
+      // Update consecutive correct answers
+      if (progress.lastAnswerCorrect !== undefined) {
+        if (progress.lastAnswerCorrect) {
+          currentProgress.consecutiveCorrect = (currentProgress.lastAnswerCorrect ? currentProgress.consecutiveCorrect : 0) + 1;
+        } else {
+          currentProgress.consecutiveCorrect = 0;
+        }
+      }
+
+      // For kana, require two consecutive correct answers for mastery
+      const isKana = currentProgress.category === 'hiragana' || currentProgress.category === 'katakana';
+      if (isKana) {
+        if (currentProgress.consecutiveCorrect >= 2) {
+          newMasteryLevel = 5; // Full mastery for kana
+        } else {
+          newMasteryLevel = Math.min(newMasteryLevel, 4); // Cap at 4 until two consecutive correct
+        }
+      }
+
+      // Add practice history entry if score is provided
+      const practiceHistory = [...(currentProgress.practiceHistory || [])];
+      if (progress.strokeOrderProgress?.lastScore !== undefined) {
+        practiceHistory.push({
+          date: Date.now(),
+          score: progress.strokeOrderProgress.lastScore,
+          type: 'writing'
+        });
+      }
+
+      const updatedProgress = {
+        ...currentProgress,
+        ...progress,
+        masteryLevel: newMasteryLevel,
+        lastReviewed: Date.now(),
+        practiceHistory: practiceHistory.slice(-10) // Keep last 10 practice sessions
+      };
 
       return {
         ...prev,
-        statistics: {
-          ...prev.statistics,
-          currentStreak: newStreak,
-          longestStreak: Math.max(newStreak, prev.statistics.longestStreak),
-          lastStudyDate: Date.now()
+        words: {
+          ...prev.words,
+          [wordId]: updatedProgress
         }
       };
     });
-  };
-  
-  // Update progress with offline support
-  const updateWordProgress = (wordId: string, newProgress: Partial<WordProgress>) => {
-    setProgress(prev => ({
-      ...prev,
-      words: {
-        ...prev.words,
-        [wordId]: {
-          ...prev.words[wordId],
-          ...newProgress,
-          lastReviewed: Date.now()
+  }, []);
+
+  // Update section progress
+  const updateSectionProgress = useCallback((section: keyof ProgressState['sections'], sectionProgress: Partial<SectionProgress>) => {
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        sections: {
+          ...prev.sections,
+          [section]: {
+            ...prev.sections[section],
+            ...sectionProgress,
+            lastUpdated: Date.now()
+          }
         }
-      }
-    }));
-  };
+      };
+      updateProgress(newProgress);
+      return newProgress;
+    });
+  }, [updateProgress]);
 
-  const updateSectionProgress = (section: keyof ProgressState['sections'], newProgress: Partial<SectionProgress>) => {
-    setProgress(prev => ({
-      ...prev,
-      sections: {
-        ...prev.sections,
-        [section]: {
-          ...prev.sections[section],
-          ...newProgress
+  // Update preferences
+  const updatePreferences = useCallback((preferences: Partial<ProgressState['preferences']>) => {
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        preferences: {
+          ...prev.preferences,
+          ...preferences
         }
-      }
-    }));
-  };
+      };
+      updateProgress(newProgress);
+      return newProgress;
+    });
+  }, [updateProgress]);
 
-  const updatePreferences = (newPreferences: Partial<ProgressState['preferences']>) => {
-    setProgress(prev => ({
-      ...prev,
-      preferences: {
-        ...prev.preferences,
-        ...newPreferences
-      }
-    }));
-  };
+  // Update statistics
+  const updateStatistics = useCallback((stats: Partial<ProgressState['statistics']>) => {
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          ...stats,
+          lastUpdated: Date.now()
+        }
+      };
+      updateProgress(newProgress);
+      return newProgress;
+    });
+  }, [updateProgress]);
 
-  const updateStatistics = (newStats: Partial<ProgressState['statistics']>) => {
-    setProgress(prev => ({
-      ...prev,
-      statistics: {
-        ...prev.statistics,
-        ...newStats
-      }
-    }));
-  };
+  // Add a study session
+  const addStudySession = useCallback((session: {
+    timestamp: number;
+    duration: number;
+    wordsLearned: number;
+    accuracy: number;
+    averageMastery: number;
+  }) => {
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          studySessions: [...(prev.statistics.studySessions || []), session],
+          totalStudyTime: prev.statistics.totalStudyTime + session.duration,
+          wordsLearned: prev.statistics.wordsLearned + session.wordsLearned,
+          lastStudyDate: session.timestamp
+        }
+      };
+      updateProgress(newProgress);
+      return newProgress;
+    });
+  }, [updateProgress]);
 
-  const resetProgress = () => {
-    setProgress(defaultProgress);
-  };
+  // Reset progress
+  const resetProgress = useCallback(() => {
+    const newProgress = defaultProgress;
+    updateProgress(newProgress);
+  }, [updateProgress]);
 
   const exportProgress = () => {
     return JSON.stringify(progress);
@@ -351,7 +570,27 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const getMasteryLevel = (wordId: string) => {
-    return progress.words[wordId]?.masteryLevel || 0;
+    const wordProgress = progress.words[wordId];
+    if (!wordProgress) return 0;
+    
+    // For kanji, consider mastery based on multiple factors
+    if (wordProgress.category === 'kanji') {
+      const { masteryLevel, correctAnswers, incorrectAnswers, consecutiveCorrect } = wordProgress;
+      const totalAnswers = correctAnswers + incorrectAnswers;
+      
+      if (totalAnswers === 0) return 0;
+      
+      // Calculate mastery based on:
+      // 1. Overall mastery level (0-5)
+      // 2. Correct answer ratio
+      // 3. Consecutive correct answers
+      const correctRatio = correctAnswers / totalAnswers;
+      const streakBonus = Math.min(consecutiveCorrect * 0.1, 0.5);
+      return Math.min(5, Math.max(0, (correctRatio * 4) + streakBonus));
+    }
+    
+    // For kana, use simpler mastery calculation
+    return wordProgress.masteryLevel;
   };
 
   const getNextReviewDate = (wordId: string) => {
@@ -490,10 +729,15 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   const value: ProgressContextType = {
     progress,
+    isLoading,
+    error,
+    isSyncing,
+    lastSyncTime,
     updateWordProgress,
     updateSectionProgress,
     updatePreferences,
     updateStatistics,
+    addStudySession,
     resetProgress,
     exportProgress,
     importProgress,
@@ -503,7 +747,9 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     getNextReviewDate,
     toggleFavorite,
     addStudyTime,
-    updateStreak
+    updateStreak: () => {
+      // Implementation needed
+    }
   };
   
   return (
@@ -515,7 +761,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 export const useProgress = () => {
   const context = useContext(ProgressContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useProgress must be used within a ProgressProvider');
   }
   return context;

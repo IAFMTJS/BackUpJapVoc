@@ -1,351 +1,927 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useTheme } from '../../context/ThemeContext';
-import { useSound } from '../../context/SoundContext';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  IconButton,
+  Tooltip,
+  useTheme,
+  useMediaQuery,
+  Grid,
+  Alert,
+  LinearProgress,
+} from '@mui/material';
+import {
+  Undo as UndoIcon,
+  Delete as DeleteIcon,
+  VolumeUp as VolumeIcon,
+  Check as CheckIcon,
+  PlayArrow as PlayArrowIcon,
+  Pause as PauseIcon,
+} from '@mui/icons-material';
+import { useAudio } from '../../context/AudioContext';
 import { useProgress } from '../../context/ProgressContext';
-import { playAudio } from '../../utils/audio';
-import { basicKana } from './BasicKana';
-import { yōonKana } from './YōonKana';
-import { dakuonKana } from './DakuonKana';
-
-type PracticeMode = 'recognition' | 'writing' | 'listening' | 'matching';
-type Difficulty = 'easy' | 'medium' | 'hard';
-
-interface PracticeQuestion {
-  question: string;
-  correctAnswer: string;
-  options?: string[];
-  type: 'hiragana' | 'katakana' | 'romaji';
-  audio?: string;
-}
+import { kanaData } from './KanaChart';
 
 interface KanaPracticeProps {
-  mode?: PracticeMode;
-  difficulty?: Difficulty;
-  onComplete?: () => void;
+  type: 'hiragana' | 'katakana';
+  initialKana?: string;
 }
 
-// Add Fisher-Yates shuffle algorithm
-const shuffleArray = <T,>(array: T[]): T[] => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+interface Stroke {
+  points: { x: number; y: number }[];
+  color: string;
+}
+
+interface KanaStrokeData {
+  kana: string;
+  romaji: string;
+  referencePoints: { x: number; y: number }[];
+  keyFeatures: {
+    center: { x: number; y: number };
+    width: number;
+    height: number;
+    topPoints: { x: number; y: number }[];
+    bottomPoints: { x: number; y: number }[];
+    leftPoints: { x: number; y: number }[];
+    rightPoints: { x: number; y: number }[];
+  };
+  gridSize: number;
+  category: string;
+}
+
+// Define kana categories with complete character lists
+const getKanaCategories = (type: 'hiragana' | 'katakana') => ({
+  gojuon: {
+    title: 'Gojuon (Basic)',
+    description: 'Basic kana characters',
+    kana: type === 'hiragana' ? [
+      // Vowels
+      'あ', 'い', 'う', 'え', 'お',
+      // K series
+      'か', 'き', 'く', 'け', 'こ',
+      // S series
+      'さ', 'し', 'す', 'せ', 'そ',
+      // T series
+      'た', 'ち', 'つ', 'て', 'と',
+      // N series
+      'な', 'に', 'ぬ', 'ね', 'の',
+      // H series
+      'は', 'ひ', 'ふ', 'へ', 'ほ',
+      // M series
+      'ま', 'み', 'む', 'め', 'も',
+      // Y series
+      'や', 'ゆ', 'よ',
+      // R series
+      'ら', 'り', 'る', 'れ', 'ろ',
+      // W series
+      'わ', 'を',
+      // N
+      'ん'
+    ] : [
+      // Vowels
+      'ア', 'イ', 'ウ', 'エ', 'オ',
+      // K series
+      'カ', 'キ', 'ク', 'ケ', 'コ',
+      // S series
+      'サ', 'シ', 'ス', 'セ', 'ソ',
+      // T series
+      'タ', 'チ', 'ツ', 'テ', 'ト',
+      // N series
+      'ナ', 'ニ', 'ヌ', 'ネ', 'ノ',
+      // H series
+      'ハ', 'ヒ', 'フ', 'ヘ', 'ホ',
+      // M series
+      'マ', 'ミ', 'ム', 'メ', 'モ',
+      // Y series
+      'ヤ', 'ユ', 'ヨ',
+      // R series
+      'ラ', 'リ', 'ル', 'レ', 'ロ',
+      // W series
+      'ワ', 'ヲ',
+      // N
+      'ン'
+    ]
+  },
+  dakuon: {
+    title: 'Dakuon (Voiced)',
+    description: 'Voiced kana characters',
+    kana: type === 'hiragana' ? [
+      // G series
+      'が', 'ぎ', 'ぐ', 'げ', 'ご',
+      // Z series
+      'ざ', 'じ', 'ず', 'ぜ', 'ぞ',
+      // D series
+      'だ', 'ぢ', 'づ', 'で', 'ど',
+      // B series
+      'ば', 'び', 'ぶ', 'べ', 'ぼ'
+    ] : [
+      // G series
+      'ガ', 'ギ', 'グ', 'ゲ', 'ゴ',
+      // Z series
+      'ザ', 'ジ', 'ズ', 'ゼ', 'ゾ',
+      // D series
+      'ダ', 'ヂ', 'ヅ', 'デ', 'ド',
+      // B series
+      'バ', 'ビ', 'ブ', 'ベ', 'ボ'
+    ]
+  },
+  handakuon: {
+    title: 'Handakuon (Semi-voiced)',
+    description: 'Semi-voiced kana characters',
+    kana: type === 'hiragana' ? [
+      // P series
+      'ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ'
+    ] : [
+      // P series
+      'パ', 'ピ', 'プ', 'ペ', 'ポ'
+    ]
+  },
+  yoon: {
+    title: 'Yoon (Contracted)',
+    description: 'Contracted kana characters',
+    kana: type === 'hiragana' ? [
+      // K series
+      'きゃ', 'きゅ', 'きょ',
+      // S series
+      'しゃ', 'しゅ', 'しょ',
+      // T series
+      'ちゃ', 'ちゅ', 'ちょ',
+      // N series
+      'にゃ', 'にゅ', 'にょ',
+      // H series
+      'ひゃ', 'ひゅ', 'ひょ',
+      // M series
+      'みゃ', 'みゅ', 'みょ',
+      // R series
+      'りゃ', 'りゅ', 'りょ',
+      // G series
+      'ぎゃ', 'ぎゅ', 'ぎょ',
+      // J series
+      'じゃ', 'じゅ', 'じょ',
+      // B series
+      'びゃ', 'びゅ', 'びょ',
+      // P series
+      'ぴゃ', 'ぴゅ', 'ぴょ'
+    ] : [
+      // K series
+      'キャ', 'キュ', 'キョ',
+      // S series
+      'シャ', 'シュ', 'ショ',
+      // T series
+      'チャ', 'チュ', 'チョ',
+      // N series
+      'ニャ', 'ニュ', 'ニョ',
+      // H series
+      'ヒャ', 'ヒュ', 'ヒョ',
+      // M series
+      'ミャ', 'ミュ', 'ミョ',
+      // R series
+      'リャ', 'リュ', 'リョ',
+      // G series
+      'ギャ', 'ギュ', 'ギョ',
+      // J series
+      'ジャ', 'ジュ', 'ジョ',
+      // B series
+      'ビャ', 'ビュ', 'ビョ',
+      // P series
+      'ピャ', 'ピュ', 'ピョ'
+    ]
   }
-  return shuffled;
+});
+
+// Define reference data for kana characters with improved feature detection
+const kanaStrokeData: Record<string, KanaStrokeData> = {};
+
+// Helper function to generate placeholder data for remaining kana
+const generatePlaceholderKanaData = (kana: string, romaji: string, category: string): KanaStrokeData => {
+  // Define basic stroke patterns for different kana types
+  const getReferencePoints = (kana: string, category: string) => {
+    // Basic patterns for different categories
+    const patterns: Record<string, { x: number; y: number }[]> = {
+      // Vowels (あ, い, う, え, お)
+      'あ': [
+        { x: 30, y: 30 }, { x: 50, y: 30 }, // Top horizontal
+        { x: 40, y: 30 }, { x: 40, y: 70 }, // Vertical
+        { x: 30, y: 70 }, { x: 50, y: 70 }  // Bottom horizontal
+      ],
+      'い': [
+        { x: 30, y: 30 }, { x: 30, y: 70 }, // Left vertical
+        { x: 50, y: 30 }, { x: 50, y: 70 }  // Right vertical
+      ],
+      'う': [
+        { x: 30, y: 30 }, { x: 50, y: 30 }, // Top horizontal
+        { x: 40, y: 30 }, { x: 40, y: 70 }  // Vertical
+      ],
+      'え': [
+        { x: 30, y: 30 }, { x: 50, y: 30 }, // Top horizontal
+        { x: 40, y: 30 }, { x: 40, y: 70 }, // Vertical
+        { x: 30, y: 70 }, { x: 50, y: 70 }  // Bottom horizontal
+      ],
+      'お': [
+        { x: 30, y: 30 }, { x: 50, y: 30 }, // Top horizontal
+        { x: 40, y: 30 }, { x: 40, y: 70 }, // Vertical
+        { x: 30, y: 70 }, { x: 50, y: 70 }  // Bottom horizontal
+      ],
+      // K series (か, き, く, け, こ)
+      'か': [
+        { x: 30, y: 30 }, { x: 50, y: 30 }, // Top horizontal
+        { x: 40, y: 30 }, { x: 40, y: 70 }, // Vertical
+        { x: 30, y: 50 }, { x: 50, y: 50 }  // Middle horizontal
+      ],
+      'き': [
+        { x: 30, y: 30 }, { x: 50, y: 30 }, // Top horizontal
+        { x: 40, y: 30 }, { x: 40, y: 70 }, // Vertical
+        { x: 30, y: 50 }, { x: 50, y: 50 }  // Middle horizontal
+      ],
+      'く': [
+        { x: 30, y: 30 }, { x: 50, y: 50 }, // Diagonal
+        { x: 30, y: 50 }, { x: 50, y: 70 }  // Diagonal
+      ],
+      'け': [
+        { x: 30, y: 30 }, { x: 50, y: 30 }, // Top horizontal
+        { x: 40, y: 30 }, { x: 40, y: 70 }, // Vertical
+        { x: 30, y: 50 }, { x: 50, y: 50 }  // Middle horizontal
+      ],
+      'こ': [
+        { x: 30, y: 30 }, { x: 50, y: 30 }, // Top horizontal
+        { x: 30, y: 50 }, { x: 50, y: 50 }  // Bottom horizontal
+      ],
+      // Default pattern for other characters
+      'default': [
+        { x: 30, y: 30 }, { x: 50, y: 30 }, // Top horizontal
+        { x: 40, y: 30 }, { x: 40, y: 70 }, // Vertical
+        { x: 30, y: 70 }, { x: 50, y: 70 }  // Bottom horizontal
+      ]
+    };
+
+    // Return specific pattern if available, otherwise use default
+    return patterns[kana] || patterns['default'];
+  };
+
+  const referencePoints = getReferencePoints(kana, category);
+  
+  // Calculate key features based on reference points
+  const minX = Math.min(...referencePoints.map(p => p.x));
+  const maxX = Math.max(...referencePoints.map(p => p.x));
+  const minY = Math.min(...referencePoints.map(p => p.y));
+  const maxY = Math.max(...referencePoints.map(p => p.y));
+  
+  const center = {
+    x: (minX + maxX) / 2,
+    y: (minY + maxY) / 2
+  };
+
+  const width = maxX - minX;
+  const height = maxY - minY;
+
+  // Group points by their relative position
+  const topPoints = referencePoints.filter(p => p.y <= minY + height * 0.3);
+  const bottomPoints = referencePoints.filter(p => p.y >= minY + height * 0.7);
+  const leftPoints = referencePoints.filter(p => p.x <= minX + width * 0.3);
+  const rightPoints = referencePoints.filter(p => p.x >= minX + width * 0.7);
+
+  return {
+    kana,
+    romaji,
+    referencePoints,
+    keyFeatures: {
+      center,
+      width,
+      height,
+      topPoints,
+      bottomPoints,
+      leftPoints,
+      rightPoints
+    },
+    gridSize: 100,
+    category
+  };
 };
 
-// Add function to get random subset without replacement
-const getRandomSubset = <T,>(array: T[], count: number): T[] => {
-  if (count >= array.length) return shuffleArray(array);
-  const shuffled = shuffleArray(array);
-  return shuffled.slice(0, count);
-};
+const KanaPractice: React.FC<KanaPracticeProps> = ({ type, initialKana }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { playAudio } = useAudio();
+  const { updateWordProgress } = useProgress();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [currentKana, setCurrentKana] = useState(initialKana || 'あ');
+  const [currentRomaji, setCurrentRomaji] = useState('a');
+  const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [currentStroke, setCurrentStroke] = useState<Stroke | null>(null);
+  const [showHint, setShowHint] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<{
+    isCorrect: boolean;
+    message: string;
+    accuracy: number;
+  } | null>(null);
+  const [practiceMode, setPracticeMode] = useState<'practice' | 'free'>('practice');
+  const [selectedCategory, setSelectedCategory] = useState<string>('gojuon');
+  const [availableKana, setAvailableKana] = useState<string[]>([]);
 
-const KanaPractice: React.FC<KanaPracticeProps> = ({ 
-  mode: initialMode = 'recognition',
-  difficulty: initialDifficulty = 'easy',
-  onComplete 
-}) => {
-  const { theme, getThemeClasses } = useTheme();
-  const themeClasses = getThemeClasses();
-  const { playSound } = useSound();
-  const { updateProgress } = useProgress();
+  // Initialize kanaStrokeData when type changes
+  useEffect(() => {
+    const kanaCategories = getKanaCategories(type);
+    // Add placeholder data for all remaining kana
+    Object.entries(kanaCategories).forEach(([category, data]) => {
+      data.kana.forEach(kana => {
+        if (!kanaStrokeData[kana]) {
+          // Find romaji from the kana data in other components
+          const findRomaji = (category: 'gojuon' | 'dakuon' | 'handakuon' | 'yoon') => {
+            const foundRow = kanaData[type][category].find(r => r.kana.includes(kana));
+            if (foundRow) {
+              const index = foundRow.kana.indexOf(kana);
+              return foundRow.romaji[index];
+            }
+            return '';
+          };
 
-  const [mode, setMode] = useState<PracticeMode>(initialMode);
-  const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
-  const [currentKana, setCurrentKana] = useState<string>('');
-  const [userInput, setUserInput] = useState<string>('');
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [score, setScore] = useState<number>(0);
-  const [attempts, setAttempts] = useState<number>(0);
-  const [showHint, setShowHint] = useState<boolean>(false);
+          const romaji = findRomaji('gojuon') || 
+                        findRomaji('dakuon') || 
+                        findRomaji('handakuon') || 
+                        findRomaji('yoon') || 
+                        '';
+          
+          kanaStrokeData[kana] = generatePlaceholderKanaData(kana, romaji, category);
+        }
+      });
+    });
 
-  const generateQuestion = useCallback(() => {
-    let questionPool: any[] = [];
-    
-    // Combine kana based on selected type
-    if (difficulty === 'easy') questionPool = [...questionPool, ...basicKana];
-    else if (difficulty === 'medium') questionPool = [...questionPool, ...yōonKana];
-    else if (difficulty === 'hard') questionPool = [...questionPool, ...dakuonKana];
-
-    // Use improved randomization for question type and kana
-    const questionTypes = ['hiragana', 'katakana'];
-    const questionType = getRandomSubset(questionTypes, 1)[0];
-    const kana = getRandomSubset(questionPool, 1)[0];
-    
-    let question: PracticeQuestion;
-
-    switch (mode) {
-      case 'recognition':
-        question = {
-          question: questionType === 'hiragana' ? kana.hiragana : kana.katakana,
-          correctAnswer: kana.romaji,
-          type: 'romaji',
-          audio: kana.audio
-        };
-        break;
-      case 'writing':
-        question = {
-          question: kana.romaji,
-          correctAnswer: questionType === 'hiragana' ? kana.hiragana : kana.katakana,
-          type: questionType,
-          audio: kana.audio
-        };
-        break;
-      case 'listening':
-        question = {
-          question: kana.romaji,
-          correctAnswer: questionType === 'hiragana' ? kana.hiragana : kana.katakana,
-          type: questionType,
-          audio: kana.audio
-        };
-        break;
-      case 'matching':
-        // For matching mode, we'll show multiple options
-        const options = questionPool
-          .filter(k => k !== kana)
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 3)
-          .map(k => questionType === 'hiragana' ? k.hiragana : k.katakana);
-        
-        question = {
-          question: kana.romaji,
-          correctAnswer: questionType === 'hiragana' ? kana.hiragana : kana.katakana,
-          options: [...options, questionType === 'hiragana' ? kana.hiragana : kana.katakana].sort(() => Math.random() - 0.5),
-          type: questionType,
-          audio: kana.audio
-        };
-        break;
-      default:
-        throw new Error(`Invalid mode: ${mode}`);
+    // Update available kana for the current category
+    const category = kanaCategories[selectedCategory as keyof typeof kanaCategories];
+    if (category) {
+      setAvailableKana(category.kana.filter(kana => kanaStrokeData[kana]));
     }
-
-    setCurrentKana(question.question);
-    setUserInput('');
-    setIsCorrect(null);
-    setScore(prev => prev + (isCorrect ? 1 : 0));
-    setAttempts(prev => prev + 1);
-    setShowHint(false);
-
-    return question;
-  }, [mode, difficulty]);
-
-  const startNewPractice = useCallback(() => {
-    // Generate initial set of questions
-    const initialQuestions = Array.from({ length: 10 }, () => generateQuestion());
-    setQuestions(initialQuestions);
-    setCurrentQuestion(0);
-    setScore(0);
-    setShowResult(false);
-    setUserAnswer('');
-    setShowHint(false);
-    setTimeLeft(getTimeForDifficulty(difficulty));
-    setTimerActive(true);
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [generateQuestion, difficulty]);
-
-  const handleNextQuestion = useCallback(() => {
-    if (currentQuestion + 1 >= questions.length) {
-      // Generate new set of questions when we run out
-      const newQuestions = Array.from({ length: 10 }, () => generateQuestion());
-      setQuestions(newQuestions);
-      setCurrentQuestion(0);
-    } else {
-      setCurrentQuestion(prev => prev + 1);
-    }
-    setUserAnswer('');
-    setShowHint(false);
-    setTimeLeft(getTimeForDifficulty(difficulty));
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [currentQuestion, questions.length, generateQuestion, difficulty]);
+  }, [type, selectedCategory]);
 
   useEffect(() => {
-    startNewPractice();
-  }, [startNewPractice]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  const checkAnswer = () => {
-    if (!currentKana) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    const isCorrect = userInput.toLowerCase() === currentKana.toLowerCase();
-    setIsCorrect(isCorrect);
-    setScore(prev => prev + (isCorrect ? 1 : 0));
+    // Set canvas size
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
 
-    setTimeout(() => {
-      handleNextQuestion();
-    }, 1500);
+    // Set canvas style
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3;
+
+    // Draw grid
+    drawGrid(ctx, canvas.width, canvas.height);
+  }, []);
+
+  const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.strokeStyle = theme.palette.divider;
+    ctx.lineWidth = 0.5;
+
+    // Draw vertical lines
+    for (let x = 0; x <= width; x += width / 8) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+
+    // Draw horizontal lines
+    for (let y = 0; y <= height; y += height / 8) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
   };
 
-  const nextKana = () => {
-    handleNextQuestion();
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    setIsDrawing(true);
+    const newStroke: Stroke = {
+      points: [{ x, y }],
+      color: theme.palette.primary.main
+    };
+    setCurrentStroke(newStroke);
   };
 
-  const getCorrectAnswer = (kana: string) => {
-    // Implement the logic to get the correct answer based on the kana
-    return '';
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !currentStroke) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    currentStroke.points.push({ x, y });
+
+    // Redraw everything
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid(ctx, canvas.width, canvas.height);
+
+    // Draw completed strokes
+    strokes.forEach(stroke => {
+      drawStroke(ctx, stroke);
+    });
+
+    // Draw current stroke
+    drawStroke(ctx, currentStroke);
   };
 
-  const getHint = (kana: string) => {
-    // Implement the logic to get a hint for the kana
-    return '';
+  const drawStroke = (ctx: CanvasRenderingContext2D, stroke: Stroke) => {
+    if (stroke.points.length < 2) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = stroke.color;
+    ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+    
+    for (let i = 1; i < stroke.points.length; i++) {
+      ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+    }
+    
+    ctx.stroke();
+  };
+
+  const verifyDrawing = (drawnStrokes: Stroke[]) => {
+    const referenceData = kanaStrokeData[currentKana];
+    if (!referenceData) {
+      console.log('No referenceData for', currentKana);
+      return;
+    }
+
+    // Combine all drawn points into a single array
+    const allDrawnPoints = drawnStrokes.flatMap(stroke => stroke.points);
+
+    // Require a minimum number of points
+    if (allDrawnPoints.length < 10) {
+      setVerificationResult({
+        isCorrect: false,
+        message: 'Please draw the full character.',
+        accuracy: 0
+      });
+      return;
+    }
+    
+    // Calculate similarity between drawn shape and reference shape
+    const accuracy = calculateShapeAccuracy(allDrawnPoints, referenceData);
+    const isCorrect = accuracy > 0.92; // Stricter threshold
+
+    const result = {
+      isCorrect,
+      message: isCorrect 
+        ? 'Good job! The character looks correct!' 
+        : 'Try again, focus on the overall shape and proportions',
+      accuracy
+    };
+    console.log('setVerificationResult called with:', result);
+    setVerificationResult(result);
+
+    if (isCorrect) {
+      // Update progress when the character is drawn correctly
+      updateWordProgress(currentKana, {
+        masteryLevel: 1,
+        lastReviewed: Date.now(),
+        reviewCount: 1,
+        nextReviewDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        category: type,
+        section: 'writing',
+        difficulty: 'beginner',
+        consecutiveCorrect: 1,
+        lastAnswerCorrect: true
+      });
+    }
+  };
+
+  const calculateShapeAccuracy = (drawnPoints: { x: number; y: number }[], referenceData: KanaStrokeData): number => {
+    // Normalize points to a common scale
+    const normalizePoints = (points: { x: number; y: number }[]) => {
+      const minX = Math.min(...points.map(p => p.x));
+      const maxX = Math.max(...points.map(p => p.x));
+      const minY = Math.min(...points.map(p => p.y));
+      const maxY = Math.max(...points.map(p => p.y));
+      const scale = Math.max(maxX - minX, maxY - minY);
+      
+      return {
+        points: points.map(p => ({
+          x: (p.x - minX) / scale,
+          y: (p.y - minY) / scale
+        })),
+        bounds: {
+          minX, maxX, minY, maxY,
+          width: maxX - minX,
+          height: maxY - minY
+        }
+      };
+    };
+
+    const normalizedDrawn = normalizePoints(drawnPoints);
+    const normalizedReference = normalizePoints(referenceData.referencePoints);
+
+    // Calculate center points
+    const drawnCenter = {
+      x: (normalizedDrawn.bounds.minX + normalizedDrawn.bounds.maxX) / 2,
+      y: (normalizedDrawn.bounds.minY + normalizedDrawn.bounds.maxY) / 2
+    };
+
+    // Calculate aspect ratio similarity
+    const drawnAspectRatio = normalizedDrawn.bounds.width / normalizedDrawn.bounds.height;
+    const referenceAspectRatio = normalizedReference.bounds.width / normalizedReference.bounds.height;
+    const aspectRatioScore = 1 - Math.min(1, Math.abs(drawnAspectRatio - referenceAspectRatio));
+
+    // Calculate point distribution similarity
+    const calculatePointDistribution = (points: { x: number; y: number }[], bounds: any) => {
+      const gridSize = 5;
+      const grid: number[][] = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0));
+      const width = bounds.width || 1;   // Prevent division by zero
+      const height = bounds.height || 1; // Prevent division by zero
+
+      points.forEach(point => {
+        let gridX = Math.floor((point.x - bounds.minX) / width * (gridSize - 1));
+        let gridY = Math.floor((point.y - bounds.minY) / height * (gridSize - 1));
+        // Clamp to valid range
+        gridX = Math.max(0, Math.min(gridSize - 1, gridX));
+        gridY = Math.max(0, Math.min(gridSize - 1, gridY));
+        grid[gridY][gridX]++;
+      });
+
+      return grid;
+    };
+
+    const drawnGrid = calculatePointDistribution(normalizedDrawn.points, normalizedDrawn.bounds);
+    const referenceGrid = calculatePointDistribution(normalizedReference.points, normalizedReference.bounds);
+
+    // Calculate grid similarity
+    let gridScore = 0;
+    for (let y = 0; y < 5; y++) {
+      for (let x = 0; x < 5; x++) {
+        const diff = Math.abs(drawnGrid[y][x] - referenceGrid[y][x]);
+        gridScore += 1 - (diff / Math.max(drawnGrid[y][x], referenceGrid[y][x], 1));
+      }
+    }
+    gridScore /= 25; // Normalize to 0-1
+
+    // Calculate Hausdorff distance for overall shape
+    const calculateDistance = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
+      const dx = p1.x - p2.x;
+      const dy = p1.y - p2.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    let maxDistance = 0;
+    for (const drawnPoint of normalizedDrawn.points) {
+      let minDistance = Infinity;
+      for (const refPoint of normalizedReference.points) {
+        const distance = calculateDistance(drawnPoint, refPoint);
+        minDistance = Math.min(minDistance, distance);
+      }
+      maxDistance = Math.max(maxDistance, minDistance);
+    }
+
+    // Convert distance to similarity score (0 to 1)
+    const shapeScore = Math.max(0, 1 - maxDistance * 2);
+
+    // Combine scores with weights
+    const finalScore = (
+      shapeScore * 0.4 +      // Overall shape similarity
+      aspectRatioScore * 0.3 + // Aspect ratio similarity
+      gridScore * 0.3         // Point distribution similarity
+    );
+
+    // Adjust threshold based on character complexity
+    const threshold = 0.6; // Lower threshold for simpler characters
+    return Math.min(1, finalScore / threshold);
+  };
+
+  const endDrawing = () => {
+    if (!isDrawing || !currentStroke) return;
+
+    console.log('endDrawing called');
+    console.log('practiceMode:', practiceMode);
+    setIsDrawing(false);
+    const newStrokes = [...strokes, currentStroke];
+    setStrokes(newStrokes);
+    setCurrentStroke(null);
+
+    if (practiceMode === 'practice') {
+      console.log('Calling verifyDrawing with newStrokes:', newStrokes);
+      verifyDrawing(newStrokes);
+    }
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid(ctx, canvas.width, canvas.height);
+    setStrokes([]);
+    setCurrentStroke(null);
+    setVerificationResult(null);
+  };
+
+  const undoLastStroke = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid(ctx, canvas.width, canvas.height);
+    
+    const newStrokes = strokes.slice(0, -1);
+    setStrokes(newStrokes);
+
+    // Redraw remaining strokes
+    newStrokes.forEach(stroke => {
+      drawStroke(ctx, stroke);
+    });
+
+    // Verify the drawing after undoing
+    if (practiceMode === 'practice' && newStrokes.length > 0) {
+      verifyDrawing(newStrokes);
+    } else {
+      setVerificationResult(null);
+    }
+  };
+
+  const handleKanaChange = (kana: string) => {
+    setCurrentKana(kana);
+    setCurrentRomaji(kanaStrokeData[kana]?.romaji || '');
+    clearCanvas();
+  };
+
+  const handlePracticeModeChange = () => {
+    setPracticeMode(prev => prev === 'practice' ? 'free' : 'practice');
+    clearCanvas();
+  };
+
+  // Touch event handlers for mobile/iOS
+  const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    setIsDrawing(true);
+    const newStroke: Stroke = {
+      points: [{ x, y }],
+      color: theme.palette.primary.main
+    };
+    setCurrentStroke(newStroke);
+  };
+
+  const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !currentStroke) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    currentStroke.points.push({ x, y });
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid(ctx, canvas.width, canvas.height);
+    strokes.forEach(stroke => {
+      drawStroke(ctx, stroke);
+    });
+    drawStroke(ctx, currentStroke);
+  };
+
+  const endDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !currentStroke) return;
+    setIsDrawing(false);
+    const newStrokes = [...strokes, currentStroke];
+    setStrokes(newStrokes);
+    setCurrentStroke(null);
+    if (practiceMode === 'practice') {
+      verifyDrawing(newStrokes);
+    }
   };
 
   return (
-    <div className={`min-h-screen ${themeClasses.container}`}>
-      <div className="container mx-auto px-4 py-8">
-        <div className={`max-w-2xl mx-auto ${themeClasses.card}`}>
-          <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text.primary}`}>
-            {mode === 'hiragana' ? 'Hiragana' : 'Katakana'} Practice
-          </h2>
-
-          <div className="space-y-6">
-            <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl`}>
-              <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>
-                Practice Mode
-              </h3>
-              <div className="space-y-3">
-                {['recognition', 'writing', 'listening', 'matching'].map((practiceMode) => (
-                  <label key={practiceMode} className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      value={practiceMode}
-                      checked={mode === practiceMode}
-                      onChange={(e) => setMode(e.target.value as PracticeMode)}
-                      className={`form-radio h-5 w-5 ${theme === 'dark' ? 'text-neon-blue' : 'text-blue-500'}`}
-                    />
-                    <span className={themeClasses.text.primary}>
-                      {practiceMode === 'recognition' && 'Recognition (Kana → Romaji)'}
-                      {practiceMode === 'writing' && 'Writing (Romaji → Kana)'}
-                      {practiceMode === 'listening' && 'Listening (Audio → Kana)'}
-                      {practiceMode === 'matching' && 'Matching (Romaji ↔ Kana)'}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl`}>
-              <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary}`}>
-                Difficulty
-              </h3>
-              <div className="space-y-3">
-                {['easy', 'medium', 'hard'].map((diff) => (
-                  <label key={diff} className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      value={diff}
-                      checked={difficulty === diff}
-                      onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-                      className={`form-radio h-5 w-5 ${theme === 'dark' ? 'text-neon-blue' : 'text-blue-500'}`}
-                    />
-                    <span className={themeClasses.text.primary}>
-                      {diff === 'easy' && 'Easy (Basic Characters)'}
-                      {diff === 'medium' && 'Medium (Common Words)'}
-                      {diff === 'hard' && 'Hard (Sentences)'}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl`}>
-              <div className="mb-6">
-                <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text.primary}`}>
-                  {currentKana?.kana || ''}
-                </h2>
-                <div className="flex items-center justify-center space-x-4">
-                  <button
-                    onClick={() => handlePlayAudio(currentKana?.kana || '')}
-                    className={`p-3 rounded-lg ${themeClasses.button.secondary} transition-all duration-300 ${
-                      theme === 'dark' ? 'hover:shadow-[0_0_10px_rgba(0,149,255,0.4)]' : ''
-                    }`}
+    <Box sx={{ width: '100%' }}>
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 3,
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+        }}
+      >
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={8}>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6" component="h2">
+                Practice Writing {type === 'hiragana' ? 'Hiragana' : 'Katakana'}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Tooltip title={practiceMode === 'practice' ? 'Switch to Free Practice' : 'Switch to Practice Mode'}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handlePracticeModeChange}
                   >
-                    🔊 Play
-                  </button>
-                </div>
-              </div>
+                    {practiceMode === 'practice' ? 'Free Practice' : 'Practice Mode'}
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Show/Hide Hint">
+                  <IconButton onClick={() => setShowHint(!showHint)}>
+                    <CheckIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Listen">
+                  <IconButton onClick={() => playAudio(currentRomaji)}>
+                    <VolumeIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
 
-              <div className="flex flex-wrap gap-4 justify-center">
-                <button
-                  onClick={handleCheck}
-                  className={themeClasses.button.primary}
-                  disabled={!userInput.trim()}
+            {verificationResult && (
+              <Alert 
+                severity={verificationResult.isCorrect ? 'success' : 'warning'}
+                sx={{ mb: 2 }}
+              >
+                {verificationResult.message}
+                {!verificationResult.isCorrect && (
+                  <Typography variant="caption" display="block">
+                    Accuracy: {Math.round(verificationResult.accuracy * 100)}%
+                  </Typography>
+                )}
+              </Alert>
+            )}
+
+            <Box
+              sx={{
+                position: 'relative',
+                width: '100%',
+                height: isMobile ? '300px' : '400px',
+                bgcolor: 'background.default',
+                borderRadius: 1,
+                overflow: 'hidden',
+              }}
+            >
+              <canvas
+                ref={canvasRef}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  touchAction: 'none',
+                }}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={endDrawing}
+                onMouseLeave={endDrawing}
+                onTouchStart={startDrawingTouch}
+                onTouchMove={drawTouch}
+                onTouchEnd={endDrawingTouch}
+              />
+              {showHint && practiceMode === 'practice' && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                  }}
                 >
-                  Check Answer
-                </button>
-                <button
-                  onClick={() => setShowHint(!showHint)}
-                  className={themeClasses.button.secondary}
-                >
-                  {showHint ? 'Hide Hint' : 'Show Hint'}
-                </button>
-              </div>
-
-              {showResult && (
-                <div className={`mt-6 p-4 rounded-lg ${
-                  isCorrect 
-                    ? theme === 'dark' 
-                      ? 'bg-neon-blue/20 border-neon-blue/30' 
-                      : 'bg-green-100 border-green-200'
-                    : theme === 'dark' 
-                      ? 'bg-neon-pink/20 border-neon-pink/30' 
-                      : 'bg-red-100 border-red-200'
-                } border`}>
-                  <div className={`text-lg font-medium mb-2 ${
-                    isCorrect 
-                      ? theme === 'dark' 
-                        ? 'text-neon-blue' 
-                        : 'text-green-800'
-                      : theme === 'dark' 
-                        ? 'text-neon-pink' 
-                        : 'text-red-800'
-                  }`}>
-                    {isCorrect ? 'Correct!' : 'Incorrect!'}
-                  </div>
-                  {!isCorrect && (
-                    <div className={`${themeClasses.text.secondary} mb-2`}>
-                      Correct Answer: {getCorrectAnswer(currentKana)}
-                    </div>
-                  )}
-                </div>
+                  <Typography variant="h1" component="div">
+                    {currentKana}
+                  </Typography>
+                </Box>
               )}
+            </Box>
 
-              {showHint && (
-                <div className={`mt-6 p-4 rounded-lg ${themeClasses.card}`}>
-                  <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text.primary}`}>
-                    Hint
-                  </h3>
-                  <p className={themeClasses.text.secondary}>
-                    {getHint(currentKana)}
-                  </p>
-                </div>
-              )}
+            <Box sx={{ mt: 2, display: 'flex', gap: 1, justifyContent: 'center' }}>
+              <Button
+                variant="outlined"
+                startIcon={<UndoIcon />}
+                onClick={undoLastStroke}
+                disabled={strokes.length === 0}
+              >
+                Undo
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={clearCanvas}
+                disabled={strokes.length === 0}
+              >
+                Clear
+              </Button>
+            </Box>
+          </Grid>
 
-              <div className="space-y-4">
-                <div>
-                  <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text.primary}`}>
-                    Progress
-                  </h3>
-                  <div className={`grid grid-cols-2 gap-4 ${themeClasses.text.secondary}`}>
-                    <div>
-                      <div className="text-sm opacity-75">Score</div>
-                      <div className="text-xl font-bold">{score}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm opacity-75">Attempts</div>
-                      <div className="text-xl font-bold">{attempts}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          <Grid item xs={12} md={4}>
+            <Typography variant="subtitle1" gutterBottom>
+              Current Character: {currentKana}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Romaji: {currentRomaji}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Reference Points: {kanaStrokeData[currentKana]?.referencePoints.length || 0}
+            </Typography>
+            
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Category:
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                {Object.entries(getKanaCategories(type)).map(([key, category]) => (
+                  <Button
+                    key={key}
+                    variant={selectedCategory === key ? 'contained' : 'outlined'}
+                    size="small"
+                    onClick={() => {
+                      setSelectedCategory(key);
+                      if (category.kana.length > 0) {
+                        handleKanaChange(category.kana[0]);
+                      }
+                    }}
+                  >
+                    {category.title}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
+
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Available Characters:
+              </Typography>
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 1,
+                maxHeight: '200px',
+                overflowY: 'auto',
+                p: 1,
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 1
+              }}>
+                {availableKana.map((kana) => (
+                  <Button
+                    key={kana}
+                    variant={currentKana === kana ? 'contained' : 'outlined'}
+                    size="small"
+                    onClick={() => handleKanaChange(kana)}
+                    sx={{ minWidth: '40px' }}
+                  >
+                    {kana}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
+
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Practice Tips:
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                • Focus on the overall shape of the character
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                • Use the grid to maintain proper proportions
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                • Try writing without looking at the hint
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                • Practice both the character's shape and its pronunciation
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+    </Box>
   );
 };
 

@@ -8,7 +8,6 @@ const ThemeToggle: React.FC = () => {
   const themes = [
     { id: 'dark', label: 'Dark', icon: '🌙' },
     { id: 'light', label: 'Light', icon: '☀️' },
-    { id: 'neon', label: 'Neon', icon: '✨' },
   ] as const;
 
   return (

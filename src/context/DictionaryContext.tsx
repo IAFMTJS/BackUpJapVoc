@@ -1,16 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DictionaryItem } from '../types/dictionary';
-import { openDB } from 'idb';
+import { databasePromise, getDatabase, StoreName } from '../utils/databaseConfig';
 import { quizWords } from '../data/quizData';
-
-// Database configuration
-const DB_CONFIG = {
-  name: 'japanese-dictionary',
-  version: 1,
-  stores: {
-    words: { keyPath: 'id' }
-  }
-};
 
 interface DictionaryContextType {
   words: DictionaryItem[];
@@ -43,18 +34,7 @@ export const DictionaryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const initializeDatabase = async () => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version, {
-        upgrade(db) {
-          if (!db.objectStoreNames.contains('words')) {
-            const store = db.createObjectStore('words', { keyPath: 'id' });
-            store.createIndex('by-level', 'level');
-            store.createIndex('by-category', 'category');
-            store.createIndex('by-jlpt', 'jlptLevel');
-          }
-        }
-      });
-
-      // Check if we need to initialize the database
+      const db = await databasePromise;
       const tx = db.transaction('words', 'readonly');
       const store = tx.objectStore('words');
       const count = await store.count();
@@ -116,7 +96,7 @@ export const DictionaryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       await initializeDatabase();
 
       // Then load words
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('words', 'readonly');
       const store = tx.objectStore('words');
       const wordsData = await store.getAll();
@@ -159,7 +139,7 @@ export const DictionaryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const addWord = async (wordData: Omit<DictionaryItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('words', 'readwrite');
       const store = tx.objectStore('words');
 
@@ -180,7 +160,7 @@ export const DictionaryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const updateWord = async (word: DictionaryItem) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('words', 'readwrite');
       const store = tx.objectStore('words');
 
@@ -199,7 +179,7 @@ export const DictionaryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const deleteWord = async (id: string) => {
     try {
-      const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+      const db = await getDatabase();
       const tx = db.transaction('words', 'readwrite');
       const store = tx.objectStore('words');
 

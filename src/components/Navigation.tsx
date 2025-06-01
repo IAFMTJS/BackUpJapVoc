@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from './ThemeToggle';
+import { useAuth } from '../context/AuthContext';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
   const { getThemeClasses } = useTheme();
+  const { currentUser } = useAuth();
   const themeClasses = getThemeClasses();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
@@ -19,15 +21,15 @@ const Navigation: React.FC = () => {
     { path: '/knowing', label: 'Knowing' },
     { path: '/srs', label: 'SRS' },
     { path: '/trivia', label: 'Trivia' },
-    { path: '/progress', label: 'Progress' },
-    { path: '/settings', label: 'Settings' }
+    { path: '/profile', label: 'Profile' }
   ];
 
   // Learning submenu items
-  const learningItems = [
-    { path: '/learning/writing', label: 'Writing' },
+  const learningRoutes = [
+    { path: '/learning/kana', label: 'Kana' },
     { path: '/learning/kanji', label: 'Kanji' },
-    { path: '/learning/romaji', label: 'Romaji' }
+    { path: '/learning/romaji', label: 'Romaji' },
+    { path: '/learning/quiz', label: 'Quiz' }
   ];
 
   // Knowing submenu items
@@ -96,7 +98,7 @@ const Navigation: React.FC = () => {
                 >
                   {label}
                 </Link>
-                {path === '/learning' && renderSubmenu(learningItems, '/learning')}
+                {path === '/learning' && renderSubmenu(learningRoutes, '/learning')}
                 {path === '/knowing' && renderSubmenu(knowingItems, '/knowing')}
                 {path === '/trivia' && renderSubmenu(triviaItems, '/trivia')}
               </div>
@@ -109,35 +111,23 @@ const Navigation: React.FC = () => {
           {/* Mobile menu button */}
           <div className="md:hidden">
             <button
-              type="button"
-              className={`${themeClasses.button.secondary} inline-flex items-center justify-center p-2 rounded-md`}
-              aria-controls="mobile-menu"
-              aria-expanded={isMobileMenuOpen}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={`${themeClasses.nav.link.default} inline-flex items-center justify-center p-2 rounded-md`}
             >
-              <span className="sr-only">{isMobileMenuOpen ? 'Close main menu' : 'Open main menu'}</span>
+              <span className="sr-only">Open main menu</span>
               <svg
-                className="h-5 w-5"
+                className="h-6 w-6"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                {isMobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
+                />
               </svg>
             </button>
           </div>
@@ -166,7 +156,7 @@ const Navigation: React.FC = () => {
                   </Link>
                   {(path === '/learning' || path === '/knowing' || path === '/trivia') && (
                     <div className="pl-4">
-                      {(path === '/learning' ? learningItems : 
+                      {(path === '/learning' ? learningRoutes : 
                         path === '/knowing' ? knowingItems : 
                         triviaItems).map((item) => (
                         <Link

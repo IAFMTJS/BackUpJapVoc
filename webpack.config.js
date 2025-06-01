@@ -24,7 +24,7 @@ module.exports = (env, argv) => {
       filename: isProduction ? 'static/js/[name].[contenthash:8].js' : 'static/js/[name].js',
       chunkFilename: isProduction ? 'static/js/[name].[contenthash:8].chunk.js' : 'static/js/[name].chunk.js',
       publicPath: '/',
-      clean: true,
+      clean: isProduction,
       crossOriginLoading: 'anonymous',
       assetModuleFilename: 'static/media/[name].[hash][ext][query]',
       chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
@@ -360,7 +360,7 @@ module.exports = (env, argv) => {
         'Cache-Control': 'no-cache, no-store, must-revalidate'
       },
       devMiddleware: {
-        writeToDisk: true,
+        writeToDisk: false,
         publicPath: '/'
       },
       client: {

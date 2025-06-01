@@ -1,502 +1,460 @@
-import React, { useState, lazy, Suspense, Component } from 'react';
-import { useTheme } from '../context/ThemeContext';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { useProgress } from '../context/ProgressContext';
-import { useSettings } from '../context/SettingsContext';
-import { useAccessibility } from '../context/AccessibilityContext';
-import { ProgressItem } from '../types';
-import { quizWords } from '../data/quizData';
-import { kanjiList } from '../data/kanjiData';
-import { beginnerPhrases } from './AnimeSection';
-import { romajiWords, romajiSentences, romajiStories } from '../data/romajiWords';
-import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
-import { Paper, Box, Container, Typography, Grid, LinearProgress, Card, CardContent, Divider, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
+import { useAuth } from '../context/AuthContext';
 import {
-  Timeline as TimelineIcon,
-  Star as StarIcon,
-  School as SchoolIcon,
-  EmojiEmotions as MoodIcon,
-  Book as DictionaryIcon,
-  AccessTime as TimeIcon,
+  Box,
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  CircularProgress,
+  Alert,
+  Button,
+  Divider,
+  useTheme,
+  useMediaQuery,
+  Tabs,
+  Tab
+} from '@mui/material';
+import {
+  Timeline,
+  TimelineItem,
+  TimelineSeparator,
+  TimelineConnector,
+  TimelineContent,
+  TimelineDot
+} from '@mui/lab';
+import {
   TrendingUp as TrendingUpIcon,
-  CalendarToday as CalendarIcon,
+  School as SchoolIcon,
+  EmojiEvents as EmojiEventsIcon,
+  AccessTime as AccessTimeIcon,
+  Star as StarIcon,
+  LocalFireDepartment as FireIcon
 } from '@mui/icons-material';
+import { formatDistanceToNow, format } from 'date-fns';
+import StatisticsDashboard from '../components/progress/StatisticsDashboard';
+import LearningPath from '../components/progress/LearningPath';
+import { StudyHistory } from '../components/progress/StudyHistory';
+import { MasteryDistribution } from '../components/progress/MasteryDistribution';
+import { DailyProgressChart } from '../components/progress/DailyProgressChart';
+import { StudyEfficiency } from '../components/progress/StudyEfficiency';
+import { Achievements } from '../components/progress/Achievements';
 
-// Loading component
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-[200px]">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    <span className="ml-3 text-lg">Loading progress...</span>
-  </div>
-);
-
-// Lazy load heavy components with error handling
-const LazyDictionary = lazy(() => {
-  return import('../components/DictionaryList').catch(error => {
-    console.error('Error loading Dictionary component:', error);
-    return { default: () => <div>Error loading Dictionary component</div> };
-  });
-});
-
-const LazyLearningProgress = lazy(() => {
-  return import('../components/LearningProgress').catch(error => {
-    console.error('Error loading LearningProgress component:', error);
-    return { default: () => <div>Error loading LearningProgress component</div> };
-  });
-});
-
-const LazyProgressVisuals = lazy(() => {
-  return import('../components/ProgressVisuals').catch(error => {
-    console.error('Error loading ProgressVisuals component:', error);
-    return { default: () => <div>Error loading ProgressVisuals component</div> };
-  });
-});
-
-// Loading fallback component for lazy-loaded components
-const ComponentLoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-[200px]">
-    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-    <span className="ml-3 text-sm">Loading component...</span>
-  </div>
-);
-
-// Component error boundary
-class ErrorBoundary extends Component<{ children: React.ReactNode; fallback: React.ReactNode }> {
-  state = { hasError: false };
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback;
-    }
-    return this.props.children;
-  }
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
 }
 
-// Component error boundary wrapper
-const ComponentErrorBoundary: React.FC<{ children: React.ReactNode; componentName: string }> = ({ children, componentName }) => (
-  <ErrorBoundary
-    fallback={
-      <div className="p-4 text-center">
-        <p className="text-red-500 mb-2">Error loading {componentName}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Retry
-        </button>
-      </div>
-    }
-  >
-    {children}
-  </ErrorBoundary>
-);
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
 
-type TabType = 'progress' | 'dictionary';
-
-const sections = [
-  { 
-    id: 'dictionary', 
-    name: 'Dictionary', 
-    icon: '📖', 
-    total: quizWords.filter(item => item.isHiragana || item.isKatakana).length + kanjiList.length,
-    description: 'Learn and track vocabulary progress'
-  },
-  { 
-    id: 'kanji', 
-    name: 'Kanji', 
-    icon: '🀄', 
-    total: kanjiList.length,
-    description: 'Master Japanese characters'
-  },
-  { 
-    id: 'games', 
-    name: 'Games', 
-    icon: '🎮', 
-    total: 50,
-    description: 'Learn through interactive games',
-    path: '/games'
-  },
-  { 
-    id: 'vocabulary-builder', 
-    name: 'Vocabulary Builder', 
-    icon: '📚', 
-    total: quizWords.length,
-    description: 'Build your vocabulary systematically'
-  },
-  { 
-    id: 'anime', 
-    name: 'Anime Section', 
-    icon: '🎬', 
-    total: beginnerPhrases.length,
-    description: 'Learn from anime and manga'
-  },
-  {
-    id: 'romaji',
-    name: 'Romaji Practice',
-    icon: '🔤',
-    total: romajiWords.length + romajiSentences.length + romajiStories.length,
-    description: 'Master Romaji words, sentences, and stories'
-  },
-];
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`progress-tabpanel-${index}`}
+      aria-labelledby={`progress-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ py: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
 
 const ProgressPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('progress');
-  const { getThemeClasses, theme } = useTheme();
-  const { 
-    progress, 
-    isLoading: isProgressLoading, 
-    error: progressError,
-    settings,
-    isSettingsLoading,
-    settingsError
-  } = useProgress();
-  const { settings: accessibilitySettings, isLoading: isAccessibilityLoading } = useAccessibility();
+  const { progress, isLoading, error, isSyncing, lastSyncTime } = useProgress();
+  const { currentUser } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [selectedTimeRange, setSelectedTimeRange] = useState<'week' | 'month' | 'year'>('week');
 
-  const themeClasses = getThemeClasses();
-
-  // Add error state for component loading
-  const [componentError, setComponentError] = useState<string | null>(null);
-
-  // Wrap lazy components with error boundary and suspense
-  const renderLazyComponent = (Component: React.LazyExoticComponent<any>, componentName: string) => (
-    <ErrorBoundary
-      fallback={
-        <div className="p-4 text-center">
-          <p className="text-red-500 mb-2">Error loading {componentName}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Retry
-          </button>
-        </div>
-      }
-    >
-      <Suspense fallback={<ComponentLoadingFallback />}>
-        <Component />
-      </Suspense>
-    </ErrorBoundary>
-  );
-
-  // Show error state if there's a critical error
-  if (progressError) {
+  if (isLoading) {
     return (
-      <div className={themeClasses.container}>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center">
-              <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
-                ← Back to Home
-              </Link>
-              <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
-                Learning Progress
-              </h1>
-            </div>
-          </div>
-          <div className={`p-6 rounded-lg ${themeClasses.card} ${themeClasses.error}`}>
-            <h2 className={`text-xl font-semibold mb-4 ${themeClasses.text.error}`}>
-              Error Loading Progress
-            </h2>
-            <p className={`mb-4 ${themeClasses.text.muted}`}>
-              {progressError}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className={`px-4 py-2 rounded ${themeClasses.button.primary}`}
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+        <CircularProgress />
+      </Box>
     );
   }
 
-  // Render the page header
-  const renderHeader = () => (
-    <div className="flex items-center justify-between mb-8">
-      <div className="flex items-center">
-        <Link to="/" className={`${themeClasses.nav.link.default} mr-4`}>
-          ← Back to Home
-        </Link>
-        <h1 className={`text-3xl font-bold ${themeClasses.text.primary}`}>
-          Learning Progress
-        </h1>
-      </div>
-    </div>
-  );
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
 
-  // Loading state component
-  const renderLoadingState = (component: string) => (
-    <div className="flex items-center justify-center min-h-[200px]">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      <span className="ml-3 text-sm">Loading {component}...</span>
-    </div>
-  );
+  const {
+    statistics,
+    sections,
+    preferences
+  } = progress;
 
-  const calculateMasteryDistribution = () => {
-    const distribution = {
-      mastered: 0,
-      learning: 0,
-      notStarted: 0,
-    };
-
-    Object.values(progress.words).forEach((word) => {
-      if (word.mastery >= 0.8) distribution.mastered++;
-      else if (word.mastery > 0) distribution.learning++;
-      else distribution.notStarted++;
-    });
-
-    return distribution;
-  };
-
-  const masteryDistribution = calculateMasteryDistribution();
   const totalWords = Object.keys(progress.words).length;
-  const totalStudyTime = progress.statistics.totalStudyTime || 0;
-  const currentStreak = progress.statistics.currentStreak || 0;
-  const longestStreak = progress.statistics.longestStreak || 0;
+  const masteredWords = Object.values(progress.words).filter(w => w.mastery >= 0.8).length;
+  const inProgressWords = Object.values(progress.words).filter(w => w.mastery > 0 && w.mastery < 0.8).length;
+  const notStartedWords = totalWords - masteredWords - inProgressWords;
 
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
+  const totalStudyTime = statistics.totalStudyTime;
+  const averageStudyTimePerDay = totalStudyTime / (statistics.studySessions.length || 1);
+  const studyEfficiency = statistics.studyEfficiency;
+  const averageAccuracy = statistics.averageAccuracy;
+
+  const recentSessions = statistics.studySessions
+    .slice(-5)
+    .reverse()
+    .map(session => ({
+      ...session,
+      date: new Date(session.timestamp),
+      duration: session.duration / 60, // Convert to minutes
+      masteryGained: session.averageMastery
+    }));
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setSelectedTab(newValue);
   };
-
-  const StatCard: React.FC<{
-    title: string;
-    value: string | number;
-    icon: React.ReactNode;
-    color?: string;
-  }> = ({ title, value, icon, color = 'primary.main' }) => (
-    <Card>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ color, mr: 1 }}>{icon}</Box>
-          <Typography variant="h6" component="div">
-            {title}
-          </Typography>
-        </Box>
-        <Typography variant="h4" component="div" sx={{ color }}>
-          {value}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
 
   return (
-    <div className={themeClasses.container}>
-      {/* Decorative cityscape background */}
-      <div className="absolute inset-0 pointer-events-none z-0 opacity-10">
-        <JapaneseCityscape 
-          width={1000}
-          height={500}
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            right: 0,
-            transform: 'scaleX(-1)',
-            filter: theme === 'dark' ? 'brightness(0.6)' : 'brightness(0.9)'
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Status Alerts */}
+      <Box sx={{ mb: 3 }}>
+        {!currentUser && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            You are currently using the app without an account. Sign in to sync your progress across devices.
+          </Alert>
+        )}
+
+        {isSyncing && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Syncing progress...
+          </Alert>
+        )}
+
+        {lastSyncTime && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+            Last synced: {formatDistanceToNow(lastSyncTime)} ago
+          </Typography>
+        )}
+      </Box>
+
+      {/* Main Content */}
+      <Paper sx={{ width: '100%' }}>
+        <Tabs
+          value={selectedTab}
+          onChange={handleTabChange}
+          indicatorColor="primary"
+          textColor="primary"
+          variant={isMobile ? "fullWidth" : "standard"}
+          centered={!isMobile}
+          sx={{ 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+            position: 'sticky',
+            top: 0,
+            zIndex: 1
           }}
-        />
-      </div>
+        >
+          <Tab label="Overview" />
+          <Tab label="Statistics" />
+          <Tab label="Charts" />
+          <Tab label="Sections" />
+        </Tabs>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
-        {renderHeader()}
-
-        {/* Main content area */}
-        <div className="space-y-6">
-          {/* Progress Visualization */}
-          <div className={`p-6 rounded-lg ${themeClasses.card}`}>
-            <Paper>
-              {isProgressLoading ? (
-                renderLoadingState('progress data')
-              ) : (
-                renderLazyComponent(LazyProgressVisuals, 'Progress Visualization')
-              )}
+        {/* Overview Tab */}
+        <TabPanel value={selectedTab} index={0}>
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            {/* Current Progress Overview */}
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 3, 
+                mb: 3, 
+                bgcolor: 'background.default',
+                borderRadius: 2
+              }}
+            >
+              <Typography variant="h5" gutterBottom>
+                Current Progress
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ 
+                    textAlign: 'center',
+                    p: 2,
+                    bgcolor: 'background.paper',
+                    borderRadius: 1,
+                    boxShadow: 1
+                  }}>
+                    <Typography variant="h4" color="primary">
+                      {masteredWords}
+                    </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Words Mastered
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ 
+                    textAlign: 'center',
+                    p: 2,
+                    bgcolor: 'background.paper',
+                    borderRadius: 1,
+                    boxShadow: 1
+                  }}>
+                    <Typography variant="h4" color="secondary">
+                      {inProgressWords}
+                    </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      In Progress
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ 
+                    textAlign: 'center',
+                    p: 2,
+                    bgcolor: 'background.paper',
+                    borderRadius: 1,
+                    boxShadow: 1
+                  }}>
+                    <Typography variant="h4" color="warning.main">
+                      {statistics.currentStreak}
+                    </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Day Streak
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ 
+                    textAlign: 'center',
+                    p: 2,
+                    bgcolor: 'background.paper',
+                    borderRadius: 1,
+                    boxShadow: 1
+                  }}>
+                    <Typography variant="h4" color="success.main">
+                      {Math.round(studyEfficiency * 100)}%
+                    </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Study Efficiency
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
             </Paper>
-          </div>
 
-          {/* Dictionary Section */}
-          <Box sx={{ mt: 4 }}>
-            {isSettingsLoading ? (
-              renderLoadingState('dictionary settings')
-            ) : (
-              renderLazyComponent(LazyDictionary, 'Dictionary')
-            )}
+            {/* Learning Path */}
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 3, 
+                mb: 3, 
+                bgcolor: 'background.default',
+                borderRadius: 2
+              }}
+            >
+              <Typography variant="h5" gutterBottom>
+                Learning Path
+              </Typography>
+              <LearningPath />
+            </Paper>
+
+            {/* Achievements */}
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 3, 
+                bgcolor: 'background.default',
+                borderRadius: 2
+              }}
+            >
+              <Typography variant="h5" gutterBottom>
+                Achievements
+              </Typography>
+              <Achievements />
+            </Paper>
           </Box>
+        </TabPanel>
 
-          {/* Progress Section */}
-          {activeTab === 'progress' && (
-            <Box sx={{ mt: 4 }}>
-              {isProgressLoading ? (
-                renderLoadingState('learning progress')
-              ) : (
-                renderLazyComponent(LazyLearningProgress, 'Learning Progress')
-              )}
-            </Box>
-          )}
+        {/* Statistics Tab */}
+        <TabPanel value={selectedTab} index={1}>
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            <Grid container spacing={3}>
+              {/* Statistics Dashboard */}
+              <Grid item xs={12}>
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    p: 3, 
+                    bgcolor: 'background.default',
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography variant="h5" gutterBottom>
+                    Statistics Dashboard
+                  </Typography>
+                  <StatisticsDashboard />
+                </Paper>
+              </Grid>
 
-          {/* Accessibility Settings Notice */}
-          {isAccessibilityLoading && (
-            <div className={`p-4 rounded-lg ${themeClasses.card} bg-yellow-50 dark:bg-yellow-900/20`}>
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                Loading accessibility settings...
-              </p>
-            </div>
-          )}
+              {/* Study History */}
+              <Grid item xs={12} md={6}>
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    p: 3, 
+                    height: '100%',
+                    bgcolor: 'background.default',
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography variant="h5" gutterBottom>
+                    Study History
+                  </Typography>
+                  <StudyHistory sessions={recentSessions} />
+                </Paper>
+              </Grid>
 
-          {/* Overview Stats */}
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <StatCard
-                title="Total Study Time"
-                value={formatTime(totalStudyTime)}
-                icon={<TimeIcon />}
-                color="info.main"
-              />
+              {/* Mastery Distribution */}
+              <Grid item xs={12} md={6}>
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    p: 3, 
+                    height: '100%',
+                    bgcolor: 'background.default',
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography variant="h5" gutterBottom>
+                    Mastery Distribution
+                  </Typography>
+                  <MasteryDistribution
+                    mastered={masteredWords}
+                    inProgress={inProgressWords}
+                    notStarted={notStartedWords}
+                    total={totalWords}
+                  />
+                </Paper>
+              </Grid>
             </Grid>
-            <Grid item xs={12} md={4}>
-              <StatCard
-                title="Current Streak"
-                value={`${currentStreak} days`}
-                icon={<TrendingUpIcon />}
-                color="success.main"
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <StatCard
-                title="Longest Streak"
-                value={`${longestStreak} days`}
-                icon={<CalendarIcon />}
-                color="warning.main"
-              />
-            </Grid>
-          </Grid>
+          </Box>
+        </TabPanel>
 
-          {/* Section Progress */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+        {/* Charts Tab */}
+        <TabPanel value={selectedTab} index={2}>
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            <Grid container spacing={3}>
+              {/* Daily Progress Chart */}
+              <Grid item xs={12}>
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    p: 3, 
+                    mb: 3,
+                    bgcolor: 'background.default',
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography variant="h5" gutterBottom>
+                    Daily Progress
+                  </Typography>
+                  <DailyProgressChart
+                    data={statistics.dailyProgress}
+                    timeRange={selectedTimeRange}
+                    onTimeRangeChange={setSelectedTimeRange}
+                  />
+                </Paper>
+              </Grid>
+
+              {/* Study Efficiency */}
+              <Grid item xs={12}>
+                <Paper 
+                  elevation={0} 
+                  sx={{ 
+                    p: 3,
+                    bgcolor: 'background.default',
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography variant="h5" gutterBottom>
+                    Study Efficiency
+                  </Typography>
+                  <StudyEfficiency
+                    efficiency={studyEfficiency}
+                    averageAccuracy={averageAccuracy}
+                    averageStudyTime={averageStudyTimePerDay}
+                    totalStudyTime={totalStudyTime}
+                  />
+                </Paper>
+              </Grid>
+            </Grid>
+          </Box>
+        </TabPanel>
+
+        {/* Sections Tab */}
+        <TabPanel value={selectedTab} index={3}>
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 3,
+                bgcolor: 'background.default',
+                borderRadius: 2
+              }}
+            >
+              <Typography variant="h5" gutterBottom>
                 Section Progress
               </Typography>
               <Grid container spacing={2}>
-                {sections.map((section) => (
-                  <Grid item xs={12} sm={6} md={4} key={section.id}>
-                    <Box sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        {section.id === 'dictionary' && <DictionaryIcon sx={{ mr: 1 }} />}
-                        {section.id === 'mood' && <MoodIcon sx={{ mr: 1 }} />}
-                        {section.id === 'culture' && <SchoolIcon sx={{ mr: 1 }} />}
-                        <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>
-                          {section.name}
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={(progress.sections[section.id] || 0) * 100}
-                        sx={{ height: 10, borderRadius: 5 }}
-                      />
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        {Math.round((progress.sections[section.id] || 0) * 100)}% Complete
+                {Object.entries(sections).map(([section, data]) => (
+                  <Grid item xs={12} sm={6} md={4} key={section}>
+                    <Paper 
+                      elevation={1}
+                      sx={{ 
+                        p: 2, 
+                        height: '100%',
+                        bgcolor: 'background.paper',
+                        borderRadius: 1,
+                        transition: 'transform 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: 2
+                        }
+                      }}
+                    >
+                      <Typography variant="subtitle1" gutterBottom>
+                        {section.charAt(0).toUpperCase() + section.slice(1)}
                       </Typography>
-                    </Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Mastered: {data.masteredItems} / {data.totalItems}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        In Progress: {data.inProgressItems}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Average Mastery: {Math.round(data.averageMastery * 100)}%
+                      </Typography>
+                    </Paper>
                   </Grid>
                 ))}
               </Grid>
             </Paper>
-          </Grid>
-
-          {/* Word Mastery Distribution */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Word Mastery
-              </Typography>
-              <List>
-                <ListItem>
-                  <ListItemIcon>
-                    <StarIcon color="success" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Mastered"
-                    secondary={`${masteryDistribution.mastered} words (${Math.round(
-                      (masteryDistribution.mastered / totalWords) * 100
-                    )}%)`}
-                  />
-                  <LinearProgress
-                    variant="determinate"
-                    value={(masteryDistribution.mastered / totalWords) * 100}
-                    sx={{ width: 100, ml: 2 }}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <TimelineIcon color="primary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Learning"
-                    secondary={`${masteryDistribution.learning} words (${Math.round(
-                      (masteryDistribution.learning / totalWords) * 100
-                    )}%)`}
-                  />
-                  <LinearProgress
-                    variant="determinate"
-                    value={(masteryDistribution.learning / totalWords) * 100}
-                    sx={{ width: 100, ml: 2 }}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <SchoolIcon color="action" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Not Started"
-                    secondary={`${masteryDistribution.notStarted} words (${Math.round(
-                      (masteryDistribution.notStarted / totalWords) * 100
-                    )}%)`}
-                  />
-                  <LinearProgress
-                    variant="determinate"
-                    value={(masteryDistribution.notStarted / totalWords) * 100}
-                    sx={{ width: 100, ml: 2 }}
-                  />
-                </ListItem>
-              </List>
-            </Paper>
-          </Grid>
-
-          {/* Recent Activity */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Recent Activity
-              </Typography>
-              <List>
-                {progress.statistics.recentActivity?.slice(0, 5).map((activity, index) => (
-                  <React.Fragment key={index}>
-                    <ListItem>
-                      <ListItemText
-                        primary={activity.description}
-                        secondary={new Date(activity.timestamp).toLocaleDateString()}
-                      />
-                    </ListItem>
-                    {index < progress.statistics.recentActivity.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
-              </List>
-            </Paper>
-          </Grid>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </TabPanel>
+      </Paper>
+    </Container>
   );
 };
 

@@ -1,9 +1,9 @@
 import { ProgressItem, PendingProgressItem, Settings } from '../types';
+import { DB_CONFIG as MainDBConfig } from './databaseConfig';
 
-// Database configuration
+// Use the same database configuration as databaseConfig.ts
 const DB_CONFIG = {
-  name: 'JapVocDB',
-  version: 5,
+  ...MainDBConfig,
   stores: {
     words: {
       name: 'words',

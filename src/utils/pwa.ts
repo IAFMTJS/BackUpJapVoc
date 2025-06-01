@@ -1,4 +1,5 @@
 import { openDB } from 'idb';
+import { getDatabase } from './databaseConfig';
 
 // PWA utility functions
 export class PWAUtils {
@@ -178,20 +179,7 @@ export class PWAUtils {
 
   // Utility methods
   private async getDB() {
-    return openDB('japvoc-sync', 1, {
-      upgrade(db) {
-        // Create object stores for different types of data
-        if (!db.objectStoreNames.contains('pendingVocabulary')) {
-          db.createObjectStore('pendingVocabulary', { keyPath: 'id', autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains('pendingProgress')) {
-          db.createObjectStore('pendingProgress', { keyPath: 'id', autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains('pendingSettings')) {
-          db.createObjectStore('pendingSettings', { keyPath: 'id', autoIncrement: true });
-        }
-      }
-    });
+    return getDatabase();
   }
 
   private urlBase64ToUint8Array(base64String: string): Uint8Array {

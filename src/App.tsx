@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useState, createContext, useContext } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider, createTheme, Theme } from '@mui/material/styles';
 import { useTheme } from './context/ThemeContext';
 import Navigation from './components/Navigation';
@@ -7,6 +7,7 @@ import ThemeToggle from './components/ThemeToggle';
 import ErrorBoundary from './components/ErrorBoundary';
 import OfflineStatus from './components/OfflineStatus';
 import PushNotifications from './components/PushNotifications';
+import MainLayout from './components/MainLayout';
 import './App.css';
 import { openDB, deleteDB, DB_CONFIG } from './utils/indexedDB';
 import { initializeAudioCache } from './utils/audio';
@@ -24,19 +25,23 @@ import { WordProvider } from './context/WordContext';
 import { DictionaryProvider } from './context/DictionaryContext';
 import { LearningProvider } from './context/LearningContext';
 import LoadingSpinner from './components/LoadingSpinner';
-import WritingPractice from './components/WritingPractice';
 import { databasePromise, initializeDatabase, forceDatabaseReset } from './utils/databaseConfig';
 import { CircularProgress, Box } from '@mui/material';
 import { KnowingNavigation } from './components/KnowingNavigation';
+import ProfilePage from './pages/ProfilePage';
+import Login from './components/Login';
+import { AchievementProvider } from './context/AchievementContext';
+import { KanjiProvider } from './context/KanjiContext';
 
 // Lazy load all route components
 const Home = lazy(() => import('./pages/Home'));
 const Settings = lazy(() => import('./pages/Settings'));
 const LearningLayout = lazy(() => import('./pages/learning/LearningLayout'));
-const Writing = lazy(() => import('./pages/learning/Writing'));
-const Kanji = lazy(() => import('./pages/learning/Kanji'));
+const LearnKanji = lazy(() => import('./pages/LearnKanji'));
+const KanjiDictionary = lazy(() => import('./pages/learning/KanjiDictionary'));
 const Romaji = lazy(() => import('./pages/learning/Romaji'));
 const QuizPage = lazy(() => import('./pages/learning/QuizPage'));
+const Kana = lazy(() => import('./pages/learning/Kana'));
 const Dictionary = lazy(() => import('./pages/Dictionary'));
 const KnowingDictionary = lazy(() => import('./pages/KnowingDictionary'));
 const SRSPage = lazy(() => import('./pages/SRSPage'));
@@ -71,34 +76,30 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
     // Create theme with safe defaults
     const themeConfig = {
       palette: {
-        mode: theme === 'dark' || theme === 'neon' ? 'dark' : 'light',
+        mode: theme === 'dark' ? 'dark' : 'light',
         primary: {
-          main: theme === 'neon' ? '#00f7ff' : theme === 'dark' ? '#3b82f6' : '#2563eb',
+          main: theme === 'dark' ? '#3b82f6' : '#2563eb',
         },
         secondary: {
-          main: theme === 'neon' ? '#ff3afc' : theme === 'dark' ? '#8b5cf6' : '#7c3aed',
+          main: theme === 'dark' ? '#8b5cf6' : '#7c3aed',
         },
         background: {
-          default: theme === 'neon' ? '#0a0a23' : theme === 'dark' ? '#181830' : '#ffffff',
-          paper: theme === 'neon' ? '#181830' : theme === 'dark' ? '#23233a' : '#ffffff',
+          default: theme === 'dark' ? '#181830' : '#ffffff',
+          paper: theme === 'dark' ? '#23233a' : '#ffffff',
         },
         text: {
-          primary: theme === 'neon' ? '#00f7ff' : theme === 'dark' ? '#ffffff' : '#1f2937',
-          secondary: theme === 'neon' ? '#ff3afc' : theme === 'dark' ? '#d1d5db' : '#4b5563',
+          primary: theme === 'dark' ? '#ffffff' : '#1f2937',
+          secondary: theme === 'dark' ? '#d1d5db' : '#4b5563',
         },
       },
       components: {
         MuiCard: {
           styleOverrides: {
             root: {
-              background: theme === 'neon' ? 'rgba(24, 24, 48, 0.8)' : 
-                        theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 
-                        'rgba(255, 255, 255, 0.8)',
+              background: theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 'rgba(255, 255, 255, 0.8)',
               backdropFilter: 'blur(10px)',
               border: `1px solid ${
-                theme === 'neon' ? 'rgba(0, 247, 255, 0.1)' :
-                theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' :
-                'rgba(0, 0, 0, 0.1)'
+                theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
               }`,
             },
           },
@@ -339,80 +340,110 @@ const App: React.FC = () => {
       <WordProvider>
         <DictionaryProvider>
           <LearningProvider>
-            <ThemeWrapper>
-              <Navigation />
-              <Suspense fallback={<LoadingSpinner />}>
-                <Routes>
-                  <Route path="/" element={
-                    <ErrorBoundary>
-                      <Home />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/settings" element={
-                    <ErrorBoundary>
-                      <Settings />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/learning" element={
-                    <ErrorBoundary>
-                      <LearningLayout />
-                    </ErrorBoundary>
-                  }>
-                    <Route index element={<Navigate to="/learning/writing-practice" replace />} />
-                    <Route path="writing-practice" element={<WritingPractice />} />
-                    <Route path="writing" element={<Writing />} />
-                    <Route path="kanji" element={<Kanji />} />
-                    <Route path="romaji" element={<Romaji />} />
-                    <Route path="quiz" element={<QuizPage />} />
-                  </Route>
-                  <Route path="/srs" element={
-                    <ErrorBoundary>
-                      <SRSPage />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/games" element={
-                    <ErrorBoundary>
-                      <GamesPage />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/anime" element={
-                    <ErrorBoundary>
-                      <AnimeSection />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/progress" element={
-                    <ErrorBoundary>
-                      <Progress />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/knowing/*" element={
-                    <ErrorBoundary>
-                      <ProgressProvider>
-                        <KnowingNavigation>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Routes>
-                              <Route index element={<KnowingCenter />} />
-                              <Route path="dictionary" element={<KnowingDictionary />} />
-                              <Route path="mood" element={<MoodPage />} />
-                              <Route path="culture" element={<CultureAndRules />} />
-                              <Route path="progress" element={<ProgressPage />} />
-                              <Route path="favorites" element={<FavoritesPage />} />
-                              <Route path="settings" element={<SettingsPage />} />
-                              <Route path="*" element={<Navigate to="/knowing" replace />} />
-                            </Routes>
-                          </Suspense>
-                        </KnowingNavigation>
-                      </ProgressProvider>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/trivia" element={
-                    <ErrorBoundary>
-                      <TriviaSection />
-                    </ErrorBoundary>
-                  } />
-                </Routes>
-              </Suspense>
-            </ThemeWrapper>
+            <AudioProvider>
+              <ThemeWrapper>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    <Route path="/login" element={
+                      <ErrorBoundary>
+                        <Login />
+                      </ErrorBoundary>
+                    } />
+                    <Route element={
+                      <ErrorBoundary>
+                        <MainLayout>
+                          <Outlet />
+                        </MainLayout>
+                      </ErrorBoundary>
+                    }>
+                      <Route path="/" element={
+                        <ErrorBoundary>
+                          <Home />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/settings" element={
+                        <ErrorBoundary>
+                          <Settings />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/learning" element={<LearningLayout />}>
+                        <Route index element={<Navigate to="/learning/kana" replace />} />
+                        <Route path="kana" element={<Kana />} />
+                        <Route path="kanji" element={
+                          <ErrorBoundary>
+                            <KanjiProvider>
+                              <LearnKanji />
+                            </KanjiProvider>
+                          </ErrorBoundary>
+                        } />
+                        <Route path="kanji-dictionary" element={
+                          <ErrorBoundary>
+                            <KanjiProvider>
+                              <KanjiDictionary />
+                            </KanjiProvider>
+                          </ErrorBoundary>
+                        } />
+                        <Route path="romaji" element={<Romaji />} />
+                        <Route path="quiz" element={<QuizPage />} />
+                      </Route>
+                      <Route path="/srs" element={
+                        <ErrorBoundary>
+                          <SRSPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/games" element={
+                        <ErrorBoundary>
+                          <GamesPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/anime" element={
+                        <ErrorBoundary>
+                          <AnimeSection />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/progress" element={
+                        <ErrorBoundary>
+                          <ProgressProvider>
+                            <WordLevelProvider>
+                              <AchievementProvider>
+                                <ProgressPage />
+                              </AchievementProvider>
+                            </WordLevelProvider>
+                          </ProgressProvider>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/profile" element={
+                        <ErrorBoundary>
+                          <ProfilePage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/knowing" element={
+                        <ErrorBoundary>
+                          <ProgressProvider>
+                            <KnowingNavigation>
+                              <Outlet />
+                            </KnowingNavigation>
+                          </ProgressProvider>
+                        </ErrorBoundary>
+                      }>
+                        <Route index element={<KnowingCenter />} />
+                        <Route path="dictionary" element={<KnowingDictionary />} />
+                        <Route path="mood" element={<MoodPage />} />
+                        <Route path="culture" element={<CultureAndRules />} />
+                        <Route path="favorites" element={<FavoritesPage />} />
+                        <Route path="settings" element={<SettingsPage />} />
+                        <Route path="*" element={<Navigate to="/knowing" replace />} />
+                      </Route>
+                      <Route path="/trivia" element={
+                        <ErrorBoundary>
+                          <TriviaSection />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
+                  </Routes>
+                </Suspense>
+              </ThemeWrapper>
+            </AudioProvider>
           </LearningProvider>
         </DictionaryProvider>
       </WordProvider>
