@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { Link } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
-import { Container, Typography, Box, Paper, Grid, Button, Card, CardContent, CardActionArea } from '@mui/material';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
+import { Container, Typography, Box, Paper, Grid, Button, Card, CardContent, CardActionArea, useMediaQuery } from '@mui/material';
 import {
   School as SchoolIcon,
   MenuBook as MenuBookIcon,
@@ -125,8 +125,8 @@ const FEATURE_CATEGORIES = [
 ];
 
 const HomeContent: React.FC = () => {
-  const { getThemeClasses } = useTheme();
-  const themeClasses = getThemeClasses();
+  const theme = useMuiTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -137,7 +137,9 @@ const HomeContent: React.FC = () => {
           p: { xs: 3, md: 6 },
           mb: 6,
           borderRadius: 4,
-          background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
+          background: theme.palette.mode === 'dark' 
+            ? 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)'
+            : 'linear-gradient(45deg, #2196f3 30%, #64b5f6 90%)',
           color: 'white',
           position: 'relative',
           overflow: 'hidden'
@@ -197,7 +199,7 @@ const HomeContent: React.FC = () => {
       </Paper>
 
       {/* Feature Categories */}
-      {FEATURE_CATEGORIES.map((category, categoryIndex) => (
+      {FEATURE_CATEGORIES.map((category) => (
         <Box key={category.title} sx={{ mb: 6 }}>
           <Typography 
             variant="h5" 
@@ -211,7 +213,7 @@ const HomeContent: React.FC = () => {
             {category.title}
           </Typography>
           <Grid container spacing={3}>
-            {category.items.map((item, index) => (
+            {category.items.map((item) => (
               <Grid item xs={12} md={4} key={item.title}>
                 <Card 
                   sx={{ 
@@ -219,7 +221,7 @@ const HomeContent: React.FC = () => {
                     transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: 4
+                      boxShadow: theme.shadows[4]
                     }
                   }}
                 >
@@ -234,7 +236,7 @@ const HomeContent: React.FC = () => {
                           sx={{ 
                             p: 1,
                             borderRadius: 1,
-                            bgcolor: `${item.color}.light`,
+                            bgcolor: `${item.color}.main`,
                             color: `${item.color}.contrastText`,
                             mr: 2
                           }}
@@ -251,7 +253,7 @@ const HomeContent: React.FC = () => {
                       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <Button
                           variant="contained"
-                          color={item.color as any}
+                          color={item.color as 'primary' | 'secondary' | 'success'}
                           endIcon={<PlayArrowIcon />}
                         >
                           Explore
@@ -269,10 +271,18 @@ const HomeContent: React.FC = () => {
   );
 };
 
-// Main Home component with error boundary
 const Home: React.FC = () => {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={
+      <Box sx={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <Typography variant="h6">Loading...</Typography>
+      </Box>
+    }>
       <HomeContent />
     </Suspense>
   );
