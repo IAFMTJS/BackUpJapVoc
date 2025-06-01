@@ -7,7 +7,7 @@ import {
   MenuBook as MenuBookIcon,
   Translate as TranslateIcon,
   EmojiEmotions as MoodIcon,
-  Culture as CultureIcon,
+  Public as CultureIcon,
   SportsEsports as GamesIcon,
   Movie as MovieIcon,
   History as HistoryIcon,
