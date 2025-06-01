@@ -55,6 +55,10 @@ const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
 const SettingsPage = lazy(() => import('./pages/Settings'));
 const TriviaSection = lazy(() => import('./pages/TriviaSection'));
 const AnimeSection = lazy(() => import('./pages/AnimeSection'));
+const FAQScoring = lazy(() => import('./pages/FAQScoring'));
+const FAQLearning = lazy(() => import('./pages/FAQLearning'));
+const FAQFeatures = lazy(() => import('./pages/FAQFeatures'));
+const FAQProgress = lazy(() => import('./pages/FAQProgress'));
 
 // Loading component with better visual feedback
 const LoadingFallback = () => (
@@ -439,6 +443,18 @@ const App: React.FC = () => {
                           <TriviaSection />
                         </ErrorBoundary>
                       } />
+                      <Route path="/faq" element={
+                        <ErrorBoundary>
+                          <Outlet />
+                        </ErrorBoundary>
+                      }>
+                        <Route index element={<FAQFeatures />} />
+                        <Route path="features" element={<FAQFeatures />} />
+                        <Route path="learning" element={<FAQLearning />} />
+                        <Route path="scoring" element={<FAQScoring />} />
+                        <Route path="progress" element={<FAQProgress />} />
+                        <Route path="*" element={<Navigate to="/faq" replace />} />
+                      </Route>
                     </Route>
                   </Routes>
                 </Suspense>

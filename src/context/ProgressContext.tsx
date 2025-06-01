@@ -409,6 +409,16 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         practiceHistory: []
       };
 
+      // Update consecutive correct answers based on previous state
+      let newConsecutiveCorrect = currentProgress.consecutiveCorrect;
+      if (progress.lastAnswerCorrect !== undefined) {
+        if (progress.lastAnswerCorrect) {
+          newConsecutiveCorrect = currentProgress.consecutiveCorrect + 1;
+        } else {
+          newConsecutiveCorrect = 0;
+        }
+      }
+
       // Calculate new mastery level based on correct/incorrect answers and streak
       let newMasteryLevel = currentProgress.masteryLevel;
       if (progress.correctAnswers !== undefined || progress.incorrectAnswers !== undefined) {
@@ -417,23 +427,14 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const correctRatio = (progress.correctAnswers || currentProgress.correctAnswers) / totalAnswers;
         
         // Base mastery on correct ratio and consecutive correct answers
-        const streakBonus = Math.min((progress.consecutiveCorrect || currentProgress.consecutiveCorrect) * 0.1, 0.5);
+        const streakBonus = Math.min(newConsecutiveCorrect * 0.1, 0.5);
         newMasteryLevel = Math.min(5, Math.max(0, (correctRatio * 4) + streakBonus));
-      }
-
-      // Update consecutive correct answers
-      if (progress.lastAnswerCorrect !== undefined) {
-        if (progress.lastAnswerCorrect) {
-          currentProgress.consecutiveCorrect = (currentProgress.lastAnswerCorrect ? currentProgress.consecutiveCorrect : 0) + 1;
-        } else {
-          currentProgress.consecutiveCorrect = 0;
-        }
       }
 
       // For kana, require two consecutive correct answers for mastery
       const isKana = currentProgress.category === 'hiragana' || currentProgress.category === 'katakana';
       if (isKana) {
-        if (currentProgress.consecutiveCorrect >= 2) {
+        if (newConsecutiveCorrect >= 2) {
           newMasteryLevel = 5; // Full mastery for kana
         } else {
           newMasteryLevel = Math.min(newMasteryLevel, 4); // Cap at 4 until two consecutive correct
@@ -454,6 +455,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ...currentProgress,
         ...progress,
         masteryLevel: newMasteryLevel,
+        consecutiveCorrect: newConsecutiveCorrect,
         lastReviewed: Date.now(),
         practiceHistory: practiceHistory.slice(-10) // Keep last 10 practice sessions
       };

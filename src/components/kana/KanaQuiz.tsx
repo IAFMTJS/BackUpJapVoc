@@ -120,7 +120,7 @@ const kanaData = {
 const KanaQuiz: React.FC<KanaQuizProps> = ({ type, difficulty = 'beginner' }) => {
   const theme = useTheme();
   const { playAudio } = useAudio();
-  const { updateWordProgress, updateSectionProgress, addStudySession } = useProgress();
+  const { updateWordProgress, updateSectionProgress, addStudySession, progress } = useProgress();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [isAnswered, setIsAnswered] = useState(false);
@@ -132,6 +132,7 @@ const KanaQuiz: React.FC<KanaQuizProps> = ({ type, difficulty = 'beginner' }) =>
   const [showFeedback, setShowFeedback] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
   const [quizStartTime, setQuizStartTime] = useState(0);
+  const [answers, setAnswers] = useState<{ [key: number]: string }>({});
 
   // Generate questions based on difficulty and type
   useEffect(() => {
@@ -174,22 +175,31 @@ const KanaQuiz: React.FC<KanaQuizProps> = ({ type, difficulty = 'beginner' }) =>
       });
 
       // Update individual kana progress
-      questions.forEach(question => {
-        const isCorrect = question.correctAnswer === selectedAnswer;
+      questions.forEach((question, index) => {
+        const userAnswer = answers[index];
+        const isCorrect = userAnswer === question.correctAnswer;
+        const currentProgress = progress.words[question.kana] || {
+          masteryLevel: 0,
+          consecutiveCorrect: 0,
+          lastAnswerCorrect: false,
+          correctAnswers: 0,
+          incorrectAnswers: 0
+        };
+
         updateWordProgress(question.kana, {
-          masteryLevel: isCorrect ? 1 : 0,
           lastReviewed: Date.now(),
-          reviewCount: 1,
-          nextReviewDate: Date.now() + (isCorrect ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000), // 7 days if correct, 1 day if incorrect
+          reviewCount: (currentProgress.reviewCount || 0) + 1,
+          nextReviewDate: Date.now() + (isCorrect ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000),
           category: type,
           section: type,
           difficulty: difficulty,
-          consecutiveCorrect: isCorrect ? 1 : 0,
-          lastAnswerCorrect: isCorrect
+          lastAnswerCorrect: isCorrect,
+          correctAnswers: isCorrect ? (currentProgress.correctAnswers || 0) + 1 : (currentProgress.correctAnswers || 0),
+          incorrectAnswers: !isCorrect ? (currentProgress.incorrectAnswers || 0) + 1 : (currentProgress.incorrectAnswers || 0)
         });
       });
     }
-  }, [quizCompleted, score, questions, type, difficulty, selectedAnswer, addStudySession, updateSectionProgress, updateWordProgress]);
+  }, [quizCompleted, score, questions, type, difficulty, answers, addStudySession, updateSectionProgress, updateWordProgress, progress]);
 
   const generateQuestions = (type: 'hiragana' | 'katakana', difficulty: string): QuizQuestion[] => {
     const allKana: { kana: string; romaji: string }[] = [];
@@ -256,6 +266,7 @@ const KanaQuiz: React.FC<KanaQuizProps> = ({ type, difficulty = 'beginner' }) =>
   const handleAnswerSelect = (answer: string) => {
     if (!isAnswered) {
       setSelectedAnswer(answer);
+      setAnswers(prev => ({ ...prev, [currentQuestionIndex]: answer }));
       const correct = answer === questions[currentQuestionIndex].correctAnswer;
       setIsCorrect(correct);
       setIsAnswered(true);
@@ -288,6 +299,7 @@ const KanaQuiz: React.FC<KanaQuizProps> = ({ type, difficulty = 'beginner' }) =>
     setCurrentQuestionIndex(0);
     setScore(0);
     setSelectedAnswer('');
+    setAnswers({});
     setIsAnswered(false);
     setIsCorrect(null);
     setShowFeedback(false);

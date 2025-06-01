@@ -4,6 +4,8 @@ import { useApp } from '../context/AppContext';
 import { useSettings } from '../context/SettingsContext';
 import type { Settings } from '../context/AppContext';
 import { getCacheStats, clearCache } from '../utils/AudioCache';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 type SettingsKey = keyof Settings;
 
@@ -11,14 +13,16 @@ const SettingsPanel: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
   const { settings: appSettings, updateSettings: updateAppSettings } = useApp();
   const { settings: globalSettings, updateSettings: updateGlobalSettings } = useSettings();
+  const { currentUser, updateUserProfile } = useAuth();
 
   // Form state for user-specific settings
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
+  const [email, setEmail] = useState(currentUser?.email || '');
   const [dailyGoal, setDailyGoal] = useState(10);
   const [practiceMode, setPracticeMode] = useState<'word' | 'sentence'>('word');
   const [dailyReminders, setDailyReminders] = useState(false);
   const [progressUpdates, setProgressUpdates] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Audio cache state
   const [cacheStats, setCacheStats] = useState<{ fileCount: number; totalSize: number }>({ fileCount: 0, totalSize: 0 });
@@ -42,6 +46,14 @@ const SettingsPanel: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    // Update form state when currentUser changes
+    if (currentUser) {
+      setDisplayName(currentUser.displayName || '');
+      setEmail(currentUser.email || '');
+    }
+  }, [currentUser]);
+
   const handleClearCache = async () => {
     setClearing(true);
     await clearCache();
@@ -49,27 +61,45 @@ const SettingsPanel: React.FC = () => {
     setCacheStats({ fileCount: 0, totalSize: 0 });
   };
 
-  const handleSave = () => {
-    // Save user-specific settings to localStorage
-    const userSettings = {
-      displayName,
-      email,
-      dailyGoal,
-      practiceMode,
-      dailyReminders,
-      progressUpdates
-    };
-    localStorage.setItem('userSettings', JSON.stringify(userSettings));
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
 
-    // Update global settings
-    updateGlobalSettings({
-      useTimer: globalSettings.useTimer,
-      timeLimit: globalSettings.timeLimit,
-      showRomaji: globalSettings.showRomaji,
-      showHints: globalSettings.showHints,
-      soundEnabled: globalSettings.soundEnabled,
-      darkMode: isDarkMode
-    });
+      // Update user profile if there are changes
+      if (currentUser && (displayName !== currentUser.displayName || email !== currentUser.email)) {
+        await updateUserProfile({
+          displayName: displayName !== currentUser.displayName ? displayName : undefined,
+          email: email !== currentUser.email ? email : undefined
+        });
+        toast.success('Profile updated successfully');
+      }
+
+      // Save other settings to localStorage
+      const userSettings = {
+        dailyGoal,
+        practiceMode,
+        dailyReminders,
+        progressUpdates
+      };
+      localStorage.setItem('userSettings', JSON.stringify(userSettings));
+
+      // Update global settings
+      updateGlobalSettings({
+        useTimer: globalSettings.useTimer,
+        timeLimit: globalSettings.timeLimit,
+        showRomaji: globalSettings.showRomaji,
+        showHints: globalSettings.showHints,
+        soundEnabled: globalSettings.soundEnabled,
+        darkMode: isDarkMode
+      });
+
+      toast.success('Settings saved successfully');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error('Failed to save settings. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getThemeClasses = () => {
@@ -142,6 +172,7 @@ const SettingsPanel: React.FC = () => {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                  disabled={isSaving}
                 />
               </div>
               <div>
@@ -153,6 +184,7 @@ const SettingsPanel: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -227,9 +259,14 @@ const SettingsPanel: React.FC = () => {
           <div className="flex justify-end">
             <button
               onClick={handleSave}
-              className={`px-6 py-3 rounded-lg ${themeClasses.button} font-medium shadow-card hover:shadow-soft transition-all duration-300`}
+              disabled={isSaving}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                isSaving 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : themeClasses.button
+              }`}
             >
-              Save Changes
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>

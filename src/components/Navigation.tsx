@@ -21,6 +21,7 @@ const Navigation: React.FC = () => {
     { path: '/knowing', label: 'Knowing' },
     { path: '/srs', label: 'SRS' },
     { path: '/trivia', label: 'Trivia' },
+    { path: '/faq', label: 'FAQ' },
     { path: '/profile', label: 'Profile' }
   ];
 
@@ -47,6 +48,13 @@ const Navigation: React.FC = () => {
     { path: '/trivia', label: 'Japanese History', tabIndex: 3 },
     { path: '/trivia', label: 'Japanese Cuisine', tabIndex: 4 },
     { path: '/trivia', label: 'Japanese Mythology', tabIndex: 5 }
+  ];
+
+  // FAQ submenu items
+  const faqItems = [
+    { path: '/faq/scoring', label: 'Scoring & Progress' },
+    { path: '/faq/learning', label: 'Learning Guide' },
+    { path: '/faq/features', label: 'Features & Tips' }
   ];
 
   const renderSubmenu = (items: typeof triviaItems, basePath: string) => {
@@ -101,6 +109,7 @@ const Navigation: React.FC = () => {
                 {path === '/learning' && renderSubmenu(learningRoutes, '/learning')}
                 {path === '/knowing' && renderSubmenu(knowingItems, '/knowing')}
                 {path === '/trivia' && renderSubmenu(triviaItems, '/trivia')}
+                {path === '/faq' && renderSubmenu(faqItems, '/faq')}
               </div>
             ))}
             <div className="ml-2">
@@ -147,17 +156,18 @@ const Navigation: React.FC = () => {
                       isActive(path) ? themeClasses.nav.link.active : themeClasses.nav.link.default
                     }`}
                     onClick={() => {
-                      if (path !== '/learning' && path !== '/knowing' && path !== '/trivia') {
+                      if (path !== '/learning' && path !== '/knowing' && path !== '/trivia' && path !== '/faq') {
                         setIsMobileMenuOpen(false);
                       }
                     }}
                   >
                     {label}
                   </Link>
-                  {(path === '/learning' || path === '/knowing' || path === '/trivia') && (
+                  {(path === '/learning' || path === '/knowing' || path === '/trivia' || path === '/faq') && (
                     <div className="pl-4">
                       {(path === '/learning' ? learningRoutes : 
                         path === '/knowing' ? knowingItems : 
+                        path === '/faq' ? faqItems :
                         triviaItems).map((item) => (
                         <Link
                           key={item.label}

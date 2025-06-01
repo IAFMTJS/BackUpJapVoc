@@ -40,6 +40,7 @@ export interface AuthContextType {
   sendVerificationEmail: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserPassword: (actionCode: string, newPassword: string) => Promise<void>;
+  updateUserProfile: (updates: { displayName?: string; email?: string }) => Promise<void>;
   isEmailVerified: boolean;
   sessionWarning: boolean;
   resetSessionTimer: () => void;

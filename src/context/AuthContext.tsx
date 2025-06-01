@@ -203,6 +203,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserProfile = async (updates: { displayName?: string; email?: string }) => {
+    try {
+      clearError();
+      if (!currentUser) {
+        throw new Error('No user is currently signed in');
+      }
+
+      // Update profile in Firebase Auth
+      if (updates.displayName) {
+        await updateProfile(currentUser, { displayName: updates.displayName });
+      }
+
+      // Update email if provided
+      if (updates.email && updates.email !== currentUser.email) {
+        await updateEmail(currentUser, updates.email);
+      }
+
+      // Update user document in Firestore
+      const userRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userRef, {
+        ...updates,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+
+      // Update local state
+      setCurrentUser({ ...currentUser, ...updates });
+    } catch (error: unknown) {
+      handleError(error);
+      throw error; // Re-throw to let the component handle the error
+    }
+  };
+
   const value: AuthContextType = {
     currentUser,
     loading,
@@ -212,6 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sendVerificationEmail,
     resetPassword,
     updateUserPassword,
+    updateUserProfile,
     isEmailVerified,
     sessionWarning,
     resetSessionTimer,
