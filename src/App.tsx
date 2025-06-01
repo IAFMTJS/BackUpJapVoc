@@ -143,9 +143,17 @@ const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [initProgress, setInitProgress] = useState<string>('Initializing...');
+  const [initStep, setInitStep] = useState<number>(0);
   const { db } = useDatabase();
 
-  // Function to initialize audio cache
+  // Function to update progress with step tracking
+  const updateProgress = (message: string, step: number) => {
+    setInitProgress(message);
+    setInitStep(step);
+    console.log(`[App] Initialization step ${step}: ${message}`);
+  };
+
+  // Function to initialize audio cache with better error handling
   const initAudioCache = async (): Promise<void> => {
     if (!db) {
       console.warn('[App] Database not available for audio cache initialization');
@@ -161,43 +169,37 @@ const App: React.FC = () => {
       console.log(`[App] Starting audio cache for ${words.length} words`);
       
       // Process words in smaller batches with delays
-      const BATCH_SIZE = 10;
-      const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
+      const BATCH_SIZE = 5; // Reduced batch size for mobile
+      const DELAY_BETWEEN_BATCHES = 2000; // Increased delay for mobile
       
       for (let i = 0; i < words.length; i += BATCH_SIZE) {
         const batch = words.slice(i, i + BATCH_SIZE);
-        console.log(`[App] Processing audio batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(words.length / BATCH_SIZE)}`);
-        
-        // Process batch
-        await Promise.all(batch.map(async (word) => {
-          try {
-            if (word.audioUrl) {
-              const response = await fetch(word.audioUrl);
-              if (response.ok) {
-                const blob = await response.blob();
+        await Promise.all(
+          batch.map(async (word) => {
+            try {
+              // Check if audio already exists
+              const existing = await store.get(word.id);
+              if (!existing) {
+                // Generate and store audio
                 await store.put({
                   id: word.id,
-                  blob,
-                  type: 'word',
-                  text: word.japanese
+                  audio: null, // Will be generated on demand
+                  timestamp: Date.now()
                 });
               }
+            } catch (error) {
+              console.warn(`[App] Failed to process word ${word.id}:`, error);
             }
-          } catch (error) {
-            console.warn(`[App] Failed to cache audio for ${word.id}:`, error);
-          }
-        }));
-
+          })
+        );
+        
         // Add delay between batches
         if (i + BATCH_SIZE < words.length) {
           await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
         }
       }
-      
-      console.log('[App] Audio cache initialization completed');
     } catch (error) {
-      console.error('[App] Error initializing audio cache:', error);
-      throw error;
+      console.warn('[App] Audio cache initialization warning:', error);
     }
   };
 
@@ -216,28 +218,37 @@ const App: React.FC = () => {
   const initializeApp = async () => {
     setIsInitializing(true);
     setInitError(null);
-    setInitProgress('Initializing database...');
+    setInitStep(0);
+    updateProgress('Starting initialization...', 0);
 
     try {
       console.log('[App] Starting application initialization');
       
       // Initialize database through the DatabaseContext
-      setInitProgress('Initializing database...');
+      updateProgress('Initializing database...', 1);
       await databasePromise; // Wait for the database promise from DatabaseContext
       console.log('[App] Database initialized successfully');
 
-      // Import words
-      setInitProgress('Importing words...');
-      const importResult = await importWords();
+      // Import words with timeout
+      updateProgress('Importing words...', 2);
+      const importPromise = importWords();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Word import timed out')), 30000)
+      );
+      const importResult = await Promise.race([importPromise, timeoutPromise]);
       if (!importResult.success) {
         console.warn('[App] Word import warning:', importResult.error);
       }
       console.log('[App] Word import completed');
 
-      // Import dictionary data
-      setInitProgress('Importing dictionary data...');
+      // Import dictionary data with timeout
+      updateProgress('Importing dictionary data...', 3);
       try {
-        const dictResult = await importDictionaryData();
+        const dictPromise = importDictionaryData();
+        const dictTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Dictionary import timed out')), 30000)
+        );
+        const dictResult = await Promise.race([dictPromise, dictTimeoutPromise]);
         if (!dictResult.success) {
           console.warn('[App] Dictionary import warning:', dictResult.error);
         } else {
@@ -248,7 +259,7 @@ const App: React.FC = () => {
       }
 
       // Initialize mood words
-      setInitProgress('Initializing mood words...');
+      updateProgress('Initializing mood words...', 4);
       try {
         await initializeMoodWords();
         console.log('[App] Mood words initialized');
@@ -257,6 +268,7 @@ const App: React.FC = () => {
       }
 
       // Mark initialization as complete
+      updateProgress('Initialization complete!', 5);
       console.log('[App] Core initialization completed');
       setIsInitializing(false);
 
@@ -283,6 +295,12 @@ const App: React.FC = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-lg text-gray-700">{initProgress}</p>
+          <div className="mt-4 w-64 bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
+              style={{ width: `${(initStep / 5) * 100}%` }}
+            ></div>
+          </div>
         </div>
       </div>
     );

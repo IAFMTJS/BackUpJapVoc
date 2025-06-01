@@ -52,22 +52,29 @@ ReactDOM.render(
 if ('serviceWorker' in navigator) {
   const registerServiceWorker = async () => {
     try {
-      console.log('Starting service worker registration process...');
+      console.log('[SW] Starting service worker registration process...');
       
       // Get existing registration
       const existingRegistration = await navigator.serviceWorker.getRegistration();
       
-      // Only unregister in production if there's an existing registration
-      if (process.env.NODE_ENV === 'production' && existingRegistration) {
-        console.log('Unregistering existing service worker for update...');
+      // Only unregister in production if there's an existing registration AND it's not active
+      if (process.env.NODE_ENV === 'production' && existingRegistration && !existingRegistration.active) {
+        console.log('[SW] Unregistering inactive service worker for update...');
         await existingRegistration.unregister();
+      } else if (existingRegistration?.active) {
+        console.log('[SW] Using existing active service worker');
+        return existingRegistration;
       }
 
-      console.log('Registering new service worker...');
+      console.log('[SW] Registering new service worker...');
       const registration = await navigator.serviceWorker.register('/service-worker.js', {
         scope: '/',
         updateViaCache: 'none'
       });
+
+      // Wait for the service worker to be ready
+      await navigator.serviceWorker.ready;
+      console.log('[SW] Service worker ready');
 
       // Handle service worker updates
       registration.addEventListener('updatefound', () => {
@@ -75,8 +82,9 @@ if ('serviceWorker' in navigator) {
         if (!newWorker) return;
 
         newWorker.addEventListener('statechange', () => {
+          console.log(`[SW] New worker state: ${newWorker.state}`);
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('New version available. Please refresh to update.');
+            console.log('[SW] New version available. Please refresh to update.');
             // Show a notification to the user
             if ('Notification' in window && Notification.permission === 'granted') {
               new Notification('Update Available', {
@@ -90,18 +98,42 @@ if ('serviceWorker' in navigator) {
 
       // Handle controller change
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('Service worker controller changed');
-        window.location.reload();
+        console.log('[SW] Service worker controller changed');
+        // Only reload if we're not in a loading state
+        if (!document.querySelector('.loading-spinner')) {
+          window.location.reload();
+        }
       });
 
-      console.log('ServiceWorker registration successful with scope:', registration.scope);
+      console.log('[SW] ServiceWorker registration successful with scope:', registration.scope);
+      return registration;
     } catch (error) {
-      console.error('ServiceWorker registration failed:', error);
+      console.error('[SW] ServiceWorker registration failed:', error);
+      // Don't throw the error, just log it and continue
+      return null;
     }
   };
 
-  // Register service worker immediately
-  registerServiceWorker();
+  // Register service worker with retry
+  const registerWithRetry = async (retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const registration = await registerServiceWorker();
+        if (registration) return;
+      } catch (error) {
+        console.warn(`[SW] Registration attempt ${i + 1} failed:`, error);
+        if (i < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    console.warn('[SW] Service worker registration failed after all retries');
+  };
+
+  // Register service worker with a slight delay to ensure app is loaded
+  setTimeout(() => {
+    registerWithRetry();
+  }, 1000);
 }
 
 // Modify the global error handler to be more specific
