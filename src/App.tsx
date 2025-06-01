@@ -65,10 +65,11 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Create a stable theme object with proper type checking
   const muiTheme = React.useMemo(() => {
-    // Default to dark theme if context is not ready
+    // Ensure we have a valid theme value
     const theme = themeContext?.theme || 'dark';
     
-    return createTheme({
+    // Create theme with safe defaults
+    const themeConfig = {
       palette: {
         mode: theme === 'dark' || theme === 'neon' ? 'dark' : 'light',
         primary: {
@@ -86,7 +87,6 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
           secondary: theme === 'neon' ? '#ff3afc' : theme === 'dark' ? '#d1d5db' : '#4b5563',
         },
       },
-      spacing: (factor: number) => `${8 * factor}px`,
       components: {
         MuiCard: {
           styleOverrides: {
@@ -104,17 +104,24 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
           },
         },
       },
-    });
+    };
+
+    return createTheme(themeConfig);
   }, [themeContext?.theme]);
 
   // Ensure theme is ready before rendering children
   React.useEffect(() => {
     if (muiTheme && muiTheme.palette && muiTheme.palette.mode) {
-      setIsThemeReady(true);
+      // Add a small delay to ensure theme is fully initialized
+      const timer = setTimeout(() => {
+        setIsThemeReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [muiTheme]);
 
-  if (!isThemeReady) {
+  // Show loading state while theme is initializing
+  if (!isThemeReady || !muiTheme) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#181830]">
         <div className="text-center">
