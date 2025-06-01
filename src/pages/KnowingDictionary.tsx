@@ -73,9 +73,12 @@ const WordCard: React.FC<{
   const [isFavorite, setIsFavorite] = useState(false);
   const theme = useTheme();
 
-  const handlePlayAudio = () => {
-    // TODO: Implement audio playback
-    console.log('Play audio for:', word.japanese);
+  const handlePlayAudio = async () => {
+    try {
+      await playAudio(word.japanese);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
   };
 
   const toggleFavorite = () => {
