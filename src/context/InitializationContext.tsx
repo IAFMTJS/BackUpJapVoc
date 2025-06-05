@@ -53,102 +53,160 @@ interface ProviderState {
 
 export const InitializationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<InitState>(initializationCoordinator.getState());
-  const [providerStates, setProviderStates] = useState<ProviderState>({});
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const mountedRef = useRef(true);
+  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = process.env.NODE_ENV === 'production' ? 5 : 3;
+  const INIT_TIMEOUT = process.env.NODE_ENV === 'production' ? 45000 : 15000; // 45 seconds in production
 
   useEffect(() => {
-    const unsubscribe = initializationCoordinator.subscribe(setState);
+    console.log('[InitializationProvider] Setting up coordinator subscription');
+    const unsubscribe = initializationCoordinator.subscribe((newState) => {
+      console.log('[InitializationProvider] State update:', {
+        newState,
+        currentState: state,
+        isInitializing,
+        retryCount: retryCountRef.current,
+        environment: process.env.NODE_ENV
+      });
+      
+      // If we're stuck at the same progress for too long, increment retry count
+      if (newState.progress.progress === state.progress.progress && 
+          newState.progress.step === state.progress.step &&
+          retryCountRef.current < MAX_RETRIES) {
+        retryCountRef.current++;
+        console.warn(`[InitializationProvider] Progress stalled, retry ${retryCountRef.current}/${MAX_RETRIES}`);
+        
+        if (retryCountRef.current >= MAX_RETRIES) {
+          console.error('[InitializationProvider] Max retries reached, forcing initialization complete');
+          // In production, try to continue with partial initialization
+          if (process.env.NODE_ENV === 'production') {
+            setState(prev => ({
+              ...prev,
+              isInitialized: true,
+              isInitializing: false,
+              criticalDataLoaded: prev.criticalDataLoaded,
+              progress: { 
+                ...prev.progress, 
+                step: 'Initialization partially complete (forced)', 
+                progress: 100,
+                details: 'Some features may be limited'
+              }
+            }));
+          } else {
+            setState(prev => ({
+              ...prev,
+              isInitialized: true,
+              isInitializing: false,
+              criticalDataLoaded: true,
+              progress: { ...prev.progress, step: 'Initialization complete (forced)', progress: 100 }
+            }));
+          }
+          setIsInitializing(false);
+          return;
+        }
+      }
+      
+      setState(newState);
+      
+      if (newState.isInitialized) {
+        console.log('[InitializationProvider] Coordinator initialized, completing initialization');
+        setIsInitializing(false);
+        if (initTimeoutRef.current) {
+          clearTimeout(initTimeoutRef.current);
+        }
+      }
+    });
+    
+    // Add a timeout to prevent infinite loading
+    initTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current && isInitializing) {
+        console.error('[InitializationProvider] Initialization timeout reached');
+        // In production, try to continue with partial initialization
+        if (process.env.NODE_ENV === 'production') {
+          setInitError('Initialization taking longer than expected. Some features may be limited.');
+          setState(prev => ({
+            ...prev,
+            isInitialized: true,
+            isInitializing: false,
+            criticalDataLoaded: prev.criticalDataLoaded,
+            progress: { 
+              ...prev.progress, 
+              step: 'Initialization partially complete (timeout)', 
+              progress: 100,
+              details: 'Some features may be limited'
+            }
+          }));
+        } else {
+          setInitError('Initialization timed out. Please refresh the page.');
+          setState(prev => ({
+            ...prev,
+            isInitialized: true,
+            isInitializing: false,
+            criticalDataLoaded: true,
+            progress: { ...prev.progress, step: 'Initialization complete (timeout)', progress: 100 }
+          }));
+        }
+        setIsInitializing(false);
+      }
+    }, INIT_TIMEOUT);
+
     return () => {
+      console.log('[InitializationProvider] Cleanup');
       mountedRef.current = false;
       unsubscribe();
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+      }
     };
   }, []);
 
-  const initializeProvider = async (providerName: ProviderName): Promise<void> => {
-    if (!mountedRef.current) return;
-
-    try {
-      setProviderStates(prev => ({ ...prev, [providerName]: 'initializing' }));
-      
-      // Add a longer delay between provider initializations
-      await new Promise(resolve => setTimeout(resolve, 150));
-      
-      // Special handling for critical providers
-      if (providerName === 'DatabaseProvider') {
-        // Ensure database is fully initialized
-        await new Promise(resolve => setTimeout(resolve, 200));
-      } else if (providerName === 'ThemeProvider') {
-        // Ensure theme is fully initialized
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      // Simulate provider initialization with proper error handling
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          if (!mountedRef.current) return;
-          setProviderStates(prev => ({ ...prev, [providerName]: 'ready' }));
-          resolve(undefined);
-        }, 300); // Increased timeout for more reliable initialization
-
-        const errorHandler = (error: Error) => {
-          clearTimeout(timeout);
-          if (!mountedRef.current) return;
-          setProviderStates(prev => ({ ...prev, [providerName]: 'error' }));
-          reject(error);
-        };
-
-        try {
-          // Provider initialization logic
-          resolve(undefined);
-        } catch (error) {
-          errorHandler(error instanceof Error ? error : new Error(`Failed to initialize ${providerName}`));
-        }
-      });
-    } catch (error) {
-      if (!mountedRef.current) return;
-      console.error(`Failed to initialize ${providerName}:`, error);
-      throw error;
-    }
-  };
-
-  const initializeProviders = async () => {
-    if (!mountedRef.current) return;
-
-    try {
-      setIsInitializing(true);
-      setInitError(null);
-
-      // Initialize providers sequentially
-      for (const provider of INITIALIZATION_ORDER) {
+  // Start initialization when the provider mounts
+  useEffect(() => {
+    console.log('[InitializationProvider] Starting initialization');
+    
+    const init = async () => {
+      try {
+        // Reset retry count on new initialization attempt
+        retryCountRef.current = 0;
+        await initializationCoordinator.initialize();
+      } catch (error) {
         if (!mountedRef.current) return;
-        await initializeProvider(provider);
-      }
-
-      if (mountedRef.current) {
+        console.error('[InitializationProvider] Initialization failed:', error);
+        setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
         setIsInitializing(false);
+        // Force initialization complete to prevent UI from being stuck
+        setState(prev => ({
+          ...prev,
+          isInitialized: true,
+          isInitializing: false,
+          criticalDataLoaded: true,
+          progress: { ...prev.progress, step: 'Initialization complete (error)', progress: 100 }
+        }));
       }
-    } catch (error) {
-      if (!mountedRef.current) return;
-      console.error('Provider initialization failed:', error);
-      setInitError(error instanceof Error ? error.message : 'Failed to initialize providers');
-      setIsInitializing(false);
-      throw error;
-    }
-  };
+    };
+
+    init();
+
+    return () => {
+      mountedRef.current = false;
+      initializationCoordinator.abort();
+    };
+  }, []);
 
   const retry = async () => {
     if (!mountedRef.current) return;
     try {
       setInitError(null);
+      setIsInitializing(true);
       await initializationCoordinator.initialize();
-      await initializeProviders();
     } catch (error) {
       if (!mountedRef.current) return;
-      console.error('Retry failed:', error);
+      console.error('[InitializationProvider] Retry failed:', error);
       setInitError(error instanceof Error ? error.message : 'Failed to retry initialization');
-      throw error;
+      setIsInitializing(false);
     }
   };
 
@@ -159,32 +217,38 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
     setIsInitializing(false);
   };
 
-  // Start initialization when the provider mounts
-  useEffect(() => {
-    initializeProviders().catch(error => {
-      if (!mountedRef.current) return;
-      console.error('Initialization failed:', error);
-      setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
-    });
-
-    return () => {
-      mountedRef.current = false;
-      abort();
-    };
-  }, []);
-
   // Show loading state during initialization
   if (isInitializing || !state.isInitialized) {
+    console.log('[InitializationProvider] Rendering loading state:', {
+      isInitializing,
+      isInitialized: state.isInitialized,
+      progress: state.progress,
+      environment: process.env.NODE_ENV
+    });
+    
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">Initializing application...</p>
+          <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">
+            {initError ? 'Initialization Notice' : 'Initializing application...'}
+          </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {state.progress.step}
             {state.progress.details && ` - ${state.progress.details}`}
           </p>
-          {state.progress.progress > 0 && (
+          {initError && (
+            <div className="mt-4">
+              <p className="text-sm text-yellow-500 mb-4">{initError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Refresh Page
+              </button>
+            </div>
+          )}
+          {state.progress.progress > 0 && !initError && (
             <div className="w-64 mx-auto mt-4">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
@@ -192,6 +256,17 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
                   style={{ width: `${state.progress.progress}%` }}
                 ></div>
               </div>
+            </div>
+          )}
+          
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 text-xs text-gray-500">
+              <p>Initialization Status:</p>
+              <p>Progress: {state.progress.progress}%</p>
+              <p>Step: {state.progress.step}</p>
+              {state.progress.details && (
+                <p>Details: {state.progress.details}</p>
+              )}
             </div>
           )}
         </div>

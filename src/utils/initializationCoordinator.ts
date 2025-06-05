@@ -24,9 +24,9 @@ export type InitState = {
   progress: InitProgress;
 };
 
-const INIT_TIMEOUT = 30000; // 30 seconds timeout for initialization
-const DB_TIMEOUT = 10000; // 10 seconds timeout for database
-const CRITICAL_DATA_TIMEOUT = 15000; // 15 seconds timeout for critical data
+const INIT_TIMEOUT = process.env.NODE_ENV === 'production' ? 60000 : 30000; // 60 seconds timeout for initialization in production
+const DB_TIMEOUT = process.env.NODE_ENV === 'production' ? 20000 : 10000; // 20 seconds timeout for database in production
+const CRITICAL_DATA_TIMEOUT = process.env.NODE_ENV === 'production' ? 30000 : 15000; // 30 seconds timeout for critical data in production
 
 class InitializationCoordinator {
   private state: InitState = {
@@ -39,20 +39,61 @@ class InitializationCoordinator {
 
   private listeners: ((state: InitState) => void)[] = [];
   private abortController: AbortController | null = null;
+  private lastProgressUpdate: number = Date.now();
+  private progressUpdateTimeout: NodeJS.Timeout | null = null;
 
   subscribe(listener: (state: InitState) => void) {
+    console.log('[InitializationCoordinator] New subscriber added');
     this.listeners.push(listener);
+    // Immediately notify the new subscriber of current state
+    listener(this.state);
     return () => {
+      console.log('[InitializationCoordinator] Subscriber removed');
       this.listeners = this.listeners.filter(l => l !== listener);
     };
   }
 
   private updateState(update: Partial<InitState>) {
+    const oldState = { ...this.state };
     this.state = { ...this.state, ...update };
+    console.log('[InitializationCoordinator] State updated:', {
+      from: oldState,
+      to: this.state,
+      update
+    });
     this.listeners.forEach(listener => listener(this.state));
   }
 
   private updateProgress(step: string, progress: number, details?: string) {
+    const now = Date.now();
+    console.log('[InitializationCoordinator] Progress update:', { 
+      step, 
+      progress, 
+      details,
+      timeSinceLastUpdate: now - this.lastProgressUpdate 
+    });
+
+    // If progress hasn't changed in 5 seconds, force an update
+    if (this.progressUpdateTimeout) {
+      clearTimeout(this.progressUpdateTimeout);
+    }
+
+    this.progressUpdateTimeout = setTimeout(() => {
+      if (this.state.progress.progress === progress && 
+          this.state.progress.step === step &&
+          !this.state.isInitialized) {
+        console.warn('[InitializationCoordinator] Progress stalled, forcing update');
+        this.updateState({
+          progress: { 
+            step: `${step} (stalled)`, 
+            progress: Math.min(progress + 1, 99),
+            details: 'Progress stalled, forcing update...'
+          }
+        });
+      }
+    }, 5000);
+
+    this.lastProgressUpdate = now;
     this.updateState({
       progress: { step, progress, details }
     });
@@ -74,23 +115,56 @@ class InitializationCoordinator {
     try {
       this.updateProgress('Initializing database...', 10);
       
-      // Initialize the database using the correct function
-      await initializeDatabase();
+      // Add retry logic for database initialization
+      let retryCount = 0;
+      const maxRetries = process.env.NODE_ENV === 'production' ? 3 : 1;
       
-      // Wait for the database to be ready
-      const db = await getDatabase();
-      if (!db) {
-        throw new Error('Database initialization failed - no database instance returned');
+      while (retryCount < maxRetries) {
+        try {
+          // Initialize the database using the correct function
+          await this.withTimeout(
+            initializeDatabase(),
+            DB_TIMEOUT,
+            'Database initialization timed out'
+          );
+          
+          // Wait for the database to be ready
+          const db = await this.withTimeout(
+            getDatabase(),
+            DB_TIMEOUT,
+            'Database connection timed out'
+          );
+
+          if (!db) {
+            throw new Error('Database initialization failed - no database instance returned');
+          }
+
+          // Wait for database to be ready
+          await this.withTimeout(
+            isDatabaseReady(),
+            DB_TIMEOUT,
+            'Database ready check timed out'
+          );
+
+          this.updateProgress('Database initialized', 30);
+          return db;
+        } catch (error) {
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            throw error;
+          }
+          console.warn(`Database initialization attempt ${retryCount} failed, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+        }
       }
-
-      // Wait for database to be ready
-      await isDatabaseReady();
-
-      this.updateProgress('Database initialized', 30);
-      return db;
+      
+      throw new Error('Database initialization failed after all retries');
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`Database initialization failed: ${error.message}`);
+        const errorMessage = process.env.NODE_ENV === 'production' 
+          ? 'Database initialization failed. Please try refreshing the page.'
+          : `Database initialization failed: ${error.message}`;
+        throw new Error(errorMessage);
       }
       throw error;
     }
@@ -163,12 +237,14 @@ class InitializationCoordinator {
 
   async initialize() {
     if (this.state.isInitializing) {
-      console.warn('Initialization already in progress');
+      console.warn('[InitializationCoordinator] Initialization already in progress');
       return;
     }
 
+    console.log('[InitializationCoordinator] Starting initialization process');
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
+    this.lastProgressUpdate = Date.now();
 
     try {
       this.updateState({
@@ -177,27 +253,66 @@ class InitializationCoordinator {
         progress: { step: 'Starting initialization...', progress: 0 }
       });
 
-      // Initialize database with timeout
+      // Add a safety timeout to force completion
+      const safetyTimeout = setTimeout(() => {
+        if (!this.state.isInitialized) {
+          console.warn('[InitializationCoordinator] Safety timeout reached, forcing completion');
+          // In production, we'll try to continue with partial initialization
+          if (process.env.NODE_ENV === 'production') {
+            this.updateState({
+              isInitialized: true,
+              isInitializing: false,
+              criticalDataLoaded: this.state.criticalDataLoaded,
+              progress: { 
+                step: 'Initialization partially complete (safety timeout)', 
+                progress: 100,
+                details: 'Some features may be limited'
+              }
+            });
+          } else {
+            this.updateState({
+              isInitialized: true,
+              isInitializing: false,
+              criticalDataLoaded: true,
+              progress: { step: 'Initialization complete (safety timeout)', progress: 100 }
+            });
+          }
+        }
+      }, INIT_TIMEOUT);
+
+      console.log('[InitializationCoordinator] Initializing database...');
       const db = await this.initializeDatabase();
-      if (signal.aborted) return;
+      if (signal.aborted) {
+        console.log('[InitializationCoordinator] Initialization aborted after database init');
+        return;
+      }
 
-      // Load critical data with timeout
+      console.log('[InitializationCoordinator] Loading critical data...');
       await this.loadCriticalData(db);
-      if (signal.aborted) return;
+      if (signal.aborted) {
+        console.log('[InitializationCoordinator] Initialization aborted after critical data load');
+        return;
+      }
 
+      console.log('[InitializationCoordinator] Critical data loaded, updating state');
       this.updateState({ criticalDataLoaded: true });
 
-      // Load non-critical data (no timeout, as it's not blocking)
+      console.log('[InitializationCoordinator] Loading non-critical data...');
       await this.loadNonCriticalData(db);
-      if (signal.aborted) return;
+      if (signal.aborted) {
+        console.log('[InitializationCoordinator] Initialization aborted after non-critical data load');
+        return;
+      }
 
-      // Complete initialization
+      clearTimeout(safetyTimeout);
+      console.log('[InitializationCoordinator] Initialization complete, updating final state');
       this.updateState({
         isInitialized: true,
         isInitializing: false,
         progress: { step: 'Initialization complete', progress: 100 }
       });
     } catch (error) {
+      console.error('[InitializationCoordinator] Initialization failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown initialization error';
       this.updateState({
         isInitialized: false,
@@ -211,6 +326,10 @@ class InitializationCoordinator {
       });
       throw error;
     } finally {
+      console.log('[InitializationCoordinator] Cleanup after initialization');
+      if (this.progressUpdateTimeout) {
+        clearTimeout(this.progressUpdateTimeout);
+      }
       this.abortController = null;
     }
   }

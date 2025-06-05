@@ -5,7 +5,6 @@ const CompressionPlugin = require('compression-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const CopyPlugin = require('copy-webpack-plugin');
 // const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const ImageMinimizerPlugin = require('image-minimizer-webpack-plugin');
 const BrotliPlugin = require('brotli-webpack-plugin');
@@ -15,11 +14,14 @@ const express = require('express');
 // Base configuration that can be extended by dev and prod configs
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
+  const isVercel = process.env.VERCEL === '1';
   // const analyzeBundle = env.analyze === 'true';  // Comment out bundle analyzer flag
 
   return {
     mode: isProduction ? 'production' : 'development',
-    entry: './src/index.tsx',
+    entry: {
+      main: './src/index.tsx'
+    },
     output: {
       path: path.resolve(__dirname, 'build'),
       filename: isProduction ? 'static/js/[name].[contenthash:8].js' : 'static/js/[name].js',
@@ -28,13 +30,6 @@ module.exports = (env, argv) => {
       clean: isProduction,
       crossOriginLoading: 'anonymous',
       assetModuleFilename: 'static/media/[name].[hash][ext][query]',
-      chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
-      chunkLoadTimeout: 120000,
-      chunkLoading: 'jsonp',
-      chunkFormat: 'array-push',
-      hashFunction: 'xxhash64',
-      hashDigest: 'hex',
-      hashDigestLength: 16,
       environment: {
         arrowFunction: true,
         const: true,
@@ -42,7 +37,9 @@ module.exports = (env, argv) => {
         dynamicImport: true,
         forOf: true,
         module: true
-      }
+      },
+      chunkLoadTimeout: isVercel ? 120000 : 30000, // 2 minutes on Vercel
+      chunkLoadingGlobal: 'webpackChunkBackupJapVoc'
     },
     module: {
       rules: [
@@ -123,7 +120,8 @@ module.exports = (env, argv) => {
           test: /\.(mp3|wav|ogg)$/i,
           type: 'asset/resource',
           generator: {
-            filename: 'static/sounds/[name][ext]'
+            filename: 'static/audio/[name][ext]',
+            emit: false
           }
         },
         {
@@ -163,9 +161,9 @@ module.exports = (env, argv) => {
         new TerserPlugin({
           terserOptions: {
             compress: {
-              drop_console: isProduction,
-              drop_debugger: isProduction,
-              pure_funcs: isProduction ? ['console.log', 'console.info'] : [],
+              drop_console: isProduction && !isVercel, // Keep console logs on Vercel for debugging
+              drop_debugger: isProduction && !isVercel,
+              pure_funcs: isProduction && !isVercel ? ['console.log', 'console.info'] : [],
               passes: 2,
               dead_code: isProduction,
               unused: isProduction
@@ -189,9 +187,9 @@ module.exports = (env, argv) => {
       ],
       splitChunks: {
         chunks: 'all',
-        maxInitialRequests: 30,
+        maxInitialRequests: isVercel ? 20 : 30, // Reduce for Vercel
         minSize: 20000,
-        maxSize: 244000,
+        maxSize: isVercel ? 200000 : 244000, // Smaller chunks for Vercel
         cacheGroups: {
           critical: {
             test: /[\\/]src[\\/](components|pages|hooks|utils)[\\/]/,
@@ -214,7 +212,9 @@ module.exports = (env, argv) => {
             name: 'audio',
             chunks: 'async',
             priority: 40,
-            reuseExistingChunk: true
+            reuseExistingChunk: true,
+            enforce: true,
+            maxSize: 0
           },
           common: {
             name: 'common',
@@ -238,7 +238,7 @@ module.exports = (env, argv) => {
       new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development')
       }),
-      new CopyPlugin({
+      new CopyWebpackPlugin({
         patterns: [
           {
             from: 'src/assets',
@@ -281,8 +281,46 @@ module.exports = (env, argv) => {
               ignore: ['**/.DS_Store', '**/dict/**', '**/assets/**', '**/index.html']
             }
           },
-          { from: 'src/data/romaji-data.json', to: 'romaji-data.json' }
-        ]
+          { 
+            from: 'src/data/romaji-data.json', 
+            to: 'romaji-data.json',
+            noErrorOnMissing: true
+          },
+          {
+            from: 'public/service-worker.js',
+            to: 'service-worker.js',
+            noErrorOnMissing: true,
+            toType: 'file',
+            force: true,
+            transform(content) {
+              // Ensure we're working with a string
+              const contentStr = Buffer.isBuffer(content) ? content.toString('utf-8') : 
+                               typeof content === 'string' ? content : '';
+              
+              // Remove any problematic imports or dynamic imports
+              return contentStr
+                .replace(/import\s*\([^)]*\)/g, '')
+                .replace(/import\s+.*?from\s+['"].*?['"]/g, '')
+                .replace(/export\s+.*?{.*?}/gs, '')
+                .replace(/export\s+default/g, '');
+            }
+          },
+          {
+            from: 'public/audio',
+            to: 'static/audio',
+            noErrorOnMissing: true,
+            globOptions: {
+              ignore: ['**/.DS_Store'],
+              matchBase: true,
+              dot: false
+            },
+            toType: 'file',
+            force: true
+          }
+        ],
+        options: {
+          concurrency: 4
+        }
       }),
       new HtmlWebpackPlugin({
         template: 'public/index.html',
@@ -413,8 +451,8 @@ module.exports = (env, argv) => {
       watchFiles: {
         paths: ['src/**/*', 'public/**/*'],
         options: {
-          usePolling: true,
-          interval: 1000,
+          usePolling: false,
+          interval: 100,
         },
       },
       port: 3002,
@@ -423,13 +461,21 @@ module.exports = (env, argv) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
         'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
-        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0'
       },
       devMiddleware: {
         writeToDisk: false,
-        publicPath: '/'
+        publicPath: '/',
+        stats: {
+          colors: true,
+          chunks: false,
+          modules: false,
+          children: false,
+          reasons: false,
+          errorDetails: true
+        }
       },
       client: {
         overlay: {
@@ -437,7 +483,7 @@ module.exports = (env, argv) => {
           warnings: false
         },
         progress: true,
-        logging: 'info',
+        logging: 'error',
         reconnect: true,
         webSocketURL: {
           hostname: 'localhost',
@@ -460,153 +506,44 @@ module.exports = (env, argv) => {
           throw new Error('webpack-dev-server is not defined');
         }
         
-        // Add critical loading middleware
+        // Simplified critical loading middleware
         middlewares.push({
           name: 'critical-loading',
           middleware: (req, res, next) => {
             if (req.path.endsWith('.js')) {
-              // Add priority hints for critical resources
-              if (req.path.includes('runtime.js') || 
-                  req.path.includes('vendor.react.js') || 
-                  req.path.includes('vendor.mui.js') || 
-                  req.path.includes('critical.js')) {
-                res.setHeader('Priority', 'high');
-                res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-              }
+              res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+              res.setHeader('Pragma', 'no-cache');
+              res.setHeader('Expires', '0');
             }
             next();
           }
         });
 
-        // Enhanced error handling middleware
+        // Simplified error handling middleware
         middlewares.push({
           name: 'error-handler',
           middleware: (err, req, res, next) => {
             console.error('Loading error:', err);
-            
-            // Handle critical loading failures
             if (err.name === 'AbortError' || 
-                (err.message && (
-                  err.message.includes('Loading chunk') || 
-                  err.message.includes('Failed to load') ||
-                  err.message.includes('NetworkError')
-                ))) {
-              
-              // Check if it's a critical resource
-              const isCritical = req.path.includes('runtime.js') || 
-                               req.path.includes('vendor.react.js') || 
-                               req.path.includes('vendor.mui.js') || 
-                               req.path.includes('critical.js');
-              
-              if (isCritical) {
-                // For critical resources, try immediate reload
-                res.status(200).send(`
-                  <!DOCTYPE html>
-                  <html>
-                    <head>
-                      <title>Critical Resource Loading Error</title>
-                      <script>
-                        (function() {
-                          console.log('Critical resource loading failed, attempting immediate recovery...');
-                          
-                          // Clear all caches immediately
-                          if ('caches' in window) {
-                            caches.keys().then(keys => {
-                              keys.forEach(key => caches.delete(key));
-                            });
-                          }
-                          
-                          // Clear service worker
-                          if ('serviceWorker' in navigator) {
-                            navigator.serviceWorker.getRegistrations()
-                              .then(registrations => {
-                                registrations.forEach(reg => reg.unregister());
-                              });
-                          }
-                          
-                          // Force reload with cache busting
-                          window.location.href = window.location.href.split('?')[0] + 
-                            '?t=' + Date.now() + '&critical=' + Math.random();
-                        })();
-                      </script>
-                    </head>
-                    <body>
-                      <p>Critical resource loading failed, recovering...</p>
-                    </body>
-                  </html>
-                `);
-                return;
-              }
-              
-              // For non-critical resources, use the existing retry logic
-              // ... existing error handling code ...
-            }
-            
-            next(err);
-          }
-        });
-
-        // Enhanced chunk recovery middleware
-        middlewares.push({
-          name: 'chunk-recovery',
-          middleware: (req, res, next) => {
-            // Add headers to prevent caching issues
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
-            
-            // Add enhanced error recovery script to HTML responses
-            if (req.path.endsWith('.html') || req.path === '/') {
-              const originalSend = res.send;
-              res.send = function(body) {
-                if (typeof body === 'string' && body.includes('</head>')) {
-                  const recoveryScript = `
+                (err.message && err.message.includes('Loading chunk'))) {
+              res.status(200).send(`
+                <!DOCTYPE html>
+                <html>
+                  <head>
+                    <title>Loading Error</title>
                     <script>
-                      (function() {
-                        let retryCount = 0;
-                        const maxRetries = 3;
-                        
-                        function handleChunkError(e) {
-                          if (e.message && (e.message.includes('Loading chunk') || e.message.includes('AbortError'))) {
-                            console.log('Detected chunk loading error, attempt:', retryCount + 1);
-                            
-                            if (retryCount < maxRetries) {
-                              retryCount++;
-                              // Clear the failed chunk from cache
-                              if (window.webpackChunkBackupJapVoc) {
-                                const chunkId = e.message.match(/Loading chunk (\\d+)/)?.[1];
-                                if (chunkId) {
-                                  delete window.webpackChunkBackupJapVoc[chunkId];
-                                }
-                              }
-                              
-                              // Retry loading after a delay
-                              setTimeout(() => {
-                                window.location.reload(true);
-                              }, 1000 * retryCount);
-                            } else {
-                              // After max retries, do a full reload
-                              console.log('Max retries reached, performing full reload');
-                              window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
-                            }
-                          }
-                        }
-                        
-                        window.addEventListener('error', handleChunkError);
-                        window.addEventListener('unhandledrejection', (e) => {
-                          if (e.reason && e.reason.message) {
-                            handleChunkError(e.reason);
-                          }
-                        });
-                      })();
+                      console.log('Resource loading failed, reloading...');
+                      window.location.reload();
                     </script>
-                  `;
-                  body = body.replace('</head>', `${recoveryScript}</head>`);
-                }
-                return originalSend.call(this, body);
-              };
+                  </head>
+                  <body>
+                    <p>Loading error, reloading page...</p>
+                  </body>
+                </html>
+              `);
+              return;
             }
-            next();
+            next(err);
           }
         });
 
@@ -615,9 +552,9 @@ module.exports = (env, argv) => {
     },
     devtool: isProduction ? 'source-map' : 'eval-source-map',
     performance: {
-      hints: isProduction ? 'warning' : false,
-      maxEntrypointSize: 512000,
-      maxAssetSize: 512000
+      hints: isProduction ? (isVercel ? false : 'warning') : false, // Disable performance hints on Vercel
+      maxEntrypointSize: isVercel ? 1024000 : 512000, // Double size limit for Vercel
+      maxAssetSize: isVercel ? 1024000 : 512000
     },
     cache: {
       type: 'filesystem',
