@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState, createContext, useContext } from 'react';
+import React, { Suspense, lazy, useEffect, useState, createContext, useContext, useRef, useCallback } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider, createTheme, Theme } from '@mui/material/styles';
 import { useTheme } from './context/ThemeContext';
@@ -24,61 +24,152 @@ import { WordLevelProvider } from './context/WordLevelContext';
 import { WordProvider } from './context/WordContext';
 import { DictionaryProvider } from './context/DictionaryContext';
 import { LearningProvider } from './context/LearningContext';
+import { AuthProvider } from './context/AuthContext';
+import { AppProvider } from './context/AppContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import { databasePromise, initializeDatabase, forceDatabaseReset } from './utils/databaseConfig';
-import { CircularProgress, Box } from '@mui/material';
+import { CircularProgress, Box, Typography, Button, LinearProgress } from '@mui/material';
 import { KnowingNavigation } from './components/KnowingNavigation';
 import ProfilePage from './pages/ProfilePage';
+import EditProfilePage from './pages/EditProfilePage';
 import Login from './components/Login';
 import { AchievementProvider } from './context/AchievementContext';
 import { KanjiProvider } from './context/KanjiContext';
+import AnimeTriviaPage from './pages/trivia/AnimeTriviaPage';
+import MangaTriviaPage from './pages/trivia/MangaTriviaPage';
+import GamesTriviaPage from './pages/trivia/GamesTriviaPage';
+import ShintoTriviaPage from './pages/trivia/ShintoTriviaPage';
+import HistoryTriviaPage from './pages/trivia/HistoryTriviaPage';
+import CuisineTriviaPage from './pages/trivia/CuisineTriviaPage';
+import MythologyTriviaPage from './pages/trivia/MythologyTriviaPage';
+import TriviaHomePage from './pages/trivia/TriviaHomePage';
+import AnimeSection from './pages/AnimeSection';
+import { RefreshIcon } from './index';
+import { InitializationProvider, withInitialization } from './context/InitializationContext';
+import { useInitialization } from './context/InitializationContext';
+import KanjiDictionary from './pages/learning/KanjiDictionary';
+import { KanjiDictionaryProvider } from './context/KanjiDictionaryContext';
+import SRSManager from './components/SRSManager';
+import SRSStats from './components/SRSStats';
+import SRSSettings from './components/SRSSettings';
+import { ProgressAndAchievementProvider } from './components/providers/ProgressAndAchievementProvider';
 
-// Lazy load all route components
-const Home = lazy(() => import('./pages/Home'));
-const Settings = lazy(() => import('./pages/Settings'));
-const LearningLayout = lazy(() => import('./pages/learning/LearningLayout'));
-const LearnKanji = lazy(() => import('./pages/LearnKanji'));
-const KanjiDictionary = lazy(() => import('./pages/learning/KanjiDictionary'));
-const Romaji = lazy(() => import('./pages/learning/Romaji'));
-const QuizPage = lazy(() => import('./pages/learning/QuizPage'));
-const Kana = lazy(() => import('./pages/learning/Kana'));
-const Dictionary = lazy(() => import('./pages/Dictionary'));
-const KnowingDictionary = lazy(() => import('./pages/KnowingDictionary'));
-const SRSPage = lazy(() => import('./pages/SRSPage'));
-const GamesPage = lazy(() => import('./pages/GamesPage'));
-const Progress = lazy(() => import('./pages/Progress'));
-const KnowingCenter = lazy(() => import('./pages/KnowingCenter'));
-const CultureAndRules = lazy(() => import('./pages/CultureAndRules'));
-const MoodPage = lazy(() => import('./pages/MoodPage'));
-const ProgressPage = lazy(() => import('./pages/ProgressPage'));
-const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
-const SettingsPage = lazy(() => import('./pages/Settings'));
-const TriviaSection = lazy(() => import('./pages/TriviaSection'));
-const AnimeSection = lazy(() => import('./pages/AnimeSection'));
-const FAQScoring = lazy(() => import('./pages/FAQScoring'));
-const FAQLearning = lazy(() => import('./pages/FAQLearning'));
-const FAQFeatures = lazy(() => import('./pages/FAQFeatures'));
-const FAQProgress = lazy(() => import('./pages/FAQProgress'));
+// Optimize lazy loading with better chunk names and preloading hints
+const HomePage = lazy(() => import(/* webpackChunkName: "home", webpackPrefetch: true */ './pages/Home'));
+const Settings = lazy(() => import(/* webpackChunkName: "settings", webpackPrefetch: true */ './pages/Settings'));
+const LearningLayout = lazy(() => import(/* webpackChunkName: "learning" */ './pages/learning/LearningLayout'));
+const Romaji = lazy(() => import(/* webpackChunkName: "romaji" */ './pages/learning/Romaji'));
+const QuizPage = lazy(() => import(/* webpackChunkName: "quiz" */ './pages/learning/QuizPage'));
+const Kana = lazy(() => import(/* webpackChunkName: "kana" */ './pages/learning/Kana'));
+const Dictionary = lazy(() => import(/* webpackChunkName: "dictionary" */ './pages/Dictionary'));
+const KnowingDictionary = lazy(() => import(/* webpackChunkName: "knowing-dict" */ './pages/KnowingDictionary'));
+const SRSPage = lazy(() => import(/* webpackChunkName: "srs" */ './pages/SRSPage'));
+const GamesPage = lazy(() => import(/* webpackChunkName: "games" */ './pages/GamesPage'));
+const Progress = lazy(() => import(/* webpackChunkName: "progress" */ './pages/Progress'));
+const KnowingCenter = lazy(() => import(/* webpackChunkName: "knowing" */ './pages/KnowingCenter'));
+const CultureAndRules = lazy(() => import(/* webpackChunkName: "culture" */ './pages/CultureAndRules'));
+const MoodPage = lazy(() => import(/* webpackChunkName: "mood" */ './pages/MoodPage'));
+const ProgressPage = lazy(() => import(/* webpackChunkName: "progress-page" */ './pages/ProgressPage'));
+const FavoritesPage = lazy(() => import(/* webpackChunkName: "favorites" */ './pages/FavoritesPage'));
+const SettingsPage = lazy(() => import(/* webpackChunkName: "settings-page" */ './pages/Settings'));
+const TriviaSection = lazy(() => import(/* webpackChunkName: "trivia" */ './pages/TriviaSection'));
+const FAQScoring = lazy(() => import(/* webpackChunkName: "faq-scoring" */ './pages/FAQScoring'));
+const FAQLearning = lazy(() => import(/* webpackChunkName: "faq-learning" */ './pages/FAQLearning'));
+const FAQFeatures = lazy(() => import(/* webpackChunkName: "faq-features" */ './pages/FAQFeatures'));
+const FAQProgress = lazy(() => import(/* webpackChunkName: "faq-progress" */ './pages/FAQProgress'));
+const Writing = lazy(() => import(/* webpackChunkName: "writing" */ './pages/Writing'));
+const Signup = lazy(() => import(/* webpackChunkName: "signup" */ './components/Signup'));
 
-// Loading component with better visual feedback
-const LoadingFallback = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-    <CircularProgress />
+// Enhanced loading component with better visual feedback and progress
+const LoadingFallback = ({ progress }: { progress?: { step: string; progress: number } }) => (
+  <Box sx={{ 
+    display: 'flex', 
+    flexDirection: 'column',
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh',
+    gap: 2
+  }}>
+    <CircularProgress size={40} />
+    {progress && (
+      <>
+        <Typography variant="body1" color="text.secondary">
+          {progress.step}
+        </Typography>
+        <Box sx={{ width: 200, mt: 1 }}>
+          <LinearProgress 
+            variant="determinate" 
+            value={progress.progress} 
+            sx={{ height: 8, borderRadius: 4 }}
+          />
+        </Box>
+      </>
+    )}
   </Box>
 );
 
-// Theme wrapper component to handle Material-UI theme
-export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Enhanced error boundary component
+const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ErrorBoundary
+    fallback={({ error, resetErrorBoundary }) => (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        gap: 2,
+        p: 3
+      }}>
+        <Typography variant="h5" color="error" gutterBottom>
+          Something went wrong
+        </Typography>
+        <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 2 }}>
+          {error.message}
+        </Typography>
+        <Button 
+          variant="contained" 
+          onClick={resetErrorBoundary}
+          startIcon={<RefreshIcon />}
+        >
+          Try Again
+        </Button>
+      </Box>
+    )}
+  >
+    {children}
+  </ErrorBoundary>
+);
+
+// Preload critical components
+const preloadCriticalComponents = () => {
+  // Preload home page and settings as they're most commonly accessed
+  const preloadHome = () => import('./pages/Home');
+  const preloadSettings = () => import('./pages/Settings');
+  
+  // Use requestIdleCallback for non-critical preloading
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => {
+      preloadHome();
+      preloadSettings();
+    });
+  } else {
+    // Fallback for browsers that don't support requestIdleCallback
+    setTimeout(() => {
+      preloadHome();
+      preloadSettings();
+    }, 2000);
+  }
+};
+
+// Optimize theme wrapper to reduce re-renders
+export const ThemeWrapper = React.memo<{ children: React.ReactNode }>(({ children }) => {
   const themeContext = useTheme();
   const [isThemeReady, setIsThemeReady] = React.useState(false);
 
-  // Create a stable theme object with proper type checking
   const muiTheme = React.useMemo(() => {
-    // Ensure we have a valid theme value
     const theme = themeContext?.theme || 'dark';
-    
-    // Create theme with safe defaults
-    const themeConfig = {
+    return createTheme({
       palette: {
         mode: theme === 'dark' ? 'dark' : 'light',
         primary: {
@@ -102,30 +193,20 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
             root: {
               background: theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 'rgba(255, 255, 255, 0.8)',
               backdropFilter: 'blur(10px)',
-              border: `1px solid ${
-                theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-              }`,
+              border: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
             },
           },
         },
       },
-    };
-
-    return createTheme(themeConfig);
+    });
   }, [themeContext?.theme]);
 
-  // Ensure theme is ready before rendering children
   React.useEffect(() => {
-    if (muiTheme && muiTheme.palette && muiTheme.palette.mode) {
-      // Add a small delay to ensure theme is fully initialized
-      const timer = setTimeout(() => {
-        setIsThemeReady(true);
-      }, 100);
-      return () => clearTimeout(timer);
+    if (muiTheme) {
+      setIsThemeReady(true);
     }
   }, [muiTheme]);
 
-  // Show loading state while theme is initializing
   if (!isThemeReady || !muiTheme) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#181830]">
@@ -142,329 +223,339 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </MuiThemeProvider>
   );
-};
+});
 
-const App: React.FC = () => {
-  const [isInitializing, setIsInitializing] = useState(true);
+// Add debug logging utility
+const DEBUG = true;
+function log(component: string, message: string, data?: any) {
+  if (DEBUG) {
+    const timestamp = new Date().toISOString();
+    if (data) {
+      console.log(`[${timestamp}] [${component}] ${message}`, data);
+    } else {
+      console.log(`[${timestamp}] [${component}] ${message}`);
+    }
+  }
+}
+
+// Add AbortController for managing async operations
+const createAbortController = () => new AbortController();
+
+// Add a context initialization coordinator
+const ContextInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isInitialized, setIsInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
-  const [initProgress, setInitProgress] = useState<string>('Initializing...');
-  const [initStep, setInitStep] = useState<number>(0);
-  const { db } = useDatabase();
-
-  // Function to update progress with step tracking
-  const updateProgress = (message: string, step: number) => {
-    setInitProgress(message);
-    setInitStep(step);
-    console.log(`[App] Initialization step ${step}: ${message}`);
-  };
-
-  // Function to initialize audio cache with better error handling
-  const initAudioCache = async (): Promise<void> => {
-    if (!db) {
-      console.warn('[App] Database not available for audio cache initialization');
-      return;
-    }
-
-    try {
-      const transaction = db.transaction(['audioFiles'], 'readwrite');
-      const store = transaction.objectStore('audioFiles');
-      
-      // Get all words from the database
-      const words = await db.getAll('words');
-      console.log(`[App] Starting audio cache for ${words.length} words`);
-      
-      // Process words in smaller batches with delays
-      const BATCH_SIZE = 5; // Reduced batch size for mobile
-      const DELAY_BETWEEN_BATCHES = 2000; // Increased delay for mobile
-      
-      for (let i = 0; i < words.length; i += BATCH_SIZE) {
-        const batch = words.slice(i, i + BATCH_SIZE);
-        await Promise.all(
-          batch.map(async (word) => {
-            try {
-              // Check if audio already exists
-              const existing = await store.get(word.id);
-              if (!existing) {
-                // Generate and store audio
-                await store.put({
-                  id: word.id,
-                  audio: null, // Will be generated on demand
-                  timestamp: Date.now()
-                });
-              }
-            } catch (error) {
-              console.warn(`[App] Failed to process word ${word.id}:`, error);
-            }
-          })
-        );
-        
-        // Add delay between batches
-        if (i + BATCH_SIZE < words.length) {
-          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
-        }
-      }
-    } catch (error) {
-      console.warn('[App] Audio cache initialization warning:', error);
-    }
-  };
-
-  const handleForceReset = async () => {
-    try {
-      setInitProgress('Resetting database...');
-      await forceDatabaseReset();
-      setInitError(null);
-      initializeApp();
-    } catch (error) {
-      console.error('[App] Error during force reset:', error);
-      setInitError('Failed to reset database. Please try clearing your browser data manually.');
-    }
-  };
-
-  const initializeApp = async () => {
-    setIsInitializing(true);
-    setInitError(null);
-    setInitStep(0);
-    updateProgress('Starting initialization...', 0);
-
-    try {
-      console.log('[App] Starting application initialization');
-      
-      // Initialize database through the DatabaseContext
-      updateProgress('Initializing database...', 1);
-      await databasePromise; // Wait for the database promise from DatabaseContext
-      console.log('[App] Database initialized successfully');
-
-      // Import words with timeout
-      updateProgress('Importing words...', 2);
-      const importPromise = importWords();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Word import timed out')), 30000)
-      );
-      const importResult = await Promise.race([importPromise, timeoutPromise]);
-      if (!importResult.success) {
-        console.warn('[App] Word import warning:', importResult.error);
-      }
-      console.log('[App] Word import completed');
-
-      // Import dictionary data with timeout
-      updateProgress('Importing dictionary data...', 3);
-      try {
-        const dictPromise = importDictionaryData();
-        const dictTimeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Dictionary import timed out')), 30000)
-        );
-        const dictResult = await Promise.race([dictPromise, dictTimeoutPromise]);
-        if (!dictResult.success) {
-          console.warn('[App] Dictionary import warning:', dictResult.error);
-        } else {
-          console.log(`[App] Dictionary import completed with ${dictResult.count} words`);
-        }
-      } catch (error) {
-        console.warn('[App] Dictionary import warning:', error);
-      }
-
-      // Initialize mood words
-      updateProgress('Initializing mood words...', 4);
-      try {
-        await initializeMoodWords();
-        console.log('[App] Mood words initialized');
-      } catch (error) {
-        console.warn('[App] Mood words initialization warning:', error);
-      }
-
-      // Mark initialization as complete
-      updateProgress('Initialization complete!', 5);
-      console.log('[App] Core initialization completed');
-      setIsInitializing(false);
-
-      // Start audio cache initialization in the background
-      console.log('[App] Starting background audio cache initialization...');
-      initAudioCache().catch(error => {
-        console.warn('[App] Audio cache initialization warning:', error);
-      });
-
-    } catch (error) {
-      console.error('[App] Initialization error:', error);
-      setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
-      setIsInitializing(false);
-    }
-  };
+  const { db, isReady, error: dbError } = useDatabase();
 
   useEffect(() => {
-    initializeApp();
-  }, []);
+    if (!db || !isReady || dbError) return;
 
-  if (isInitializing) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-700">{initProgress}</p>
-          <div className="mt-4 w-64 bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
-              style={{ width: `${(initStep / 5) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
-    );
+    const initializeContexts = async () => {
+      try {
+        // Wait for all critical contexts to be ready
+        await Promise.all([
+          // Add any critical context initialization promises here
+          // For example, if you need to wait for specific data to be loaded
+          new Promise(resolve => setTimeout(resolve, 100)) // Small delay to ensure contexts are mounted
+        ]);
+
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Context initialization failed:', error);
+        setInitError(error instanceof Error ? error.message : 'Failed to initialize contexts');
+      }
+    };
+
+    initializeContexts();
+  }, [db, isReady, dbError]);
+
+  if (!isInitialized || !isReady) {
+    return <LoadingFallback />;
   }
 
   if (initError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-red-600 mb-4">Initialization Error</h2>
-          <p className="text-gray-700 mb-4">{initError}</p>
-          <div className="space-y-3">
-            <button
-              onClick={initializeApp}
-              className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-            >
-              Retry Initialization
-            </button>
-            <button
-              onClick={handleForceReset}
-              className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
-            >
-              Force Reset Database
-            </button>
-          </div>
-          <p className="mt-4 text-sm text-gray-500">
-            If the error persists, try clearing your browser data or using a different browser.
-          </p>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        gap: 2,
+        p: 3
+      }}>
+        <Typography variant="h5" color="error" gutterBottom>
+          Initialization Error
+        </Typography>
+        <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 2 }}>
+          {initError}
+        </Typography>
+        <Button 
+          variant="contained" 
+          onClick={() => window.location.reload()}
+          startIcon={<RefreshIcon />}
+        >
+          Retry
+        </Button>
+      </Box>
+    );
+  }
+
+  return <>{children}</>;
+};
+
+// Wrap providers with initialization
+const DatabaseProviderWithInit = withInitialization(DatabaseProvider, 'DatabaseProvider');
+const AuthProviderWithInit = withInitialization(AuthProvider, 'AuthProvider');
+const ThemeProviderWithInit = withInitialization(ThemeProvider, 'ThemeProvider');
+const SettingsProviderWithInit = withInitialization(SettingsProvider, 'SettingsProvider');
+const AccessibilityProviderWithInit = withInitialization(AccessibilityProvider, 'AccessibilityProvider');
+const WordProviderWithInit = withInitialization(WordProvider, 'WordProvider');
+const WordLevelProviderWithInit = withInitialization(WordLevelProvider, 'WordLevelProvider');
+const AchievementProviderWithInit = withInitialization(AchievementProvider, 'AchievementProvider');
+const ProgressProviderWithInit = withInitialization(ProgressProvider, 'ProgressProvider');
+const LearningProviderWithInit = withInitialization(LearningProvider, 'LearningProvider');
+const AppProviderWithInit = withInitialization(AppProvider, 'AppProvider');
+const DictionaryProviderWithInit = withInitialization(DictionaryProvider, 'DictionaryProvider');
+
+// Update the App component to use initialization
+function App() {
+  return (
+    <ErrorBoundary>
+      <DatabaseProviderWithInit>
+        <KanjiProvider>
+          <AudioProvider>
+            <DictionaryProviderWithInit>
+              <AuthProviderWithInit>
+                <ThemeProviderWithInit>
+                  <ThemeWrapper>
+                    <AppProviderWithInit>
+                      <SettingsProviderWithInit>
+                        <AccessibilityProviderWithInit>
+                          <WordProviderWithInit>
+                            <WordLevelProviderWithInit>
+                              <ProgressAndAchievementProvider>
+                                <LearningProviderWithInit>
+                                  <Suspense fallback={<LoadingFallback />}>
+                                    <Routes>
+                                      <Route path="/login" element={
+                                        <RouteErrorBoundary>
+                                          <Login />
+                                        </RouteErrorBoundary>
+                                      } />
+                                      <Route path="/register" element={
+                                        <RouteErrorBoundary>
+                                          <Signup />
+                                        </RouteErrorBoundary>
+                                      } />
+                                      <Route element={
+                                        <RouteErrorBoundary>
+                                          <MainLayout>
+                                            <Outlet />
+                                          </MainLayout>
+                                        </RouteErrorBoundary>
+                                      }>
+                                        {/* Always render Home route, but show loading state if not ready */}
+                                        <Route path="/" element={
+                                          <RouteErrorBoundary>
+                                            <HomePage />
+                                          </RouteErrorBoundary>
+                                        } />
+                                        {/* Other routes */}
+                                        <Route path="/settings" element={
+                                          <RouteErrorBoundary>
+                                            <Settings />
+                                          </RouteErrorBoundary>
+                                        } />
+                                        <Route path="/learning" element={<LearningLayout />}>
+                                          <Route index element={<Navigate to="/learning/kana" replace />} />
+                                          <Route path="kana" element={<Kana />} />
+                                          <Route path="kanji-dictionary" element={
+                                            <RouteErrorBoundary>
+                                              <KanjiDictionaryProvider>
+                                                <KanjiDictionary />
+                                              </KanjiDictionaryProvider>
+                                            </RouteErrorBoundary>
+                                          } />
+                                          <Route path="romaji" element={<Romaji />} />
+                                          <Route path="quiz" element={<QuizPage />} />
+                                          <Route path="writing" element={
+                                            <RouteErrorBoundary>
+                                              <Writing />
+                                            </RouteErrorBoundary>
+                                          } />
+                                        </Route>
+                                        <Route path="/srs" element={
+                                          <RouteErrorBoundary>
+                                            <SRSPage />
+                                          </RouteErrorBoundary>
+                                        }>
+                                          <Route index element={<SRSPage />} />
+                                          <Route path="review" element={
+                                            <RouteErrorBoundary>
+                                              <SRSManager />
+                                            </RouteErrorBoundary>
+                                          } />
+                                          <Route path="stats" element={
+                                            <RouteErrorBoundary>
+                                              <SRSStats />
+                                            </RouteErrorBoundary>
+                                          } />
+                                          <Route path="settings" element={
+                                            <RouteErrorBoundary>
+                                              <SRSSettings />
+                                            </RouteErrorBoundary>
+                                          } />
+                                        </Route>
+                                        <Route path="/games" element={
+                                          <RouteErrorBoundary>
+                                            <GamesPage />
+                                          </RouteErrorBoundary>
+                                        } />
+                                        <Route path="/anime" element={
+                                          <RouteErrorBoundary>
+                                            <AnimeSection />
+                                          </RouteErrorBoundary>
+                                        } />
+                                        <Route path="/progress" element={
+                                          <RouteErrorBoundary>
+                                            <ProgressProvider>
+                                              <WordLevelProvider>
+                                                <AchievementProvider>
+                                                  <ProgressPage />
+                                                </AchievementProvider>
+                                              </WordLevelProvider>
+                                            </ProgressProvider>
+                                          </RouteErrorBoundary>
+                                        } />
+                                        <Route path="/profile" element={
+                                          <RouteErrorBoundary>
+                                            <ProgressProvider>
+                                              <WordLevelProvider>
+                                                <AchievementProvider>
+                                                  <ProfilePage />
+                                                </AchievementProvider>
+                                              </WordLevelProvider>
+                                            </ProgressProvider>
+                                          </RouteErrorBoundary>
+                                        } />
+                                        <Route path="/profile/edit" element={
+                                          <RouteErrorBoundary>
+                                            <ProgressProvider>
+                                              <WordLevelProvider>
+                                                <AchievementProvider>
+                                                  <EditProfilePage />
+                                                </AchievementProvider>
+                                              </WordLevelProvider>
+                                            </ProgressProvider>
+                                          </RouteErrorBoundary>
+                                        } />
+                                        <Route path="/knowing" element={
+                                          <RouteErrorBoundary>
+                                            <ProgressProvider>
+                                              <KnowingNavigation>
+                                                <Outlet />
+                                              </KnowingNavigation>
+                                            </ProgressProvider>
+                                          </RouteErrorBoundary>
+                                        }>
+                                          <Route index element={<KnowingCenter />} />
+                                          <Route path="dictionary" element={<KnowingDictionary />} />
+                                          <Route path="kanji-dictionary" element={
+                                            <RouteErrorBoundary>
+                                              <KanjiDictionaryProvider>
+                                                <KanjiDictionary />
+                                              </KanjiDictionaryProvider>
+                                            </RouteErrorBoundary>
+                                          } />
+                                          <Route path="mood" element={<MoodPage />} />
+                                          <Route path="culture" element={<CultureAndRules />} />
+                                          <Route path="favorites" element={<FavoritesPage />} />
+                                          <Route path="settings" element={<SettingsPage />} />
+                                          <Route path="*" element={<Navigate to="/knowing" replace />} />
+                                        </Route>
+                                        <Route path="/trivia" element={<TriviaHomePage />} />
+                                        <Route path="/trivia/anime" element={<AnimeSection />} />
+                                        <Route path="/trivia/games" element={<GamesTriviaPage />} />
+                                        <Route path="/trivia/shinto" element={<ShintoTriviaPage />} />
+                                        <Route path="/trivia/history" element={<HistoryTriviaPage />} />
+                                        <Route path="/trivia/cuisine" element={<CuisineTriviaPage />} />
+                                        <Route path="/trivia/mythology" element={<MythologyTriviaPage />} />
+                                        <Route path="/trivia/*" element={<Navigate to="/trivia" replace />} />
+                                        <Route path="/faq" element={
+                                          <RouteErrorBoundary>
+                                            <Outlet />
+                                          </RouteErrorBoundary>
+                                        }>
+                                          <Route index element={<FAQFeatures />} />
+                                          <Route path="features" element={<FAQFeatures />} />
+                                          <Route path="learning" element={<FAQLearning />} />
+                                          <Route path="scoring" element={<FAQScoring />} />
+                                          <Route path="progress" element={<FAQProgress />} />
+                                          <Route path="*" element={<Navigate to="/faq" replace />} />
+                                        </Route>
+                                      </Route>
+                                    </Routes>
+                                  </Suspense>
+                                </LearningProviderWithInit>
+                              </ProgressAndAchievementProvider>
+                            </WordLevelProviderWithInit>
+                          </WordProviderWithInit>
+                        </AccessibilityProviderWithInit>
+                      </SettingsProviderWithInit>
+                    </AppProviderWithInit>
+                  </ThemeWrapper>
+                </ThemeProviderWithInit>
+              </AuthProviderWithInit>
+            </DictionaryProviderWithInit>
+          </AudioProvider>
+        </KanjiProvider>
+      </DatabaseProviderWithInit>
+    </ErrorBoundary>
+  );
+}
+
+// Create a new AppWrapper component to handle initialization
+function AppWrapper() {
+  const { state, retry } = useInitialization();
+
+  // Show loading state during initialization
+  if (state.isInitializing || !state.isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-lg">{state.progress.step}</p>
+          {state.progress.details && (
+            <p className="text-sm text-gray-500 mt-2">{state.progress.details}</p>
+          )}
+          {state.error && (
+            <div className="mt-4">
+              <p className="text-sm text-red-500">{state.error}</p>
+              <button
+                onClick={retry}
+                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {state.progress.progress > 0 && (
+            <div className="w-64 mx-auto mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${state.progress.progress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  return (
-    <ErrorBoundary>
-      <WordProvider>
-        <DictionaryProvider>
-          <LearningProvider>
-            <AudioProvider>
-              <ThemeWrapper>
-                <Suspense fallback={<LoadingSpinner />}>
-                  <Routes>
-                    <Route path="/login" element={
-                      <ErrorBoundary>
-                        <Login />
-                      </ErrorBoundary>
-                    } />
-                    <Route element={
-                      <ErrorBoundary>
-                        <MainLayout>
-                          <Outlet />
-                        </MainLayout>
-                      </ErrorBoundary>
-                    }>
-                      <Route path="/" element={
-                        <ErrorBoundary>
-                          <Home />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/settings" element={
-                        <ErrorBoundary>
-                          <Settings />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/learning" element={<LearningLayout />}>
-                        <Route index element={<Navigate to="/learning/kana" replace />} />
-                        <Route path="kana" element={<Kana />} />
-                        <Route path="kanji" element={
-                          <ErrorBoundary>
-                            <KanjiProvider>
-                              <LearnKanji />
-                            </KanjiProvider>
-                          </ErrorBoundary>
-                        } />
-                        <Route path="kanji-dictionary" element={
-                          <ErrorBoundary>
-                            <KanjiProvider>
-                              <KanjiDictionary />
-                            </KanjiProvider>
-                          </ErrorBoundary>
-                        } />
-                        <Route path="romaji" element={<Romaji />} />
-                        <Route path="quiz" element={<QuizPage />} />
-                      </Route>
-                      <Route path="/srs" element={
-                        <ErrorBoundary>
-                          <SRSPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/games" element={
-                        <ErrorBoundary>
-                          <GamesPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/anime" element={
-                        <ErrorBoundary>
-                          <AnimeSection />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/progress" element={
-                        <ErrorBoundary>
-                          <ProgressProvider>
-                            <WordLevelProvider>
-                              <AchievementProvider>
-                                <ProgressPage />
-                              </AchievementProvider>
-                            </WordLevelProvider>
-                          </ProgressProvider>
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/profile" element={
-                        <ErrorBoundary>
-                          <ProfilePage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/knowing" element={
-                        <ErrorBoundary>
-                          <ProgressProvider>
-                            <KnowingNavigation>
-                              <Outlet />
-                            </KnowingNavigation>
-                          </ProgressProvider>
-                        </ErrorBoundary>
-                      }>
-                        <Route index element={<KnowingCenter />} />
-                        <Route path="dictionary" element={<KnowingDictionary />} />
-                        <Route path="mood" element={<MoodPage />} />
-                        <Route path="culture" element={<CultureAndRules />} />
-                        <Route path="favorites" element={<FavoritesPage />} />
-                        <Route path="settings" element={<SettingsPage />} />
-                        <Route path="*" element={<Navigate to="/knowing" replace />} />
-                      </Route>
-                      <Route path="/trivia" element={
-                        <ErrorBoundary>
-                          <TriviaSection />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/faq" element={
-                        <ErrorBoundary>
-                          <Outlet />
-                        </ErrorBoundary>
-                      }>
-                        <Route index element={<FAQFeatures />} />
-                        <Route path="features" element={<FAQFeatures />} />
-                        <Route path="learning" element={<FAQLearning />} />
-                        <Route path="scoring" element={<FAQScoring />} />
-                        <Route path="progress" element={<FAQProgress />} />
-                        <Route path="*" element={<Navigate to="/faq" replace />} />
-                      </Route>
-                    </Route>
-                  </Routes>
-                </Suspense>
-              </ThemeWrapper>
-            </AudioProvider>
-          </LearningProvider>
-        </DictionaryProvider>
-      </WordProvider>
-    </ErrorBoundary>
-  );
-};
+  return <App />;
+}
 
-export default App; 
+export default AppWrapper; 

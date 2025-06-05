@@ -75,7 +75,7 @@ export const KnowingNavigation: React.FC<KnowingNavigationProps> = ({ children }
     {
       text: 'Progress',
       icon: <ProgressIcon />,
-      path: '/knowing/progress',
+      path: '/progress',
       progress: 0,
     },
     {

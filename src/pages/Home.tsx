@@ -1,133 +1,86 @@
 import React, { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
-import { Container, Typography, Box, Paper, Grid, Button, Card, CardContent, CardActionArea, useMediaQuery } from '@mui/material';
-import {
-  School as SchoolIcon,
-  MenuBook as MenuBookIcon,
-  Translate as TranslateIcon,
-  EmojiEmotions as MoodIcon,
-  Public as CultureIcon,
-  SportsEsports as GamesIcon,
-  Movie as MovieIcon,
-  History as HistoryIcon,
-  Restaurant as FoodIcon,
-  TempleBuddhist as ShintoIcon,
-  PlayArrow as PlayArrowIcon
-} from '@mui/icons-material';
+import { Container, Typography, Box, Paper, Grid, Button, Card, CardContent, CardActionArea, useMediaQuery, Chip, Stack } from '@mui/material';
 import { motion } from 'framer-motion';
-import { ThemeWrapper } from '../App';
+import { useAuth } from '../context/AuthContext';
+import { useProgress } from '../context/ProgressContext';
+import LoadingSpinner from '../components/LoadingSpinner';
+import {
+  SchoolIcon,
+  MenuBookIcon,
+  QuizIcon,
+  EmojiEventsIcon,
+  HelpIcon,
+  PersonIcon,
+  MovieIcon,
+  SportsEsportsIcon,
+  HistoryIcon,
+  RestaurantIcon,
+  TempleBuddhistIcon,
+  PsychologyIcon,
+  MoodIcon,
+  StarIcon,
+  TimelineIcon
+} from '../index';
+import ProgressSummary from '../components/progress/ProgressSummary';
 
-const FEATURE_CATEGORIES = [
+const MAIN_CATEGORIES = [
   {
-    title: 'Getting Started',
-    items: [
-      {
-        title: 'Knowing Center',
-        description: 'Your central hub for learning Japanese vocabulary, culture, and more.',
-        icon: <SchoolIcon sx={{ fontSize: 32 }} />,
-        path: '/knowing',
-        color: 'primary'
-      },
-      {
-        title: 'Learning Center',
-        description: 'Master Japanese writing, kanji, and romaji through interactive lessons.',
-        icon: <MenuBookIcon sx={{ fontSize: 32 }} />,
-        path: '/learning',
-        color: 'secondary'
-      },
-      {
-        title: 'SRS Learning',
-        description: 'Optimize your learning with spaced repetition system.',
-        icon: <TranslateIcon sx={{ fontSize: 32 }} />,
-        path: '/srs',
-        color: 'success'
-      }
-    ]
+    title: 'Knowing Center',
+    description: 'Your central hub for learning Japanese vocabulary, culture, and more.',
+    icon: <SchoolIcon sx={{ fontSize: 40 }} />,
+    path: '/knowing',
+    color: 'primary',
+    features: ['Dictionary', 'Mood & Emotions', 'Culture & Rules', 'Favorites']
   },
   {
-    title: 'Core Learning',
-    items: [
-      {
-        title: 'Dictionary',
-        description: 'Comprehensive Japanese dictionary with audio pronunciation and examples.',
-        icon: <MenuBookIcon sx={{ fontSize: 32 }} />,
-        path: '/knowing/dictionary',
-        color: 'primary'
-      },
-      {
-        title: 'Mood & Emotions',
-        description: 'Learn words through emotional context and cultural insights.',
-        icon: <MoodIcon sx={{ fontSize: 32 }} />,
-        path: '/knowing/mood',
-        color: 'secondary'
-      },
-      {
-        title: 'Culture & Rules',
-        description: 'Explore Japanese culture, customs, and language rules.',
-        icon: <CultureIcon sx={{ fontSize: 32 }} />,
-        path: '/knowing/culture',
-        color: 'success'
-      }
-    ]
+    title: 'Learning Practice',
+    description: 'Master Japanese writing, kanji, and kana through interactive lessons.',
+    icon: <MenuBookIcon sx={{ fontSize: 40 }} />,
+    path: '/learning',
+    color: 'secondary',
+    features: ['Kana Practice', 'Kanji Practice', 'Writing Practice', 'Quiz Mode']
   },
   {
-    title: 'Interactive Learning',
-    items: [
-      {
-        title: 'Learning Games',
-        description: 'Practice Japanese through fun interactive games and quizzes.',
-        icon: <GamesIcon sx={{ fontSize: 32 }} />,
-        path: '/games',
-        color: 'primary'
-      },
-      {
-        title: 'Anime & Manga',
-        description: 'Learn Japanese through popular anime and manga content.',
-        icon: <MovieIcon sx={{ fontSize: 32 }} />,
-        path: '/anime',
-        color: 'secondary'
-      },
-      {
-        title: 'Japanese Trivia',
-        description: 'Discover fascinating facts about Japanese culture, history, and mythology.',
-        icon: <HistoryIcon sx={{ fontSize: 32 }} />,
-        path: '/trivia',
-        color: 'success'
-      }
-    ]
+    title: 'SRS Learning',
+    description: 'Optimize your learning with spaced repetition system.',
+    icon: <HelpIcon sx={{ fontSize: 40 }} />,
+    path: '/srs',
+    color: 'success',
+    features: ['Review', 'Statistics', 'SRS Settings']
   },
   {
-    title: 'Progress & Settings',
-    items: [
-      {
-        title: 'Progress Tracking',
-        description: 'Monitor your learning journey and track your achievements.',
-        icon: <HistoryIcon sx={{ fontSize: 32 }} />,
-        path: '/progress',
-        color: 'primary'
-      },
-      {
-        title: 'Favorites',
-        description: 'Access your saved words, phrases, and learning materials.',
-        icon: <MoodIcon sx={{ fontSize: 32 }} />,
-        path: '/knowing/favorites',
-        color: 'secondary'
-      },
-      {
-        title: 'Settings',
-        description: 'Customize your learning experience and preferences.',
-        icon: <CultureIcon sx={{ fontSize: 32 }} />,
-        path: '/settings',
-        color: 'success'
-      }
-    ]
+    title: 'Learning Games',
+    description: 'Practice Japanese through fun interactive games and quizzes.',
+    icon: <SportsEsportsIcon sx={{ fontSize: 40 }} />,
+    path: '/games',
+    color: 'primary',
+    features: ['Memory Game', 'Quiz Game', 'Typing Practice']
+  },
+  {
+    title: 'Japanese Trivia',
+    description: 'Discover fascinating facts about Japanese culture, history, and mythology.',
+    icon: <HistoryIcon sx={{ fontSize: 40 }} />,
+    path: '/trivia',
+    color: 'secondary',
+    features: ['Anime & Manga', 'Games', 'Shintoism', 'History', 'Cuisine', 'Mythology']
+  },
+  {
+    title: 'Progress Tracking',
+    description: 'Monitor your learning journey and track your achievements.',
+    icon: <TimelineIcon sx={{ fontSize: 40 }} />,
+    path: '/progress',
+    color: 'success',
+    features: ['Overview', 'Achievements', 'Learning Goals', 'Statistics']
   }
 ];
 
 const HomeContent: React.FC = () => {
   const theme = useMuiTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { currentUser } = useAuth();
+  const { progress } = useProgress();
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -158,9 +111,9 @@ const HomeContent: React.FC = () => {
           }}
         />
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <SchoolIcon sx={{ fontSize: 32, mr: 2 }} />
+          <SchoolIcon sx={{ fontSize: 40, mr: 2 }} />
           <Typography 
-            variant="h4" 
+            variant="h3" 
             component="h1"
             sx={{ 
               fontWeight: 'bold',
@@ -170,124 +123,169 @@ const HomeContent: React.FC = () => {
             Japanese Vocabulary Learning
           </Typography>
         </Box>
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            opacity: 0.9,
-            maxWidth: '800px',
-            mb: 4
-          }}
-        >
-          Your journey to mastering Japanese starts here. Explore vocabulary, culture, 
-          and language through interactive learning tools and engaging content.
+        <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
+          Master Japanese vocabulary through interactive learning and spaced repetition
         </Typography>
-        <Button
-          component={Link}
-          to="/knowing"
-          variant="contained"
-          size="large"
-          endIcon={<PlayArrowIcon />}
-          sx={{
-            bgcolor: 'white',
-            color: 'primary.main',
-            '&:hover': {
-              bgcolor: 'rgba(255,255,255,0.9)'
-            }
-          }}
-        >
-          Start Learning
-        </Button>
-      </Paper>
-
-      {/* Feature Categories */}
-      {FEATURE_CATEGORIES.map((category) => (
-        <Box key={category.title} sx={{ mb: 6 }}>
-          <Typography 
-            variant="h5" 
-            component="h2"
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button 
+            variant="contained" 
+            color="secondary"
+            size="large"
+            href="/learn"
             sx={{ 
-              fontWeight: 'bold',
-              mb: 3,
-              color: 'primary.main'
+              bgcolor: 'white',
+              color: 'primary.main',
+              '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.9)'
+              }
             }}
           >
-            {category.title}
-          </Typography>
-          <Grid container spacing={3}>
-            {category.items.map((item) => (
-              <Grid item xs={12} md={4} key={item.title}>
-                <Card 
-                  sx={{ 
-                    height: '100%',
-                    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: theme.shadows[4]
-                    }
-                  }}
-                >
-                  <CardActionArea 
-                    component={Link} 
-                    to={item.path}
-                    sx={{ height: '100%' }}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Box 
-                          sx={{ 
-                            p: 1,
-                            borderRadius: 1,
-                            bgcolor: `${item.color}.main`,
-                            color: `${item.color}.contrastText`,
-                            mr: 2
-                          }}
-                        >
-                          {item.icon}
-                        </Box>
-                        <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold' }}>
-                          {item.title}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        {item.description}
-                      </Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button
-                          variant="contained"
-                          color={item.color as 'primary' | 'secondary' | 'success'}
-                          endIcon={<PlayArrowIcon />}
-                        >
-                          Explore
-                        </Button>
-                      </Box>
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+            Start Learning
+          </Button>
+          {!currentUser && (
+            <Button 
+              variant="outlined" 
+              color="inherit"
+              size="large"
+              href="/login"
+              sx={{ 
+                borderColor: 'white',
+                '&:hover': {
+                  borderColor: 'white',
+                  bgcolor: 'rgba(255,255,255,0.1)'
+                }
+              }}
+            >
+              Sign In
+            </Button>
+          )}
         </Box>
-      ))}
+      </Paper>
+
+      {/* Progress Summary */}
+      {progress && (
+        <Box sx={{ mb: 6 }}>
+          <ProgressSummary variant="compact" />
+        </Box>
+      )}
+
+      {/* Main Categories */}
+      <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
+        Learning Categories
+      </Typography>
+      <Grid container spacing={3} sx={{ mb: 6 }}>
+        {MAIN_CATEGORIES.map((category) => (
+          <Grid item xs={12} sm={6} md={4} key={category.title}>
+            <Card 
+              component={motion.div}
+              whileHover={{ y: -4 }}
+              sx={{ 
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  boxShadow: theme.shadows[4]
+                }
+              }}
+            >
+              <CardActionArea 
+                component={Link} 
+                to={category.path}
+                sx={{ height: '100%' }}
+              >
+                <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    {category.icon}
+                    <Typography 
+                      variant="h5" 
+                      component="h2" 
+                      sx={{ ml: 2, fontWeight: 'bold' }}
+                    >
+                      {category.title}
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    variant="body1" 
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    {category.description}
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {category.features.map((feature) => (
+                      <Chip
+                        key={feature}
+                        label={feature}
+                        size="small"
+                        color={category.color as any}
+                        variant="outlined"
+                        sx={{ mb: 1 }}
+                      />
+                    ))}
+                  </Stack>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Features Section */}
+      <Box>
+        <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
+          Features
+        </Typography>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+          gap: 3 
+        }}>
+          {/* Feature cards */}
+          <Paper sx={{ p: 3, height: '100%' }}>
+            <Typography variant="h6" gutterBottom>
+              Interactive Learning
+            </Typography>
+            <Typography color="text.secondary">
+              Learn through engaging exercises, quizzes, and real-world examples
+            </Typography>
+          </Paper>
+          <Paper sx={{ p: 3, height: '100%' }}>
+            <Typography variant="h6" gutterBottom>
+              Spaced Repetition
+            </Typography>
+            <Typography color="text.secondary">
+              Optimize your learning with scientifically proven spaced repetition techniques
+            </Typography>
+          </Paper>
+          <Paper sx={{ p: 3, height: '100%' }}>
+            <Typography variant="h6" gutterBottom>
+              Progress Tracking
+            </Typography>
+            <Typography color="text.secondary">
+              Monitor your progress with detailed statistics and achievements
+            </Typography>
+          </Paper>
+        </Box>
+      </Box>
     </Container>
   );
 };
 
 const Home: React.FC = () => {
   return (
-    <ThemeWrapper>
-      <Suspense fallback={
-        <Box sx={{ 
-          minHeight: '100vh', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center' 
-        }}>
-          <Typography variant="h6">Loading...</Typography>
-        </Box>
-      }>
-        <HomeContent />
-      </Suspense>
-    </ThemeWrapper>
+    <Suspense fallback={
+      <Box sx={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <LoadingSpinner />
+      </Box>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 };
 

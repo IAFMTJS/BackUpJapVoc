@@ -201,6 +201,14 @@ const trophyVariants = {
   }
 };
 
+// Add type definition for graph data
+interface GraphDataPoint {
+  date: string;
+  vocabulary: number;
+  kanji: number;
+  grammar: number;
+}
+
 const ProgressVisuals: React.FC = () => {
   const { theme } = useCustomTheme();
   const muiTheme = useMuiTheme();
@@ -282,22 +290,29 @@ const ProgressVisuals: React.FC = () => {
     return timelineEvents;
   };
 
-  // Generate graph data
-  const generateGraphData = () => {
-    const categories = ['vocabulary', 'kanji', 'grammar'];
+  // Update generateGraphData function with proper typing
+  const generateGraphData = (): GraphDataPoint[] => {
+    const categories = ['vocabulary', 'kanji', 'grammar'] as const;
     const last30Days = eachDayOfInterval({
       start: subDays(new Date(), 30),
       end: new Date()
     });
 
     return last30Days.map(date => {
-      const dayData: any = { date: format(date, 'MM/dd') };
+      const dayData: GraphDataPoint = {
+        date: format(date, 'MM/dd'),
+        vocabulary: 0,
+        kanji: 0,
+        grammar: 0
+      };
+
       categories.forEach(category => {
         const categoryProgress = Object.values(progress).filter(p => 
           p.section === category && isSameDay(new Date(p.lastAttempted), date)
         );
-        dayData[category] = categoryProgress.reduce((acc, p) => acc + p.correct, 0);
+        dayData[category] = categoryProgress.reduce((acc, p) => acc + (p.correct || 0), 0);
       });
+
       return dayData;
     });
   };
@@ -517,6 +532,7 @@ const ProgressVisuals: React.FC = () => {
                               border: '1px solid #00f7ff',
                               boxShadow: '0 0 16px rgba(0, 247, 255, 0.2)'
                             } : undefined}
+                            formatter={(value: number) => [value.toString(), '']}
                           />
                           <Legend />
                           <Line 
@@ -524,18 +540,21 @@ const ProgressVisuals: React.FC = () => {
                             dataKey="vocabulary" 
                             stroke={isNeonMode ? '#00f7ff' : '#8884d8'}
                             strokeWidth={isNeonMode ? 2 : 1}
+                            isAnimationActive={false}
                           />
                           <Line 
                             type="monotone" 
                             dataKey="kanji" 
                             stroke={isNeonMode ? '#ff3afc' : '#82ca9d'}
                             strokeWidth={isNeonMode ? 2 : 1}
+                            isAnimationActive={false}
                           />
                           <Line 
                             type="monotone" 
                             dataKey="grammar" 
                             stroke={isNeonMode ? '#9c00ff' : '#ffc658'}
                             strokeWidth={isNeonMode ? 2 : 1}
+                            isAnimationActive={false}
                           />
                         </LineChart>
                       </ResponsiveContainer>

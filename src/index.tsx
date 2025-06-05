@@ -1,8 +1,8 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
-import App, { ThemeWrapper } from './App';
+import AppWrapper from './App';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
@@ -14,39 +14,135 @@ import { WordLevelProvider } from './context/WordLevelContext';
 import { LearningProvider } from './context/LearningContext';
 import { AchievementProvider } from './context/AchievementContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import { DatabaseProvider } from './context/DatabaseContext';
+import { InitializationProvider } from './context/InitializationContext';
 
-ReactDOM.render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <ThemeWrapper>
-          <ErrorBoundary>
-            <AuthProvider>
-              <AppProvider>
-                <ProgressProvider>
-                  <WordProvider>
-                    <WordLevelProvider>
-                      <AchievementProvider>
-                        <LearningProvider>
-                          <AccessibilityProvider>
-                            <SettingsProvider>
-                              <App />
-                            </SettingsProvider>
-                          </AccessibilityProvider>
-                        </LearningProvider>
-                      </AchievementProvider>
-                    </WordLevelProvider>
-                  </WordProvider>
-                </ProgressProvider>
-              </AppProvider>
-            </AuthProvider>
-          </ErrorBoundary>
-        </ThemeWrapper>
-      </ThemeProvider>
-    </BrowserRouter>
-  </React.StrictMode>,
-  document.getElementById('root')
-);
+// Optimize Material-UI icon imports
+import BaseRefreshIcon from '@mui/icons-material/Refresh';
+import BaseHomeIcon from '@mui/icons-material/Home';
+import BaseSchoolIcon from '@mui/icons-material/School';
+import BaseMenuBookIcon from '@mui/icons-material/MenuBook';
+import BaseQuizIcon from '@mui/icons-material/Quiz';
+import BaseEmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import BaseHelpIcon from '@mui/icons-material/Help';
+import BasePersonIcon from '@mui/icons-material/Person';
+import BaseMovieIcon from '@mui/icons-material/Movie';
+import BaseSportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import BaseHistoryIcon from '@mui/icons-material/History';
+import BaseRestaurantIcon from '@mui/icons-material/Restaurant';
+import BaseTempleBuddhistIcon from '@mui/icons-material/TempleBuddhist';
+import BasePsychologyIcon from '@mui/icons-material/Psychology';
+import BaseMoodIcon from '@mui/icons-material/Mood';
+import BaseStarIcon from '@mui/icons-material/Star';
+import BaseTimelineIcon from '@mui/icons-material/Timeline';
+import BaseSettingsIcon from '@mui/icons-material/Settings';
+import BaseEditIcon from '@mui/icons-material/Edit';
+import BaseBarChartIcon from '@mui/icons-material/BarChart';
+import BaseTranslateIcon from '@mui/icons-material/Translate';
+import BaseEmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
+import BasePublicIcon from '@mui/icons-material/Public';
+import BasePlayArrowIcon from '@mui/icons-material/PlayArrow';
+import BaseTrophyIcon from '@mui/icons-material/EmojiEvents';
+import BaseNotificationsIcon from '@mui/icons-material/Notifications';
+import BaseLanguageIcon from '@mui/icons-material/Language';
+import BasePaletteIcon from '@mui/icons-material/Palette';
+import BaseSecurityIcon from '@mui/icons-material/Security';
+import BaseDeleteIcon from '@mui/icons-material/Delete';
+import BaseSaveIcon from '@mui/icons-material/Save';
+import BaseRestoreIcon from '@mui/icons-material/Restore';
+import BaseDownloadIcon from '@mui/icons-material/Download';
+import BaseUploadIcon from '@mui/icons-material/Upload';
+import BaseVolumeUpIcon from '@mui/icons-material/VolumeUp';
+import BaseTimerIcon from '@mui/icons-material/Timer';
+import BaseSpeedIcon from '@mui/icons-material/Speed';
+import BaseVisibilityIcon from '@mui/icons-material/Visibility';
+import BaseKeyboardIcon from '@mui/icons-material/Keyboard';
+import BaseMenuIcon from '@mui/icons-material/Menu';
+import BaseBookIcon from '@mui/icons-material/Book';
+import BaseWifiOffIcon from '@mui/icons-material/WifiOff';
+import BaseWifiIcon from '@mui/icons-material/Wifi';
+import BaseCloseIcon from '@mui/icons-material/Close';
+import BaseLightbulbIcon from '@mui/icons-material/Lightbulb';
+import BaseTrendingUpIcon from '@mui/icons-material/TrendingUp';
+import BaseWarningIcon from '@mui/icons-material/Warning';
+import BaseScheduleIcon from '@mui/icons-material/Schedule';
+import BaseAutoGraphIcon from '@mui/icons-material/AutoGraph';
+import BaseDarkModeIcon from '@mui/icons-material/DarkMode';
+import BaseCloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import BaseCloudUploadIcon from '@mui/icons-material/CloudUpload';
+import BaseAccessibilityIcon from '@mui/icons-material/Accessibility';
+import BaseExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import BaseExpandLessIcon from '@mui/icons-material/ExpandLess';
+import BaseCultureIcon from '@mui/icons-material/Public';
+import BaseShintoIcon from '@mui/icons-material/TempleBuddhist';
+import BaseMythologyIcon from '@mui/icons-material/Psychology';
+import BaseChartIcon from '@mui/icons-material/BarChart';
+
+// Create a wrapper component to enforce Outlined variant
+const createOutlinedIcon = (Icon: React.ComponentType<any>) => {
+  return (props: any) => <Icon {...props} variant="outlined" />;
+};
+
+// Create and export wrapped icons directly
+export const RefreshIcon = createOutlinedIcon(BaseRefreshIcon);
+export const HomeIcon = createOutlinedIcon(BaseHomeIcon);
+export const SchoolIcon = createOutlinedIcon(BaseSchoolIcon);
+export const MenuBookIcon = createOutlinedIcon(BaseMenuBookIcon);
+export const QuizIcon = createOutlinedIcon(BaseQuizIcon);
+export const EmojiEventsIcon = createOutlinedIcon(BaseEmojiEventsIcon);
+export const HelpIcon = createOutlinedIcon(BaseHelpIcon);
+export const PersonIcon = createOutlinedIcon(BasePersonIcon);
+export const MovieIcon = createOutlinedIcon(BaseMovieIcon);
+export const SportsEsportsIcon = createOutlinedIcon(BaseSportsEsportsIcon);
+export const HistoryIcon = createOutlinedIcon(BaseHistoryIcon);
+export const RestaurantIcon = createOutlinedIcon(BaseRestaurantIcon);
+export const TempleBuddhistIcon = createOutlinedIcon(BaseTempleBuddhistIcon);
+export const PsychologyIcon = createOutlinedIcon(BasePsychologyIcon);
+export const MoodIcon = createOutlinedIcon(BaseMoodIcon);
+export const StarIcon = createOutlinedIcon(BaseStarIcon);
+export const TimelineIcon = createOutlinedIcon(BaseTimelineIcon);
+export const SettingsIcon = createOutlinedIcon(BaseSettingsIcon);
+export const EditIcon = createOutlinedIcon(BaseEditIcon);
+export const BarChartIcon = createOutlinedIcon(BaseBarChartIcon);
+export const TranslateIcon = createOutlinedIcon(BaseTranslateIcon);
+export const EmojiEmotionsIcon = createOutlinedIcon(BaseEmojiEmotionsIcon);
+export const PublicIcon = createOutlinedIcon(BasePublicIcon);
+export const PlayArrowIcon = createOutlinedIcon(BasePlayArrowIcon);
+export const TrophyIcon = createOutlinedIcon(BaseTrophyIcon);
+export const NotificationsIcon = createOutlinedIcon(BaseNotificationsIcon);
+export const LanguageIcon = createOutlinedIcon(BaseLanguageIcon);
+export const PaletteIcon = createOutlinedIcon(BasePaletteIcon);
+export const SecurityIcon = createOutlinedIcon(BaseSecurityIcon);
+export const DeleteIcon = createOutlinedIcon(BaseDeleteIcon);
+export const SaveIcon = createOutlinedIcon(BaseSaveIcon);
+export const RestoreIcon = createOutlinedIcon(BaseRestoreIcon);
+export const DownloadIcon = createOutlinedIcon(BaseDownloadIcon);
+export const UploadIcon = createOutlinedIcon(BaseUploadIcon);
+export const VolumeUpIcon = createOutlinedIcon(BaseVolumeUpIcon);
+export const TimerIcon = createOutlinedIcon(BaseTimerIcon);
+export const SpeedIcon = createOutlinedIcon(BaseSpeedIcon);
+export const VisibilityIcon = createOutlinedIcon(BaseVisibilityIcon);
+export const KeyboardIcon = createOutlinedIcon(BaseKeyboardIcon);
+export const MenuIcon = createOutlinedIcon(BaseMenuIcon);
+export const BookIcon = createOutlinedIcon(BaseBookIcon);
+export const WifiOffIcon = createOutlinedIcon(BaseWifiOffIcon);
+export const WifiIcon = createOutlinedIcon(BaseWifiIcon);
+export const CloseIcon = createOutlinedIcon(BaseCloseIcon);
+export const LightbulbIcon = createOutlinedIcon(BaseLightbulbIcon);
+export const TrendingUpIcon = createOutlinedIcon(BaseTrendingUpIcon);
+export const WarningIcon = createOutlinedIcon(BaseWarningIcon);
+export const ScheduleIcon = createOutlinedIcon(BaseScheduleIcon);
+export const AutoGraphIcon = createOutlinedIcon(BaseAutoGraphIcon);
+export const DarkModeIcon = createOutlinedIcon(BaseDarkModeIcon);
+export const CloudDownloadIcon = createOutlinedIcon(BaseCloudDownloadIcon);
+export const CloudUploadIcon = createOutlinedIcon(BaseCloudUploadIcon);
+export const AccessibilityIcon = createOutlinedIcon(BaseAccessibilityIcon);
+export const ExpandMoreIcon = createOutlinedIcon(BaseExpandMoreIcon);
+export const ExpandLessIcon = createOutlinedIcon(BaseExpandLessIcon);
+export const CultureIcon = createOutlinedIcon(BaseCultureIcon);
+export const ShintoIcon = createOutlinedIcon(BaseShintoIcon);
+export const MythologyIcon = createOutlinedIcon(BaseMythologyIcon);
+export const ChartIcon = createOutlinedIcon(BaseChartIcon);
 
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
@@ -57,84 +153,72 @@ if ('serviceWorker' in navigator) {
       // Get existing registration
       const existingRegistration = await navigator.serviceWorker.getRegistration();
       
+      // Check if we're in a state where we should abort registration
+      if (document.readyState === 'unloaded' || document.readyState === 'unloading') {
+        console.log('[SW] Document unloading, aborting registration');
+        return null;
+      }
+
       // Only unregister in production if there's an existing registration AND it's not active
       if (process.env.NODE_ENV === 'production' && existingRegistration && !existingRegistration.active) {
-        console.log('[SW] Unregistering inactive service worker for update...');
-        await existingRegistration.unregister();
+        try {
+          console.log('[SW] Unregistering inactive service worker for update...');
+          await existingRegistration.unregister();
+        } catch (unregisterError) {
+          console.warn('[SW] Failed to unregister existing worker:', unregisterError);
+        }
       } else if (existingRegistration?.active) {
         console.log('[SW] Using existing active service worker');
         return existingRegistration;
       }
 
+      // Register new service worker
       console.log('[SW] Registering new service worker...');
       const registration = await navigator.serviceWorker.register('/service-worker.js', {
         scope: '/',
         updateViaCache: 'none'
       });
 
-      // Wait for the service worker to be ready
-      await navigator.serviceWorker.ready;
-      console.log('[SW] Service worker ready');
+      // Wait for the service worker to be ready with a timeout
+      try {
+        await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Service worker ready timeout')), 5000)
+          )
+        ]);
+        console.log('[SW] Service worker ready');
+      } catch (readyError) {
+        console.warn('[SW] Service worker ready check failed:', readyError);
+      }
 
-      // Handle service worker updates
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (!newWorker) return;
-
-        newWorker.addEventListener('statechange', () => {
-          console.log(`[SW] New worker state: ${newWorker.state}`);
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('[SW] New version available. Please refresh to update.');
-            // Show a notification to the user
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Update Available', {
-                body: 'A new version is available. Please refresh to update.',
-                icon: '/icons/icon-192x192.png'
-              });
-            }
-          }
-        });
-      });
-
-      // Handle controller change
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('[SW] Service worker controller changed');
-        // Only reload if we're not in a loading state
-        if (!document.querySelector('.loading-spinner')) {
-          window.location.reload();
-        }
-      });
-
-      console.log('[SW] ServiceWorker registration successful with scope:', registration.scope);
       return registration;
     } catch (error) {
       console.error('[SW] ServiceWorker registration failed:', error);
-      // Don't throw the error, just log it and continue
       return null;
     }
   };
 
-  // Register service worker with retry
-  const registerWithRetry = async (retries = 3, delay = 1000) => {
-    for (let i = 0; i < retries; i++) {
-      try {
-        const registration = await registerServiceWorker();
-        if (registration) return;
-      } catch (error) {
-        console.warn(`[SW] Registration attempt ${i + 1} failed:`, error);
-        if (i < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-    }
-    console.warn('[SW] Service worker registration failed after all retries');
-  };
-
-  // Register service worker with a slight delay to ensure app is loaded
-  setTimeout(() => {
-    registerWithRetry();
-  }, 1000);
+  // Register service worker immediately, but don't block app initialization
+  registerServiceWorker().catch(console.error);
 }
+
+// Replace ReactDOM.render with createRoot
+const container = document.getElementById('root');
+if (!container) {
+  throw new Error('Failed to find the root element');
+}
+
+const root = createRoot(container);
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <InitializationProvider>
+        <AppWrapper />
+      </InitializationProvider>
+    </BrowserRouter>
+  </React.StrictMode>
+);
 
 // Modify the global error handler to be more specific
 window.addEventListener('error', (event) => {

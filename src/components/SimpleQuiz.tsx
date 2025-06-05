@@ -119,17 +119,17 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
   const progress = ((quizState.currentQuestionIndex + 1) / shuffledWords.length) * 100;
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
+    <div className="w-full max-w-full px-2 sm:px-4 py-2 sm:py-4">
       {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+      <div className="w-full bg-gray-200 rounded-full h-2 sm:h-2.5 mb-2 sm:mb-4">
         <div 
-          className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+          className="bg-blue-600 h-2 sm:h-2.5 rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>
 
       {/* Question counter */}
-      <div className="text-sm text-gray-600 mb-4">
+      <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-4">
         Question {quizState.currentQuestionIndex + 1} of {shuffledWords.length}
       </div>
 
@@ -139,25 +139,25 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 sm:p-6 mb-4 sm:mb-6"
       >
-        <h2 className="text-2xl font-bold mb-4 text-center">
+        <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4 text-center">
           {currentWord.japanese}
           {currentWord.hiragana && (
-            <span className="text-lg text-gray-600 dark:text-gray-400 ml-2">
+            <span className="text-base sm:text-lg text-gray-600 dark:text-gray-400 ml-1 sm:ml-2">
               ({currentWord.hiragana})
             </span>
           )}
         </h2>
 
         {/* Answer options */}
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
           {options.map((option, index) => (
             <motion.button
               key={index}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`p-4 rounded-lg text-left transition-colors ${
+              className={`p-2 sm:p-4 rounded-lg text-left transition-colors text-sm sm:text-base ${
                 quizState.selectedAnswer === option
                   ? quizState.isCorrect
                     ? 'bg-green-100 dark:bg-green-900'
@@ -172,14 +172,13 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
           ))}
         </div>
 
-        {/* Feedback */}
         <AnimatePresence>
           {quizState.showFeedback && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className={`mt-4 p-4 rounded-lg text-center ${
+              className={`mt-2 sm:mt-4 p-2 sm:p-4 rounded-lg text-center text-sm sm:text-base ${
                 quizState.isCorrect
                   ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                   : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
@@ -192,7 +191,7 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
       </motion.div>
 
       {/* Score display */}
-      <div className="text-center text-lg font-semibold">
+      <div className="text-center text-base sm:text-lg font-semibold">
         Score: {quizState.score} / {quizState.currentQuestionIndex + 1}
       </div>
     </div>

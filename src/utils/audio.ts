@@ -58,29 +58,16 @@ const getVoiceForContext = (context: VoiceContext): SpeechSynthesisVoice | null 
     return null;
   }
 
-  // Try to find voices with specific characteristics
-  switch (context) {
-    case 'happy':
-      // Prefer female voices for happy context
-      return japaneseVoices.find(voice => 
-        voice.name.toLowerCase().includes('female') || 
-        voice.name.toLowerCase().includes('kyoko') ||
-        voice.name.toLowerCase().includes('haruka')
-      ) || japaneseVoices[0];
-    
-    case 'serious':
-      // Prefer male voices for serious context
-      return japaneseVoices.find(voice => 
-        voice.name.toLowerCase().includes('male') || 
-        voice.name.toLowerCase().includes('takumi') ||
-        voice.name.toLowerCase().includes('daichi')
-      ) || japaneseVoices[0];
-    
-    default:
-      // For neutral context, just use the first available Japanese voice
-      return japaneseVoices[0];
-  }
+  // Always prefer female voices
+  return japaneseVoices.find(voice => 
+    voice.name.toLowerCase().includes('female') || 
+    voice.name.toLowerCase().includes('kyoko') ||
+    voice.name.toLowerCase().includes('haruka')
+  ) || japaneseVoices[0];
 };
+
+// Track if audio is currently playing
+let isPlaying = false;
 
 // Enhanced audio playback function with context
 export const playAudioWithContext = async (
@@ -104,8 +91,8 @@ export const playAudioWithContext = async (
     utterance.voice = voice;
   }
 
-  // Apply custom options
-  utterance.rate = options.rate || 1;
+  // Apply custom options or defaults
+  utterance.rate = options.rate || 0.8;
   utterance.pitch = options.pitch || 1;
 
   return new Promise<void>((resolve, reject) => {
@@ -121,19 +108,50 @@ export const playAudio = async (
   type: 'word' | 'example' = 'word',
   context: VoiceContext = 'neutral'
 ): Promise<void> => {
+  if (isPlaying) {
+    // If already playing, cancel current playback first
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    audioService.stopAudio();
+    isPlaying = false;
+  }
+
   if (!isInitialized) {
     await initializeAudio();
   }
 
+  isPlaying = true;
+
   try {
-    // Try to use the audio service first
-    await audioService.playAudio(text, {
-      useTTS: isIOS, // Prefer TTS on iOS
-    });
+    // For individual kanji readings or if TTS is explicitly requested, use Web Speech API directly
+    if (text.length === 1 || type === 'example') {
+      if (!('speechSynthesis' in window)) {
+        throw new Error('Speech synthesis not supported');
+      }
+      await playAudioWithContext(text, context);
+      return;
+    }
+
+    // For words, try the audio service first
+    try {
+      await audioService.playAudio(text, {
+        useTTS: false, // Don't use TTS initially
+      });
+    } catch (audioError) {
+      console.log('Falling back to TTS for:', text);
+      // If audio service fails, fall back to Web Speech API
+      if (!('speechSynthesis' in window)) {
+        throw new Error('Speech synthesis not supported');
+      }
+      await playAudioWithContext(text, context);
+    }
   } catch (error) {
     console.error('[playAudio] Error playing audio:', error);
-    // Fallback to Web Speech API with context
-    await playAudioWithContext(text, context);
+    isPlaying = false;
+    throw new Error('Failed to play audio');
+  } finally {
+    isPlaying = false;
   }
 };
 
@@ -149,6 +167,10 @@ export const queueAudio = (text: string) => {
 
 export const clearAudioQueue = () => {
   audioService.stopAudio();
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  isPlaying = false;
 };
 
 // Cache management

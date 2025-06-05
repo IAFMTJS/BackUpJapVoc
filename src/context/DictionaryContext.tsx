@@ -7,6 +7,7 @@ interface DictionaryContextType {
   words: DictionaryItem[];
   isLoading: boolean;
   error: string | null;
+  isInitialized: boolean;
   searchWords: (query: string) => DictionaryItem[];
   getWordsByLevel: (level: number) => DictionaryItem[];
   getWordsByCategory: (category: string) => DictionaryItem[];
@@ -29,94 +30,89 @@ export const useDictionary = () => {
 
 export const DictionaryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [words, setWords] = useState<DictionaryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const initializeDatabase = async () => {
-    try {
-      const db = await databasePromise;
-      const tx = db.transaction('words', 'readonly');
-      const store = tx.objectStore('words');
-      const count = await store.count();
-
-      if (count === 0) {
-        // Initialize with quiz words
-        const initTx = db.transaction('words', 'readwrite');
-        const initStore = initTx.objectStore('words');
-
-        // Convert quiz words to dictionary items
-        const dictionaryWords = quizWords.map((word, index) => ({
-          id: `word-${index + 1}`,
-          japanese: word.japanese,
-          english: word.english,
-          romaji: word.romaji,
-          type: 'word',
-          level: word.difficulty === 'easy' ? 1 : word.difficulty === 'medium' ? 2 : 3,
-          category: word.category,
-          jlptLevel: word.difficulty === 'easy' ? 'N5' : word.difficulty === 'medium' ? 'N4' : 'N3',
-          frequency: 1,
-          mastery: 0,
-          readings: [word.japanese],
-          meanings: [word.english],
-          examples: [],
-          etymology: null,
-          kanji: [],
-          radicals: [],
-          tags: [],
-          notes: '',
-          lastViewed: null,
-          emotionalContext: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isHiragana: word.isHiragana,
-          isKatakana: word.isKatakana,
-          audioUrl: null
-        }));
-
-        // Add all words to the database
-        for (const word of dictionaryWords) {
-          await initStore.add(word);
-        }
-
-        console.log(`[DictionaryContext] Initialized database with ${dictionaryWords.length} words`);
-        setWords(dictionaryWords);
-      }
-    } catch (err) {
-      console.error('[DictionaryContext] Error initializing database:', err);
-      setError(err instanceof Error ? err.message : 'Failed to initialize database');
-    }
-  };
-
-  const loadWords = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // First ensure database is initialized
-      await initializeDatabase();
-
-      // Then load words
-      const db = await getDatabase();
-      const tx = db.transaction('words', 'readonly');
-      const store = tx.objectStore('words');
-      const wordsData = await store.getAll();
-      
-      setWords(wordsData);
-      console.log(`[DictionaryContext] Successfully loaded ${wordsData.length} words`);
-    } catch (err) {
-      console.error('[DictionaryContext] Error loading words:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load words');
-      setWords([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    loadWords();
+    const preloadData = async () => {
+      try {
+        console.log('[Debug] Starting dictionary data preload...');
+        const db = await databasePromise;
+        const tx = db.transaction('words', 'readonly');
+        const store = tx.objectStore('words');
+        const count = await store.count();
+        console.log('[Debug] Current word count in database:', count);
+
+        if (count === 0) {
+          console.log('[Debug] Database empty, loading from JSON...');
+          const response = await fetch('/data/dictionary_words.json');
+          if (!response.ok) {
+            throw new Error('Failed to load dictionary words');
+          }
+          const jsonWords = await response.json();
+          console.log('[Debug] Loaded words from JSON:', jsonWords.length);
+          
+          const initTx = db.transaction('words', 'readwrite');
+          const initStore = initTx.objectStore('words');
+          
+          const dictionaryWords = jsonWords.map((word: any, index: number) => ({
+            id: word.id || `word-${index + 1}`,
+            japanese: word.japanese,
+            english: word.english,
+            romaji: word.romaji,
+            type: 'word',
+            level: word.level || 1,
+            category: word.category || 'noun',
+            jlptLevel: word.jlptLevel || 'N5',
+            frequency: word.frequency || 1,
+            mastery: 0,
+            readings: [word.japanese],
+            meanings: [word.english],
+            examples: word.examples || [],
+            etymology: null,
+            kanji: word.kanji || [],
+            radicals: [],
+            tags: [],
+            notes: word.notes || '',
+            lastViewed: null,
+            emotionalContext: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isHiragana: word.isHiragana || false,
+            isKatakana: word.isKatakana || false,
+            audioUrl: word.audioUrl || null
+          }));
+
+          console.log('[Debug] First few words to be added:', dictionaryWords.slice(0, 3));
+          
+          for (const word of dictionaryWords) {
+            await initStore.add(word);
+          }
+          
+          setWords(dictionaryWords);
+          console.log(`[DictionaryContext] Preloaded ${dictionaryWords.length} words`);
+        } else {
+          console.log('[Debug] Loading existing words from database...');
+          const wordsData = await store.getAll();
+          console.log('[Debug] First few words loaded:', wordsData.slice(0, 3));
+          setWords(wordsData);
+          console.log(`[DictionaryContext] Loaded ${wordsData.length} existing words`);
+        }
+        
+        setIsInitialized(true);
+        console.log('[Debug] Dictionary initialization complete');
+      } catch (err) {
+        console.error('[DictionaryContext] Error preloading data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to preload dictionary data');
+      }
+    };
+
+    preloadData();
   }, []);
 
   const searchWords = (query: string): DictionaryItem[] => {
+    if (!isInitialized) return [];
     const searchTerm = query.toLowerCase();
     return words.filter(word => 
       word.japanese.toLowerCase().includes(searchTerm) ||
@@ -195,11 +191,12 @@ export const DictionaryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     words,
     isLoading,
     error,
+    isInitialized,
     searchWords,
     getWordsByLevel,
     getWordsByCategory,
     getWordsByJLPT,
-    refreshWords: loadWords,
+    refreshWords: () => Promise.resolve(),
     addWord,
     updateWord,
     deleteWord

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Box,
   Container,
@@ -45,6 +45,9 @@ import {
 import { SimpleDictionaryItem } from '../types/dictionary';
 import { useTheme as useAppTheme } from '../context/ThemeContext';
 import { playAudio } from '../utils/audio';
+import WordCard from '../components/WordCard';
+import { loadDictionaryWords, getDictionaryPage } from '../data/dictionaryLoader';
+import { useDictionary } from '../context/DictionaryContext';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -64,202 +67,98 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   </Box>
 );
 
-const WordCard: React.FC<{ 
-  word: SimpleDictionaryItem;
-  onMarkAsRead: (wordId: string) => void;
-  isRead: boolean;
-}> = ({ word, onMarkAsRead, isRead }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const theme = useTheme();
-
-  const handlePlayAudio = async () => {
-    try {
-      await playAudio(word.japanese);
-    } catch (error) {
-      console.error('Error playing audio:', error);
-    }
-  };
-
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    // TODO: Implement favorite functionality with backend
-  };
-
-  return (
-    <Card 
-      elevation={2}
-      sx={{ 
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'transform 0.2s ease-in-out',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: 3
-        },
-        position: 'relative',
-        ...(isRead && {
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '8px',
-            height: '100%',
-            backgroundColor: theme.palette.success.main,
-            borderTopRightRadius: '4px',
-            borderBottomRightRadius: '4px'
-          }
-        })
-      }}
-    >
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box>
-            <Typography variant="h5" component="div" gutterBottom>
-              {word.japanese}
-              {word.kanji && word.kanji !== word.japanese && (
-                <Typography 
-                  component="span" 
-                  variant="subtitle1" 
-                  color="text.secondary"
-                  sx={{ ml: 1 }}
-                >
-                  ({word.kanji})
-                </Typography>
-              )}
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-              {word.romaji}
-            </Typography>
-          </Box>
-          <Box>
-            <Tooltip title="Play pronunciation">
-              <IconButton onClick={handlePlayAudio} size="small">
-                <VolumeUpIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
-              <IconButton onClick={toggleFavorite} size="small">
-                {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={isRead ? "Mark as unread" : "Mark as read"}>
-              <IconButton 
-                onClick={() => onMarkAsRead(word.id)} 
-                size="small"
-                color={isRead ? "success" : "default"}
-              >
-                {isRead ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-
-        <Typography variant="body1" gutterBottom>
-          {word.english}
-        </Typography>
-
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap" gap={1}>
-          {word.category && (
-            <Chip 
-              icon={<CategoryIcon />} 
-              label={word.category} 
-              size="small" 
-              color="primary" 
-              variant="outlined" 
-            />
-          )}
-          {word.level && (
-            <Chip 
-              icon={<SchoolIcon />} 
-              label={`Level ${word.level}`} 
-              size="small" 
-              color="secondary" 
-              variant="outlined" 
-            />
-          )}
-          {word.jlptLevel && (
-            <Chip 
-              icon={<StarIcon />} 
-              label={`JLPT ${word.jlptLevel}`} 
-              size="small" 
-              color="info" 
-              variant="outlined" 
-            />
-          )}
-        </Stack>
-
-        {word.examples && word.examples.length > 0 && (
-          <Box>
-            <Button
-              endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              onClick={() => setIsExpanded(!isExpanded)}
-              size="small"
-              sx={{ mb: 1 }}
-            >
-              {isExpanded ? 'Hide Examples' : 'Show Examples'}
-            </Button>
-            <Collapse in={isExpanded}>
-              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
-                {word.examples.map((example, index) => (
-                  <Box key={index} sx={{ mb: index < word.examples.length - 1 ? 2 : 0 }}>
-                    <Typography variant="body2" gutterBottom>
-                      {example}
-                    </Typography>
-                  </Box>
-                ))}
-              </Paper>
-            </Collapse>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+interface DictionaryResponse {
+  words: SimpleDictionaryItem[];
+  total: number;
+  hasMore: boolean;
+}
 
 const KnowingDictionary: React.FC = () => {
+  const { words: dictionaryWords, isInitialized, isLoading, error } = useDictionary();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
-  const [words, setWords] = useState<SimpleDictionaryItem[]>([]);
   const [readWords, setReadWords] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 50;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { getThemeClasses } = useAppTheme();
   const themeClasses = getThemeClasses();
+  const observerTarget = useRef<HTMLDivElement>(null);
 
+  // Load read words from localStorage
   useEffect(() => {
-    const loadWords = async () => {
-      try {
-        setIsLoading(true);
-        // Load words from the dictionary_words.json file
-        const response = await fetch('/data/dictionary_words.json');
-        if (!response.ok) {
-          throw new Error('Failed to load dictionary words');
-        }
-        const wordList = await response.json();
-        setWords(wordList);
-        
-        // Load read words from localStorage
-        const savedReadWords = localStorage.getItem('readWords');
-        if (savedReadWords) {
-          setReadWords(new Set(JSON.parse(savedReadWords)));
-        }
-      } catch (err) {
-        console.error('Error loading words:', err);
-        setError('Failed to load dictionary words');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadWords();
+    const savedReadWords = localStorage.getItem('readWords');
+    if (savedReadWords) {
+      setReadWords(new Set(JSON.parse(savedReadWords)));
+    }
   }, []);
+
+  // Filter words based on search, category, and level
+  const filteredWords = useMemo(() => {
+    if (!isInitialized || isLoading) {
+      console.log('[Debug] Dictionary not ready:', { isInitialized, isLoading });
+      return [];
+    }
+    
+    console.log('[Debug] Total dictionary words:', dictionaryWords.length);
+    console.log('[Debug] Search term:', searchTerm);
+    console.log('[Debug] Selected category:', selectedCategory);
+    console.log('[Debug] Selected level:', selectedLevel);
+    
+    const filtered = dictionaryWords.filter(word => {
+      const matchesSearch = 
+        (word.japanese?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (word.english?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (word.romaji?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = selectedCategory === 'all' || word.category === selectedCategory;
+      const matchesLevel = selectedLevel === 'all' || word.level?.toString() === selectedLevel;
+
+      const matches = matchesSearch && matchesCategory && matchesLevel;
+      if (matches) {
+        console.log('[Debug] Matching word:', word);
+      }
+      return matches;
+    });
+
+    console.log('[Debug] Filtered words count:', filtered.length);
+    return filtered;
+  }, [dictionaryWords, searchTerm, selectedCategory, selectedLevel, isInitialized, isLoading]);
+
+  // Get paginated words
+  const paginatedWords = useMemo(() => {
+    const start = 0;
+    const end = page * ITEMS_PER_PAGE;
+    const words = filteredWords.slice(start, end);
+    setHasMore(end < filteredWords.length);
+    console.log('[Debug] Paginated words:', words.length);
+    return words;
+  }, [filteredWords, page]);
+
+  // Handle infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true);
+          setPage(prev => prev + 1);
+          setIsLoadingMore(false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore]);
 
   const handleMarkAsRead = (wordId: string) => {
     setReadWords(prev => {
@@ -269,58 +168,71 @@ const KnowingDictionary: React.FC = () => {
       } else {
         newReadWords.add(wordId);
       }
-      // Save to localStorage
       localStorage.setItem('readWords', JSON.stringify(Array.from(newReadWords)));
       return newReadWords;
     });
   };
 
-  const filteredWords = useMemo(() => {
-    return words.filter(word => {
-      const matchesSearch = 
-        word.japanese.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        word.english.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        word.romaji.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = selectedCategory === 'all' || word.category === selectedCategory;
-      const matchesLevel = selectedLevel === 'all' || word.level.toString() === selectedLevel;
-
-      return matchesSearch && matchesCategory && matchesLevel;
-    });
-  }, [words, searchTerm, selectedCategory, selectedLevel]);
-
   const categories = useMemo(() => {
-    const uniqueCategories = new Set(words.map(word => word.category));
+    const uniqueCategories = new Set(dictionaryWords.map(word => word.category));
     return Array.from(uniqueCategories).sort();
-  }, [words]);
+  }, [dictionaryWords]);
 
   const levels = useMemo(() => {
-    const uniqueLevels = new Set(words.map(word => word.level));
+    const uniqueLevels = new Set(dictionaryWords.map(word => word.level));
     return Array.from(uniqueLevels).sort((a, b) => a - b);
-  }, [words]);
+  }, [dictionaryWords]);
 
   const progress = useMemo(() => {
-    if (words.length === 0) return 0;
-    return (readWords.size / words.length) * 100;
-  }, [words.length, readWords.size]);
+    if (dictionaryWords.length === 0) return 0;
+    return (readWords.size / dictionaryWords.length) * 100;
+  }, [dictionaryWords.length, readWords.size]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
   };
 
-  if (isLoading) {
+  // Show loading state while initializing
+  if (!isInitialized || isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <CircularProgress />
-      </Box>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box 
+          display="flex" 
+          flexDirection="column"
+          justifyContent="center" 
+          alignItems="center" 
+          minHeight="200px"
+          gap={2}
+        >
+          <CircularProgress />
+          <Typography variant="body1" color="text.secondary">
+            Loading dictionary...
+          </Typography>
+        </Box>
+      </Container>
     );
   }
 
+  // Show error state if there's an error
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        {error}
-      </Alert>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert 
+          severity="error" 
+          sx={{ mb: 2 }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      </Container>
     );
   }
 
@@ -363,7 +275,7 @@ const KnowingDictionary: React.FC = () => {
         </Typography>
         <Box sx={{ maxWidth: '600px', mx: 'auto', mt: 3 }}>
           <Typography variant="body2" sx={{ mb: 1, textAlign: 'center' }}>
-            Progress: {Math.round(progress)}% ({readWords.size} of {words.length} words)
+            Progress: {Math.round(progress)}% ({readWords.size} of {dictionaryWords.length} words)
           </Typography>
           <LinearProgress 
             variant="determinate" 
@@ -430,31 +342,54 @@ const KnowingDictionary: React.FC = () => {
             </Stack>
           </Grid>
         </Grid>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          Showing {filteredWords.length} of {dictionaryWords.length} words
+        </Typography>
       </Box>
 
       {/* Results */}
-      <Box>
+      <Box sx={{ mt: 4 }}>
         <Typography variant="h6" gutterBottom>
           {filteredWords.length} words found
         </Typography>
-        <Grid container spacing={3}>
-          {filteredWords.map((word) => (
-            <Grid item xs={12} sm={6} md={4} key={word.id}>
-              <WordCard 
-                word={word} 
-                onMarkAsRead={handleMarkAsRead}
-                isRead={readWords.has(word.id)}
-              />
-            </Grid>
+        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+          {paginatedWords.map((word) => (
+            <WordCard
+              key={word.id}
+              word={word}
+              onMarkAsRead={handleMarkAsRead}
+              isRead={readWords.has(word.id)}
+            />
           ))}
-        </Grid>
-        {filteredWords.length === 0 && (
+        </Box>
+        {filteredWords.length === 0 && !searchTerm && !selectedCategory && !selectedLevel && (
+          <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="body1" color="text.secondary">
+              No words found in the dictionary.
+            </Typography>
+          </Paper>
+        )}
+        {filteredWords.length === 0 && (searchTerm || selectedCategory !== 'all' || selectedLevel !== 'all') && (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="body1" color="text.secondary">
               No words found matching your search criteria.
             </Typography>
           </Paper>
         )}
+        
+        {/* Loading indicator for infinite scroll */}
+        <Box 
+          ref={observerTarget} 
+          sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            mt: 4, 
+            mb: 4,
+            minHeight: '50px'
+          }}
+        >
+          {isLoadingMore && <CircularProgress />}
+        </Box>
       </Box>
     </Container>
   );

@@ -56,18 +56,22 @@ const CulturalItemCard: React.FC<CulturalItemProps> = ({
   };
 
   const renderText = (text: { japanese: string; romaji: string; english: string }) => (
-    <>
-      <Typography variant="body1">
+    <Box>
+      <Typography variant="body1" component="div">
         {text.japanese}
         {showRomaji && (
-          <Typography component="div" variant="subtitle2" sx={{ mt: 0.5, color: 'text.secondary' }}>
-            {text.romaji}
-          </Typography>
+          <Box component="div" sx={{ mt: 0.5, color: 'text.secondary' }}>
+            <Typography variant="subtitle2">
+              {text.romaji}
+            </Typography>
+          </Box>
         )}
         {showEnglish && (
-          <Typography component="div" variant="subtitle2" sx={{ mt: 0.5, color: 'text.secondary' }}>
-            {text.english}
-          </Typography>
+          <Box component="div" sx={{ mt: 0.5, color: 'text.secondary' }}>
+            <Typography variant="subtitle2">
+              {text.english}
+            </Typography>
+          </Box>
         )}
       </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -75,7 +79,7 @@ const CulturalItemCard: React.FC<CulturalItemProps> = ({
           <VolumeUpIcon />
         </IconButton>
       </Box>
-    </>
+    </Box>
   );
 
   return (

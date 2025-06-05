@@ -148,6 +148,11 @@ class AudioService {
       return this.playTTS(text, options);
     }
 
+    // If TTS is explicitly requested, use it directly
+    if (options.useTTS === true) {
+      return this.playTTS(text, options);
+    }
+
     try {
       // Initialize AudioContext on first use
       await this.initializeAudioContext();
@@ -171,18 +176,31 @@ class AudioService {
         };
         audio.onerror = (error) => {
           this.currentAudio = null;
-          reject(error);
+          // Only fall back to TTS if we haven't already tried it
+          if (!options.useTTS) {
+            console.log('Falling back to TTS for:', text);
+            this.playTTS(text, { ...options, useTTS: true }).then(resolve).catch(reject);
+          } else {
+            reject(error);
+          }
         };
         audio.play().catch(error => {
-          // If playback fails, fall back to TTS
-          console.log('Falling back to TTS for:', text);
-          this.playTTS(text, options).then(resolve).catch(reject);
+          // Only fall back to TTS if we haven't already tried it
+          if (!options.useTTS) {
+            console.log('Falling back to TTS for:', text);
+            this.playTTS(text, { ...options, useTTS: true }).then(resolve).catch(reject);
+          } else {
+            reject(error);
+          }
         });
       });
     } catch (error) {
-      // Fallback to TTS if pre-recorded audio generation fails
-      console.log('Falling back to TTS for:', text);
-      return this.playTTS(text, options);
+      // Only fall back to TTS if we haven't already tried it
+      if (!options.useTTS) {
+        console.log('Falling back to TTS for:', text);
+        return this.playTTS(text, { ...options, useTTS: true });
+      }
+      throw error;
     }
   }
 

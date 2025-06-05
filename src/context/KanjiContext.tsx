@@ -2,24 +2,23 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { databasePromise, getDatabase, StoreName } from '../utils/databaseConfig';
 
 // Types
+export interface KanjiReading {
+  on: string[];
+  kun: string[];
+}
+
+export interface KanjiExample {
+  word: string;
+  reading: string;
+  meaning: string;
+}
+
 export interface Kanji {
-  id: string;
   character: string;
-  level: number;
-  jlptLevel: string;
-  frequency: number;
-  radicals: string[];
-  strokeCount: number;
-  readings: {
-    onyomi: string[];
-    kunyomi: string[];
-    nanori: string[];
-  };
   meanings: string[];
-  examples: string[];
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  readings: KanjiReading;
+  jlpt?: number;
+  examples?: KanjiExample[];
 }
 
 export interface KanjiProgress {
@@ -50,21 +49,11 @@ export interface KanjiStroke {
   }>;
 }
 
-export interface KanjiExample {
-  id: string;
-  kanjiId: string;
-  wordId: string;
-  word: string;
-  reading: string;
-  meaning: string;
-  frequency: number;
-}
-
 interface KanjiContextType {
   kanji: Kanji[];
   kanjiProgress: Record<string, KanjiProgress>;
   isLoading: boolean;
-  error: string | null;
+  error: Error | null;
   refreshKanji: () => Promise<void>;
   addKanji: (kanji: Omit<Kanji, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateKanji: (kanji: Kanji) => Promise<void>;
@@ -94,21 +83,114 @@ interface KanjiContextType {
   };
 }
 
-const KanjiContext = createContext<KanjiContextType | undefined>(undefined);
+const KanjiContext = createContext<KanjiContextType>({
+  kanji: [],
+  kanjiProgress: {},
+  isLoading: true,
+  error: null,
+  refreshKanji: async () => {},
+  addKanji: async () => {},
+  updateKanji: async () => {},
+  deleteKanji: async () => {},
+  updateProgress: async () => {},
+  getKanjiByLevel: () => [],
+  getKanjiByJLPT: () => [],
+  getKanjiByRadical: () => [],
+  getKanjiForReview: () => [],
+  getMasteredKanji: () => [],
+  getKanjiNeedingReview: () => [],
+  getStrokeOrder: async () => undefined,
+  getExamples: () => [],
+  calculateMasteryLevel: () => 0,
+  getNextReviewDate: () => new Date(),
+  updateWritingScore: () => {},
+  updateReadingScore: () => {},
+  addNote: () => {},
+  getSimilarKanji: () => [],
+  getKanjiStats: () => ({
+    masteryLevel: 0,
+    writingScore: 0,
+    readingScore: 0,
+    reviewCount: 0,
+    lastReviewed: new Date(),
+    nextReview: new Date()
+  })
+});
 
-export const useKanji = () => {
-  const context = useContext(KanjiContext);
-  if (!context) {
-    throw new Error('useKanji must be used within a KanjiProvider');
+export const useKanji = () => useContext(KanjiContext);
+
+// Sample kanji data - in a real application, this would come from an API or database
+const sampleKanji: Kanji[] = [
+  {
+    character: '日',
+    meanings: ['day', 'sun', 'Japan'],
+    readings: {
+      on: ['ニチ', 'ジツ'],
+      kun: ['ひ', '-び', '-か']
+    },
+    jlpt: 5,
+    examples: [
+      {
+        word: '日本',
+        reading: 'にほん',
+        meaning: 'Japan'
+      },
+      {
+        word: '今日',
+        reading: 'きょう',
+        meaning: 'today'
+      }
+    ]
+  },
+  {
+    character: '月',
+    meanings: ['moon', 'month'],
+    readings: {
+      on: ['ゲツ', 'ガツ'],
+      kun: ['つき']
+    },
+    jlpt: 5,
+    examples: [
+      {
+        word: '月曜日',
+        reading: 'げつようび',
+        meaning: 'Monday'
+      },
+      {
+        word: '一月',
+        reading: 'いちがつ',
+        meaning: 'January'
+      }
+    ]
+  },
+  {
+    character: '水',
+    meanings: ['water'],
+    readings: {
+      on: ['スイ'],
+      kun: ['みず']
+    },
+    jlpt: 5,
+    examples: [
+      {
+        word: '水曜日',
+        reading: 'すいようび',
+        meaning: 'Wednesday'
+      },
+      {
+        word: '水泳',
+        reading: 'すいえい',
+        meaning: 'swimming'
+      }
+    ]
   }
-  return context;
-};
+];
 
 export const KanjiProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [kanji, setKanji] = useState<Kanji[]>([]);
   const [kanjiProgress, setKanjiProgress] = useState<Record<string, KanjiProgress>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   const loadKanjiData = async () => {
     setIsLoading(true);
@@ -138,7 +220,7 @@ export const KanjiProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.log('[KanjiContext] Successfully loaded kanji data');
     } catch (err) {
       console.error('[KanjiContext] Error loading kanji data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load kanji data');
+      setError(err instanceof Error ? err : new Error('Failed to load kanji data'));
     } finally {
       setIsLoading(false);
     }
@@ -149,28 +231,28 @@ export const KanjiProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const getKanjiByLevel = useCallback((level: number): Kanji[] => {
-    return kanji.filter(k => k.level === level);
+    return kanji.filter(k => k.jlpt === level);
   }, [kanji]);
 
   const getKanjiByJLPT = useCallback((level: string): Kanji[] => {
-    return kanji.filter(k => k.jlptLevel === level);
+    return kanji.filter(k => k.readings.on.includes(level) || k.readings.kun.includes(level));
   }, [kanji]);
 
   const getKanjiByRadical = useCallback((radical: string): Kanji[] => {
-    return kanji.filter(k => k.radicals.includes(radical));
+    return kanji.filter(k => k.readings.on.includes(radical) || k.readings.kun.includes(radical));
   }, [kanji]);
 
   const getKanjiForReview = useCallback((): Kanji[] => {
     const now = new Date();
     return kanji.filter(k => {
-      const progress = kanjiProgress[k.id];
+      const progress = kanjiProgress[k.character];
       return progress && progress.nextReview <= now;
     });
   }, [kanji, kanjiProgress]);
 
   const getMasteredKanji = useCallback((): Kanji[] => {
     return kanji.filter(k => {
-      const progress = kanjiProgress[k.id];
+      const progress = kanjiProgress[k.character];
       return progress && progress.masteryLevel >= 0.8; // 80% mastery threshold
     });
   }, [kanji, kanjiProgress]);
@@ -178,7 +260,7 @@ export const KanjiProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const getKanjiNeedingReview = useCallback((): Kanji[] => {
     const now = new Date();
     return kanji.filter(k => {
-      const progress = kanjiProgress[k.id];
+      const progress = kanjiProgress[k.character];
       return progress && progress.masteryLevel < 0.8 && progress.nextReview <= now;
     });
   }, [kanji, kanjiProgress]);
@@ -292,12 +374,13 @@ export const KanjiProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [updateProgress]);
 
   const getSimilarKanji = useCallback((kanjiId: string): Kanji[] => {
-    const targetKanji = kanji.find(k => k.id === kanjiId);
+    const targetKanji = kanji.find(k => k.character === kanjiId);
     if (!targetKanji) return [];
 
     return kanji.filter(k => 
-      k.id !== kanjiId && (
-        k.radicals.some(r => targetKanji.radicals.includes(r)) ||
+      k.character !== kanjiId && (
+        k.readings.on.some(r => targetKanji.readings.on.includes(r)) ||
+        k.readings.kun.some(r => targetKanji.readings.kun.includes(r)) ||
         Math.abs(k.strokeCount - targetKanji.strokeCount) <= 2
       )
     );
@@ -415,4 +498,6 @@ export const KanjiProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {children}
     </KanjiContext.Provider>
   );
-}; 
+};
+
+export default KanjiContext; 

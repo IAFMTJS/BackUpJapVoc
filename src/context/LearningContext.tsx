@@ -268,9 +268,25 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const tx = db.transaction('learningProgress', 'readwrite');
       const store = tx.objectStore('learningProgress');
 
-      const currentProgress = learningProgress[wordId];
+      let currentProgress = learningProgress[wordId];
       if (!currentProgress) {
-        throw new Error(`No progress found for word ${wordId}`);
+        // Initialize new progress for the word
+        currentProgress = {
+          wordId,
+          masteryLevel: 0,
+          lastReviewed: new Date(),
+          nextReview: new Date(),
+          correctAnswers: 0,
+          mistakes: 0,
+          streak: 0,
+          difficulty: 1,
+          reviewHistory: [],
+          tags: [],
+          notes: '',
+          examples: [],
+          pronunciationScore: 0,
+          writingScore: 0
+        };
       }
 
       const updatedProgress = {

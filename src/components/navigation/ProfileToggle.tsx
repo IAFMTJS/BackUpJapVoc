@@ -5,7 +5,8 @@ import {
   Person as PersonIcon,
   Help as HelpIcon,
   Settings as SettingsIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 
@@ -98,7 +99,13 @@ const ProfileToggle: React.FC = () => {
           </ListItemIcon>
           <ListItemText>Profile</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => handleMenuItemClick('/settings')}>
+        <MenuItem onClick={() => handleMenuItemClick('/profile/edit')}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Edit Profile</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleMenuItemClick('/knowing/settings')}>
           <ListItemIcon>
             <SettingsIcon fontSize="small" />
           </ListItemIcon>

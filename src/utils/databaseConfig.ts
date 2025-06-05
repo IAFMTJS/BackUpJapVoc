@@ -1,6 +1,7 @@
 import { IDBPDatabase } from 'idb';
 import { openDB, deleteDB } from 'idb';
 import { JapVocDB, StoreName } from '../types/database';
+import { kanjiList } from '../data/kanjiData';
 
 // Remove timeout constant and simplify initialization state
 let isInitializing = false;
@@ -13,7 +14,7 @@ let forceReset = false;
 // Database configuration
 export const DB_CONFIG = {
   name: 'JapVocDB',
-  version: 7,
+  version: 8,
   stores: {
     words: {
       keyPath: 'id',
@@ -116,9 +117,9 @@ export const DB_CONFIG = {
     progress: {
       keyPath: 'id',
       indexes: {
-        'by-user': { keyPath: 'userId' },
-        'by-section': { keyPath: 'section' },
-        'by-timestamp': { keyPath: 'timestamp' }
+        'userId': { keyPath: 'userId' },
+        'section': { keyPath: 'section' },
+        'timestamp': { keyPath: 'timestamp' }
       }
     },
     pending: {
@@ -366,7 +367,13 @@ export async function initializeDatabase(): Promise<IDBPDatabase<JapVocDB>> {
 
   if (forceReset) {
     console.log('[Database] Force reset requested, deleting existing database...');
-    await deleteDB(DB_CONFIG.name);
+    try {
+      await deleteDB(DB_CONFIG.name);
+      console.log('[Database] Existing database deleted');
+    } catch (error) {
+      console.warn('[Database] Error deleting database:', error);
+      // Continue anyway, as the database might not exist
+    }
     forceReset = false;
   }
 
@@ -374,45 +381,118 @@ export async function initializeDatabase(): Promise<IDBPDatabase<JapVocDB>> {
   console.log('[Database] Starting database initialization...');
 
   try {
-    initPromise = openDB<JapVocDB>(DB_CONFIG.name, DB_CONFIG.version, {
-      upgrade(db, oldVersion, newVersion) {
-        console.log(`[Database] Upgrading database from version ${oldVersion} to ${newVersion}`);
+    // Create a new promise for this initialization attempt
+    initPromise = (async () => {
+      try {
+        const db = await openDB<JapVocDB>(DB_CONFIG.name, DB_CONFIG.version, {
+          upgrade(db, oldVersion, newVersion, transaction) {
+            console.log(`[Database] Upgrading database from version ${oldVersion} to ${newVersion}`);
 
-        // Create or update stores
-        Object.entries(DB_CONFIG.stores).forEach(([storeName, storeConfig]) => {
-          if (!db.objectStoreNames.contains(storeName)) {
-            console.log(`[Database] Creating store: ${storeName}`);
-            const store = db.createObjectStore(storeName, { keyPath: storeConfig.keyPath });
-            
-            // Create indexes
-            Object.entries(storeConfig.indexes).forEach(([indexName, indexConfig]) => {
-              console.log(`[Database] Creating index: ${storeName}.${indexName}`);
-              store.createIndex(indexName, indexConfig.keyPath);
+            // Create all stores fresh
+            Object.entries(DB_CONFIG.stores).forEach(([storeName, storeConfig]) => {
+              // Only create store if it doesn't exist
+              if (!db.objectStoreNames.contains(storeName)) {
+                console.log(`[Database] Creating store: ${storeName}`);
+                try {
+                  const store = db.createObjectStore(storeName, { keyPath: storeConfig.keyPath });
+                  
+                  // Create indexes
+                  Object.entries(storeConfig.indexes).forEach(([indexName, indexConfig]) => {
+                    console.log(`[Database] Creating index: ${storeName}.${indexName}`);
+                    try {
+                      store.createIndex(indexName, indexConfig.keyPath, { unique: indexConfig.unique || false });
+                    } catch (error) {
+                      console.warn(`[Database] Error creating index ${indexName} for ${storeName}:`, error);
+                      // Continue with other indexes even if one fails
+                    }
+                  });
+                } catch (error) {
+                  console.error(`[Database] Error creating store ${storeName}:`, error);
+                  throw error; // Re-throw store creation errors as they are critical
+                }
+              } else {
+                console.log(`[Database] Store ${storeName} already exists`);
+              }
             });
+
+            // Initialize kanji data if needed
+            if (!db.objectStoreNames.contains('kanji')) {
+              console.log('[Database] Creating kanji store and initializing data...');
+              const kanjiStore = db.createObjectStore('kanji', { keyPath: 'id' });
+              kanjiStore.createIndex('by-character', 'character', { unique: true });
+              kanjiStore.createIndex('by-jlpt', 'jlpt', { unique: false });
+              kanjiStore.createIndex('by-difficulty', 'difficulty', { unique: false });
+              kanjiStore.createIndex('by-category', 'category', { unique: false });
+
+              // Add initial kanji data synchronously
+              const kanjiData = kanjiList.map(kanji => ({
+                id: `kanji-${kanji.character}`,
+                character: kanji.character,
+                meanings: [kanji.english],
+                readings: {
+                  on: kanji.onyomi,
+                  kun: kanji.kunyomi
+                },
+                examples: kanji.examples,
+                jlpt: parseInt(kanji.jlptLevel.replace('N', '')),
+                difficulty: kanji.difficulty,
+                category: kanji.category,
+                hint: kanji.hint,
+                strokeCount: kanji.strokeCount,
+                radicals: kanji.radicals,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }));
+
+              // Add all kanji to the store synchronously
+              kanjiData.forEach(kanji => {
+                try {
+                  kanjiStore.add(kanji);
+                } catch (error) {
+                  console.warn(`[Database] Error adding kanji ${kanji.character}:`, error);
+                }
+              });
+
+              console.log(`[Database] Successfully initialized kanji store with ${kanjiData.length} kanji`);
+            }
+          },
+          blocked() {
+            console.warn('[Database] Database blocked by another connection');
+          },
+          blocking() {
+            console.warn('[Database] Database blocking another connection');
+          },
+          terminated() {
+            console.warn('[Database] Database connection terminated');
+            cleanupInitState();
           }
         });
-      },
-      blocked() {
-        console.warn('[Database] Database upgrade blocked by another connection');
-      },
-      blocking() {
-        console.warn('[Database] Database upgrade blocking other connections');
-      },
-      terminated() {
-        console.warn('[Database] Database connection terminated');
-        isInitializing = false;
-        initPromise = null;
+
+        console.log('[Database] Database opened successfully');
+        
+        // Track the connection
+        activeConnections.push(db);
+        
+        // Add connection close handler
+        db.addEventListener('close', () => {
+          console.log('[Database] Connection closed');
+          activeConnections = activeConnections.filter(conn => conn !== db);
+        });
+
+        return db;
+      } catch (error) {
+        console.error('[Database] Error during database initialization:', error);
+        cleanupInitState();
+        throw error;
       }
-    });
+    })();
 
     const db = await initPromise;
-    console.log('[Database] Database initialized successfully');
-    activeConnections.push(db);
+    console.log('[Database] Database initialization completed successfully');
     return db;
   } catch (error) {
-    console.error('[Database] Error initializing database:', error);
-    isInitializing = false;
-    initPromise = null;
+    console.error('[Database] Error in initializeDatabase:', error);
+    cleanupInitState();
     throw error;
   } finally {
     isInitializing = false;
@@ -436,8 +516,9 @@ export async function getDatabase(): Promise<IDBPDatabase<JapVocDB>> {
 export async function isDatabaseReady(): Promise<boolean> {
   try {
     const db = await getDatabase();
-    await verifyStores(db);
-    return true;
+    const requiredStores = Object.keys(DB_CONFIG.stores);
+    const existingStores = Array.from(db.objectStoreNames);
+    return requiredStores.every(store => existingStores.includes(store));
   } catch (error) {
     console.error('[Database] Error checking database readiness:', error);
     return false;
@@ -445,7 +526,32 @@ export async function isDatabaseReady(): Promise<boolean> {
 }
 
 // Export the database promise for components that need to wait for initialization
-export const databasePromise = initializeDatabase();
+export const databasePromise = (async () => {
+  let retryCount = 0;
+  const maxRetries = 3;
+  
+  while (retryCount < maxRetries) {
+    try {
+      console.log(`[Database] Attempting database initialization (attempt ${retryCount + 1}/${maxRetries})`);
+      const db = await initializeDatabase();
+      console.log('[Database] Database initialization successful');
+      return db;
+    } catch (error) {
+      console.error(`[Database] Database initialization failed (attempt ${retryCount + 1}/${maxRetries}):`, error);
+      retryCount++;
+      
+      if (retryCount < maxRetries) {
+        console.log('[Database] Waiting before retry...');
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+      } else {
+        console.error('[Database] Max retries reached, giving up');
+        throw error;
+      }
+    }
+  }
+  
+  throw new Error('Failed to initialize database after multiple attempts');
+})();
 
 // Export store names as a type
 export type StoreName = keyof JapVocDB;
@@ -540,4 +646,117 @@ export async function getAllFromStore<T>(
   const tx = db.transaction(storeName, 'readonly');
   const store = tx.store;
   return store.getAll();
+}
+
+// Function to safely reset database while preserving data
+export async function safeDatabaseReset(): Promise<void> {
+  console.log('[Database] Starting safe database reset...');
+  try {
+    // Create backup first
+    const db = await getDatabase();
+    const backup = {
+      progress: await getAllFromStore(db, 'progress'),
+      pending: await getAllFromStore(db, 'pending'),
+      settings: await getAllFromStore(db, 'settings')
+    };
+
+    // Force reset the database
+    await forceDatabaseReset();
+
+    // Wait for database to be ready
+    const newDb = await initializeDatabase();
+
+    // Restore data
+    if (backup.progress.length > 0) {
+      await addBulkToStore('progress', backup.progress);
+    }
+    if (backup.pending.length > 0) {
+      await addBulkToStore('pending', backup.pending);
+    }
+    if (backup.settings.length > 0) {
+      await addBulkToStore('settings', backup.settings);
+    }
+
+    console.log('[Database] Safe database reset completed successfully');
+  } catch (error) {
+    console.error('[Database] Error during safe database reset:', error);
+    throw error;
+  }
+}
+
+// Progress and settings related functions
+export async function saveProgress(progress: { id: string; [key: string]: any }): Promise<void> {
+  const db = await getDatabase();
+  await db.put('progress', progress);
+}
+
+export async function saveBulkProgress(items: Array<{ id: string; [key: string]: any }>): Promise<void> {
+  const db = await getDatabase();
+  const tx = db.transaction('progress', 'readwrite');
+  await Promise.all(items.map(item => tx.store.put(item)));
+  await tx.done;
+}
+
+export async function getProgress(userId: string): Promise<any> {
+  const db = await getDatabase();
+  return db.get('progress', userId);
+}
+
+export async function savePendingProgress(progress: { id: string; [key: string]: any }): Promise<void> {
+  const db = await getDatabase();
+  await db.put('pending', progress);
+}
+
+export async function saveBulkPendingProgress(items: Array<{ id: string; [key: string]: any }>): Promise<void> {
+  const db = await getDatabase();
+  const tx = db.transaction('pending', 'readwrite');
+  await Promise.all(items.map(item => tx.store.put(item)));
+  await tx.done;
+}
+
+export async function getPendingProgress(userId: string): Promise<any> {
+  const db = await getDatabase();
+  return db.get('pending', userId);
+}
+
+export async function clearPendingProgress(): Promise<void> {
+  const db = await getDatabase();
+  await db.clear('pending');
+}
+
+export async function saveSettings(settings: { userId: string; [key: string]: any }): Promise<void> {
+  const db = await getDatabase();
+  await db.put('settings', settings);
+}
+
+export async function getSettings(userId: string): Promise<any> {
+  const db = await getDatabase();
+  return db.get('settings', userId);
+}
+
+export async function createBackup(): Promise<any> {
+  const db = await getDatabase();
+  const backup = {
+    progress: await getAllFromStore(db, 'progress'),
+    pending: await getAllFromStore(db, 'pending'),
+    settings: await getAllFromStore(db, 'settings')
+  };
+  return backup;
+}
+
+export async function restoreBackup(backup: any): Promise<void> {
+  const db = await getDatabase();
+  const tx = db.transaction(['progress', 'pending', 'settings'], 'readwrite');
+  
+  if (backup.progress?.length) {
+    await Promise.all(backup.progress.map((item: any) => tx.objectStore('progress').put(item)));
+  }
+  if (backup.pending?.length) {
+    await Promise.all(backup.pending.map((item: any) => tx.objectStore('pending').put(item)));
+  }
+  if (backup.settings?.length) {
+    await Promise.all(backup.settings.map((item: any) => tx.objectStore('settings').put(item)));
+  }
+  
+  await tx.done;
 } 

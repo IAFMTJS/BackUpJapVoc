@@ -213,50 +213,53 @@ const SimpleQuizWrapper: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`p-6 rounded-lg ${themeClasses.card}`}
+      className={`p-3 sm:p-6 rounded-lg ${themeClasses.card}`}
     >
-      <h2 className={`text-2xl font-bold mb-6 ${themeClasses.text.primary}`}>
+      <h2 className={`text-xl sm:text-2xl font-bold mb-4 sm:mb-6 ${themeClasses.text.primary}`}>
         Quiz Settings
       </h2>
-      <div className="space-y-4">
-        <div>
-          <label className={`block mb-2 ${themeClasses.text.primary}`}>
-            Category
-          </label>
-          <select
-            value={settings.category}
-            onChange={(e) => setSettings(prev => ({ ...prev, category: e.target.value }))}
-            className={`w-full p-2 rounded-lg ${themeClasses.input}`}
-          >
-            {categories.map(category => (
-              <option key={category} value={category}>
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-              </option>
-            ))}
-          </select>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div>
+            <label className={`block mb-1 sm:mb-2 text-sm sm:text-base ${themeClasses.text.primary}`}>
+              Category
+            </label>
+            <select
+              value={settings.category}
+              onChange={(e) => setSettings(prev => ({ ...prev, category: e.target.value }))}
+              className={`w-full p-2 rounded-lg text-sm sm:text-base ${themeClasses.input}`}
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={`block mb-1 sm:mb-2 text-sm sm:text-base ${themeClasses.text.primary}`}>
+              Difficulty
+            </label>
+            <select
+              value={settings.difficulty}
+              onChange={(e) => setSettings(prev => ({ ...prev, difficulty: e.target.value as 'beginner' | 'intermediate' | 'advanced' }))}
+              className={`w-full p-2 rounded-lg text-sm sm:text-base ${themeClasses.input}`}
+            >
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
         </div>
+        
         <div>
-          <label className={`block mb-2 ${themeClasses.text.primary}`}>
-            Difficulty
-          </label>
-          <select
-            value={settings.difficulty}
-            onChange={(e) => setSettings(prev => ({ ...prev, difficulty: e.target.value as 'beginner' | 'intermediate' | 'advanced' }))}
-            className={`w-full p-2 rounded-lg ${themeClasses.input}`}
-          >
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-        </div>
-        <div>
-          <label className={`block mb-2 ${themeClasses.text.primary}`}>
+          <label className={`block mb-1 sm:mb-2 text-sm sm:text-base ${themeClasses.text.primary}`}>
             Number of Questions
           </label>
           <select
             value={settings.questionCount}
             onChange={(e) => setSettings(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
-            className={`w-full p-2 rounded-lg ${themeClasses.input}`}
+            className={`w-full p-2 rounded-lg text-sm sm:text-base ${themeClasses.input}`}
           >
             <option value="5">5 Questions</option>
             <option value="10">10 Questions</option>
@@ -264,17 +267,18 @@ const SimpleQuizWrapper: React.FC = () => {
             <option value="20">20 Questions</option>
           </select>
         </div>
+        
         <button
           onClick={handleStartQuiz}
           disabled={selectedWords.length < settings.questionCount}
-          className={`w-full py-3 rounded-lg ${themeClasses.button.primary} ${
+          className={`w-full py-2 sm:py-3 rounded-lg text-sm sm:text-base ${themeClasses.button.primary} ${
             selectedWords.length < settings.questionCount ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
           Start Quiz
         </button>
         {selectedWords.length < settings.questionCount && (
-          <p className={`text-sm mt-2 ${themeClasses.text.muted}`}>
+          <p className={`text-xs sm:text-sm mt-1 sm:mt-2 ${themeClasses.text.muted}`}>
             Not enough words available for the selected settings. Please try a different category or difficulty.
           </p>
         )}

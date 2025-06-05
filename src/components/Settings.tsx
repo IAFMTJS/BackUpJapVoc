@@ -1,278 +1,690 @@
-import React, { useEffect, useState } from 'react';
-import { useTheme } from '../context/ThemeContext';
-import { useApp } from '../context/AppContext';
-import { useSettings } from '../context/SettingsContext';
-import type { Settings } from '../context/AppContext';
-import { getCacheStats, clearCache } from '../utils/AudioCache';
+import React, { useState } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Grid,
+  Switch,
+  FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Divider,
+  Button,
+  TextField,
+  Alert,
+  Snackbar,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  ListItemSecondaryAction,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  useTheme,
+  Tabs,
+  Tab,
+  Radio,
+  RadioGroup,
+  FormLabel,
+  Slider,
+  Tooltip
+} from '@mui/material';
+import {
+  NotificationsIcon,
+  LanguageIcon,
+  PaletteIcon,
+  SecurityIcon,
+  DeleteIcon,
+  SaveIcon,
+  RestoreIcon,
+  DownloadIcon,
+  UploadIcon,
+  HelpIcon,
+  VolumeUpIcon,
+  TimerIcon,
+  SpeedIcon,
+  VisibilityIcon,
+  KeyboardIcon,
+  DarkModeIcon,
+  CloudDownloadIcon,
+  CloudUploadIcon,
+  AccessibilityIcon
+} from '../index';
 import { useAuth } from '../context/AuthContext';
-import { toast } from 'react-toastify';
+import { useProgress } from '../context/ProgressContext';
 
-type SettingsKey = keyof Settings;
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
 
-const SettingsPanel: React.FC = () => {
-  const { theme, isDarkMode } = useTheme();
-  const { settings: appSettings, updateSettings: updateAppSettings } = useApp();
-  const { settings: globalSettings, updateSettings: updateGlobalSettings } = useSettings();
-  const { currentUser, updateUserProfile } = useAuth();
-
-  // Form state for user-specific settings
-  const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
-  const [email, setEmail] = useState(currentUser?.email || '');
-  const [dailyGoal, setDailyGoal] = useState(10);
-  const [practiceMode, setPracticeMode] = useState<'word' | 'sentence'>('word');
-  const [dailyReminders, setDailyReminders] = useState(false);
-  const [progressUpdates, setProgressUpdates] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Audio cache state
-  const [cacheStats, setCacheStats] = useState<{ fileCount: number; totalSize: number }>({ fileCount: 0, totalSize: 0 });
-  const [clearing, setClearing] = useState(false);
-
-  useEffect(() => {
-    getCacheStats().then(setCacheStats);
-  }, [clearing]);
-
-  useEffect(() => {
-    // Load saved user settings from localStorage
-    const savedSettings = localStorage.getItem('userSettings');
-    if (savedSettings) {
-      const parsedSettings = JSON.parse(savedSettings);
-      setDisplayName(parsedSettings.displayName || '');
-      setEmail(parsedSettings.email || '');
-      setDailyGoal(parsedSettings.dailyGoal || 10);
-      setPracticeMode(parsedSettings.practiceMode || 'word');
-      setDailyReminders(parsedSettings.dailyReminders || false);
-      setProgressUpdates(parsedSettings.progressUpdates || false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Update form state when currentUser changes
-    if (currentUser) {
-      setDisplayName(currentUser.displayName || '');
-      setEmail(currentUser.email || '');
-    }
-  }, [currentUser]);
-
-  const handleClearCache = async () => {
-    setClearing(true);
-    await clearCache();
-    setClearing(false);
-    setCacheStats({ fileCount: 0, totalSize: 0 });
-  };
-
-  const handleSave = async () => {
-    try {
-      setIsSaving(true);
-
-      // Update user profile if there are changes
-      if (currentUser && (displayName !== currentUser.displayName || email !== currentUser.email)) {
-        await updateUserProfile({
-          displayName: displayName !== currentUser.displayName ? displayName : undefined,
-          email: email !== currentUser.email ? email : undefined
-        });
-        toast.success('Profile updated successfully');
-      }
-
-      // Save other settings to localStorage
-      const userSettings = {
-        dailyGoal,
-        practiceMode,
-        dailyReminders,
-        progressUpdates
-      };
-      localStorage.setItem('userSettings', JSON.stringify(userSettings));
-
-      // Update global settings
-      updateGlobalSettings({
-        useTimer: globalSettings.useTimer,
-        timeLimit: globalSettings.timeLimit,
-        showRomaji: globalSettings.showRomaji,
-        showHints: globalSettings.showHints,
-        soundEnabled: globalSettings.soundEnabled,
-        darkMode: isDarkMode
-      });
-
-      toast.success('Settings saved successfully');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error('Failed to save settings. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const getThemeClasses = () => {
-    if (isDarkMode) {
-      return {
-        container: 'bg-charcoal-800',
-        text: 'text-ivory-100',
-        card: 'bg-charcoal-700 hover:bg-charcoal-600',
-        border: 'border-charcoal-600',
-        input: 'bg-charcoal-900 border-charcoal-700 text-ivory-100',
-        button: 'bg-sage-600 hover:bg-sage-500 text-ivory-100',
-        buttonSecondary: 'bg-charcoal-700 hover:bg-charcoal-600 text-ivory-100',
-      };
-    }
-
-    return {
-      container: 'bg-ivory-100',
-      text: 'text-charcoal-800',
-      card: 'bg-ivory-50 hover:bg-sage-50',
-      border: 'border-sage-200',
-      input: 'bg-white border-sage-200 text-charcoal-800',
-      button: 'bg-sage-600 hover:bg-sage-500 text-ivory-100',
-      buttonSecondary: 'bg-charcoal-200 hover:bg-charcoal-300 text-charcoal-800',
-    };
-  };
-
-  const themeClasses = getThemeClasses();
-
-  const renderToggle = (settingKey: keyof Settings, label: string) => (
-    <div className="flex items-center justify-between">
-      <span className={`text-sm ${themeClasses.text}`}>{label}</span>
-      <button
-        onClick={() => {
-          const newValue = !globalSettings[settingKey as keyof typeof globalSettings];
-          updateGlobalSettings({ [settingKey]: newValue });
-        }}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-          globalSettings[settingKey as keyof typeof globalSettings] ? 'bg-blue-600' : 'bg-gray-200'
-        }`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            globalSettings[settingKey as keyof typeof globalSettings] ? 'translate-x-6' : 'translate-x-1'
-          }`}
-        />
-      </button>
-    </div>
-  );
-
+const TabPanel = (props: TabPanelProps) => {
+  const { children, value, index, ...other } = props;
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className={`${themeClasses.container} rounded-2xl shadow-soft p-8`}>
-        <h1 className={`text-3xl font-serif font-medium mb-8 ${themeClasses.text}`}>
-          Settings
-        </h1>
-
-        <div className="space-y-8">
-          {/* Profile Settings */}
-          <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
-            <h2 className={`text-xl font-serif font-medium mb-4 ${themeClasses.text}`}>
-              Profile Settings
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${themeClasses.text}`}>
-                  Display Name
-                </label>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
-                  disabled={isSaving}
-                />
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${themeClasses.text}`}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
-                  disabled={isSaving}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Practice Settings */}
-          <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
-            <h2 className={`text-xl font-serif font-medium mb-4 ${themeClasses.text}`}>
-              Practice Settings
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${themeClasses.text}`}>
-                  Daily Goal (words)
-                </label>
-                <input
-                  type="number"
-                  value={dailyGoal}
-                  onChange={(e) => setDailyGoal(Number(e.target.value))}
-                  min="1"
-                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
-                />
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${themeClasses.text}`}>
-                  Practice Mode
-                </label>
-                <select
-                  value={practiceMode}
-                  onChange={(e) => setPracticeMode(e.target.value as 'word' | 'sentence')}
-                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
-                >
-                  <option value="word">Word Practice</option>
-                  <option value="sentence">Sentence Practice</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Notification Settings */}
-          <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
-            <h2 className={`text-xl font-serif font-medium mb-4 ${themeClasses.text}`}>
-              Notification Settings
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className={`text-sm font-medium ${themeClasses.text}`}>
-                  Daily Reminders
-                </label>
-                <button
-                  onClick={() => setDailyReminders(!dailyReminders)}
-                  className={`px-4 py-2 rounded-lg ${dailyReminders ? themeClasses.button : themeClasses.buttonSecondary}`}
-                >
-                  {dailyReminders ? 'Enabled' : 'Disabled'}
-                </button>
-              </div>
-              <div className="flex items-center justify-between">
-                <label className={`text-sm font-medium ${themeClasses.text}`}>
-                  Progress Updates
-                </label>
-                <button
-                  onClick={() => setProgressUpdates(!progressUpdates)}
-                  className={`px-4 py-2 rounded-lg ${progressUpdates ? themeClasses.button : themeClasses.buttonSecondary}`}
-                >
-                  {progressUpdates ? 'Enabled' : 'Disabled'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                isSaving 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : themeClasses.button
-              }`}
-            >
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
-      </div>
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`settings-tabpanel-${index}`}
+      aria-labelledby={`settings-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ py: 3 }}>
+          {children}
+        </Box>
+      )}
     </div>
   );
 };
 
-export default SettingsPanel; 
+const Settings: React.FC = () => {
+  const theme = useTheme();
+  const { currentUser } = useAuth();
+  const { progress, updateProgress } = useProgress();
+  const [tabValue, setTabValue] = useState(0);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', action: () => {} });
+
+  // Notification Settings
+  const [notificationSettings, setNotificationSettings] = useState({
+    dailyReminder: true,
+    goalReminders: true,
+    achievementAlerts: true,
+    progressUpdates: true,
+    reminderTime: '09:00',
+    reminderDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  });
+
+  // Language Settings
+  const [languageSettings, setLanguageSettings] = useState({
+    interfaceLanguage: 'en',
+    studyLanguage: 'ja',
+    romanization: true,
+    showEnglish: true,
+    showKanji: true,
+    showHiragana: true,
+    showKatakana: true
+  });
+
+  // Theme Settings
+  const [themeSettings, setThemeSettings] = useState({
+    mode: 'light',
+    primaryColor: theme.palette.primary.main,
+    fontSize: 16,
+    animationSpeed: 1,
+    highContrast: false,
+    reducedMotion: false
+  });
+
+  // Study Settings
+  const [studySettings, setStudySettings] = useState({
+    reviewInterval: 24, // hours
+    newWordsPerDay: 10,
+    maxReviewsPerDay: 50,
+    autoPlayAudio: true,
+    showHints: true,
+    typingMode: false,
+    studySessionDuration: 25, // minutes
+    breakDuration: 5 // minutes
+  });
+
+  // Security Settings
+  const [securitySettings, setSecuritySettings] = useState({
+    requirePassword: false,
+    sessionTimeout: 30, // minutes
+    dataExport: true,
+    dataSync: true
+  });
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  const handleSaveSettings = (section: string) => {
+    // TODO: Implement actual saving logic
+    setSnackbar({
+      open: true,
+      message: `${section} settings saved successfully`,
+      severity: 'success'
+    });
+  };
+
+  const handleResetSettings = (section: string) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Reset Settings',
+      message: `Are you sure you want to reset all ${section} settings to default?`,
+      action: () => {
+        // TODO: Implement reset logic
+        setSnackbar({
+          open: true,
+          message: `${section} settings reset to default`,
+          severity: 'success'
+        });
+      }
+    });
+  };
+
+  const handleExportData = () => {
+    // TODO: Implement data export
+    setSnackbar({
+      open: true,
+      message: 'Data exported successfully',
+      severity: 'success'
+    });
+  };
+
+  const handleImportData = () => {
+    // TODO: Implement data import
+    setSnackbar({
+      open: true,
+      message: 'Data imported successfully',
+      severity: 'success'
+    });
+  };
+
+  return (
+    <Box>
+      <Paper sx={{ width: '100%' }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Tab icon={<NotificationsIcon />} label="Notifications" />
+          <Tab icon={<LanguageIcon />} label="Language" />
+          <Tab icon={<PaletteIcon />} label="Appearance" />
+          <Tab icon={<TimerIcon />} label="Study" />
+          <Tab icon={<SecurityIcon />} label="Security" />
+          <Tab icon={<HelpIcon />} label="Help" />
+        </Tabs>
+
+        {/* Notifications Settings */}
+        <TabPanel value={tabValue} index={0}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Notification Preferences
+              </Typography>
+              <List>
+                <ListItem>
+                  <ListItemIcon><NotificationsIcon /></ListItemIcon>
+                  <ListItemText 
+                    primary="Daily Study Reminders"
+                    secondary="Get reminded to study at your preferred time"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={notificationSettings.dailyReminder}
+                      onChange={(e) => setNotificationSettings({
+                        ...notificationSettings,
+                        dailyReminder: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><TimerIcon /></ListItemIcon>
+                  <ListItemText 
+                    primary="Goal Reminders"
+                    secondary="Get notified about your learning goals"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={notificationSettings.goalReminders}
+                      onChange={(e) => setNotificationSettings({
+                        ...notificationSettings,
+                        goalReminders: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon><VolumeUpIcon /></ListItemIcon>
+                  <ListItemText 
+                    primary="Achievement Alerts"
+                    secondary="Get notified when you earn achievements"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={notificationSettings.achievementAlerts}
+                      onChange={(e) => setNotificationSettings({
+                        ...notificationSettings,
+                        achievementAlerts: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </List>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Reminder Time</InputLabel>
+                <Select
+                  value={notificationSettings.reminderTime}
+                  label="Reminder Time"
+                  onChange={(e) => setNotificationSettings({
+                    ...notificationSettings,
+                    reminderTime: e.target.value
+                  })}
+                >
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <MenuItem key={i} value={`${i.toString().padStart(2, '0')}:00`}>
+                      {`${i.toString().padStart(2, '0')}:00`}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Language Settings */}
+        <TabPanel value={tabValue} index={1}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Interface Language</InputLabel>
+                <Select
+                  value={languageSettings.interfaceLanguage}
+                  label="Interface Language"
+                  onChange={(e) => setLanguageSettings({
+                    ...languageSettings,
+                    interfaceLanguage: e.target.value
+                  })}
+                >
+                  <MenuItem value="en">English</MenuItem>
+                  <MenuItem value="ja">日本語</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Study Language</InputLabel>
+                <Select
+                  value={languageSettings.studyLanguage}
+                  label="Study Language"
+                  onChange={(e) => setLanguageSettings({
+                    ...languageSettings,
+                    studyLanguage: e.target.value
+                  })}
+                >
+                  <MenuItem value="ja">Japanese</MenuItem>
+                  <MenuItem value="en">English</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom>
+                Display Options
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={languageSettings.romanization}
+                        onChange={(e) => setLanguageSettings({
+                          ...languageSettings,
+                          romanization: e.target.checked
+                        })}
+                      />
+                    }
+                    label="Show Romanization"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={languageSettings.showEnglish}
+                        onChange={(e) => setLanguageSettings({
+                          ...languageSettings,
+                          showEnglish: e.target.checked
+                        })}
+                      />
+                    }
+                    label="Show English Translations"
+                  />
+                </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Appearance Settings */}
+        <TabPanel value={tabValue} index={2}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <FormControl component="fieldset">
+                <FormLabel component="legend">Theme Mode</FormLabel>
+                <RadioGroup
+                  row
+                  value={themeSettings.mode}
+                  onChange={(e) => setThemeSettings({
+                    ...themeSettings,
+                    mode: e.target.value
+                  })}
+                >
+                  <FormControlLabel value="light" control={<Radio />} label="Light" />
+                  <FormControlLabel value="dark" control={<Radio />} label="Dark" />
+                  <FormControlLabel value="system" control={<Radio />} label="System" />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography gutterBottom>Font Size</Typography>
+              <Slider
+                value={themeSettings.fontSize}
+                min={12}
+                max={24}
+                step={1}
+                marks
+                valueLabelDisplay="auto"
+                onChange={(_, value) => setThemeSettings({
+                  ...themeSettings,
+                  fontSize: value as number
+                })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography gutterBottom>Animation Speed</Typography>
+              <Slider
+                value={themeSettings.animationSpeed}
+                min={0.5}
+                max={2}
+                step={0.1}
+                marks
+                valueLabelDisplay="auto"
+                onChange={(_, value) => setThemeSettings({
+                  ...themeSettings,
+                  animationSpeed: value as number
+                })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={themeSettings.highContrast}
+                    onChange={(e) => setThemeSettings({
+                      ...themeSettings,
+                      highContrast: e.target.checked
+                    })}
+                  />
+                }
+                label="High Contrast Mode"
+              />
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Study Settings */}
+        <TabPanel value={tabValue} index={3}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Typography gutterBottom>New Words Per Day</Typography>
+              <Slider
+                value={studySettings.newWordsPerDay}
+                min={5}
+                max={50}
+                step={5}
+                marks
+                valueLabelDisplay="auto"
+                onChange={(_, value) => setStudySettings({
+                  ...studySettings,
+                  newWordsPerDay: value as number
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography gutterBottom>Review Interval (hours)</Typography>
+              <Slider
+                value={studySettings.reviewInterval}
+                min={12}
+                max={72}
+                step={12}
+                marks
+                valueLabelDisplay="auto"
+                onChange={(_, value) => setStudySettings({
+                  ...studySettings,
+                  reviewInterval: value as number
+                })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Study Session Duration</InputLabel>
+                <Select
+                  value={studySettings.studySessionDuration}
+                  label="Study Session Duration"
+                  onChange={(e) => setStudySettings({
+                    ...studySettings,
+                    studySessionDuration: e.target.value as number
+                  })}
+                >
+                  <MenuItem value={15}>15 minutes</MenuItem>
+                  <MenuItem value={25}>25 minutes</MenuItem>
+                  <MenuItem value={45}>45 minutes</MenuItem>
+                  <MenuItem value={60}>60 minutes</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Break Duration</InputLabel>
+                <Select
+                  value={studySettings.breakDuration}
+                  label="Break Duration"
+                  onChange={(e) => setStudySettings({
+                    ...studySettings,
+                    breakDuration: e.target.value as number
+                  })}
+                >
+                  <MenuItem value={5}>5 minutes</MenuItem>
+                  <MenuItem value={10}>10 minutes</MenuItem>
+                  <MenuItem value={15}>15 minutes</MenuItem>
+                  <MenuItem value={30}>30 minutes</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={studySettings.typingMode}
+                    onChange={(e) => setStudySettings({
+                      ...studySettings,
+                      typingMode: e.target.checked
+                    })}
+                  />
+                }
+                label="Enable Typing Mode (Type answers instead of multiple choice)"
+              />
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Security Settings */}
+        <TabPanel value={tabValue} index={4}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={securitySettings.requirePassword}
+                    onChange={(e) => setSecuritySettings({
+                      ...securitySettings,
+                      requirePassword: e.target.checked
+                    })}
+                  />
+                }
+                label="Require Password for App Access"
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Session Timeout</InputLabel>
+                <Select
+                  value={securitySettings.sessionTimeout}
+                  label="Session Timeout"
+                  onChange={(e) => setSecuritySettings({
+                    ...securitySettings,
+                    sessionTimeout: e.target.value as number
+                  })}
+                >
+                  <MenuItem value={15}>15 minutes</MenuItem>
+                  <MenuItem value={30}>30 minutes</MenuItem>
+                  <MenuItem value={60}>1 hour</MenuItem>
+                  <MenuItem value={120}>2 hours</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Data Management
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item>
+                  <Button
+                    variant="outlined"
+                    startIcon={<DownloadIcon />}
+                    onClick={handleExportData}
+                  >
+                    Export Data
+                  </Button>
+                </Grid>
+                <Grid item>
+                  <Button
+                    variant="outlined"
+                    startIcon={<UploadIcon />}
+                    onClick={handleImportData}
+                  >
+                    Import Data
+                  </Button>
+                </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Help Settings */}
+        <TabPanel value={tabValue} index={5}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Help & Support
+              </Typography>
+              <List>
+                <ListItem button onClick={() => window.open('/docs/getting-started', '_blank')}>
+                  <ListItemIcon><HelpIcon /></ListItemIcon>
+                  <ListItemText 
+                    primary="Getting Started Guide"
+                    secondary="Learn the basics of using the app"
+                  />
+                </ListItem>
+                <ListItem button onClick={() => window.open('/docs/faq', '_blank')}>
+                  <ListItemIcon><HelpIcon /></ListItemIcon>
+                  <ListItemText 
+                    primary="Frequently Asked Questions"
+                    secondary="Find answers to common questions"
+                  />
+                </ListItem>
+                <ListItem button onClick={() => window.open('/docs/contact', '_blank')}>
+                  <ListItemIcon><HelpIcon /></ListItemIcon>
+                  <ListItemText 
+                    primary="Contact Support"
+                    secondary="Get help from our support team"
+                  />
+                </ListItem>
+              </List>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                About
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Version: 1.0.0
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Last updated: {new Date().toLocaleDateString()}
+              </Typography>
+            </Grid>
+          </Grid>
+        </TabPanel>
+      </Paper>
+
+      {/* Action Buttons */}
+      <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+        <Button
+          variant="outlined"
+          startIcon={<RestoreIcon />}
+          onClick={() => handleResetSettings('all')}
+        >
+          Reset All Settings
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<SaveIcon />}
+          onClick={() => handleSaveSettings('all')}
+        >
+          Save All Changes
+        </Button>
+      </Box>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
+      >
+        <DialogTitle>{confirmDialog.title}</DialogTitle>
+        <DialogContent>
+          <Typography>{confirmDialog.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+              confirmDialog.action();
+              setConfirmDialog({ ...confirmDialog, open: false });
+            }}
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+};
+
+export default Settings; 

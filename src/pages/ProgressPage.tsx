@@ -40,6 +40,7 @@ import { MasteryDistribution } from '../components/progress/MasteryDistribution'
 import { DailyProgressChart } from '../components/progress/DailyProgressChart';
 import { StudyEfficiency } from '../components/progress/StudyEfficiency';
 import { Achievements } from '../components/progress/Achievements';
+import ProgressSummary from '../components/progress/ProgressSummary';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -174,115 +175,34 @@ const ProgressPage: React.FC = () => {
         <TabPanel value={selectedTab} index={0}>
           <Box sx={{ p: { xs: 2, sm: 3 } }}>
             {/* Current Progress Overview */}
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: 3, 
-                mb: 3, 
-                bgcolor: 'background.default',
-                borderRadius: 2
-              }}
-            >
-              <Typography variant="h5" gutterBottom>
-                Current Progress
+            <ProgressSummary variant="detailed" showCharts={true} />
+            
+            {/* Recent Study Sessions */}
+            <Paper sx={{ p: 3, mt: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Recent Study Sessions
               </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ 
-                    textAlign: 'center',
-                    p: 2,
-                    bgcolor: 'background.paper',
-                    borderRadius: 1,
-                    boxShadow: 1
-                  }}>
-                    <Typography variant="h4" color="primary">
-                      {masteredWords}
-                    </Typography>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Words Mastered
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ 
-                    textAlign: 'center',
-                    p: 2,
-                    bgcolor: 'background.paper',
-                    borderRadius: 1,
-                    boxShadow: 1
-                  }}>
-                    <Typography variant="h4" color="secondary">
-                      {inProgressWords}
-                    </Typography>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      In Progress
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ 
-                    textAlign: 'center',
-                    p: 2,
-                    bgcolor: 'background.paper',
-                    borderRadius: 1,
-                    boxShadow: 1
-                  }}>
-                    <Typography variant="h4" color="warning.main">
-                      {statistics.currentStreak}
-                    </Typography>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Day Streak
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ 
-                    textAlign: 'center',
-                    p: 2,
-                    bgcolor: 'background.paper',
-                    borderRadius: 1,
-                    boxShadow: 1
-                  }}>
-                    <Typography variant="h4" color="success.main">
-                      {Math.round(studyEfficiency * 100)}%
-                    </Typography>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Study Efficiency
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
-
-            {/* Learning Path */}
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: 3, 
-                mb: 3, 
-                bgcolor: 'background.default',
-                borderRadius: 2
-              }}
-            >
-              <Typography variant="h5" gutterBottom>
-                Learning Path
-              </Typography>
-              <LearningPath />
-            </Paper>
-
-            {/* Achievements */}
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: 3, 
-                bgcolor: 'background.default',
-                borderRadius: 2
-              }}
-            >
-              <Typography variant="h5" gutterBottom>
-                Achievements
-              </Typography>
-              <Achievements />
+              <Timeline>
+                {recentSessions.map((session, index) => (
+                  <TimelineItem key={index}>
+                    <TimelineSeparator>
+                      <TimelineDot color="primary" />
+                      {index < recentSessions.length - 1 && <TimelineConnector />}
+                    </TimelineSeparator>
+                    <TimelineContent>
+                      <Typography variant="subtitle2">
+                        {format(session.date, 'MMM d, yyyy h:mm a')}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Duration: {Math.round(session.duration)} minutes
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Mastery Gained: {Math.round(session.masteryGained * 100)}%
+                      </Typography>
+                    </TimelineContent>
+                  </TimelineItem>
+                ))}
+              </Timeline>
             </Paper>
           </Box>
         </TabPanel>

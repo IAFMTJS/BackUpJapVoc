@@ -36,13 +36,6 @@ const LearningLayout: React.FC = () => {
       color: '#3b82f6'
     },
     {
-      path: '/learning/kanji',
-      label: 'Kanji',
-      icon: <SchoolIcon />,
-      description: 'Master Japanese characters',
-      color: '#8b5cf6'
-    },
-    {
       path: '/learning/kanji-dictionary',
       label: 'Kanji Dictionary',
       icon: <MenuBookIcon />,
@@ -55,6 +48,13 @@ const LearningLayout: React.FC = () => {
       icon: <TranslateIcon />,
       description: 'Learn romanized Japanese',
       color: '#10b981'
+    },
+    {
+      path: '/learning/writing',
+      label: 'Writing',
+      icon: <EditIcon />,
+      description: 'Practice writing Japanese characters',
+      color: '#f59e0b'
     },
     {
       path: '/learning/quiz',

@@ -370,28 +370,46 @@ const isDictionaryInitialized = async (): Promise<boolean> => {
 
 // Styled components
 const QuizContainer = styled(Box)(({ theme }) => ({
-  maxWidth: '800px',
+  maxWidth: '100%',
+  width: '100%',
   margin: '0 auto',
-  padding: theme.spacing(3),
-  display: 'flex',
-  flexDirection: 'column',
-  gap: theme.spacing(3),
-}));
-
-const QuestionCard = styled(Card)(({ theme }) => ({
-  padding: theme.spacing(3),
+  padding: theme.spacing(2),
+  [theme.breakpoints.up('sm')]: {
+    maxWidth: '800px',
+    padding: theme.spacing(3),
+  },
   display: 'flex',
   flexDirection: 'column',
   gap: theme.spacing(2),
+  [theme.breakpoints.up('sm')]: {
+    gap: theme.spacing(3),
+  },
+}));
+
+const QuestionCard = styled(Card)(({ theme }) => ({
+  padding: theme.spacing(2),
+  [theme.breakpoints.up('sm')]: {
+    padding: theme.spacing(3),
+  },
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(1.5),
+  [theme.breakpoints.up('sm')]: {
+    gap: theme.spacing(2),
+  },
   position: 'relative',
   overflow: 'visible',
 }));
 
 const AnswerButton = styled(Button)(({ theme }) => ({
-  padding: theme.spacing(2),
+  padding: theme.spacing(1.5),
+  [theme.breakpoints.up('sm')]: {
+    padding: theme.spacing(2),
+  },
   textAlign: 'left',
   justifyContent: 'flex-start',
   transition: 'all 0.2s ease-in-out',
+  width: '100%',
   '&:hover': {
     transform: 'translateY(-2px)',
     boxShadow: theme.shadows[2],

@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es2015",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -14,17 +18,31 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "downlevelIteration": true,
     "baseUrl": "src",
     "paths": {
-      "@/*": ["*"]
+      "@/*": [
+        "*"
+      ]
     },
-    "typeRoots": ["./node_modules/@types", "./src/types", "./src/utils"],
-    "types": ["node"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types",
+      "./src/utils"
+    ],
+    "types": [
+      "node"
+    ],
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "incremental": true
   },
-  "include": ["src/**/*", "src/**/*.d.ts"],
-  "exclude": ["node_modules"]
-} 
+  "include": [
+    "src/**/*",
+    "src/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

@@ -45,6 +45,7 @@ import { useTheme as useAppTheme } from '../context/ThemeContext';
 import { playAudio } from '../utils/audio';
 import { getDatabase, getAllFromStore } from '../utils/databaseConfig';
 import { JapVocDB } from '../types/database';
+import WordCard from '../components/WordCard';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -63,157 +64,6 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
     {value === index && children}
   </Box>
 );
-
-const WordCard: React.FC<{ 
-  word: DictionaryItem;
-  onMarkAsRead: (wordId: string) => void;
-  isRead: boolean;
-}> = ({ word, onMarkAsRead, isRead }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const theme = useTheme();
-
-  const handlePlayAudio = async () => {
-    try {
-      await playAudio(word.japanese);
-    } catch (error) {
-      console.error('Error playing audio:', error);
-    }
-  };
-
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    // TODO: Implement favorite functionality with backend
-  };
-
-  const handleMarkAsRead = () => {
-    onMarkAsRead(word.id);
-  };
-
-  return (
-    <Card 
-      elevation={2}
-      sx={{ 
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'transform 0.2s ease-in-out',
-        '&:hover': {
-          transform: 'translateY(-4px)'
-        },
-        position: 'relative',
-        ...(isRead && {
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '8px',
-            height: '100%',
-            backgroundColor: theme.palette.success.main,
-            borderTopRightRadius: '4px',
-            borderBottomRightRadius: '4px'
-          }
-        })
-      }}
-    >
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box>
-            <Typography variant="h5" component="div" gutterBottom>
-              {word.japanese}
-              {word.kanji && word.kanji !== word.japanese && (
-                <Typography 
-                  component="span" 
-                  variant="subtitle1" 
-                  color="text.secondary"
-                  sx={{ ml: 1 }}
-                >
-                  ({word.kanji})
-                </Typography>
-              )}
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-              {word.romaji}
-            </Typography>
-          </Box>
-          <Box>
-            <Tooltip title="Play pronunciation">
-              <IconButton onClick={handlePlayAudio} size="small">
-                <VolumeUpIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
-              <IconButton onClick={toggleFavorite} size="small">
-                {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={isRead ? "Mark as unread" : "Mark as read"}>
-              <IconButton 
-                onClick={handleMarkAsRead} 
-                size="small"
-                color={isRead ? "success" : "default"}
-              >
-                {isRead ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-
-        <Typography variant="body1" gutterBottom>
-          {word.english}
-        </Typography>
-
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-          <Chip 
-            icon={<CategoryIcon />} 
-            label={word.category} 
-            size="small" 
-            color="primary" 
-            variant="outlined" 
-          />
-          <Chip 
-            icon={<StarIcon />} 
-            label={word.difficulty} 
-            size="small" 
-            color="info" 
-            variant="outlined" 
-          />
-        </Stack>
-
-        {word.examples && word.examples.length > 0 && (
-          <Box>
-            <Button
-              endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              onClick={() => setIsExpanded(!isExpanded)}
-              size="small"
-              sx={{ mb: 1 }}
-            >
-              {isExpanded ? 'Hide Examples' : 'Show Examples'}
-            </Button>
-            <Collapse in={isExpanded}>
-              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
-                {word.examples.map((example, index) => (
-                  <Box key={index} sx={{ mb: index < word.examples.length - 1 ? 2 : 0 }}>
-                    <Typography variant="body2" gutterBottom>
-                      {example.japanese}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {example.romaji}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {example.english}
-                    </Typography>
-                  </Box>
-                ))}
-              </Paper>
-            </Collapse>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
 
 const Dictionary: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -234,9 +84,6 @@ const Dictionary: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-
-        // Force database reset if needed
-        await forceDatabaseReset();
         
         // Initialize database and import data if needed
         const isInitialized = await isDictionaryInitialized();
@@ -445,17 +292,16 @@ const Dictionary: React.FC = () => {
         <Typography variant="h6" gutterBottom>
           {filteredWords.length} words found
         </Typography>
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
           {filteredWords.map((word) => (
-            <Grid item xs={12} sm={6} md={4} key={word.id}>
-              <WordCard 
-                word={word} 
-                onMarkAsRead={handleMarkAsRead}
-                isRead={readWords.has(word.id)}
-              />
-            </Grid>
+            <WordCard
+              key={word.id}
+              word={word}
+              onMarkAsRead={handleMarkAsRead}
+              isRead={readWords.has(word.id)}
+            />
           ))}
-        </Grid>
+        </Box>
         {filteredWords.length === 0 && (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="body1" color="text.secondary">

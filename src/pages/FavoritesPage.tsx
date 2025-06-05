@@ -27,6 +27,8 @@ import {
 } from '@mui/icons-material';
 import { useProgress } from '../context/ProgressContext';
 import { SimpleDictionaryItem } from '../types/dictionary';
+import { useTheme as useAppTheme } from '../context/ThemeContext';
+import WordCard from '../components/WordCard';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -112,75 +114,9 @@ const FavoritesPage: React.FC = () => {
     console.log('Playing audio for:', word.japanese);
   };
 
-  const WordCard: React.FC<{ word: SimpleDictionaryItem }> = ({ word }) => (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Typography variant="h6" component="div">
-            {word.japanese}
-          </Typography>
-          <IconButton
-            onClick={() => toggleFavorite(word.id)}
-            color="primary"
-            size="small"
-          >
-            <StarIcon />
-          </IconButton>
-        </Box>
-        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-          {word.romaji}
-        </Typography>
-        <Typography variant="body1" paragraph>
-          {word.english}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
-          {word.level && (
-            <Chip
-              label={`Level: ${word.level}`}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          )}
-          {word.category && (
-            <Chip
-              label={word.category}
-              size="small"
-              color="secondary"
-              variant="outlined"
-            />
-          )}
-          {word.jlptLevel && (
-            <Chip
-              label={`JLPT ${word.jlptLevel}`}
-              size="small"
-              color="info"
-              variant="outlined"
-            />
-          )}
-        </Box>
-        {word.examples && word.examples.length > 0 && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Example:
-            </Typography>
-            <Typography variant="body2">
-              {word.examples[0].japanese} - {word.examples[0].english}
-            </Typography>
-          </Box>
-        )}
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-          <IconButton
-            onClick={() => playAudio(word)}
-            size="small"
-            color="primary"
-          >
-            <VolumeUpIcon />
-          </IconButton>
-        </Box>
-      </CardContent>
-    </Card>
-  );
+  const handleToggleFavorite = (word: SimpleDictionaryItem) => {
+    toggleFavorite(word.id);
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -241,54 +177,54 @@ const FavoritesPage: React.FC = () => {
       </Box>
 
       <TabPanel value={tabValue} index={0}>
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
           {sortedWords.map((word) => (
-            <Grid item xs={12} sm={6} md={4} key={word.id}>
-              <WordCard word={word} />
-            </Grid>
+            <WordCard
+              key={word.id}
+              word={word}
+              onMarkAsLearned={handleToggleFavorite}
+              isLearned={true}
+            />
           ))}
-          {sortedWords.length === 0 && (
-            <Grid item xs={12}>
-              <Typography variant="body1" color="text.secondary" align="center">
-                No favorited words found. Start adding some to your favorites!
-              </Typography>
-            </Grid>
-          )}
-        </Grid>
+        </Box>
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
           {sortedWords
             .sort((a, b) => (b.lastStudied || 0) - (a.lastStudied || 0))
             .slice(0, 12)
             .map((word) => (
-              <Grid item xs={12} sm={6} md={4} key={word.id}>
-                <WordCard word={word} />
-              </Grid>
+              <WordCard
+                key={word.id}
+                word={word}
+                onMarkAsLearned={handleToggleFavorite}
+                isLearned={true}
+              />
             ))}
-        </Grid>
+        </Box>
       </TabPanel>
 
       <TabPanel value={tabValue} index={2}>
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
           {['beginner', 'intermediate', 'advanced'].map((level) => (
             <React.Fragment key={level}>
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                  {level.charAt(0).toUpperCase() + level.slice(1)} Level
-                </Typography>
-              </Grid>
+              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                {level.charAt(0).toUpperCase() + level.slice(1)} Level
+              </Typography>
               {sortedWords
                 .filter((word) => word.level === level)
                 .map((word) => (
-                  <Grid item xs={12} sm={6} md={4} key={word.id}>
-                    <WordCard word={word} />
-                  </Grid>
+                  <WordCard
+                    key={word.id}
+                    word={word}
+                    onMarkAsLearned={handleToggleFavorite}
+                    isLearned={true}
+                  />
                 ))}
             </React.Fragment>
           ))}
-        </Grid>
+        </Box>
       </TabPanel>
     </Container>
   );

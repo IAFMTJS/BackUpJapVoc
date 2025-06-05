@@ -111,16 +111,21 @@ async function loadWordsFromJSON(): Promise<any[]> {
 }
 
 // Main import function
-export async function importWords(): Promise<{ success: boolean; error?: string }> {
+export async function importWords(db?: IDBPDatabase): Promise<{ success: boolean; error?: string }> {
   console.log('[ImportWords] Starting word import process');
   try {
-    // Get database instance
-    console.log('[ImportWords] Getting database instance');
-    const db = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+    // Get database instance if not provided
+    let database = db;
+    if (!database) {
+      console.log('[ImportWords] No database instance provided, creating new connection');
+      database = await openDB(DB_CONFIG.name, DB_CONFIG.version);
+    } else {
+      console.log('[ImportWords] Using provided database instance');
+    }
     
     // Check if words are already imported
     console.log('[ImportWords] Checking if words are already imported');
-    const tx = db.transaction('words', 'readonly');
+    const tx = database.transaction('words', 'readonly');
     const store = tx.objectStore('words');
     const count = await store.count();
     
@@ -130,26 +135,22 @@ export async function importWords(): Promise<{ success: boolean; error?: string 
     }
 
     // Load words from JSON
-    console.log('[ImportWords] Loading words from JSON');
-    const words = await loadWordsFromJSON();
-    console.log(`[ImportWords] Loaded ${words.length} words from JSON`);
-
-    // Import words in batches
-    const BATCH_SIZE = 100;
-    console.log(`[ImportWords] Starting batch import with size ${BATCH_SIZE}`);
-    
-    for (let i = 0; i < words.length; i += BATCH_SIZE) {
-      const batch = words.slice(i, i + BATCH_SIZE);
-      console.log(`[ImportWords] Importing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(words.length / BATCH_SIZE)}`);
-      
-      const batchTx = db.transaction('words', 'readwrite');
-      const batchStore = batchTx.objectStore('words');
-      
-      await Promise.all(batch.map(word => batchStore.add(word)));
-      await batchTx.done;
-      
-      console.log(`[ImportWords] Completed batch ${Math.floor(i / BATCH_SIZE) + 1}`);
+    console.log('[ImportWords] Loading words from JSON file...');
+    const response = await fetch('/data/dictionary_words.json');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch dictionary words: ${response.status} ${response.statusText}`);
     }
+    const words = await response.json();
+    console.log(`[ImportWords] Successfully loaded ${words.length} dictionary words`);
+
+    // Import words in a single transaction
+    console.log('[ImportWords] Starting word import...');
+    const importTx = database.transaction('words', 'readwrite');
+    const importStore = importTx.objectStore('words');
+    
+    // Use Promise.all for better performance
+    await Promise.all(words.map(word => importStore.add(word)));
+    await importTx.done;
 
     console.log('[ImportWords] Word import completed successfully');
     return { success: true };

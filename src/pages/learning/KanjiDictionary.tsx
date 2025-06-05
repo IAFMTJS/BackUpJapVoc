@@ -1,345 +1,401 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
+  Box,
   Container,
   Typography,
-  Box,
-  Tabs,
-  Tab,
-  Paper,
-  Button,
-  LinearProgress,
-  useTheme,
-  useMediaQuery,
+  TextField,
   Grid,
   Card,
   CardContent,
-  TextField,
-  InputAdornment,
+  Chip,
+  Stack,
   IconButton,
   Tooltip,
+  Paper,
+  Tabs,
+  Tab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Alert,
+  useTheme,
+  useMediaQuery,
+  Collapse,
+  Button,
+  LinearProgress,
+  Divider,
+  InputAdornment
 } from '@mui/material';
 import {
-  School as SchoolIcon,
-  Edit as EditIcon,
-  Quiz as QuizIcon,
-  MenuBook as MenuBookIcon,
   Search as SearchIcon,
-  VolumeUp as VolumeIcon,
+  FilterList as FilterListIcon,
+  VolumeUp as VolumeUpIcon,
+  Favorite as FavoriteIcon,
+  FavoriteBorder as FavoriteBorderIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  School as SchoolIcon,
+  Category as CategoryIcon,
+  Star as StarIcon,
+  CheckCircle as CheckCircleIcon,
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  Translate as TranslateIcon
 } from '@mui/icons-material';
-import { useProgress } from '../../context/ProgressContext';
-import { useLearning } from '../../context/LearningContext';
-import { useAudio } from '../../context/AudioContext';
-import KanjiPractice from '../../components/KanjiPractice';
-import KanjiQuiz from '../../components/KanjiQuiz';
-import { kanjiList } from '../../data/kanjiData';
+import { useTheme as useAppTheme } from '../../context/ThemeContext';
+import { playAudio } from '../../utils/audio';
+import { useKanjiDictionary } from '../../context/KanjiDictionaryContext';
+import KanjiPractice from '../../components/kanji/KanjiPractice';
+import KanjiQuiz from '../../components/kanji/KanjiQuiz';
 
-// Tab panel component
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`kanji-tabpanel-${index}`}
-      aria-labelledby={`kanji-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ py: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
-
-function a11yProps(index: number) {
-  return {
-    id: `kanji-tab-${index}`,
-    'aria-controls': `kanji-tabpanel-${index}`,
-  };
-}
-
-// Difficulty levels
-const DIFFICULTY_LEVELS = ['Beginner', 'Intermediate', 'Advanced'] as const;
-type DifficultyLevel = typeof DIFFICULTY_LEVELS[number];
-
-// Add this mapping above the KanjiDictionary component
-const DIFFICULTY_MAP = {
-  Beginner: 'easy',
-  Intermediate: 'medium',
-  Advanced: 'hard'
-};
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
+  <div role="tabpanel" hidden={value !== index} style={{ width: '100%' }}>
+    {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+  </div>
+);
 
 const KanjiDictionary: React.FC = () => {
+  const { kanji, isInitialized, isLoading, error } = useKanjiDictionary();
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState(0);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('Beginner');
-  const [searchQuery, setSearchQuery] = useState('');
-  const { progress } = useProgress();
-  const { updateProgress } = useLearning();
-  const { playAudio } = useAudio();
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedLevel, setSelectedLevel] = useState<string>('all');
+  const [readKanji, setReadKanji] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 50;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { getThemeClasses } = useAppTheme();
+  const themeClasses = getThemeClasses();
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
 
-  // Filter kanji based on search query
+  // Load read kanji from localStorage
+  useEffect(() => {
+    const savedReadKanji = localStorage.getItem('readKanji');
+    if (savedReadKanji) {
+      setReadKanji(new Set(JSON.parse(savedReadKanji)));
+    }
+  }, []);
+
+  // Filter kanji based on search, category, and level
   const filteredKanji = useMemo(() => {
-    if (!searchQuery.trim()) return kanjiList;
+    if (!isInitialized || isLoading) {
+      console.log('[Debug] Kanji dictionary not ready:', { isInitialized, isLoading });
+      return [];
+    }
     
-    const query = searchQuery.toLowerCase().trim();
-    return kanjiList.filter(kanji => 
-      kanji.character.includes(query) ||
-      kanji.english.toLowerCase().includes(query) ||
-      kanji.onyomi.some(reading => reading.includes(query)) ||
-      kanji.kunyomi.some(reading => reading.includes(query))
-    );
-  }, [searchQuery]);
+    console.log('[Debug] Total kanji:', kanji.length);
+    console.log('[Debug] Search term:', searchTerm);
+    console.log('[Debug] Selected category:', selectedCategory);
+    console.log('[Debug] Selected level:', selectedLevel);
+    
+    const filtered = kanji.filter(k => {
+      const matchesSearch = 
+        k.character.includes(searchTerm) ||
+        k.meanings.some(m => m.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        k.readings.on.some(r => r.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        k.readings.kun.some(r => r.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesCategory = selectedCategory === 'all' || k.category === selectedCategory;
+      const matchesLevel = selectedLevel === 'all' || k.jlpt?.toString() === selectedLevel.replace('N', '');
 
-  // Calculate progress
-  const calculateProgress = () => {
-    const totalKanji = kanjiList.length;
-    const masteredKanji = Object.entries(progress.words)
-      .filter(([key, value]) => 
-        key.startsWith('kanji-') && 
-        value.category === 'kanji' && 
-        value.masteryLevel >= 4 // Consider mastery level 4 or higher as mastered
-      )
-      .length;
-    return totalKanji > 0 ? (masteredKanji / totalKanji) * 100 : 0;
+      const matches = matchesSearch && matchesCategory && matchesLevel;
+      if (matches) {
+        console.log('[Debug] Matching kanji:', k);
+      }
+      return matches;
+    });
+
+    console.log('[Debug] Filtered kanji count:', filtered.length);
+    return filtered;
+  }, [kanji, searchTerm, selectedCategory, selectedLevel, isInitialized, isLoading]);
+
+  // Get paginated kanji
+  const paginatedKanji = useMemo(() => {
+    const start = 0;
+    const end = page * ITEMS_PER_PAGE;
+    const kanjiList = filteredKanji.slice(start, end);
+    setHasMore(end < filteredKanji.length);
+    console.log('[Debug] Paginated kanji:', kanjiList.length);
+    return kanjiList;
+  }, [filteredKanji, page]);
+
+  // Handle infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true);
+          setPage(prev => prev + 1);
+          setIsLoadingMore(false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore]);
+
+  const handleMarkAsRead = (kanjiId: string) => {
+    setReadKanji(prev => {
+      const newReadKanji = new Set(prev);
+      if (newReadKanji.has(kanjiId)) {
+        newReadKanji.delete(kanjiId);
+      } else {
+        newReadKanji.add(kanjiId);
+      }
+      localStorage.setItem('readKanji', JSON.stringify(Array.from(newReadKanji)));
+      return newReadKanji;
+    });
   };
+
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set(kanji.map(k => k.category));
+    return Array.from(uniqueCategories).sort();
+  }, [kanji]);
+
+  const levels = useMemo(() => {
+    const uniqueLevels = new Set(kanji.map(k => k.jlpt));
+    return Array.from(uniqueLevels).sort((a, b) => (a || 0) - (b || 0));
+  }, [kanji]);
+
+  const progress = useMemo(() => {
+    if (kanji.length === 0) return 0;
+    return (readKanji.size / kanji.length) * 100;
+  }, [kanji.length, readKanji.size]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
   };
 
-  const handleDifficultyChange = (difficulty: DifficultyLevel) => {
-    setSelectedDifficulty(difficulty);
-  };
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-  };
-
-  const playKanjiReading = (reading: string) => {
-    if (reading) {
-      playAudio(reading);
-    }
-  };
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ m: 2 }}>
+        {error}
+      </Alert>
+    );
+  }
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Kanji Dictionary
-        </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph>
-          Master kanji through interactive lessons, practice, and quizzes. Learn meanings, readings, and usage.
-        </Typography>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Kanji Dictionary
+      </Typography>
 
-        {/* Search Input */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={selectedTab} onChange={handleTabChange} aria-label="kanji learning tabs">
+          <Tab label="Dictionary" />
+          <Tab label="Practice" />
+          <Tab label="Quiz" />
+        </Tabs>
+      </Box>
+
+      <TabPanel value={selectedTab} index={0}>
+        {/* Existing dictionary content */}
         <Box sx={{ mb: 3 }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search kanji by character, meaning, or reading..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
+        <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6} md={4}>
+            <TextField
+              fullWidth
+                label="Search Kanji"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+              }}
+            />
+          </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  label="Category"
+                >
+                  <MenuItem value="all">All Categories</MenuItem>
+                  {categories.map((category) => (
+                    <MenuItem key={category} value={category}>
+                      {category}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>JLPT Level</InputLabel>
+                <Select
+                  value={selectedLevel}
+                  onChange={(e) => setSelectedLevel(e.target.value)}
+                  label="JLPT Level"
+                >
+                  <MenuItem value="all">All Levels</MenuItem>
+                  {levels.map((level) => (
+                    <MenuItem key={level} value={`N${level}`}>
+                      N{level}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
         </Box>
 
-        {/* Progress Section */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12}>
-            <Card>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Progress: {Math.round(progress)}%
+        </Typography>
+          <LinearProgress 
+            variant="determinate" 
+            value={progress} 
+            sx={{ height: 8, borderRadius: 4 }}
+          />
+      </Box>
+
+        <Grid container spacing={2}>
+          {paginatedKanji.map((k) => (
+            <Grid item xs={12} sm={6} md={4} key={k.character}>
+              <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <MenuBookIcon sx={{ mr: 1 }} />
-                  <Typography variant="h6">Overall Progress</Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={calculateProgress()} 
-                  sx={{ height: 10, borderRadius: 5 }}
-                />
-                <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {Math.round(calculateProgress())}% Complete
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Typography variant="h4" component="div" sx={{ fontFamily: 'Noto Sans JP, sans-serif' }}>
+                    {k.character}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {Object.entries(progress.words)
-                      .filter(([key, value]) => 
-                        key.startsWith('kanji-') && 
-                        value.category === 'kanji' && 
-                        value.masteryLevel >= 4
-                      ).length} / {kanjiList.length} Kanji Mastered
-                  </Typography>
+                  <IconButton
+                      onClick={() => handleMarkAsRead(k.character)}
+                      color={readKanji.has(k.character) ? 'primary' : 'default'}
+                  >
+                      {readKanji.has(k.character) ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
+                  </IconButton>
                 </Box>
+                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                  {k.meanings.join(', ')}
+                  </Typography>
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      On: {k.readings.on.join(', ')}
+                      {k.readings.on.map((reading, index) => (
+                        <Tooltip key={`on-${index}`} title={`Play ${reading}`}>
+                          <IconButton 
+                            size="small"
+                            onClick={() => playAudio(reading)}
+                            sx={{ ml: 0.5 }}
+                          >
+                            <VolumeUpIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      ))}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Kun: {k.readings.kun.join(', ')}
+                      {k.readings.kun.map((reading, index) => (
+                        <Tooltip key={`kun-${index}`} title={`Play ${reading}`}>
+                          <IconButton 
+                            size="small"
+                            onClick={() => playAudio(reading)}
+                            sx={{ ml: 0.5 }}
+                          >
+                            <VolumeUpIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      ))}
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {k.jlpt && (
+                      <Chip
+                        icon={<SchoolIcon />}
+                        label={`N${k.jlpt}`}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                    )}
+                    {k.category && (
+                      <Chip
+                        icon={<CategoryIcon />}
+                        label={k.category}
+                        size="small"
+                        color="secondary"
+                        variant="outlined"
+                      />
+                    )}
+                  </Stack>
               </CardContent>
             </Card>
-          </Grid>
+            </Grid>
+          ))}
         </Grid>
 
-        {/* Main Content Tabs */}
-        <Paper sx={{ width: '100%' }}>
-          <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            variant={isMobile ? 'fullWidth' : 'standard'}
-            centered={!isMobile}
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
-          >
-            <Tab icon={<SchoolIcon />} label="Learn" {...a11yProps(0)} />
-            <Tab icon={<EditIcon />} label="Practice" {...a11yProps(1)} />
-            <Tab icon={<QuizIcon />} label="Quiz" {...a11yProps(2)} />
-          </Tabs>
+        {hasMore && (
+          <Box ref={observerTarget} sx={{ height: 20, mt: 2 }}>
+            {isLoadingMore && <CircularProgress size={20} />}
+        </Box>
+        )}
+      </TabPanel>
 
-          {/* Learn Tab */}
-          <TabPanel value={selectedTab} index={0}>
-            <Box sx={{ p: 3 }}>
-              {filteredKanji.length === 0 ? (
-                <Typography variant="body1" color="text.secondary" align="center">
-                  No kanji found matching your search.
-                </Typography>
-              ) : (
-                <Grid container spacing={2}>
-                  {filteredKanji.map((kanji, index) => (
-                    <Grid item xs={6} sm={4} md={3} lg={2} key={`${kanji.character}-${index}`}>
-                      <Card>
-                        <CardContent>
-                          <Typography variant="h4" component="div" align="center" sx={{ mb: 1 }}>
-                            {kanji.character}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" align="center">
-                            {kanji.english}
-                          </Typography>
-                          <Box sx={{ mt: 1 }}>
-                            {kanji.onyomi.length > 0 && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mb: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">
-                                  On: {kanji.onyomi.join(', ')}
-                                </Typography>
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  {kanji.onyomi.map((reading, index) => (
-                                    <Tooltip key={`onyomi-${index}`} title={`Play ${reading}`}>
-                                      <IconButton 
-                                        size="small" 
-                                        onClick={() => playKanjiReading(reading)}
-                                        sx={{ p: 0.5 }}
-                                      >
-                                        <VolumeIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  ))}
-                                </Box>
-                              </Box>
-                            )}
-                            {kanji.kunyomi.length > 0 && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Kun: {kanji.kunyomi.join(', ')}
-                                </Typography>
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  {kanji.kunyomi.map((reading, index) => (
-                                    <Tooltip key={`kunyomi-${index}`} title={`Play ${reading}`}>
-                                      <IconButton 
-                                        size="small" 
-                                        onClick={() => playKanjiReading(reading)}
-                                        sx={{ p: 0.5 }}
-                                      >
-                                        <VolumeIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  ))}
-                                </Box>
-                              </Box>
-                            )}
-                          </Box>
-                          {kanji.examples && kanji.examples.length > 0 && (
-                            <Box sx={{ mt: 1 }}>
-                              {kanji.examples.map((example, index) => (
-                                <Box key={`example-${index}`} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {example.word} - {example.meaning}
-                                  </Typography>
-                                  <Tooltip title={`Play ${example.word}`}>
-                                    <IconButton 
-                                      size="small" 
-                                      onClick={() => playKanjiReading(example.word)}
-                                      sx={{ p: 0.5 }}
-                                    >
-                                      <VolumeIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                </Box>
-                              ))}
-                            </Box>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              )}
-            </Box>
-          </TabPanel>
+      <TabPanel value={selectedTab} index={1}>
+        <Box sx={{ mb: 3 }}>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Difficulty</InputLabel>
+            <Select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value as 'beginner' | 'intermediate' | 'advanced')}
+              label="Difficulty"
+            >
+              <MenuItem value="beginner">Beginner (N5)</MenuItem>
+              <MenuItem value="intermediate">Intermediate (N4-N3)</MenuItem>
+              <MenuItem value="advanced">Advanced (N2-N1)</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        <KanjiPractice difficulty={selectedDifficulty} />
+      </TabPanel>
 
-          {/* Practice Tab */}
-          <TabPanel value={selectedTab} index={1}>
-            {filteredKanji.length === 0 ? (
-              <Typography variant="body1" color="text.secondary" align="center">
-                No kanji found matching your search.
-              </Typography>
-            ) : (
-              <KanjiPractice kanji={filteredKanji} />
-            )}
-          </TabPanel>
-
-          {/* Quiz Tab */}
-          <TabPanel value={selectedTab} index={2}>
-            {filteredKanji.length === 0 ? (
-              <Typography variant="body1" color="text.secondary" align="center">
-                No kanji found matching your search.
-              </Typography>
-            ) : (
-              <>
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Select Difficulty
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {DIFFICULTY_LEVELS.map((level) => (
-                      <Button
-                        key={level}
-                        variant={selectedDifficulty === level ? 'contained' : 'outlined'}
-                        onClick={() => handleDifficultyChange(level)}
-                      >
-                        {level}
-                      </Button>
-                    ))}
-                  </Box>
-                </Box>
-                <KanjiQuiz 
-                  kanji={filteredKanji} 
-                  difficulty={DIFFICULTY_MAP[selectedDifficulty]} 
-                />
-              </>
-            )}
-          </TabPanel>
-        </Paper>
+      <TabPanel value={selectedTab} index={2}>
+        <Box sx={{ mb: 3 }}>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Difficulty</InputLabel>
+            <Select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value as 'beginner' | 'intermediate' | 'advanced')}
+              label="Difficulty"
+            >
+              <MenuItem value="beginner">Beginner (N5)</MenuItem>
+              <MenuItem value="intermediate">Intermediate (N4-N3)</MenuItem>
+              <MenuItem value="advanced">Advanced (N2-N1)</MenuItem>
+            </Select>
+          </FormControl>
       </Box>
+        <KanjiQuiz difficulty={selectedDifficulty} />
+      </TabPanel>
     </Container>
   );
 };

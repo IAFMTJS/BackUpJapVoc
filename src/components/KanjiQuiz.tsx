@@ -901,7 +901,7 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
           </Paper>
         )}
 
-        <Grid container spacing={2} sx={{ width: '100%', maxWidth: 600 }}>
+        <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ width: '100%', maxWidth: { xs: '100%', sm: 600 } }}>
           {quizState.options.map((option, index) => (
             <Grid item xs={12} sm={6} key={index}>
               <Button
@@ -910,10 +910,12 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
                 onClick={() => handleAnswer(option)}
                 disabled={quizState.selectedAnswer !== null}
                 sx={{
-                  height: 60,
+                  height: { xs: 48, sm: 60 },
                   fontFamily: 'Noto Sans JP',
-                  fontSize: '1.2rem',
-                  position: 'relative'
+                  fontSize: { xs: '1rem', sm: '1.2rem' },
+                  position: 'relative',
+                  py: { xs: 1, sm: 2 },
+                  px: { xs: 1, sm: 2 }
                 }}
               >
                 {option}
@@ -921,7 +923,7 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
                   <Box
                     sx={{
                       position: 'absolute',
-                      right: 8,
+                      right: { xs: 4, sm: 8 },
                       color: option === quizState.correctAnswer ? 'success.main' : 'error.main'
                     }}
                   >
@@ -938,12 +940,13 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
             variant="text"
             onClick={() => {
               setHintUsed(true);
-              // Play audio for the word if it's a reading question
               if (quizState.correctAnswer.includes('[')) {
                 playAudio(quizState.correctAnswer);
               }
             }}
             startIcon={<Help />}
+            size="small"
+            sx={{ mt: { xs: 1, sm: 2 }, fontSize: { xs: '0.875rem', sm: '1rem' } }}
           >
             Need a hint?
           </Button>
@@ -1003,45 +1006,10 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
   };
 
   const renderQuestion = (mode: 'meaning' | 'reading') => {
-    if (!quizState.currentQuestion) {
-      return <Typography color="text.secondary">No question available.</Typography>;
-    }
-    if (questionType === 'multiple-choice' && (!quizState.options || quizState.options.length === 0)) {
-      return <Typography color="text.secondary">No answer options available.</Typography>;
-    }
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-        <Typography variant="h4" sx={{ fontFamily: 'Noto Sans JP' }}>
-          {quizState.currentQuestion}
-        </Typography>
-
-        {quizState.context && (
-          <Paper sx={{ p: 2, width: '100%', maxWidth: 600, bgcolor: 'background.paper' }}>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-              Context:
-            </Typography>
-            <Typography 
-              variant="body1" 
-              sx={{ 
-                fontFamily: 'Noto Sans JP',
-                opacity: showContext ? 1 : 0.3,
-                transition: 'opacity 0.3s ease'
-              }}
-            >
-              {quizState.context}
-            </Typography>
-            <Button
-              size="small"
-              onClick={() => setShowContext(!showContext)}
-              sx={{ mt: 1 }}
-            >
-              {showContext ? 'Hide Context' : 'Show Context'}
-            </Button>
-          </Paper>
-        )}
-
+      <Box sx={{ width: '100%', maxWidth: { xs: '100%', sm: 600 }, mx: 'auto' }}>
         {questionType === 'multiple-choice' && (
-          <Grid container spacing={2} sx={{ width: '100%', maxWidth: 600 }}>
+          <Grid container spacing={{ xs: 1, sm: 2 }}>
             {quizState.options?.map((option, index) => (
               <Grid item xs={12} sm={6} key={index}>
                 <Button
@@ -1050,10 +1018,12 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
                   onClick={() => handleAnswer(option)}
                   disabled={quizState.selectedAnswer !== null}
                   sx={{
-                    height: 60,
+                    height: { xs: 48, sm: 60 },
                     fontFamily: mode === 'reading' ? 'Noto Sans JP' : 'inherit',
-                    fontSize: '1.2rem',
-                    position: 'relative'
+                    fontSize: { xs: '1rem', sm: '1.2rem' },
+                    position: 'relative',
+                    py: { xs: 1, sm: 2 },
+                    px: { xs: 1, sm: 2 }
                   }}
                 >
                   {option}
@@ -1061,7 +1031,7 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
                     <Box
                       sx={{
                         position: 'absolute',
-                        right: 8,
+                        right: { xs: 4, sm: 8 },
                         color: option === quizState.correctAnswer ? 'success.main' : 'error.main'
                       }}
                     >
@@ -1072,116 +1042,6 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
               </Grid>
             ))}
           </Grid>
-        )}
-
-        {questionType === 'fill-in-blank' && (
-          <Box sx={{ width: '100%', maxWidth: 600 }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              value={quizState.userInput}
-              onChange={(e) => setQuizState(prev => ({ ...prev, userInput: e.target.value }))}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleAnswer(quizState.userInput);
-                }
-              }}
-              disabled={quizState.selectedAnswer !== null}
-              sx={{ mb: 2 }}
-            />
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={() => handleAnswer(quizState.userInput)}
-              disabled={!quizState.userInput || quizState.selectedAnswer !== null}
-            >
-              Submit
-            </Button>
-          </Box>
-        )}
-
-        {questionType === 'matching' && (
-          <Box sx={{ width: '100%', maxWidth: 600 }}>
-            <List>
-              {quizState.options?.map((option, index) => (
-                <ListItem key={index}>
-                  <ListItemText primary={option} />
-                </ListItem>
-              ))}
-            </List>
-            <TextField
-              fullWidth
-              variant="outlined"
-              value={quizState.userInput}
-              onChange={(e) => setQuizState(prev => ({ ...prev, userInput: e.target.value }))}
-              placeholder="Enter your matches (e.g., '1-2, 3-4')"
-              disabled={quizState.selectedAnswer !== null}
-              sx={{ mb: 2 }}
-            />
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={() => handleAnswer(quizState.userInput)}
-              disabled={!quizState.userInput || quizState.selectedAnswer !== null}
-            >
-              Submit
-            </Button>
-          </Box>
-        )}
-
-        {quizState.hint && !hintUsed && (
-          <Button
-            variant="text"
-            onClick={() => {
-              setHintUsed(true);
-              if (mode === 'reading' && currentKanji?.audioUrl) {
-                playAudio(currentKanji.audioUrl);
-              }
-            }}
-            startIcon={<Help />}
-          >
-            Need a hint?
-          </Button>
-        )}
-
-        {hintUsed && quizState.hint && (
-          <Paper sx={{ p: 2, width: '100%', maxWidth: 600, bgcolor: 'background.paper' }}>
-            <Typography variant="body1" color="text.secondary">
-              {quizState.hint}
-            </Typography>
-            {mode === 'reading' && currentKanji?.audioUrl && (
-              <IconButton
-                onClick={() => playAudio(currentKanji.audioUrl)}
-                sx={{ mt: 1 }}
-              >
-                <VolumeUp />
-              </IconButton>
-            )}
-          </Paper>
-        )}
-
-        {quizState.selectedAnswer && (
-          <Paper
-            sx={{
-              p: 2,
-              width: '100%',
-              maxWidth: 600,
-              bgcolor: quizState.selectedAnswer === quizState.correctAnswer
-                ? 'success.light'
-                : 'error.light'
-            }}
-          >
-            <Typography variant="body1" color="text.primary">
-              {quizState.selectedAnswer === quizState.correctAnswer
-                ? 'Correct!'
-                : `Incorrect. The correct answer is: ${quizState.correctAnswer}`}
-            </Typography>
-            {quizState.selectedAnswer === quizState.correctAnswer && quizState.context && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                {quizState.context}
-              </Typography>
-            )}
-          </Paper>
         )}
       </Box>
     );

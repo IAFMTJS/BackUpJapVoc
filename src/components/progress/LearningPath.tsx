@@ -43,13 +43,23 @@ const LearningPath: React.FC = () => {
     const masteredWords = Object.values(words).filter((word: any) => word.mastery >= 0.8).length;
     const learningWords = Object.values(words).filter((word: any) => word.mastery > 0 && word.mastery < 0.8).length;
     
+    // Calculate kana mastery
+    const kanaWords = Object.entries(words).filter(([_, word]: [string, any]) => 
+      word.category === 'hiragana' || word.category === 'katakana'
+    );
+    const totalKana = kanaWords.length;
+    const masteredKana = kanaWords.filter(([_, word]: [string, any]) => 
+      word.consecutiveCorrect >= 2 && word.masteryLevel >= 4
+    ).length;
+    const kanaProgress = totalKana > 0 ? (masteredKana / totalKana) * 100 : 0;
+    
     // Define detailed learning stages with their prerequisites
     const stages = {
-      // Kana Mastery (New)
+      // Kana Mastery (Updated)
       kanaMastery: {
         threshold: 0,
         title: 'Kana Mastery',
-        description: 'Master both hiragana and katakana before proceeding to vocabulary. Each kana must be answered correctly twice in a row to be considered mastered.',
+        description: `Master both hiragana and katakana before proceeding to vocabulary. Progress: ${Math.round(kanaProgress)}% complete.`,
         prerequisite: null,
         learningGoals: [
           'Master all hiragana characters',
@@ -59,7 +69,7 @@ const LearningPath: React.FC = () => {
         ],
         successMetrics: {
           masteryThreshold: 1.0, // 100% mastery required
-          requiredWords: 0,
+          requiredWords: totalKana,
           requiredKanji: 0,
           requiredGrammar: [],
           assessmentCriteria: [
@@ -615,47 +625,78 @@ const LearningPath: React.FC = () => {
     const allMilestones: LearningMilestone[] = [];
 
     // Add kana mastery milestone first
-    const kanaWords = Object.entries(words).filter(([_, word]: [string, any]) => 
-      word.category === 'hiragana' || word.category === 'katakana'
-    );
-    const totalKana = kanaWords.length;
-    const masteredKana = kanaWords.filter(([_, word]: [string, any]) => 
-      word.masteryLevel >= 5 && word.consecutiveCorrect >= 2
-    ).length;
-
     allMilestones.push({
       id: 'kana-mastery',
       title: 'Kana Mastery',
       description: (
         <Box>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Master both hiragana and katakana before proceeding to vocabulary. Each kana must be answered correctly twice in a row to be considered mastered.
+            Master both hiragana and katakana before proceeding to vocabulary.
           </Typography>
           <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Progress:
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Hiragana: {kanaWords.filter(([_, word]: [string, any]) => 
-                word.category === 'hiragana' && word.masteryLevel >= 5 && word.consecutiveCorrect >= 2
-              ).length} / {kanaWords.filter(([_, word]: [string, any]) => 
-                word.category === 'hiragana'
-              ).length} mastered
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Katakana: {kanaWords.filter(([_, word]: [string, any]) => 
-                word.category === 'katakana' && word.masteryLevel >= 5 && word.consecutiveCorrect >= 2
-              ).length} / {kanaWords.filter(([_, word]: [string, any]) => 
-                word.category === 'katakana'
-              ).length} mastered
-            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Overall Progress
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h6" color="primary.main" sx={{ fontWeight: 'bold' }}>
+                      {masteredKana}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      / {totalKana} kana mastered
+                    </Typography>
+                  </Box>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={kanaProgress}
+                    sx={{ mt: 0.5, height: 6, borderRadius: 3 }}
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Hiragana Progress
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h6" color="info.main" sx={{ fontWeight: 'bold' }}>
+                      {kanaWords.filter(([_, word]: [string, any]) => 
+                        word.category === 'hiragana' && word.consecutiveCorrect >= 2 && word.masteryLevel >= 4
+                      ).length}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      / {kanaWords.filter(([_, word]: [string, any]) => word.category === 'hiragana').length} mastered
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Katakana Progress
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h6" color="info.main" sx={{ fontWeight: 'bold' }}>
+                      {kanaWords.filter(([_, word]: [string, any]) => 
+                        word.category === 'katakana' && word.consecutiveCorrect >= 2 && word.masteryLevel >= 4
+                      ).length}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      / {kanaWords.filter(([_, word]: [string, any]) => word.category === 'katakana').length} mastered
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
           </Box>
         </Box>
       ),
       date: new Date(),
       type: 'milestone',
       status: masteredKana === totalKana ? 'completed' : 'in-progress',
-      progress: totalKana > 0 ? (masteredKana / totalKana) * 100 : 0,
+      progress: kanaProgress,
       icon: <SchoolIcon />
     });
 

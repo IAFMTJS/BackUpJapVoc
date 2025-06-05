@@ -600,8 +600,15 @@ const QuizPage: React.FC = () => {
                 </Box>
 
                 {/* Quiz Mode and Difficulty */}
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <FormControl sx={{ minWidth: 200 }}>
+                <Box 
+                  display="flex" 
+                  flexDirection={{ xs: 'column', sm: 'row' }}
+                  gap={2}
+                  justifyContent="space-between" 
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  mb={2}
+                >
+                  <FormControl fullWidth sx={{ minWidth: { xs: '100%', sm: 200 } }}>
                     <FormLabel>Quiz Mode</FormLabel>
                     <Select
                       value={quizState.mode}
@@ -611,6 +618,7 @@ const QuizPage: React.FC = () => {
                           setQuizState(prev => ({ ...prev, mode: newMode }));
                         }
                       }}
+                      size="small"
                     >
                       {QUIZ_MODES.map(mode => (
                         <MenuItem 
@@ -624,11 +632,12 @@ const QuizPage: React.FC = () => {
                       ))}
                     </Select>
                   </FormControl>
-                  <FormControl sx={{ minWidth: 200 }}>
+                  <FormControl fullWidth sx={{ minWidth: { xs: '100%', sm: 200 } }}>
                     <FormLabel>Difficulty</FormLabel>
                     <Select
                       value={difficulty}
                       onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+                      size="small"
                     >
                       {DIFFICULTY_LEVELS.map(level => (
                         <MenuItem key={level.value} value={level.value}>
@@ -640,29 +649,38 @@ const QuizPage: React.FC = () => {
                 </Box>
 
                 {/* Romaji toggles */}
-                <FormGroup row sx={{ mb: 2 }}>
+                <FormGroup row sx={{ flexWrap: { xs: 'wrap', sm: 'nowrap' }, gap: 1, mb: 2 }}>
                   <FormControlLabel
                     control={<Switch checked={showRomajiQuestion} onChange={() => setShowRomajiQuestion(v => !v)} />}
                     label="Show Romaji for Question"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
                   />
                   <FormControlLabel
                     control={<Switch checked={showRomajiAnswers} onChange={() => setShowRomajiAnswers(v => !v)} />}
                     label="Show Romaji for Answers"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
                   />
                 </FormGroup>
 
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="h6">
+                <Box 
+                  display="flex" 
+                  flexDirection={{ xs: 'column', sm: 'row' }}
+                  gap={1}
+                  justifyContent="space-between" 
+                  alignItems={{ xs: 'flex-start', sm: 'center' }} 
+                  mb={2}
+                >
+                  <Typography variant="subtitle1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                     Question {quizState.currentQuestion + 1} of {quizState.totalQuestions}
                   </Typography>
-                  <Typography variant="h6">
+                  <Typography variant="subtitle1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                     Score: {quizState.score}
                   </Typography>
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
 
-                <Box textAlign="center" my={4}>
+                <Box textAlign="center" my={{ xs: 2, sm: 4 }}>
                   {renderQuestion()}
                 </Box>
 

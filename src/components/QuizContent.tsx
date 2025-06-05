@@ -54,7 +54,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="max-w-2xl mx-auto p-6"
+      className="w-full max-w-full px-2 sm:px-4 py-2 sm:py-4"
     >
       {/* ... existing renderQuizSetup content ... */}
     </motion.div>
@@ -67,7 +67,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        className="max-w-2xl mx-auto p-6"
+        className="w-full max-w-full px-2 sm:px-4 py-2 sm:py-4"
       >
         {/* ... existing renderLearnMode content ... */}
       </motion.div>
@@ -81,7 +81,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        className="max-w-2xl mx-auto p-6"
+        className="w-full max-w-full px-2 sm:px-4 py-2 sm:py-4"
       >
         {/* ... existing renderPronunciationPractice content ... */}
       </motion.div>
@@ -95,7 +95,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        className="max-w-2xl mx-auto p-6"
+        className="w-full max-w-full px-2 sm:px-4 py-2 sm:py-4"
       >
         {/* ... existing renderComparisonMode content ... */}
       </motion.div>
@@ -109,7 +109,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        className="max-w-2xl mx-auto p-6"
+        className="w-full max-w-full px-2 sm:px-4 py-2 sm:py-4"
       >
         {/* ... existing renderQuizContent content ... */}
       </motion.div>
@@ -122,7 +122,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        className="max-w-2xl mx-auto p-6"
+        className="w-full max-w-full px-2 sm:px-4 py-2 sm:py-4"
       >
         {/* ... existing renderResult content ... */}
       </motion.div>

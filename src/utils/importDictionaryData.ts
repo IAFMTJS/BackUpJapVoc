@@ -165,130 +165,177 @@ function generateFrequencyData(words: DictionaryItem[]): WordFrequency[] {
 }
 
 // Add database version constant
-const DB_VERSION = 5; // Match version with databaseConfig.ts
+const DB_VERSION = 8; // Match version with databaseConfig.ts
 const DB_NAME = 'JapVocDB'; // Match name with databaseConfig.ts
 
-// Update the import function to handle async conversion
-export async function importDictionaryData(): Promise<{ success: boolean; count?: number; error?: string }> {
+// Add batch processing helper
+async function processBatch<T, R>(
+  items: T[],
+  processFn: (item: T) => Promise<R>,
+  batchSize: number = 50,
+  storeName: string = 'unknown'
+): Promise<R[]> {
+  const results: R[] = [];
+  const totalBatches = Math.ceil(items.length / batchSize);
+  
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchNum = Math.floor(i / batchSize) + 1;
+    console.log(`[Dictionary] Processing ${storeName} batch ${batchNum}/${totalBatches} (${batch.length} items)`);
+    
+    try {
+      const batchResults = await Promise.all(batch.map(processFn));
+      results.push(...batchResults);
+      console.log(`[Dictionary] Successfully processed ${storeName} batch ${batchNum}/${totalBatches}`);
+    } catch (error) {
+      console.error(`[Dictionary] Error processing ${storeName} batch ${batchNum}/${totalBatches}:`, error);
+      throw error; // Re-throw to handle in the main function
+    }
+  }
+  return results;
+}
+
+// Update the import function to handle parallel loading and batch processing
+export async function importDictionaryData(db?: IDBPDatabase): Promise<{ success: boolean; count?: number; error?: string }> {
+  let database: IDBPDatabase | undefined;
+  
   try {
     console.log('[Dictionary] Starting dictionary data import process...');
     
-    // Load the audio map first
-    console.log('[Dictionary] Loading audio map...');
-    await loadAudioMap();
-    console.log('[Dictionary] Audio map loaded successfully');
-    
-    console.log('[Dictionary] Starting dictionary data import...');
+    // Start loading audio map and get database in parallel
+    console.log('[Dictionary] Starting parallel operations...');
+    const [audioMapPromise, dbConnection] = await Promise.all([
+      (async () => {
+        console.log('[Dictionary] Starting audio map loading...');
+        try {
+          await loadAudioMap();
+          console.log('[Dictionary] Audio map loaded successfully');
+        } catch (error) {
+          console.error('[Dictionary] Failed to load audio map:', error);
+          throw error;
+        }
+      })(),
+      (async () => {
+        if (db) {
+          console.log('[Dictionary] Using provided database instance');
+          return db;
+        }
+        console.log('[Dictionary] Opening new database connection...');
+        try {
+          const newDb = await openDB(DB_NAME, DB_VERSION, {
+            upgrade(db, oldVersion, newVersion) {
+              console.log(`[Dictionary] Upgrading database from version ${oldVersion} to ${newVersion}`);
+              // Create stores if they don't exist
+              if (!db.objectStoreNames.contains('words')) {
+                console.log('[Dictionary] Creating words store');
+                db.createObjectStore('words', { keyPath: 'id' });
+              }
+              if (!db.objectStoreNames.contains('wordRelationships')) {
+                console.log('[Dictionary] Creating wordRelationships store');
+                db.createObjectStore('wordRelationships', { keyPath: 'id' });
+              }
+              if (!db.objectStoreNames.contains('wordEtymology')) {
+                console.log('[Dictionary] Creating wordEtymology store');
+                db.createObjectStore('wordEtymology', { keyPath: 'id' });
+              }
+              if (!db.objectStoreNames.contains('wordFrequency')) {
+                console.log('[Dictionary] Creating wordFrequency store');
+                db.createObjectStore('wordFrequency', { keyPath: 'id' });
+              }
+            },
+            blocked() {
+              console.warn('[Dictionary] Database upgrade blocked by another connection');
+            },
+            blocking() {
+              console.warn('[Dictionary] Database upgrade blocking other connections');
+            },
+            terminated() {
+              console.warn('[Dictionary] Database connection terminated');
+            }
+          });
+          console.log('[Dictionary] Database connection established successfully');
+          return newDb;
+        } catch (error) {
+          console.error('[Dictionary] Failed to open database:', error);
+          throw error;
+        }
+      })()
+    ]);
 
-    // Open database with upgrade handler
-    console.log('[Dictionary] Opening database...');
-    const db = await openDB(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion, newVersion) {
-        console.log(`[Dictionary] Upgrading database from version ${oldVersion} to ${newVersion}`);
-        
-        // Create stores if they don't exist
-        if (!db.objectStoreNames.contains('words')) {
-          console.log('[Dictionary] Creating words store');
-          const wordStore = db.createObjectStore('words', { keyPath: 'id' });
-          wordStore.createIndex('by-japanese', 'japanese');
-          wordStore.createIndex('by-english', 'english');
-          wordStore.createIndex('by-romaji', 'romaji');
-          wordStore.createIndex('by-level', 'level');
-          wordStore.createIndex('by-category', 'category');
-          wordStore.createIndex('by-jlpt', 'jlptLevel');
-          wordStore.createIndex('by-frequency', 'frequency.rank');
-          wordStore.createIndex('by-mastery', 'mastery.level');
-          wordStore.createIndex('by-last-viewed', 'lastViewed');
-          wordStore.createIndex('by-emotional-context', 'emotionalContext.category');
-        }
-        
-        if (!db.objectStoreNames.contains('wordRelationships')) {
-          console.log('[Dictionary] Creating wordRelationships store');
-          const relStore = db.createObjectStore('wordRelationships', { keyPath: 'id' });
-          relStore.createIndex('by-word', 'wordId');
-          relStore.createIndex('by-type', 'type');
-        }
-        
-        if (!db.objectStoreNames.contains('wordEtymology')) {
-          console.log('[Dictionary] Creating wordEtymology store');
-          const etymStore = db.createObjectStore('wordEtymology', { keyPath: 'id' });
-          etymStore.createIndex('by-word', 'wordId');
-        }
-        
-        if (!db.objectStoreNames.contains('wordFrequency')) {
-          console.log('[Dictionary] Creating wordFrequency store');
-          const freqStore = db.createObjectStore('wordFrequency', { keyPath: 'id' });
-          freqStore.createIndex('by-word', 'wordId');
-          freqStore.createIndex('by-rank', 'rank');
-        }
-      },
-      blocked() {
-        console.log('[Dictionary] Database upgrade blocked');
-      },
-      blocking() {
-        console.log('[Dictionary] Database upgrade blocking');
-      },
-      terminated() {
-        console.log('[Dictionary] Database connection terminated');
-      }
-    });
-    console.log('[Dictionary] Database opened successfully');
+    database = dbConnection;
 
-    // Fetch processed words
-    console.log('[Dictionary] Fetching processed words from /data/processed_words.json...');
+    // Wait for audio map to load
+    console.log('[Dictionary] Waiting for audio map to load...');
+    await audioMapPromise;
+    console.log('[Dictionary] Audio map loading completed');
+
+    // Fetch and process words
+    console.log('[Dictionary] Fetching processed words...');
     const response = await fetch('/data/processed_words.json');
     if (!response.ok) {
-      console.error('[Dictionary] Failed to fetch processed words:', response.status, response.statusText);
       throw new Error(`Failed to fetch processed words: ${response.status} ${response.statusText}`);
     }
+    console.log('[Dictionary] Successfully fetched processed words JSON');
     const processedWords: ProcessedWord[] = await response.json();
     console.log(`[Dictionary] Successfully loaded ${processedWords.length} processed words`);
 
-    // Convert to dictionary items (now async)
+    // Convert words in batches
     console.log('[Dictionary] Converting words to dictionary format...');
-    const dictionaryItems = await Promise.all(
-      processedWords.map((word, index) => 
-        convertToDictionaryItem(word, `dict-${index + 1}`)
-      )
+    const dictionaryItems = await processBatch(
+      processedWords,
+      (word, index) => convertToDictionaryItem(word, `dict-${index + 1}`),
+      50,
+      'word conversion'
     );
     console.log(`[Dictionary] Successfully converted ${dictionaryItems.length} words to dictionary format`);
 
-    // Generate relationships, etymology, and frequency data
-    console.log('[Dictionary] Generating word relationships...');
-    const relationships = generateWordRelationships(dictionaryItems);
-    console.log('[Dictionary] Generating etymology data...');
-    const etymologyData = generateEtymologyData(dictionaryItems);
-    console.log('[Dictionary] Generating frequency data...');
-    const frequencyData = generateFrequencyData(dictionaryItems);
+    // Generate data in parallel
+    console.log('[Dictionary] Generating word data...');
+    const [relationships, etymologyData, frequencyData] = await Promise.all([
+      Promise.resolve(generateWordRelationships(dictionaryItems)),
+      Promise.resolve(generateEtymologyData(dictionaryItems)),
+      Promise.resolve(generateFrequencyData(dictionaryItems))
+    ]);
+    console.log('[Dictionary] Successfully generated word data');
 
-    // Import all data in a single transaction
-    console.log('[Dictionary] Starting data import transaction...');
-    const tx = db.transaction(['words', 'wordRelationships', 'wordEtymology', 'wordFrequency'], 'readwrite');
+    // Import data sequentially by store to avoid transaction timeouts
+    console.log('[Dictionary] Starting data import...');
     
-    // Clear existing data
-    console.log('[Dictionary] Clearing existing data...');
-    await Promise.all([
-      tx.objectStore('words').clear(),
-      tx.objectStore('wordRelationships').clear(),
-      tx.objectStore('wordEtymology').clear(),
-      tx.objectStore('wordFrequency').clear()
-    ]);
-    console.log('[Dictionary] Existing data cleared successfully');
+    // Clear and import words
+    console.log('[Dictionary] Processing words store...');
+    const wordsTx = database.transaction('words', 'readwrite');
+    const wordsStore = wordsTx.objectStore('words');
+    await wordsStore.clear();
+    await processBatch(dictionaryItems, item => wordsStore.put(item), 50, 'words');
+    await wordsTx.done;
+    console.log('[Dictionary] Words store import completed');
 
-    // Add new data
-    console.log('[Dictionary] Adding new data to database...');
-    await Promise.all([
-      ...dictionaryItems.map(item => tx.objectStore('words').put(item)),
-      ...relationships.map(rel => tx.objectStore('wordRelationships').put(rel)),
-      ...etymologyData.map(etym => tx.objectStore('wordEtymology').put(etym)),
-      ...frequencyData.map(freq => tx.objectStore('wordFrequency').put(freq))
-    ]);
-    console.log('[Dictionary] New data added successfully');
+    // Clear and import relationships
+    console.log('[Dictionary] Processing relationships store...');
+    const relTx = database.transaction('wordRelationships', 'readwrite');
+    const relStore = relTx.objectStore('wordRelationships');
+    await relStore.clear();
+    await processBatch(relationships, rel => relStore.put(rel), 50, 'relationships');
+    await relTx.done;
+    console.log('[Dictionary] Relationships store import completed');
 
-    // Wait for transaction to complete
-    console.log('[Dictionary] Waiting for transaction to complete...');
-    await tx.done;
-    console.log('[Dictionary] Transaction completed successfully');
+    // Clear and import etymology
+    console.log('[Dictionary] Processing etymology store...');
+    const etymTx = database.transaction('wordEtymology', 'readwrite');
+    const etymStore = etymTx.objectStore('wordEtymology');
+    await etymStore.clear();
+    await processBatch(etymologyData, etym => etymStore.put(etym), 50, 'etymology');
+    await etymTx.done;
+    console.log('[Dictionary] Etymology store import completed');
+
+    // Clear and import frequency
+    console.log('[Dictionary] Processing frequency store...');
+    const freqTx = database.transaction('wordFrequency', 'readwrite');
+    const freqStore = freqTx.objectStore('wordFrequency');
+    await freqStore.clear();
+    await processBatch(frequencyData, freq => freqStore.put(freq), 50, 'frequency');
+    await freqTx.done;
+    console.log('[Dictionary] Frequency store import completed');
 
     console.log('[Dictionary] Dictionary data import completed successfully');
     return { success: true, count: dictionaryItems.length };
@@ -298,5 +345,10 @@ export async function importDictionaryData(): Promise<{ success: boolean; count?
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error occurred during dictionary data import' 
     };
+  } finally {
+    if (database && !db) {
+      console.log('[Dictionary] Closing database connection...');
+      database.close();
+    }
   }
 } 
