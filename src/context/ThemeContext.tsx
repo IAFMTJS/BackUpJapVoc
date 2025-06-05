@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 
 type Theme = 'dark' | 'light' | 'neon';
 
@@ -41,6 +41,7 @@ interface ThemeContextType {
     subtitle: string;
   };
   toggleTheme: () => void;
+  isInitialized: boolean;
 }
 
 // Move defaultThemeContext outside of any component or function
@@ -83,6 +84,7 @@ const defaultThemeContextValue: ThemeContextType = {
     subtitle: 'text-gray-300',
   }),
   toggleTheme: () => {},
+  isInitialized: false,
 };
 
 // Create context with default value
@@ -93,41 +95,74 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // Load theme from localStorage or default to 'dark' with validation
+  const [isInitialized, setIsInitialized] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => {
+    console.log('[ThemeProvider] Initializing theme state');
     if (typeof window !== 'undefined') {
       try {
         const savedTheme = localStorage.getItem('theme');
-        return (savedTheme && ['dark', 'light', 'neon'].includes(savedTheme)) 
+        const validTheme = (savedTheme && ['dark', 'light', 'neon'].includes(savedTheme)) 
           ? (savedTheme as Theme) 
           : 'dark';
+        console.log('[ThemeProvider] Loaded theme from localStorage:', validTheme);
+        return validTheme;
       } catch (error) {
-        console.error('Failed to load theme from localStorage:', error);
+        console.error('[ThemeProvider] Failed to load theme from localStorage:', error);
         return 'dark';
       }
     }
     return 'dark';
   });
 
-  // Persist theme to localStorage and update body class
-  React.useEffect(() => {
+  // Initialize theme on mount
+  useEffect(() => {
+    console.log('[ThemeProvider] Setting up theme');
     if (typeof window !== 'undefined' && theme) {
       try {
+        // Apply theme immediately
+        document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-neon');
+        document.documentElement.classList.add(`theme-${theme}`);
+        localStorage.setItem('theme', theme);
+        
+        // Mark as initialized after a small delay
+        const timer = setTimeout(() => {
+          console.log('[ThemeProvider] Theme initialized');
+          setIsInitialized(true);
+        }, 50);
+
+        return () => {
+          clearTimeout(timer);
+        };
+      } catch (error) {
+        console.error('[ThemeProvider] Failed to initialize theme:', error);
+        setIsInitialized(true); // Still mark as initialized to prevent blocking
+      }
+    } else {
+      setIsInitialized(true);
+    }
+  }, []);
+
+  // Persist theme changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && theme && isInitialized) {
+      try {
+        console.log('[ThemeProvider] Updating theme:', theme);
         localStorage.setItem('theme', theme);
         document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-neon');
         document.documentElement.classList.add(`theme-${theme}`);
       } catch (error) {
-        console.error('Failed to save theme to localStorage:', error);
+        console.error('[ThemeProvider] Failed to update theme:', error);
       }
     }
-  }, [theme]);
+  }, [theme, isInitialized]);
 
   // Validate theme before setting it
   const setThemeWithValidation = React.useCallback((newTheme: Theme) => {
+    console.log('[ThemeProvider] Setting theme:', newTheme);
     if (['dark', 'light', 'neon'].includes(newTheme)) {
       setTheme(newTheme);
     } else {
-      console.warn(`Invalid theme value: ${newTheme}. Defaulting to 'dark'`);
+      console.warn(`[ThemeProvider] Invalid theme value: ${newTheme}. Defaulting to 'dark'`);
       setTheme('dark');
     }
   }, []);
@@ -220,8 +255,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setTheme: setThemeWithValidation,
     getThemeClasses,
     toggleTheme,
-  }), [theme, setThemeWithValidation, getThemeClasses, toggleTheme]);
+    isInitialized,
+  }), [theme, setThemeWithValidation, getThemeClasses, toggleTheme, isInitialized]);
 
+  console.log('[ThemeProvider] Rendering with theme:', theme);
   return (
     <ThemeContext.Provider value={value}>
       <div className={`theme-${theme}`}>

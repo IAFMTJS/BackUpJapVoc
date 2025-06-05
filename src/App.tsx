@@ -167,6 +167,7 @@ export const ThemeWrapper = React.memo<{ children: React.ReactNode }>(({ childre
   const themeContext = useTheme();
   const [isThemeReady, setIsThemeReady] = useState(false);
   const mountedRef = useRef(true);
+  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Create a default theme that will be used if the context is not ready
   const defaultTheme = useMemo(() => createTheme({
@@ -204,33 +205,26 @@ export const ThemeWrapper = React.memo<{ children: React.ReactNode }>(({ childre
 
   // Create the theme based on context or use default
   const muiTheme = useMemo(() => {
-    if (!themeContext) {
+    if (!themeContext || !themeContext.theme) {
       return defaultTheme;
     }
     return createTheme({
       ...defaultTheme,
       palette: {
         ...defaultTheme.palette,
-        mode: themeContext.mode,
+        mode: themeContext.theme === 'dark' ? 'dark' : 'light',
       },
     });
   }, [themeContext, defaultTheme]);
 
   useEffect(() => {
-    // Set theme as ready after a small delay to ensure proper initialization
-    const timer = setTimeout(() => {
-      if (mountedRef.current) {
-        setIsThemeReady(true);
-      }
-    }, 100);
-
-    return () => {
-      mountedRef.current = false;
-      clearTimeout(timer);
-    };
-  }, []);
+    if (themeContext.isInitialized) {
+      setIsThemeReady(true);
+    }
+  }, [themeContext.isInitialized]);
 
   if (!isThemeReady) {
+    console.log('[ThemeWrapper] Rendering loading state');
     return (
       <MuiThemeProvider theme={defaultTheme}>
         <CssBaseline />
@@ -238,12 +232,14 @@ export const ThemeWrapper = React.memo<{ children: React.ReactNode }>(({ childre
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
             <p className="text-lg text-white">Loading theme...</p>
+            <p className="text-sm text-gray-400 mt-2">Theme context: {themeContext ? 'Available' : 'Not available'}</p>
           </div>
         </div>
       </MuiThemeProvider>
     );
   }
 
+  console.log('[ThemeWrapper] Rendering with theme:', { theme: muiTheme.palette.mode });
   return (
     <MuiThemeProvider theme={muiTheme}>
       <CssBaseline />
