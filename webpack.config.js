@@ -161,12 +161,15 @@ module.exports = (env, argv) => {
         new TerserPlugin({
           terserOptions: {
             compress: {
-              drop_console: isProduction && !isVercel, // Keep console logs on Vercel for debugging
+              drop_console: isProduction && !isVercel,
               drop_debugger: isProduction && !isVercel,
               pure_funcs: isProduction && !isVercel ? ['console.log', 'console.info'] : [],
               passes: 2,
               dead_code: isProduction,
-              unused: isProduction
+              unused: isProduction,
+              keep_fargs: true,
+              keep_classnames: true,
+              keep_fnames: true
             },
             format: {
               comments: !isProduction,
@@ -175,11 +178,12 @@ module.exports = (env, argv) => {
             mangle: {
               safari10: true,
               toplevel: isProduction,
-              keep_fnames: !isProduction
+              keep_fnames: true,
+              keep_classnames: true
             },
             ecma: 2020,
-            keep_classnames: !isProduction,
-            keep_fnames: !isProduction
+            keep_classnames: true,
+            keep_fnames: true
           },
           extractComments: false,
           parallel: true
@@ -187,15 +191,23 @@ module.exports = (env, argv) => {
       ],
       splitChunks: {
         chunks: 'all',
-        maxInitialRequests: isVercel ? 20 : 30, // Reduce for Vercel
+        maxInitialRequests: isVercel ? 15 : 25,
         minSize: 20000,
-        maxSize: isVercel ? 200000 : 244000, // Smaller chunks for Vercel
+        maxSize: isVercel ? 150000 : 200000,
         cacheGroups: {
+          mui: {
+            test: /[\\/]node_modules[\\/]@mui[\\/]/,
+            name: 'vendor.mui',
+            chunks: 'all',
+            priority: 40,
+            enforce: true,
+            reuseExistingChunk: true
+          },
           critical: {
             test: /[\\/]src[\\/](components|pages|hooks|utils)[\\/]/,
             name: 'critical',
             chunks: 'initial',
-            priority: 60,
+            priority: 30,
             reuseExistingChunk: true
           },
           vendor: {
@@ -204,28 +216,22 @@ module.exports = (env, argv) => {
               const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
               return `vendor.${packageName.replace('@', '')}`;
             },
-            priority: 50,
+            priority: 20,
             reuseExistingChunk: true
-          },
-          audio: {
-            test: /\.(mp3|wav|ogg)$/,
-            name: 'audio',
-            chunks: 'async',
-            priority: 40,
-            reuseExistingChunk: true,
-            enforce: true,
-            maxSize: 0
           },
           common: {
             name: 'common',
             minChunks: 2,
-            priority: 30,
+            priority: 10,
             reuseExistingChunk: true
           }
         }
       },
       moduleIds: 'deterministic',
-      runtimeChunk: 'single',
+      runtimeChunk: {
+        name: 'runtime',
+        minSize: 10000
+      },
       removeAvailableModules: isProduction,
       removeEmptyChunks: isProduction,
       mergeDuplicateChunks: isProduction
@@ -425,6 +431,10 @@ module.exports = (env, argv) => {
         hashFunction: 'xxhash64',
         hashDigest: 'hex',
         hashDigestLength: 16
+      }),
+      new webpack.ProvidePlugin({
+        React: 'react',
+        'window.React': 'react'
       }),
     ],
     devServer: {
