@@ -83,16 +83,19 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
           console.error('[InitializationProvider] Max retries reached, forcing initialization complete');
           // In production, try to continue with partial initialization
           if (process.env.NODE_ENV === 'production') {
+            const error = newState.error || 'Initialization taking longer than expected';
             setState(prev => ({
               ...prev,
               isInitialized: true,
               isInitializing: false,
               criticalDataLoaded: prev.criticalDataLoaded,
+              error: error,
               progress: { 
                 ...prev.progress, 
                 step: 'Initialization partially complete (forced)', 
                 progress: 100,
-                details: 'Some features may be limited'
+                details: 'Some features may be limited. Please try refreshing the page if you experience issues.',
+                error: error
               }
             }));
           } else {
@@ -101,7 +104,13 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
               isInitialized: true,
               isInitializing: false,
               criticalDataLoaded: true,
-              progress: { ...prev.progress, step: 'Initialization complete (forced)', progress: 100 }
+              error: 'Initialization forced complete after max retries',
+              progress: { 
+                ...prev.progress, 
+                step: 'Initialization complete (forced)', 
+                progress: 100,
+                error: 'Initialization forced complete after max retries'
+              }
             }));
           }
           setIsInitializing(false);
@@ -118,6 +127,11 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
           clearTimeout(initTimeoutRef.current);
         }
       }
+
+      // Update error state if there's an error
+      if (newState.error) {
+        setInitError(newState.error);
+      }
     });
     
     // Add a timeout to prevent infinite loading
@@ -126,27 +140,37 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
         console.error('[InitializationProvider] Initialization timeout reached');
         // In production, try to continue with partial initialization
         if (process.env.NODE_ENV === 'production') {
-          setInitError('Initialization taking longer than expected. Some features may be limited.');
+          const error = state.error || 'Initialization taking longer than expected';
+          setInitError(error);
           setState(prev => ({
             ...prev,
             isInitialized: true,
             isInitializing: false,
             criticalDataLoaded: prev.criticalDataLoaded,
+            error: error,
             progress: { 
               ...prev.progress, 
               step: 'Initialization partially complete (timeout)', 
               progress: 100,
-              details: 'Some features may be limited'
+              details: 'Some features may be limited. Please try refreshing the page if you experience issues.',
+              error: error
             }
           }));
         } else {
-          setInitError('Initialization timed out. Please refresh the page.');
+          const error = 'Initialization timed out. Please refresh the page.';
+          setInitError(error);
           setState(prev => ({
             ...prev,
             isInitialized: true,
             isInitializing: false,
             criticalDataLoaded: true,
-            progress: { ...prev.progress, step: 'Initialization complete (timeout)', progress: 100 }
+            error: error,
+            progress: { 
+              ...prev.progress, 
+              step: 'Initialization complete (timeout)', 
+              progress: 100,
+              error: error
+            }
           }));
         }
         setIsInitializing(false);
@@ -223,12 +247,13 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
       isInitializing,
       isInitialized: state.isInitialized,
       progress: state.progress,
+      error: state.error,
       environment: process.env.NODE_ENV
     });
     
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full mx-4">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">
             {initError ? 'Initialization Notice' : 'Initializing application...'}
@@ -240,22 +265,39 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
           {initError && (
             <div className="mt-4">
               <p className="text-sm text-yellow-500 mb-4">{initError}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              >
-                Refresh Page
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                >
+                  Refresh Page
+                </button>
+                {process.env.NODE_ENV === 'production' && (
+                  <button
+                    onClick={() => {
+                      localStorage.clear();
+                      sessionStorage.clear();
+                      window.location.reload();
+                    }}
+                    className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                  >
+                    Clear Data & Refresh
+                  </button>
+                )}
+              </div>
             </div>
           )}
           {state.progress.progress > 0 && !initError && (
-            <div className="w-64 mx-auto mt-4">
+            <div className="w-full mx-auto mt-4">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${state.progress.progress}%` }}
                 ></div>
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Progress: {state.progress.progress}%
+              </p>
             </div>
           )}
           
@@ -266,6 +308,9 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
               <p>Step: {state.progress.step}</p>
               {state.progress.details && (
                 <p>Details: {state.progress.details}</p>
+              )}
+              {state.error && (
+                <p className="text-red-500">Error: {state.error}</p>
               )}
             </div>
           )}
@@ -278,17 +323,31 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
   if (initError) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full mx-4">
           <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
             Initialization Error
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">{initError}</p>
-          <button
-            onClick={retry}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Retry
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={retry}
+              className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            >
+              Retry
+            </button>
+            {process.env.NODE_ENV === 'production' && (
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  window.location.reload();
+                }}
+                className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                Clear Data & Refresh
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

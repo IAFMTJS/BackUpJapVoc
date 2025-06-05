@@ -383,108 +383,96 @@ export async function initializeDatabase(): Promise<IDBPDatabase<JapVocDB>> {
   try {
     // Create a new promise for this initialization attempt
     initPromise = (async () => {
-      try {
-        const db = await openDB<JapVocDB>(DB_CONFIG.name, DB_CONFIG.version, {
-          upgrade(db, oldVersion, newVersion, transaction) {
-            console.log(`[Database] Upgrading database from version ${oldVersion} to ${newVersion}`);
+      let retryCount = 0;
+      const maxRetries = process.env.NODE_ENV === 'production' ? 3 : 1;
+      const baseDelay = 1000; // Base delay in milliseconds
 
-            // Create all stores fresh
-            Object.entries(DB_CONFIG.stores).forEach(([storeName, storeConfig]) => {
-              // Only create store if it doesn't exist
-              if (!db.objectStoreNames.contains(storeName)) {
-                console.log(`[Database] Creating store: ${storeName}`);
-                try {
-                  const store = db.createObjectStore(storeName, { keyPath: storeConfig.keyPath });
-                  
-                  // Create indexes
-                  Object.entries(storeConfig.indexes).forEach(([indexName, indexConfig]) => {
-                    console.log(`[Database] Creating index: ${storeName}.${indexName}`);
-                    try {
-                      store.createIndex(indexName, indexConfig.keyPath, { unique: indexConfig.unique || false });
-                    } catch (error) {
-                      console.warn(`[Database] Error creating index ${indexName} for ${storeName}:`, error);
-                      // Continue with other indexes even if one fails
-                    }
-                  });
-                } catch (error) {
-                  console.error(`[Database] Error creating store ${storeName}:`, error);
-                  throw error; // Re-throw store creation errors as they are critical
-                }
-              } else {
-                console.log(`[Database] Store ${storeName} already exists`);
-              }
-            });
+      while (retryCount < maxRetries) {
+        try {
+          console.log(`[Database] Initialization attempt ${retryCount + 1}/${maxRetries}`);
+          
+          const db = await openDB<JapVocDB>(DB_CONFIG.name, DB_CONFIG.version, {
+            upgrade(db, oldVersion, newVersion, transaction) {
+              console.log(`[Database] Upgrading database from version ${oldVersion} to ${newVersion}`);
 
-            // Initialize kanji data if needed
-            if (!db.objectStoreNames.contains('kanji')) {
-              console.log('[Database] Creating kanji store and initializing data...');
-              const kanjiStore = db.createObjectStore('kanji', { keyPath: 'id' });
-              kanjiStore.createIndex('by-character', 'character', { unique: true });
-              kanjiStore.createIndex('by-jlpt', 'jlpt', { unique: false });
-              kanjiStore.createIndex('by-difficulty', 'difficulty', { unique: false });
-              kanjiStore.createIndex('by-category', 'category', { unique: false });
-
-              // Add initial kanji data synchronously
-              const kanjiData = kanjiList.map(kanji => ({
-                id: `kanji-${kanji.character}`,
-                character: kanji.character,
-                meanings: [kanji.english],
-                readings: {
-                  on: kanji.onyomi,
-                  kun: kanji.kunyomi
-                },
-                examples: kanji.examples,
-                jlpt: parseInt(kanji.jlptLevel.replace('N', '')),
-                difficulty: kanji.difficulty,
-                category: kanji.category,
-                hint: kanji.hint,
-                strokeCount: kanji.strokeCount,
-                radicals: kanji.radicals,
-                createdAt: new Date(),
-                updatedAt: new Date()
-              }));
-
-              // Add all kanji to the store synchronously
-              kanjiData.forEach(kanji => {
-                try {
-                  kanjiStore.add(kanji);
-                } catch (error) {
-                  console.warn(`[Database] Error adding kanji ${kanji.character}:`, error);
+              // Create all stores fresh
+              Object.entries(DB_CONFIG.stores).forEach(([storeName, storeConfig]) => {
+                // Only create store if it doesn't exist
+                if (!db.objectStoreNames.contains(storeName)) {
+                  console.log(`[Database] Creating store: ${storeName}`);
+                  try {
+                    const store = db.createObjectStore(storeName, { keyPath: storeConfig.keyPath });
+                    
+                    // Create indexes
+                    Object.entries(storeConfig.indexes).forEach(([indexName, indexConfig]) => {
+                      console.log(`[Database] Creating index: ${storeName}.${indexName}`);
+                      try {
+                        store.createIndex(indexName, indexConfig.keyPath, { unique: indexConfig.unique || false });
+                      } catch (error) {
+                        console.warn(`[Database] Error creating index ${indexName} for ${storeName}:`, error);
+                        // Continue with other indexes even if one fails
+                      }
+                    });
+                  } catch (error) {
+                    console.error(`[Database] Error creating store ${storeName}:`, error);
+                    throw error; // Re-throw store creation errors as they are critical
+                  }
+                } else {
+                  console.log(`[Database] Store ${storeName} already exists`);
                 }
               });
-
-              console.log(`[Database] Successfully initialized kanji store with ${kanjiData.length} kanji`);
+            },
+            blocked() {
+              console.warn('[Database] Database upgrade blocked by other connections');
+              cleanupInitState();
+            },
+            blocking() {
+              console.warn('[Database] Database upgrade is blocking other connections');
+            },
+            terminated() {
+              console.warn('[Database] Database connection terminated');
+              cleanupInitState();
             }
-          },
-          blocked() {
-            console.warn('[Database] Database blocked by another connection');
-          },
-          blocking() {
-            console.warn('[Database] Database blocking another connection');
-          },
-          terminated() {
-            console.warn('[Database] Database connection terminated');
-            cleanupInitState();
+          });
+
+          console.log('[Database] Database opened successfully');
+          
+          // Track the connection
+          activeConnections.push(db);
+          
+          // Add connection close handler
+          db.addEventListener('close', () => {
+            console.log('[Database] Connection closed');
+            activeConnections = activeConnections.filter(conn => conn !== db);
+          });
+
+          // Verify database is working by attempting a simple operation
+          try {
+            const tx = db.transaction('words', 'readonly');
+            await tx.done;
+            console.log('[Database] Database verification successful');
+          } catch (error) {
+            console.error('[Database] Database verification failed:', error);
+            throw new Error('Database verification failed');
           }
-        });
 
-        console.log('[Database] Database opened successfully');
-        
-        // Track the connection
-        activeConnections.push(db);
-        
-        // Add connection close handler
-        db.addEventListener('close', () => {
-          console.log('[Database] Connection closed');
-          activeConnections = activeConnections.filter(conn => conn !== db);
-        });
+          return db;
+        } catch (error) {
+          retryCount++;
+          console.error(`[Database] Initialization attempt ${retryCount} failed:`, error);
+          
+          if (retryCount >= maxRetries) {
+            throw error;
+          }
 
-        return db;
-      } catch (error) {
-        console.error('[Database] Error during database initialization:', error);
-        cleanupInitState();
-        throw error;
+          // Calculate delay with exponential backoff
+          const delay = baseDelay * Math.pow(2, retryCount - 1);
+          console.log(`[Database] Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
+
+      throw new Error('Database initialization failed after all retries');
     })();
 
     const db = await initPromise;
@@ -493,6 +481,20 @@ export async function initializeDatabase(): Promise<IDBPDatabase<JapVocDB>> {
   } catch (error) {
     console.error('[Database] Error in initializeDatabase:', error);
     cleanupInitState();
+    
+    // Provide more user-friendly error messages in production
+    if (process.env.NODE_ENV === 'production') {
+      if (error instanceof Error) {
+        if (error.message.includes('QuotaExceededError')) {
+          throw new Error('Storage quota exceeded. Please clear some space in your browser storage.');
+        } else if (error.message.includes('blocked')) {
+          throw new Error('Database is blocked by another tab. Please close other tabs and try again.');
+        } else if (error.message.includes('verification failed')) {
+          throw new Error('Database verification failed. Please try refreshing the page.');
+        }
+      }
+      throw new Error('Database initialization failed. Please try refreshing the page or clearing your browser data.');
+    }
     throw error;
   } finally {
     isInitializing = false;

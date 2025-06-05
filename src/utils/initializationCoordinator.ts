@@ -118,51 +118,75 @@ class InitializationCoordinator {
       // Add retry logic for database initialization
       let retryCount = 0;
       const maxRetries = process.env.NODE_ENV === 'production' ? 3 : 1;
+      const baseDelay = 1000; // Base delay in milliseconds
       
       while (retryCount < maxRetries) {
         try {
+          console.log(`[Initialization] Database initialization attempt ${retryCount + 1}/${maxRetries}`);
+          
           // Initialize the database using the correct function
-          await this.withTimeout(
+          const db = await this.withTimeout(
             initializeDatabase(),
             DB_TIMEOUT,
             'Database initialization timed out'
           );
           
           // Wait for the database to be ready
-          const db = await this.withTimeout(
-            getDatabase(),
-            DB_TIMEOUT,
-            'Database connection timed out'
-          );
-
-          if (!db) {
-            throw new Error('Database initialization failed - no database instance returned');
-          }
-
-          // Wait for database to be ready
           await this.withTimeout(
             isDatabaseReady(),
             DB_TIMEOUT,
             'Database ready check timed out'
           );
 
+          // Verify database is working
+          try {
+            const tx = db.transaction('words', 'readonly');
+            await tx.done;
+            console.log('[Initialization] Database verification successful');
+          } catch (error) {
+            console.error('[Initialization] Database verification failed:', error);
+            throw new Error('Database verification failed');
+          }
+
           this.updateProgress('Database initialized', 30);
           return db;
         } catch (error) {
           retryCount++;
+          console.error(`[Initialization] Database initialization attempt ${retryCount} failed:`, error);
+          
           if (retryCount >= maxRetries) {
+            // In production, provide more user-friendly error messages
+            if (process.env.NODE_ENV === 'production') {
+              if (error instanceof Error) {
+                if (error.message.includes('QuotaExceededError')) {
+                  throw new Error('Storage quota exceeded. Please clear some space in your browser storage.');
+                } else if (error.message.includes('blocked')) {
+                  throw new Error('Database is blocked by another tab. Please close other tabs and try again.');
+                } else if (error.message.includes('verification failed')) {
+                  throw new Error('Database verification failed. Please try refreshing the page.');
+                } else if (error.message.includes('timed out')) {
+                  throw new Error('Database initialization timed out. Please try refreshing the page.');
+                }
+              }
+              throw new Error('Database initialization failed. Please try refreshing the page or clearing your browser data.');
+            }
             throw error;
           }
-          console.warn(`Database initialization attempt ${retryCount} failed, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+
+          // Calculate delay with exponential backoff
+          const delay = baseDelay * Math.pow(2, retryCount - 1);
+          console.log(`[Initialization] Waiting ${delay}ms before retry...`);
+          this.updateProgress('Retrying database initialization...', 15, `Attempt ${retryCount + 1}/${maxRetries}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
       
       throw new Error('Database initialization failed after all retries');
     } catch (error) {
+      console.error('[Initialization] Database initialization failed:', error);
       if (error instanceof Error) {
         const errorMessage = process.env.NODE_ENV === 'production' 
-          ? 'Database initialization failed. Please try refreshing the page.'
+          ? error.message // Use the user-friendly message we set above
           : `Database initialization failed: ${error.message}`;
         throw new Error(errorMessage);
       }
@@ -259,14 +283,17 @@ class InitializationCoordinator {
           console.warn('[InitializationCoordinator] Safety timeout reached, forcing completion');
           // In production, we'll try to continue with partial initialization
           if (process.env.NODE_ENV === 'production') {
+            const error = this.state.error || 'Initialization taking longer than expected';
             this.updateState({
               isInitialized: true,
               isInitializing: false,
               criticalDataLoaded: this.state.criticalDataLoaded,
+              error: error,
               progress: { 
                 step: 'Initialization partially complete (safety timeout)', 
                 progress: 100,
-                details: 'Some features may be limited'
+                details: 'Some features may be limited. Please try refreshing the page if you experience issues.',
+                error: error
               }
             });
           } else {
@@ -274,7 +301,12 @@ class InitializationCoordinator {
               isInitialized: true,
               isInitializing: false,
               criticalDataLoaded: true,
-              progress: { step: 'Initialization complete (safety timeout)', progress: 100 }
+              error: 'Initialization timed out',
+              progress: { 
+                step: 'Initialization complete (safety timeout)', 
+                progress: 100,
+                error: 'Initialization timed out'
+              }
             });
           }
         }
@@ -309,6 +341,7 @@ class InitializationCoordinator {
       this.updateState({
         isInitialized: true,
         isInitializing: false,
+        error: null,
         progress: { step: 'Initialization complete', progress: 100 }
       });
     } catch (error) {
@@ -321,7 +354,10 @@ class InitializationCoordinator {
         progress: {
           step: 'Initialization failed',
           progress: this.state.progress.progress,
-          error: errorMessage
+          error: errorMessage,
+          details: process.env.NODE_ENV === 'production' 
+            ? 'Please try refreshing the page or clearing your browser data.'
+            : undefined
         }
       });
       throw error;
