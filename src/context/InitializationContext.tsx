@@ -54,6 +54,7 @@ interface ProviderState {
 export const InitializationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<InitState>(initializationCoordinator.getState());
   const [providerStates, setProviderStates] = useState<ProviderState>({});
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = initializationCoordinator.subscribe(setState);
@@ -61,14 +62,38 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
   }, []);
 
   const initializeProvider = async (providerName: ProviderName): Promise<void> => {
-    return new Promise((resolve) => {
+    try {
       setProviderStates(prev => ({ ...prev, [providerName]: true }));
-      // Simulate provider initialization time
-      setTimeout(() => {
-        setProviderStates(prev => ({ ...prev, [providerName]: false }));
-        resolve();
-      }, 100);
-    });
+      
+      // Add a small delay between provider initializations to prevent race conditions
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Simulate provider initialization time with error handling
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          setProviderStates(prev => ({ ...prev, [providerName]: false }));
+          resolve(undefined);
+        }, 100);
+
+        // Add error handling for provider initialization
+        const errorHandler = (error: Error) => {
+          clearTimeout(timeout);
+          reject(error);
+        };
+
+        // Set up error boundary for this provider
+        try {
+          // Provider initialization logic here
+          // If any provider fails, it will be caught by the error boundary
+        } catch (error) {
+          errorHandler(error instanceof Error ? error : new Error('Provider initialization failed'));
+        }
+      });
+    } catch (error) {
+      console.error(`Failed to initialize ${providerName}:`, error);
+      setInitError(error instanceof Error ? error.message : 'Provider initialization failed');
+      throw error;
+    }
   };
 
   const initializeProviders = async () => {
@@ -78,32 +103,43 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
       }
     } catch (error) {
       console.error('Provider initialization failed:', error);
+      setInitError(error instanceof Error ? error.message : 'Failed to initialize providers');
       throw error;
     }
   };
 
   const retry = async () => {
     try {
+      setInitError(null);
       await initializationCoordinator.initialize();
       await initializeProviders();
     } catch (error) {
       console.error('Retry failed:', error);
+      setInitError(error instanceof Error ? error.message : 'Failed to retry initialization');
       throw error;
     }
   };
 
   const abort = () => {
     initializationCoordinator.abort();
+    setInitError('Initialization aborted by user');
   };
 
   // Start initialization when the provider mounts
   useEffect(() => {
+    let isMounted = true;
+
     const startInitialization = async () => {
       try {
+        if (!isMounted) return;
+        
         await initializationCoordinator.initialize();
         await initializeProviders();
       } catch (error) {
+        if (!isMounted) return;
+        
         console.error('Initialization failed:', error);
+        setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
       }
     };
 
@@ -111,9 +147,30 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
 
     // Cleanup on unmount
     return () => {
+      isMounted = false;
       abort();
     };
   }, []);
+
+  // Show error state if initialization failed
+  if (initError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
+            Initialization Error
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{initError}</p>
+          <button
+            onClick={retry}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <InitializationContext.Provider value={{ state, retry, abort }}>

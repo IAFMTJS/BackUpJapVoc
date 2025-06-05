@@ -28,7 +28,7 @@ import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import { databasePromise, initializeDatabase, forceDatabaseReset } from './utils/databaseConfig';
-import { CircularProgress, Box, Typography, Button, LinearProgress } from '@mui/material';
+import { CircularProgress, Box, Typography, Button, LinearProgress, CssBaseline } from '@mui/material';
 import { KnowingNavigation } from './components/KnowingNavigation';
 import ProfilePage from './pages/ProfilePage';
 import EditProfilePage from './pages/EditProfilePage';
@@ -168,7 +168,8 @@ export const ThemeWrapper = React.memo<{ children: React.ReactNode }>(({ childre
   const [isThemeReady, setIsThemeReady] = React.useState(false);
 
   const muiTheme = React.useMemo(() => {
-    const theme = themeContext?.theme || 'dark';
+    // Default to dark theme if context is not ready
+    const theme = themeContext?.theme ?? 'dark';
     return createTheme({
       palette: {
         mode: theme === 'dark' ? 'dark' : 'light',
@@ -197,17 +198,36 @@ export const ThemeWrapper = React.memo<{ children: React.ReactNode }>(({ childre
             },
           },
         },
+        // Add default styles for components that might be rendered before theme is ready
+        MuiButton: {
+          defaultProps: {
+            disableRipple: true,
+          },
+          styleOverrides: {
+            root: {
+              textTransform: 'none',
+            },
+          },
+        },
+        MuiCssBaseline: {
+          styleOverrides: {
+            body: {
+              backgroundColor: theme === 'dark' ? '#181830' : '#ffffff',
+              color: theme === 'dark' ? '#ffffff' : '#1f2937',
+            },
+          },
+        },
       },
     });
   }, [themeContext?.theme]);
 
   React.useEffect(() => {
-    if (muiTheme) {
-      setIsThemeReady(true);
-    }
-  }, [muiTheme]);
+    // Set theme as ready even if context is not available
+    // This ensures we always have a valid theme
+    setIsThemeReady(true);
+  }, []);
 
-  if (!isThemeReady || !muiTheme) {
+  if (!isThemeReady) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#181830]">
         <div className="text-center">
@@ -220,6 +240,7 @@ export const ThemeWrapper = React.memo<{ children: React.ReactNode }>(({ childre
 
   return (
     <MuiThemeProvider theme={muiTheme}>
+      <CssBaseline />
       {children}
     </MuiThemeProvider>
   );
