@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { initializationCoordinator, InitState } from '../utils/initializationCoordinator';
 import { DatabaseProvider } from './DatabaseContext';
 import { DictionaryProvider } from './DictionaryContext';
@@ -48,75 +48,104 @@ const INITIALIZATION_ORDER = [
 type ProviderName = typeof INITIALIZATION_ORDER[number];
 
 interface ProviderState {
-  [key: string]: boolean;
+  [key: string]: string | null;
 }
 
 export const InitializationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<InitState>(initializationCoordinator.getState());
   const [providerStates, setProviderStates] = useState<ProviderState>({});
   const [initError, setInitError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     const unsubscribe = initializationCoordinator.subscribe(setState);
-    return () => unsubscribe();
+    return () => {
+      mountedRef.current = false;
+      unsubscribe();
+    };
   }, []);
 
   const initializeProvider = async (providerName: ProviderName): Promise<void> => {
+    if (!mountedRef.current) return;
+
     try {
-      setProviderStates(prev => ({ ...prev, [providerName]: true }));
+      setProviderStates(prev => ({ ...prev, [providerName]: 'initializing' }));
       
-      // Add a longer delay between provider initializations to prevent race conditions
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Add a longer delay between provider initializations
+      await new Promise(resolve => setTimeout(resolve, 150));
       
+      // Special handling for critical providers
+      if (providerName === 'DatabaseProvider') {
+        // Ensure database is fully initialized
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } else if (providerName === 'ThemeProvider') {
+        // Ensure theme is fully initialized
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       // Simulate provider initialization with proper error handling
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-          setProviderStates(prev => ({ ...prev, [providerName]: false }));
+          if (!mountedRef.current) return;
+          setProviderStates(prev => ({ ...prev, [providerName]: 'ready' }));
           resolve(undefined);
-        }, 200); // Increased timeout for more reliable initialization
+        }, 300); // Increased timeout for more reliable initialization
 
         const errorHandler = (error: Error) => {
           clearTimeout(timeout);
+          if (!mountedRef.current) return;
+          setProviderStates(prev => ({ ...prev, [providerName]: 'error' }));
           reject(error);
         };
 
         try {
           // Provider initialization logic
-          if (providerName === 'ThemeProvider') {
-            // Ensure theme is fully initialized before proceeding
-            setTimeout(resolve, 50);
-          } else {
-            resolve(undefined);
-          }
+          resolve(undefined);
         } catch (error) {
           errorHandler(error instanceof Error ? error : new Error(`Failed to initialize ${providerName}`));
         }
       });
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error(`Failed to initialize ${providerName}:`, error);
-      setInitError(error instanceof Error ? error.message : `Failed to initialize ${providerName}`);
       throw error;
     }
   };
 
   const initializeProviders = async () => {
+    if (!mountedRef.current) return;
+
     try {
+      setIsInitializing(true);
+      setInitError(null);
+
+      // Initialize providers sequentially
       for (const provider of INITIALIZATION_ORDER) {
+        if (!mountedRef.current) return;
         await initializeProvider(provider);
       }
+
+      if (mountedRef.current) {
+        setIsInitializing(false);
+      }
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error('Provider initialization failed:', error);
       setInitError(error instanceof Error ? error.message : 'Failed to initialize providers');
+      setIsInitializing(false);
       throw error;
     }
   };
 
   const retry = async () => {
+    if (!mountedRef.current) return;
     try {
       setInitError(null);
       await initializationCoordinator.initialize();
       await initializeProviders();
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error('Retry failed:', error);
       setInitError(error instanceof Error ? error.message : 'Failed to retry initialization');
       throw error;
@@ -124,36 +153,51 @@ export const InitializationProvider: React.FC<{ children: React.ReactNode }> = (
   };
 
   const abort = () => {
+    if (!mountedRef.current) return;
     initializationCoordinator.abort();
     setInitError('Initialization aborted by user');
+    setIsInitializing(false);
   };
 
   // Start initialization when the provider mounts
   useEffect(() => {
-    let isMounted = true;
+    initializeProviders().catch(error => {
+      if (!mountedRef.current) return;
+      console.error('Initialization failed:', error);
+      setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
+    });
 
-    const startInitialization = async () => {
-      try {
-        if (!isMounted) return;
-        
-        await initializationCoordinator.initialize();
-        await initializeProviders();
-      } catch (error) {
-        if (!isMounted) return;
-        
-        console.error('Initialization failed:', error);
-        setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
-      }
-    };
-
-    startInitialization();
-
-    // Cleanup on unmount
     return () => {
-      isMounted = false;
+      mountedRef.current = false;
       abort();
     };
   }, []);
+
+  // Show loading state during initialization
+  if (isInitializing || !state.isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">Initializing application...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {state.progress.step}
+            {state.progress.details && ` - ${state.progress.details}`}
+          </p>
+          {state.progress.progress > 0 && (
+            <div className="w-64 mx-auto mt-4">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${state.progress.progress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Show error state if initialization failed
   if (initError) {

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState, createContext, useContext, useRef, useCallback } from 'react';
+import React, { Suspense, lazy, useEffect, useState, createContext, useContext, useRef, useCallback, useMemo } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider, createTheme, Theme } from '@mui/material/styles';
 import { useTheme } from './context/ThemeContext';
@@ -165,76 +165,82 @@ const preloadCriticalComponents = () => {
 // Optimize theme wrapper to reduce re-renders
 export const ThemeWrapper = React.memo<{ children: React.ReactNode }>(({ children }) => {
   const themeContext = useTheme();
-  const [isThemeReady, setIsThemeReady] = React.useState(false);
+  const [isThemeReady, setIsThemeReady] = useState(false);
+  const mountedRef = useRef(true);
 
-  const muiTheme = React.useMemo(() => {
-    // Default to dark theme if context is not ready
-    const theme = themeContext?.theme ?? 'dark';
-    return createTheme({
-      palette: {
-        mode: theme === 'dark' ? 'dark' : 'light',
-        primary: {
-          main: theme === 'dark' ? '#3b82f6' : '#2563eb',
-        },
-        secondary: {
-          main: theme === 'dark' ? '#8b5cf6' : '#7c3aed',
-        },
-        background: {
-          default: theme === 'dark' ? '#181830' : '#ffffff',
-          paper: theme === 'dark' ? '#23233a' : '#ffffff',
-        },
-        text: {
-          primary: theme === 'dark' ? '#ffffff' : '#1f2937',
-          secondary: theme === 'dark' ? '#d1d5db' : '#4b5563',
+  // Create a default theme that will be used if the context is not ready
+  const defaultTheme = useMemo(() => createTheme({
+    palette: {
+      mode: 'dark',
+      primary: {
+        main: '#3f51b5',
+      },
+      secondary: {
+        main: '#f50057',
+      },
+      background: {
+        default: '#181830',
+        paper: '#1e1e3f',
+      },
+    },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            backgroundColor: '#181830',
+            color: '#ffffff',
+          },
         },
       },
-      components: {
-        MuiCard: {
-          styleOverrides: {
-            root: {
-              background: theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-              backdropFilter: 'blur(10px)',
-              border: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-            },
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            textTransform: 'none',
           },
         },
-        // Add default styles for components that might be rendered before theme is ready
-        MuiButton: {
-          defaultProps: {
-            disableRipple: true,
-          },
-          styleOverrides: {
-            root: {
-              textTransform: 'none',
-            },
-          },
-        },
-        MuiCssBaseline: {
-          styleOverrides: {
-            body: {
-              backgroundColor: theme === 'dark' ? '#181830' : '#ffffff',
-              color: theme === 'dark' ? '#ffffff' : '#1f2937',
-            },
-          },
-        },
+      },
+    },
+  }), []);
+
+  // Create the theme based on context or use default
+  const muiTheme = useMemo(() => {
+    if (!themeContext) {
+      return defaultTheme;
+    }
+    return createTheme({
+      ...defaultTheme,
+      palette: {
+        ...defaultTheme.palette,
+        mode: themeContext.mode,
       },
     });
-  }, [themeContext?.theme]);
+  }, [themeContext, defaultTheme]);
 
-  React.useEffect(() => {
-    // Set theme as ready even if context is not available
-    // This ensures we always have a valid theme
-    setIsThemeReady(true);
+  useEffect(() => {
+    // Set theme as ready after a small delay to ensure proper initialization
+    const timer = setTimeout(() => {
+      if (mountedRef.current) {
+        setIsThemeReady(true);
+      }
+    }, 100);
+
+    return () => {
+      mountedRef.current = false;
+      clearTimeout(timer);
+    };
   }, []);
 
   if (!isThemeReady) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#181830]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg text-white">Loading theme...</p>
+      <MuiThemeProvider theme={defaultTheme}>
+        <CssBaseline />
+        <div className="flex items-center justify-center min-h-screen bg-[#181830]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-lg text-white">Loading theme...</p>
+          </div>
         </div>
-      </div>
+      </MuiThemeProvider>
     );
   }
 
