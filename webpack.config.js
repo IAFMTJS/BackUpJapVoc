@@ -229,8 +229,7 @@ module.exports = (env, argv) => {
       },
       moduleIds: 'deterministic',
       runtimeChunk: {
-        name: 'runtime',
-        minSize: 10000
+        name: 'runtime'
       },
       removeAvailableModules: isProduction,
       removeEmptyChunks: isProduction,
