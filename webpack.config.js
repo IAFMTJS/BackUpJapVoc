@@ -28,7 +28,8 @@ module.exports = (env, argv) => {
       crossOriginLoading: 'anonymous',
       assetModuleFilename: 'static/media/[name].[hash][ext][query]',
       chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
-      chunkLoadTimeout: 120000
+      chunkLoadTimeout: 120000,
+      globalObject: 'this'
     },
     module: {
       rules: [
@@ -208,6 +209,11 @@ module.exports = (env, argv) => {
       }),
       new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development')
+      }),
+      new webpack.BannerPlugin({
+        banner: 'window.webpackChunkBackupJapVoc = window.webpackChunkBackupJapVoc || [];',
+        raw: true,
+        entryOnly: true
       }),
       new CopyPlugin({
         patterns: [

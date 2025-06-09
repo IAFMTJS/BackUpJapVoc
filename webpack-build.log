@@ -5643,3 +5643,2696 @@ Entrypoints:
       static/js/main-84781932.1a109c6d.js
 
 webpack 5.99.9 compiled with 2 warnings in 65695 ms
+Starting webpack build...
+Environment: {"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true,"NODE_ENV":"production"}
+Arguments: {"config":["webpack.config.prod.js"],"env":{"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true},"mode":"production"}
+Final webpack configuration:
+{
+  "mode": "production",
+  "entry": "./src/index.tsx",
+  "output": {
+    "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+    "filename": "static/js/[name].[contenthash:8].js",
+    "chunkFilename": "static/js/[name].[contenthash:8].chunk.js",
+    "publicPath": "/",
+    "clean": true,
+    "crossOriginLoading": "anonymous",
+    "assetModuleFilename": "static/media/[name].[hash][ext][query]",
+    "chunkLoadingGlobal": "webpackChunkBackupJapVoc",
+    "chunkLoadTimeout": 120000
+  },
+  "module": {
+    "rules": [
+      {
+        "test": {},
+        "exclude": {},
+        "use": {
+          "loader": "babel-loader",
+          "options": {
+            "cacheDirectory": true,
+            "presets": [
+              "@babel/preset-env",
+              [
+                "@babel/preset-react",
+                {
+                  "runtime": "automatic"
+                }
+              ],
+              "@babel/preset-typescript"
+            ]
+          }
+        }
+      },
+      {
+        "test": {},
+        "use": [
+          "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\mini-css-extract-plugin\\dist\\loader.js",
+          {
+            "loader": "css-loader",
+            "options": {
+              "importLoaders": 1,
+              "modules": false,
+              "url": {}
+            }
+          },
+          {
+            "loader": "postcss-loader",
+            "options": {
+              "postcssOptions": {
+                "plugins": [
+                  null,
+                  null,
+                  {
+                    "version": "8.5.4",
+                    "plugins": [
+                      {
+                        "postcssPlugin": "postcss-discard-comments"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-gradients"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-initial"
+                      },
+                      {
+                        "postcssPlugin": "postcss-svgo"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-display-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-transforms"
+                      },
+                      {
+                        "postcssPlugin": "postcss-colormin"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-timing-functions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-calc"
+                      },
+                      {
+                        "postcssPlugin": "postcss-convert-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-ordered-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-selectors"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-params"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-charset"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-overridden"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-string"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-unicode"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-font-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-url"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-repeat-style"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-positions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-whitespace"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-longhand"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-duplicates"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-rules"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-empty"
+                      },
+                      {
+                        "postcssPlugin": "postcss-unique-selectors"
+                      },
+                      {
+                        "postcssPlugin": "css-declaration-sorter"
+                      },
+                      {
+                        "postcssPlugin": "cssnano-util-raw-cache"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "test": {},
+        "type": "asset",
+        "parser": {
+          "dataUrlCondition": {
+            "maxSize": 4096
+          }
+        },
+        "generator": {
+          "filename": "static/media/[name].[hash][ext]"
+        }
+      },
+      {
+        "test": {},
+        "type": "asset/resource",
+        "generator": {
+          "filename": "static/sounds/[name][ext]"
+        }
+      },
+      {
+        "test": {},
+        "type": "json"
+      }
+    ]
+  },
+  "resolve": {
+    "extensions": [
+      ".tsx",
+      ".ts",
+      ".js",
+      ".jsx"
+    ],
+    "alias": {
+      "@": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\src",
+      "~public": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+      "process": "process/browser.js",
+      "@assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets",
+      "/assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets"
+    },
+    "fallback": {
+      "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\path-browserify\\index.js",
+      "fs": false,
+      "crypto": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\crypto-browserify\\index.js",
+      "stream": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-browserify\\index.js",
+      "buffer": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\buffer\\index.js",
+      "util": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\util\\util.js",
+      "assert": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\assert\\build\\assert.js",
+      "http": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-http\\index.js",
+      "https": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\https-browserify\\index.js",
+      "os": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\os-browserify\\browser.js",
+      "url": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\url\\url.js",
+      "zlib": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\browserify-zlib\\lib\\index.js",
+      "async_hooks": false
+    }
+  },
+  "optimization": {
+    "minimize": true,
+    "minimizer": [
+      {
+        "options": {
+          "test": {},
+          "extractComments": false,
+          "parallel": true,
+          "minimizer": {
+            "options": {
+              "compress": {
+                "drop_console": true,
+                "drop_debugger": true,
+                "pure_funcs": [
+                  "console.log"
+                ]
+              },
+              "format": {
+                "comments": false
+              },
+              "mangle": true
+            }
+          }
+        }
+      }
+    ],
+    "splitChunks": {
+      "chunks": "all",
+      "maxInitialRequests": 25,
+      "minSize": 10000,
+      "maxSize": 500000,
+      "cacheGroups": {
+        "mui": {
+          "test": {},
+          "name": "vendor.mui",
+          "chunks": "all",
+          "priority": 30,
+          "enforce": false,
+          "reuseExistingChunk": true
+        },
+        "vendor": {
+          "test": {},
+          "name": "vendor",
+          "chunks": "all",
+          "priority": 20,
+          "reuseExistingChunk": true
+        },
+        "common": {
+          "name": "common",
+          "minChunks": 2,
+          "priority": 10,
+          "reuseExistingChunk": true,
+          "enforce": true
+        },
+        "styles": {
+          "name": "styles",
+          "test": {},
+          "chunks": "all",
+          "enforce": true,
+          "priority": 30
+        }
+      }
+    },
+    "runtimeChunk": "single"
+  },
+  "plugins": [
+    {
+      "definitions": {
+        "process": "process/browser.js",
+        "Buffer": [
+          "buffer",
+          "Buffer"
+        ]
+      }
+    },
+    {
+      "definitions": {
+        "process.env.NODE_ENV": "\"production\""
+      }
+    },
+    {
+      "patterns": [
+        {
+          "from": "src/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/sounds",
+          "to": "static/sounds",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "node_modules/kuromoji/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "public",
+          "to": ".",
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store",
+              "**/dict/**",
+              "**/assets/**",
+              "**/index.html"
+            ]
+          }
+        },
+        {
+          "from": "src/data/romaji-data.json",
+          "to": "romaji-data.json"
+        }
+      ],
+      "options": {}
+    },
+    {
+      "userOptions": {
+        "template": "public/index.html",
+        "inject": "body",
+        "minify": {
+          "removeComments": true,
+          "collapseWhitespace": true,
+          "removeRedundantAttributes": true,
+          "useShortDoctype": true,
+          "removeEmptyAttributes": true,
+          "removeStyleLinkTypeAttributes": true,
+          "keepClosingSlash": true,
+          "minifyJS": true,
+          "minifyCSS": true,
+          "minifyURLs": true
+        },
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ],
+        "csp": {
+          "default-src": "'self'",
+          "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src": "'self' 'unsafe-inline'",
+          "img-src": "'self' data: https:",
+          "connect-src": "'self' https:",
+          "font-src": "'self'",
+          "object-src": "'none'",
+          "media-src": "'self'",
+          "frame-src": "'none'"
+        }
+      },
+      "version": 5,
+      "options": {
+        "template": "public/index.html",
+        "templateContent": false,
+        "filename": "index.html",
+        "publicPath": "auto",
+        "hash": false,
+        "inject": "body",
+        "scriptLoading": "defer",
+        "compile": true,
+        "favicon": false,
+        "minify": {
+          "removeComments": true,
+          "collapseWhitespace": true,
+          "removeRedundantAttributes": true,
+          "useShortDoctype": true,
+          "removeEmptyAttributes": true,
+          "removeStyleLinkTypeAttributes": true,
+          "keepClosingSlash": true,
+          "minifyJS": true,
+          "minifyCSS": true,
+          "minifyURLs": true
+        },
+        "cache": true,
+        "showErrors": true,
+        "chunks": "all",
+        "excludeChunks": [],
+        "chunksSortMode": "auto",
+        "meta": {},
+        "base": false,
+        "title": "Webpack App",
+        "xhtml": false,
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ],
+        "csp": {
+          "default-src": "'self'",
+          "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src": "'self' 'unsafe-inline'",
+          "img-src": "'self' data: https:",
+          "connect-src": "'self' https:",
+          "font-src": "'self'",
+          "object-src": "'none'",
+          "media-src": "'self'",
+          "frame-src": "'none'"
+        }
+      }
+    },
+    {
+      "options": {
+        "test": {},
+        "algorithm": "gzip",
+        "compressionOptions": {
+          "level": 9
+        },
+        "filename": "[path][base].gz",
+        "threshold": 10240,
+        "minRatio": 0.8,
+        "deleteOriginalAssets": false
+      }
+    },
+    {
+      "_sortedModulesCache": {},
+      "options": {
+        "filename": "static/css/[name].[contenthash:8].css",
+        "ignoreOrder": false,
+        "runtime": true,
+        "chunkFilename": "static/css/[name].[contenthash:8].chunk.css"
+      },
+      "runtimeOptions": {
+        "linkType": "text/css"
+      }
+    },
+    {
+      "asset": "[path].br[query]",
+      "test": {},
+      "threshold": 10240,
+      "minRatio": 0.8,
+      "deleteOriginalAssets": false
+    },
+    {
+      "options": {
+        "hashFuncNames": [
+          "sha384"
+        ],
+        "enabled": "auto",
+        "hashLoading": "eager"
+      }
+    },
+    {}
+  ],
+  "devServer": {
+    "static": [
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+        "publicPath": "/",
+        "watch": true
+      },
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+        "publicPath": "/",
+        "watch": true
+      }
+    ],
+    "historyApiFallback": {
+      "disableDotRule": true,
+      "rewrites": [
+        {
+          "from": {},
+          "to": "/index.html"
+        }
+      ]
+    },
+    "hot": "only",
+    "port": 3002,
+    "allowedHosts": "all",
+    "headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
+      "Cache-Control": "no-cache, no-store, must-revalidate"
+    },
+    "devMiddleware": {
+      "writeToDisk": false,
+      "publicPath": "/"
+    },
+    "client": {
+      "overlay": {
+        "errors": true,
+        "warnings": false
+      },
+      "progress": true,
+      "logging": "info",
+      "reconnect": true
+    },
+    "compress": true,
+    "open": true,
+    "proxy": {
+      "/api": {
+        "target": "http://localhost:3000",
+        "secure": false,
+        "changeOrigin": true
+      }
+    }
+  },
+  "devtool": "source-map",
+  "performance": {
+    "hints": "warning",
+    "maxEntrypointSize": 512000,
+    "maxAssetSize": 512000
+  },
+  "stats": {
+    "errorDetails": true,
+    "logging": "verbose",
+    "loggingDebug": [
+      "webpack",
+      "webpack"
+    ],
+    "loggingTrace": true,
+    "children": true
+  }
+}
+Build completed with stats:
+assets by path audio/*.mp3 39.4 MiB 3113 assets
+assets by path static/ 3.2 MiB 96 assets
+assets by status 20.3 MiB [compared for emit] 62 assets
+assets by path data/*.br 68.8 KiB
+  asset data/common-words.json.br 24.5 KiB [emitted]
+  + 3 assets
+assets by path *.js 13.6 KiB
+  asset service-worker.js 10.5 KiB [emitted] [from: public/service-worker.js] [copied] [minimized] 1 related asset
+  asset push-handler.js 3.02 KiB [emitted] [from: public/push-handler.js] [copied] [minimized]
+assets by path *.br 5.93 KiB
+  asset service-worker.js.br 2.97 KiB [emitted]
+  asset romaji-data.json.br 2.96 KiB [emitted]
+asset audio/audio_map.txt 66.6 KiB [emitted] [from: public/audio/audio_map.txt] [copied]
+asset romaji-data.json 11.3 KiB [emitted] [from: src/data/romaji-data.json] [copied] 1 related asset
+asset index.html 8.42 KiB [emitted]
+Entrypoint main [big] 2.13 MiB (8.92 MiB) = 29 assets 29 auxiliary assets
+chunk (runtime: runtime) static/js/vendor-536eaa00.7e3ddbb7.js (vendor-536eaa00) (id hint: vendor) 266 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-06bc7934.5b4736d8.js (vendor-06bc7934) (id hint: vendor) 21.8 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/776.5453c9be.chunk.js 9.62 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-e7d3bc8e.30ea4eb7.js (vendor.mui-e7d3bc8e) (id hint: mui) 156 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/1099.4ee4291d.chunk.js 99.9 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-3837499c.411d2165.js (vendor-3837499c) (id hint: vendor) 43.9 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-f966f08c.f16459cc.js (vendor-f966f08c) (id hint: vendor) 461 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor.mui-3fb7187e.93436f13.js (vendor.mui-3fb7187e) (id hint: mui) 120 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/vendor-0fce2044.fb62b04b.js (vendor-0fce2044) (id hint: vendor) 16.3 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/1741.a0eb7c45.chunk.js 18.7 KiB [rendered]
+chunk (runtime: runtime) static/css/styles.4517d70d.css (styles) (id hint: styles) 56.4 KiB [initial] split chunk (cache group: styles) (name: styles)
+chunk (runtime: runtime) static/js/common.448f8adb.chunk.js (common) (id hint: common) 38.1 KiB [rendered] split chunk (cache group: common) (name: common)
+chunk (runtime: runtime) static/js/vendor.mui-58465378.95dab96d.js (vendor.mui-58465378) (id hint: mui) 81.1 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/main-afbe97b7.c8ded84d.js (main-afbe97b7) 434 KiB [initial] [rendered]
+chunk (runtime: runtime) static/js/vendor-1b4271fd.2008bb7f.js (vendor-1b4271fd) (id hint: vendor) 50.9 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/3080.8076e787.chunk.js 8.11 KiB [rendered]
+chunk (runtime: runtime) static/js/3166.65e1ade1.chunk.js 24.7 KiB [rendered]
+chunk (runtime: runtime) static/js/main-52f0199e.1e41764f.js (main-52f0199e) 449 KiB [initial] [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-7e1a787a.61f79fbf.js (vendor.mui-7e1a787a) (id hint: mui) 108 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/3929.5a8cccf8.chunk.js 11.8 KiB [rendered]
+chunk (runtime: runtime) static/js/4070.e046b5df.chunk.js 58.9 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-4e952270.6a445522.js (vendor-4e952270) (id hint: vendor) 265 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-0bc0478e.edef70d6.js (vendor-0bc0478e) (id hint: vendor) 153 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-bb3d84b5.5ce1ff2d.js (vendor-bb3d84b5) (id hint: vendor) 405 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-b602250d.e5e875c4.js (vendor-b602250d) (id hint: vendor) 419 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-4e0e0553.66af2578.js (vendor-4e0e0553) (id hint: vendor) 953 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-866ab763.b3a80544.js (vendor-866ab763) (id hint: vendor) 36.2 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-25d586d3.4bbce378.js (vendor-25d586d3) (id hint: vendor) 18.7 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/5120.4c94474d.chunk.js 6.34 KiB [rendered]
+chunk (runtime: runtime) static/js/5137.22f41ff7.chunk.js 26.3 KiB [rendered]
+chunk (runtime: runtime) static/js/5179.c5b2eb50.chunk.js 43 KiB [rendered]
+chunk (runtime: runtime) static/js/5282.55018e9c.chunk.js 37.7 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-1d385dd4.78d06e1a.js (vendor-1d385dd4) (id hint: vendor) 10.8 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/5419.31cfceda.chunk.js 6.59 KiB [rendered]
+chunk (runtime: runtime) static/js/6242.8e66103d.chunk.js 25.2 KiB [rendered]
+chunk (runtime: runtime) static/js/6260.e7ceb1c6.chunk.js 183 KiB [rendered]
+chunk (runtime: runtime) static/js/6283.06a51a68.chunk.js 43.8 KiB [rendered]
+chunk (runtime: runtime) static/js/6440.d5d76fe6.chunk.js 229 bytes [rendered]
+chunk (runtime: runtime) static/js/vendor-f82e0cd2.e859b0fc.js (vendor-f82e0cd2) (id hint: vendor) 281 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/7080.8cfa8459.chunk.js 16.1 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-27545368.53f23079.js (vendor-27545368) (id hint: vendor) 198 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/main-af155fb1.71760968.js (main-af155fb1) 32.2 KiB [initial] [rendered]
+chunk (runtime: runtime) static/js/7458.b398d733.chunk.js 7.39 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-cdd60c62.7fa247a8.js (vendor-cdd60c62) (id hint: vendor) 382 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/7638.6a269d91.chunk.js 13.5 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-5a94f17d.dae6669c.js (vendor-5a94f17d) (id hint: vendor) 445 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/8828.fd7470dc.chunk.js 92.8 KiB [rendered]
+chunk (runtime: runtime) static/js/8856.4c8b1eee.chunk.js 9.65 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-712bd2d8.50a7161d.js (vendor.mui-712bd2d8) (id hint: mui) 142 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/runtime.20a5d867.js (runtime) 11.4 KiB [entry] [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-f92f78ac.72f8ae27.js (vendor.mui-f92f78ac) (id hint: mui) 412 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/9280.6489ba75.chunk.js 27.2 KiB [rendered]
+chunk (runtime: runtime) static/js/9545.a4487e16.chunk.js 64.6 KiB [rendered]
+orphan modules 10.2 MiB (javascript) 8.74 KiB (asset) 1.93 KiB (runtime) [orphan] 12571 modules
+runtime modules 11.4 KiB 17 modules
+cacheable modules 7.06 MiB (javascript) 56.4 KiB (css/mini-extract)
+  modules by path ./node_modules/ 5.32 MiB 809 modules
+  modules by path ./src/ 1.75 MiB (javascript) 56.4 KiB (css/mini-extract)
+    javascript modules 1.75 MiB 70 modules
+    css modules 56.4 KiB
+      css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/index.css 51 KiB [built] [code generated]
+      css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/App.css 85 bytes [built] [code generated]
+      css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/App.css (1) 5.25 KiB [built] [code generated]
+
+WARNING in asset size limit: The following asset(s) exceed the recommended size limit (500 KiB).
+This can impact web performance.
+Assets: 
+  dict/base.dat.gz (3.77 MiB)
+  dict/cc.dat.gz (1.61 MiB)
+  dict/check.dat.gz (2.97 MiB)
+  dict/tid.dat.gz (1.53 MiB)
+  dict/tid_map.dat.gz (1.42 MiB)
+  dict/tid_pos.dat.gz (5.64 MiB)
+  anime/rin-lonely.jpg (854 KiB)
+
+WARNING in entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (500 KiB). This can impact web performance.
+Entrypoints:
+  main (2.13 MiB)
+      static/js/runtime.20a5d867.js
+      static/js/vendor.mui-3fb7187e.93436f13.js
+      static/js/vendor.mui-e7d3bc8e.30ea4eb7.js
+      static/js/vendor.mui-58465378.95dab96d.js
+      static/js/vendor.mui-f92f78ac.72f8ae27.js
+      static/js/vendor.mui-712bd2d8.50a7161d.js
+      static/js/vendor.mui-7e1a787a.61f79fbf.js
+      static/css/styles.4517d70d.css
+      static/js/vendor-cdd60c62.7fa247a8.js
+      static/js/vendor-536eaa00.7e3ddbb7.js
+      static/js/vendor-06bc7934.5b4736d8.js
+      static/js/vendor-3837499c.411d2165.js
+      static/js/vendor-1b4271fd.2008bb7f.js
+      static/js/vendor-4e0e0553.66af2578.js
+      static/js/vendor-f966f08c.f16459cc.js
+      static/js/vendor-bb3d84b5.5ce1ff2d.js
+      static/js/vendor-1d385dd4.78d06e1a.js
+      static/js/vendor-f82e0cd2.e859b0fc.js
+      static/js/vendor-0bc0478e.edef70d6.js
+      static/js/vendor-5a94f17d.dae6669c.js
+      static/js/vendor-25d586d3.4bbce378.js
+      static/js/vendor-b602250d.e5e875c4.js
+      static/js/vendor-4e952270.6a445522.js
+      static/js/vendor-27545368.53f23079.js
+      static/js/vendor-0fce2044.fb62b04b.js
+      static/js/vendor-866ab763.b3a80544.js
+      static/js/main-af155fb1.71760968.js
+      static/js/main-52f0199e.1e41764f.js
+      static/js/main-afbe97b7.c8ded84d.js
+
+webpack 5.99.9 compiled with 2 warnings in 90035 ms
+Starting webpack build...
+Environment: {"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true,"NODE_ENV":"production"}
+Arguments: {"config":["webpack.config.prod.js"],"env":{"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true},"mode":"production"}
+Final webpack configuration:
+{
+  "mode": "production",
+  "entry": "./src/index.tsx",
+  "output": {
+    "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+    "filename": "static/js/[name].[contenthash:8].js",
+    "chunkFilename": "static/js/[name].[contenthash:8].chunk.js",
+    "publicPath": "/",
+    "clean": true,
+    "crossOriginLoading": "anonymous",
+    "assetModuleFilename": "static/media/[name].[hash][ext][query]",
+    "chunkLoadingGlobal": "webpackChunkBackupJapVoc",
+    "chunkLoadTimeout": 120000,
+    "globalObject": "this"
+  },
+  "module": {
+    "rules": [
+      {
+        "test": {},
+        "exclude": {},
+        "use": {
+          "loader": "babel-loader",
+          "options": {
+            "cacheDirectory": true,
+            "presets": [
+              "@babel/preset-env",
+              [
+                "@babel/preset-react",
+                {
+                  "runtime": "automatic"
+                }
+              ],
+              "@babel/preset-typescript"
+            ]
+          }
+        }
+      },
+      {
+        "test": {},
+        "use": [
+          "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\mini-css-extract-plugin\\dist\\loader.js",
+          {
+            "loader": "css-loader",
+            "options": {
+              "importLoaders": 1,
+              "modules": false,
+              "url": {}
+            }
+          },
+          {
+            "loader": "postcss-loader",
+            "options": {
+              "postcssOptions": {
+                "plugins": [
+                  null,
+                  null,
+                  {
+                    "version": "8.5.4",
+                    "plugins": [
+                      {
+                        "postcssPlugin": "postcss-discard-comments"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-gradients"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-initial"
+                      },
+                      {
+                        "postcssPlugin": "postcss-svgo"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-display-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-transforms"
+                      },
+                      {
+                        "postcssPlugin": "postcss-colormin"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-timing-functions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-calc"
+                      },
+                      {
+                        "postcssPlugin": "postcss-convert-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-ordered-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-selectors"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-params"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-charset"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-overridden"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-string"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-unicode"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-font-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-url"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-repeat-style"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-positions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-whitespace"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-longhand"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-duplicates"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-rules"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-empty"
+                      },
+                      {
+                        "postcssPlugin": "postcss-unique-selectors"
+                      },
+                      {
+                        "postcssPlugin": "css-declaration-sorter"
+                      },
+                      {
+                        "postcssPlugin": "cssnano-util-raw-cache"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "test": {},
+        "type": "asset",
+        "parser": {
+          "dataUrlCondition": {
+            "maxSize": 4096
+          }
+        },
+        "generator": {
+          "filename": "static/media/[name].[hash][ext]"
+        }
+      },
+      {
+        "test": {},
+        "type": "asset/resource",
+        "generator": {
+          "filename": "static/sounds/[name][ext]"
+        }
+      },
+      {
+        "test": {},
+        "type": "json"
+      }
+    ]
+  },
+  "resolve": {
+    "extensions": [
+      ".tsx",
+      ".ts",
+      ".js",
+      ".jsx"
+    ],
+    "alias": {
+      "@": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\src",
+      "~public": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+      "process": "process/browser.js",
+      "@assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets",
+      "/assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets"
+    },
+    "fallback": {
+      "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\path-browserify\\index.js",
+      "fs": false,
+      "crypto": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\crypto-browserify\\index.js",
+      "stream": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-browserify\\index.js",
+      "buffer": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\buffer\\index.js",
+      "util": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\util\\util.js",
+      "assert": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\assert\\build\\assert.js",
+      "http": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-http\\index.js",
+      "https": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\https-browserify\\index.js",
+      "os": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\os-browserify\\browser.js",
+      "url": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\url\\url.js",
+      "zlib": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\browserify-zlib\\lib\\index.js",
+      "async_hooks": false
+    }
+  },
+  "optimization": {
+    "minimize": true,
+    "minimizer": [
+      {
+        "options": {
+          "test": {},
+          "extractComments": false,
+          "parallel": true,
+          "minimizer": {
+            "options": {
+              "compress": {
+                "drop_console": true,
+                "drop_debugger": true,
+                "pure_funcs": [
+                  "console.log"
+                ]
+              },
+              "format": {
+                "comments": false
+              },
+              "mangle": true
+            }
+          }
+        }
+      }
+    ],
+    "splitChunks": {
+      "chunks": "all",
+      "maxInitialRequests": 25,
+      "minSize": 10000,
+      "maxSize": 500000,
+      "cacheGroups": {
+        "mui": {
+          "test": {},
+          "name": "vendor.mui",
+          "chunks": "all",
+          "priority": 30,
+          "enforce": false,
+          "reuseExistingChunk": true
+        },
+        "vendor": {
+          "test": {},
+          "name": "vendor",
+          "chunks": "all",
+          "priority": 20,
+          "reuseExistingChunk": true
+        },
+        "common": {
+          "name": "common",
+          "minChunks": 2,
+          "priority": 10,
+          "reuseExistingChunk": true,
+          "enforce": true
+        },
+        "styles": {
+          "name": "styles",
+          "test": {},
+          "chunks": "all",
+          "enforce": true,
+          "priority": 30
+        }
+      }
+    },
+    "runtimeChunk": "single"
+  },
+  "plugins": [
+    {
+      "definitions": {
+        "process": "process/browser.js",
+        "Buffer": [
+          "buffer",
+          "Buffer"
+        ]
+      }
+    },
+    {
+      "definitions": {
+        "process.env.NODE_ENV": "\"production\""
+      }
+    },
+    {
+      "options": {
+        "banner": "window.webpackChunkBackupJapVoc = window.webpackChunkBackupJapVoc || [];",
+        "raw": true,
+        "entryOnly": true
+      }
+    },
+    {
+      "patterns": [
+        {
+          "from": "src/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/sounds",
+          "to": "static/sounds",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "node_modules/kuromoji/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "public",
+          "to": ".",
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store",
+              "**/dict/**",
+              "**/assets/**",
+              "**/index.html"
+            ]
+          }
+        },
+        {
+          "from": "src/data/romaji-data.json",
+          "to": "romaji-data.json"
+        }
+      ],
+      "options": {}
+    },
+    {
+      "userOptions": {
+        "template": "public/index.html",
+        "inject": "body",
+        "minify": {
+          "removeComments": true,
+          "collapseWhitespace": true,
+          "removeRedundantAttributes": true,
+          "useShortDoctype": true,
+          "removeEmptyAttributes": true,
+          "removeStyleLinkTypeAttributes": true,
+          "keepClosingSlash": true,
+          "minifyJS": true,
+          "minifyCSS": true,
+          "minifyURLs": true
+        },
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ],
+        "csp": {
+          "default-src": "'self'",
+          "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src": "'self' 'unsafe-inline'",
+          "img-src": "'self' data: https:",
+          "connect-src": "'self' https:",
+          "font-src": "'self'",
+          "object-src": "'none'",
+          "media-src": "'self'",
+          "frame-src": "'none'"
+        }
+      },
+      "version": 5,
+      "options": {
+        "template": "public/index.html",
+        "templateContent": false,
+        "filename": "index.html",
+        "publicPath": "auto",
+        "hash": false,
+        "inject": "body",
+        "scriptLoading": "defer",
+        "compile": true,
+        "favicon": false,
+        "minify": {
+          "removeComments": true,
+          "collapseWhitespace": true,
+          "removeRedundantAttributes": true,
+          "useShortDoctype": true,
+          "removeEmptyAttributes": true,
+          "removeStyleLinkTypeAttributes": true,
+          "keepClosingSlash": true,
+          "minifyJS": true,
+          "minifyCSS": true,
+          "minifyURLs": true
+        },
+        "cache": true,
+        "showErrors": true,
+        "chunks": "all",
+        "excludeChunks": [],
+        "chunksSortMode": "auto",
+        "meta": {},
+        "base": false,
+        "title": "Webpack App",
+        "xhtml": false,
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ],
+        "csp": {
+          "default-src": "'self'",
+          "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src": "'self' 'unsafe-inline'",
+          "img-src": "'self' data: https:",
+          "connect-src": "'self' https:",
+          "font-src": "'self'",
+          "object-src": "'none'",
+          "media-src": "'self'",
+          "frame-src": "'none'"
+        }
+      }
+    },
+    {
+      "options": {
+        "test": {},
+        "algorithm": "gzip",
+        "compressionOptions": {
+          "level": 9
+        },
+        "filename": "[path][base].gz",
+        "threshold": 10240,
+        "minRatio": 0.8,
+        "deleteOriginalAssets": false
+      }
+    },
+    {
+      "_sortedModulesCache": {},
+      "options": {
+        "filename": "static/css/[name].[contenthash:8].css",
+        "ignoreOrder": false,
+        "runtime": true,
+        "chunkFilename": "static/css/[name].[contenthash:8].chunk.css"
+      },
+      "runtimeOptions": {
+        "linkType": "text/css"
+      }
+    },
+    {
+      "asset": "[path].br[query]",
+      "test": {},
+      "threshold": 10240,
+      "minRatio": 0.8,
+      "deleteOriginalAssets": false
+    },
+    {
+      "options": {
+        "hashFuncNames": [
+          "sha384"
+        ],
+        "enabled": "auto",
+        "hashLoading": "eager"
+      }
+    },
+    {}
+  ],
+  "devServer": {
+    "static": [
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+        "publicPath": "/",
+        "watch": true
+      },
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+        "publicPath": "/",
+        "watch": true
+      }
+    ],
+    "historyApiFallback": {
+      "disableDotRule": true,
+      "rewrites": [
+        {
+          "from": {},
+          "to": "/index.html"
+        }
+      ]
+    },
+    "hot": "only",
+    "port": 3002,
+    "allowedHosts": "all",
+    "headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
+      "Cache-Control": "no-cache, no-store, must-revalidate"
+    },
+    "devMiddleware": {
+      "writeToDisk": false,
+      "publicPath": "/"
+    },
+    "client": {
+      "overlay": {
+        "errors": true,
+        "warnings": false
+      },
+      "progress": true,
+      "logging": "info",
+      "reconnect": true
+    },
+    "compress": true,
+    "open": true,
+    "proxy": {
+      "/api": {
+        "target": "http://localhost:3000",
+        "secure": false,
+        "changeOrigin": true
+      }
+    }
+  },
+  "devtool": "source-map",
+  "performance": {
+    "hints": "warning",
+    "maxEntrypointSize": 512000,
+    "maxAssetSize": 512000
+  },
+  "stats": {
+    "errorDetails": true,
+    "logging": "verbose",
+    "loggingDebug": [
+      "webpack",
+      "webpack"
+    ],
+    "loggingTrace": true,
+    "children": true
+  }
+}
+Starting webpack build...
+Environment: {"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true,"NODE_ENV":"production"}
+Arguments: {"config":["webpack.config.prod.js"],"env":{"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true},"mode":"production"}
+Final webpack configuration:
+{
+  "mode": "production",
+  "entry": "./src/index.tsx",
+  "output": {
+    "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+    "filename": "static/js/[name].[contenthash:8].js",
+    "chunkFilename": "static/js/[name].[contenthash:8].chunk.js",
+    "publicPath": "/",
+    "clean": true,
+    "crossOriginLoading": "anonymous",
+    "assetModuleFilename": "static/media/[name].[hash][ext][query]",
+    "chunkLoadingGlobal": "webpackChunkBackupJapVoc",
+    "chunkLoadTimeout": 120000,
+    "globalObject": "this"
+  },
+  "module": {
+    "rules": [
+      {
+        "test": {},
+        "exclude": {},
+        "use": {
+          "loader": "babel-loader",
+          "options": {
+            "cacheDirectory": true,
+            "presets": [
+              "@babel/preset-env",
+              [
+                "@babel/preset-react",
+                {
+                  "runtime": "automatic"
+                }
+              ],
+              "@babel/preset-typescript"
+            ]
+          }
+        }
+      },
+      {
+        "test": {},
+        "use": [
+          "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\mini-css-extract-plugin\\dist\\loader.js",
+          {
+            "loader": "css-loader",
+            "options": {
+              "importLoaders": 1,
+              "modules": false,
+              "url": {}
+            }
+          },
+          {
+            "loader": "postcss-loader",
+            "options": {
+              "postcssOptions": {
+                "plugins": [
+                  null,
+                  null,
+                  {
+                    "version": "8.5.4",
+                    "plugins": [
+                      {
+                        "postcssPlugin": "postcss-discard-comments"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-gradients"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-initial"
+                      },
+                      {
+                        "postcssPlugin": "postcss-svgo"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-display-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-transforms"
+                      },
+                      {
+                        "postcssPlugin": "postcss-colormin"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-timing-functions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-calc"
+                      },
+                      {
+                        "postcssPlugin": "postcss-convert-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-ordered-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-selectors"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-params"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-charset"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-overridden"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-string"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-unicode"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-font-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-url"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-repeat-style"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-positions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-whitespace"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-longhand"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-duplicates"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-rules"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-empty"
+                      },
+                      {
+                        "postcssPlugin": "postcss-unique-selectors"
+                      },
+                      {
+                        "postcssPlugin": "css-declaration-sorter"
+                      },
+                      {
+                        "postcssPlugin": "cssnano-util-raw-cache"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "test": {},
+        "type": "asset",
+        "parser": {
+          "dataUrlCondition": {
+            "maxSize": 4096
+          }
+        },
+        "generator": {
+          "filename": "static/media/[name].[hash][ext]"
+        }
+      },
+      {
+        "test": {},
+        "type": "asset/resource",
+        "generator": {
+          "filename": "static/sounds/[name][ext]"
+        }
+      },
+      {
+        "test": {},
+        "type": "json"
+      }
+    ]
+  },
+  "resolve": {
+    "extensions": [
+      ".tsx",
+      ".ts",
+      ".js",
+      ".jsx"
+    ],
+    "alias": {
+      "@": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\src",
+      "~public": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+      "process": "process/browser.js",
+      "@assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets",
+      "/assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets"
+    },
+    "fallback": {
+      "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\path-browserify\\index.js",
+      "fs": false,
+      "crypto": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\crypto-browserify\\index.js",
+      "stream": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-browserify\\index.js",
+      "buffer": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\buffer\\index.js",
+      "util": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\util\\util.js",
+      "assert": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\assert\\build\\assert.js",
+      "http": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-http\\index.js",
+      "https": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\https-browserify\\index.js",
+      "os": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\os-browserify\\browser.js",
+      "url": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\url\\url.js",
+      "zlib": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\browserify-zlib\\lib\\index.js",
+      "async_hooks": false
+    }
+  },
+  "optimization": {
+    "minimize": true,
+    "minimizer": [
+      {
+        "options": {
+          "test": {},
+          "extractComments": false,
+          "parallel": true,
+          "minimizer": {
+            "options": {
+              "compress": {
+                "drop_console": true,
+                "drop_debugger": true,
+                "pure_funcs": [
+                  "console.log"
+                ]
+              },
+              "format": {
+                "comments": false
+              },
+              "mangle": true
+            }
+          }
+        }
+      }
+    ],
+    "splitChunks": {
+      "chunks": "all",
+      "maxInitialRequests": 25,
+      "minSize": 10000,
+      "maxSize": 500000,
+      "cacheGroups": {
+        "mui": {
+          "test": {},
+          "name": "vendor.mui",
+          "chunks": "all",
+          "priority": 30,
+          "enforce": false,
+          "reuseExistingChunk": true
+        },
+        "vendor": {
+          "test": {},
+          "name": "vendor",
+          "chunks": "all",
+          "priority": 20,
+          "reuseExistingChunk": true
+        },
+        "common": {
+          "name": "common",
+          "minChunks": 2,
+          "priority": 10,
+          "reuseExistingChunk": true,
+          "enforce": true
+        },
+        "styles": {
+          "name": "styles",
+          "test": {},
+          "chunks": "all",
+          "enforce": true,
+          "priority": 30
+        }
+      }
+    },
+    "runtimeChunk": "single"
+  },
+  "plugins": [
+    {
+      "definitions": {
+        "process": "process/browser.js",
+        "Buffer": [
+          "buffer",
+          "Buffer"
+        ]
+      }
+    },
+    {
+      "definitions": {
+        "process.env.NODE_ENV": "\"production\""
+      }
+    },
+    {
+      "options": {
+        "banner": "window.webpackChunkBackupJapVoc = window.webpackChunkBackupJapVoc || [];",
+        "raw": true,
+        "entryOnly": true
+      }
+    },
+    {
+      "patterns": [
+        {
+          "from": "src/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/sounds",
+          "to": "static/sounds",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "node_modules/kuromoji/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "public",
+          "to": ".",
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store",
+              "**/dict/**",
+              "**/assets/**",
+              "**/index.html"
+            ]
+          }
+        },
+        {
+          "from": "src/data/romaji-data.json",
+          "to": "romaji-data.json"
+        }
+      ],
+      "options": {}
+    },
+    {
+      "userOptions": {
+        "template": "public/index.html",
+        "inject": "body",
+        "minify": {
+          "removeComments": true,
+          "collapseWhitespace": true,
+          "removeRedundantAttributes": true,
+          "useShortDoctype": true,
+          "removeEmptyAttributes": true,
+          "removeStyleLinkTypeAttributes": true,
+          "keepClosingSlash": true,
+          "minifyJS": true,
+          "minifyCSS": true,
+          "minifyURLs": true
+        },
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ],
+        "csp": {
+          "default-src": "'self'",
+          "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src": "'self' 'unsafe-inline'",
+          "img-src": "'self' data: https:",
+          "connect-src": "'self' https:",
+          "font-src": "'self'",
+          "object-src": "'none'",
+          "media-src": "'self'",
+          "frame-src": "'none'"
+        }
+      },
+      "version": 5,
+      "options": {
+        "template": "public/index.html",
+        "templateContent": false,
+        "filename": "index.html",
+        "publicPath": "auto",
+        "hash": false,
+        "inject": "body",
+        "scriptLoading": "defer",
+        "compile": true,
+        "favicon": false,
+        "minify": {
+          "removeComments": true,
+          "collapseWhitespace": true,
+          "removeRedundantAttributes": true,
+          "useShortDoctype": true,
+          "removeEmptyAttributes": true,
+          "removeStyleLinkTypeAttributes": true,
+          "keepClosingSlash": true,
+          "minifyJS": true,
+          "minifyCSS": true,
+          "minifyURLs": true
+        },
+        "cache": true,
+        "showErrors": true,
+        "chunks": "all",
+        "excludeChunks": [],
+        "chunksSortMode": "auto",
+        "meta": {},
+        "base": false,
+        "title": "Webpack App",
+        "xhtml": false,
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ],
+        "csp": {
+          "default-src": "'self'",
+          "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src": "'self' 'unsafe-inline'",
+          "img-src": "'self' data: https:",
+          "connect-src": "'self' https:",
+          "font-src": "'self'",
+          "object-src": "'none'",
+          "media-src": "'self'",
+          "frame-src": "'none'"
+        }
+      }
+    },
+    {
+      "options": {
+        "test": {},
+        "algorithm": "gzip",
+        "compressionOptions": {
+          "level": 9
+        },
+        "filename": "[path][base].gz",
+        "threshold": 10240,
+        "minRatio": 0.8,
+        "deleteOriginalAssets": false
+      }
+    },
+    {
+      "_sortedModulesCache": {},
+      "options": {
+        "filename": "static/css/[name].[contenthash:8].css",
+        "ignoreOrder": false,
+        "runtime": true,
+        "chunkFilename": "static/css/[name].[contenthash:8].chunk.css"
+      },
+      "runtimeOptions": {
+        "linkType": "text/css"
+      }
+    },
+    {
+      "asset": "[path].br[query]",
+      "test": {},
+      "threshold": 10240,
+      "minRatio": 0.8,
+      "deleteOriginalAssets": false
+    },
+    {
+      "options": {
+        "hashFuncNames": [
+          "sha384"
+        ],
+        "enabled": "auto",
+        "hashLoading": "eager"
+      }
+    },
+    {}
+  ],
+  "devServer": {
+    "static": [
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+        "publicPath": "/",
+        "watch": true
+      },
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+        "publicPath": "/",
+        "watch": true
+      }
+    ],
+    "historyApiFallback": {
+      "disableDotRule": true,
+      "rewrites": [
+        {
+          "from": {},
+          "to": "/index.html"
+        }
+      ]
+    },
+    "hot": "only",
+    "port": 3002,
+    "allowedHosts": "all",
+    "headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
+      "Cache-Control": "no-cache, no-store, must-revalidate"
+    },
+    "devMiddleware": {
+      "writeToDisk": false,
+      "publicPath": "/"
+    },
+    "client": {
+      "overlay": {
+        "errors": true,
+        "warnings": false
+      },
+      "progress": true,
+      "logging": "info",
+      "reconnect": true
+    },
+    "compress": true,
+    "open": true,
+    "proxy": {
+      "/api": {
+        "target": "http://localhost:3000",
+        "secure": false,
+        "changeOrigin": true
+      }
+    }
+  },
+  "devtool": "source-map",
+  "performance": {
+    "hints": "warning",
+    "maxEntrypointSize": 512000,
+    "maxAssetSize": 512000
+  },
+  "stats": {
+    "errorDetails": true,
+    "logging": "verbose",
+    "loggingDebug": [
+      "webpack",
+      "webpack"
+    ],
+    "loggingTrace": true,
+    "children": true
+  }
+}
+Build completed with stats:
+assets by path audio/*.mp3 39.4 MiB 3113 assets
+assets by path static/ 3.2 MiB 96 assets
+assets by path anime/ 2.09 MiB 20 assets
+assets by path dict/*.gz 17 MiB 12 assets
+assets by path icons/*.png 90.2 KiB 11 assets
+assets by path splash/*.png 459 KiB 9 assets
+assets by path data/ 744 KiB 8 assets
+assets by path *.json 14.4 KiB 3 assets
+assets by path *.html 16.4 KiB 3 assets
+assets by path *.js 13.6 KiB 2 assets
+assets by path *.br 5.93 KiB 2 assets
++ 3 assets
+Entrypoint main [big] 2.13 MiB (8.92 MiB) = 29 assets 29 auxiliary assets
+chunk (runtime: runtime) static/js/vendor-536eaa00.f60c5aad.js (vendor-536eaa00) (id hint: vendor) 266 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-06bc7934.6d271a13.js (vendor-06bc7934) (id hint: vendor) 21.8 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/776.c47c4344.chunk.js 9.62 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-e7d3bc8e.232b890e.js (vendor.mui-e7d3bc8e) (id hint: mui) 156 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/1099.39f005ca.chunk.js 99.9 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-3837499c.e67755d9.js (vendor-3837499c) (id hint: vendor) 43.9 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-f966f08c.c84ce438.js (vendor-f966f08c) (id hint: vendor) 461 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor.mui-3fb7187e.c231aac8.js (vendor.mui-3fb7187e) (id hint: mui) 120 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/vendor-0fce2044.33a59d59.js (vendor-0fce2044) (id hint: vendor) 16.3 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/1741.1019199a.chunk.js 18.7 KiB [rendered]
+chunk (runtime: runtime) static/css/styles.e5cecbd7.css (styles) (id hint: styles) 56.4 KiB [initial] split chunk (cache group: styles) (name: styles)
+chunk (runtime: runtime) static/js/common.901abcc8.chunk.js (common) (id hint: common) 38.1 KiB [rendered] split chunk (cache group: common) (name: common)
+chunk (runtime: runtime) static/js/vendor.mui-58465378.d5235894.js (vendor.mui-58465378) (id hint: mui) 81.1 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/main-afbe97b7.794f2f4d.js (main-afbe97b7) 434 KiB [initial] [rendered]
+chunk (runtime: runtime) static/js/vendor-1b4271fd.3bf68c71.js (vendor-1b4271fd) (id hint: vendor) 50.9 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/3080.018d0c01.chunk.js 8.11 KiB [rendered]
+chunk (runtime: runtime) static/js/3166.6e2e33fc.chunk.js 24.7 KiB [rendered]
+chunk (runtime: runtime) static/js/main-52f0199e.a0e07cbf.js (main-52f0199e) 449 KiB [initial] [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-7e1a787a.e540d67c.js (vendor.mui-7e1a787a) (id hint: mui) 108 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/3929.2c17537a.chunk.js 11.8 KiB [rendered]
+chunk (runtime: runtime) static/js/4070.a498e722.chunk.js 58.9 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-4e952270.3202c0bd.js (vendor-4e952270) (id hint: vendor) 265 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-0bc0478e.9d4129a4.js (vendor-0bc0478e) (id hint: vendor) 153 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-bb3d84b5.cf36c892.js (vendor-bb3d84b5) (id hint: vendor) 405 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-b602250d.b27f8082.js (vendor-b602250d) (id hint: vendor) 419 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-4e0e0553.2936e51b.js (vendor-4e0e0553) (id hint: vendor) 953 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-866ab763.f1a45c2b.js (vendor-866ab763) (id hint: vendor) 36.2 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-25d586d3.cb4ee158.js (vendor-25d586d3) (id hint: vendor) 18.7 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/5120.11f7b45d.chunk.js 6.34 KiB [rendered]
+chunk (runtime: runtime) static/js/5137.a37b5cdf.chunk.js 26.3 KiB [rendered]
+chunk (runtime: runtime) static/js/5179.66293e6e.chunk.js 43 KiB [rendered]
+chunk (runtime: runtime) static/js/5282.36886a21.chunk.js 37.7 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-1d385dd4.98d45b75.js (vendor-1d385dd4) (id hint: vendor) 10.8 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/5419.5169e93b.chunk.js 6.59 KiB [rendered]
+chunk (runtime: runtime) static/js/6242.03b58390.chunk.js 25.2 KiB [rendered]
+chunk (runtime: runtime) static/js/6260.627ee42b.chunk.js 183 KiB [rendered]
+chunk (runtime: runtime) static/js/6283.70f67f09.chunk.js 43.8 KiB [rendered]
+chunk (runtime: runtime) static/js/6440.266e0260.chunk.js 229 bytes [rendered]
+chunk (runtime: runtime) static/js/vendor-f82e0cd2.80dcde37.js (vendor-f82e0cd2) (id hint: vendor) 281 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/7080.8b83e2a1.chunk.js 16.1 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-27545368.5e54a04b.js (vendor-27545368) (id hint: vendor) 198 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/main-af155fb1.ca4bbb48.js (main-af155fb1) 32.2 KiB [initial] [rendered]
+chunk (runtime: runtime) static/js/7458.b9f68397.chunk.js 7.39 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-cdd60c62.39403d95.js (vendor-cdd60c62) (id hint: vendor) 382 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/7638.1142532f.chunk.js 13.5 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-5a94f17d.49ae8a55.js (vendor-5a94f17d) (id hint: vendor) 445 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/8828.3e7d1314.chunk.js 92.8 KiB [rendered]
+chunk (runtime: runtime) static/js/8856.11f229d4.chunk.js 9.65 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-712bd2d8.552ca3ef.js (vendor.mui-712bd2d8) (id hint: mui) 142 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/runtime.d448953d.js (runtime) 11.4 KiB [entry] [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-f92f78ac.33a3cf7a.js (vendor.mui-f92f78ac) (id hint: mui) 412 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/9280.8ee3a5ea.chunk.js 27.2 KiB [rendered]
+chunk (runtime: runtime) static/js/9545.857697a6.chunk.js 64.6 KiB [rendered]
+orphan modules 10.2 MiB (javascript) 8.74 KiB (asset) 1.93 KiB (runtime) [orphan] 12571 modules
+runtime modules 11.4 KiB 17 modules
+cacheable modules 7.06 MiB (javascript) 56.4 KiB (css/mini-extract)
+  modules by path ./node_modules/ 5.32 MiB 809 modules
+  modules by path ./src/ 1.75 MiB (javascript) 56.4 KiB (css/mini-extract)
+    javascript modules 1.75 MiB 70 modules
+    css modules 56.4 KiB
+      css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/index.css 51 KiB [built] [code generated]
+      css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/App.css 85 bytes [built] [code generated]
+      css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/App.css (1) 5.25 KiB [built] [code generated]
+
+WARNING in asset size limit: The following asset(s) exceed the recommended size limit (500 KiB).
+This can impact web performance.
+Assets: 
+  dict/base.dat.gz (3.77 MiB)
+  dict/cc.dat.gz (1.61 MiB)
+  dict/check.dat.gz (2.97 MiB)
+  dict/tid.dat.gz (1.53 MiB)
+  dict/tid_map.dat.gz (1.42 MiB)
+  dict/tid_pos.dat.gz (5.64 MiB)
+  anime/rin-lonely.jpg (854 KiB)
+
+WARNING in entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (500 KiB). This can impact web performance.
+Entrypoints:
+  main (2.13 MiB)
+      static/js/runtime.d448953d.js
+      static/js/vendor.mui-3fb7187e.c231aac8.js
+      static/js/vendor.mui-e7d3bc8e.232b890e.js
+      static/js/vendor.mui-58465378.d5235894.js
+      static/js/vendor.mui-f92f78ac.33a3cf7a.js
+      static/js/vendor.mui-712bd2d8.552ca3ef.js
+      static/js/vendor.mui-7e1a787a.e540d67c.js
+      static/css/styles.e5cecbd7.css
+      static/js/vendor-cdd60c62.39403d95.js
+      static/js/vendor-536eaa00.f60c5aad.js
+      static/js/vendor-06bc7934.6d271a13.js
+      static/js/vendor-3837499c.e67755d9.js
+      static/js/vendor-1b4271fd.3bf68c71.js
+      static/js/vendor-4e0e0553.2936e51b.js
+      static/js/vendor-f966f08c.c84ce438.js
+      static/js/vendor-bb3d84b5.cf36c892.js
+      static/js/vendor-1d385dd4.98d45b75.js
+      static/js/vendor-f82e0cd2.80dcde37.js
+      static/js/vendor-0bc0478e.9d4129a4.js
+      static/js/vendor-5a94f17d.49ae8a55.js
+      static/js/vendor-25d586d3.cb4ee158.js
+      static/js/vendor-b602250d.b27f8082.js
+      static/js/vendor-4e952270.3202c0bd.js
+      static/js/vendor-27545368.5e54a04b.js
+      static/js/vendor-0fce2044.33a59d59.js
+      static/js/vendor-866ab763.f1a45c2b.js
+      static/js/main-af155fb1.ca4bbb48.js
+      static/js/main-52f0199e.a0e07cbf.js
+      static/js/main-afbe97b7.794f2f4d.js
+
+webpack 5.99.9 compiled with 2 warnings in 90599 ms
+Starting webpack build...
+Environment: {"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true,"NODE_ENV":"production"}
+Arguments: {"config":["webpack.config.prod.js"],"env":{"WEBPACK_BUNDLE":true,"WEBPACK_BUILD":true},"mode":"production"}
+Final webpack configuration:
+{
+  "mode": "production",
+  "entry": "./src/index.tsx",
+  "output": {
+    "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+    "filename": "static/js/[name].[contenthash:8].js",
+    "chunkFilename": "static/js/[name].[contenthash:8].chunk.js",
+    "publicPath": "/",
+    "clean": true,
+    "crossOriginLoading": "anonymous",
+    "assetModuleFilename": "static/media/[name].[hash][ext][query]",
+    "chunkLoadingGlobal": "webpackChunkBackupJapVoc",
+    "chunkLoadTimeout": 120000,
+    "globalObject": "this"
+  },
+  "module": {
+    "rules": [
+      {
+        "test": {},
+        "exclude": {},
+        "use": {
+          "loader": "babel-loader",
+          "options": {
+            "cacheDirectory": true,
+            "presets": [
+              "@babel/preset-env",
+              [
+                "@babel/preset-react",
+                {
+                  "runtime": "automatic"
+                }
+              ],
+              "@babel/preset-typescript"
+            ]
+          }
+        }
+      },
+      {
+        "test": {},
+        "use": [
+          "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\mini-css-extract-plugin\\dist\\loader.js",
+          {
+            "loader": "css-loader",
+            "options": {
+              "importLoaders": 1,
+              "modules": false,
+              "url": {}
+            }
+          },
+          {
+            "loader": "postcss-loader",
+            "options": {
+              "postcssOptions": {
+                "plugins": [
+                  null,
+                  null,
+                  {
+                    "version": "8.5.4",
+                    "plugins": [
+                      {
+                        "postcssPlugin": "postcss-discard-comments"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-gradients"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-initial"
+                      },
+                      {
+                        "postcssPlugin": "postcss-svgo"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-display-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-reduce-transforms"
+                      },
+                      {
+                        "postcssPlugin": "postcss-colormin"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-timing-functions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-calc"
+                      },
+                      {
+                        "postcssPlugin": "postcss-convert-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-ordered-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-selectors"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-params"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-charset"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-overridden"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-string"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-unicode"
+                      },
+                      {
+                        "postcssPlugin": "postcss-minify-font-values"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-url"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-repeat-style"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-positions"
+                      },
+                      {
+                        "postcssPlugin": "postcss-normalize-whitespace"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-longhand"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-duplicates"
+                      },
+                      {
+                        "postcssPlugin": "postcss-merge-rules"
+                      },
+                      {
+                        "postcssPlugin": "postcss-discard-empty"
+                      },
+                      {
+                        "postcssPlugin": "postcss-unique-selectors"
+                      },
+                      {
+                        "postcssPlugin": "css-declaration-sorter"
+                      },
+                      {
+                        "postcssPlugin": "cssnano-util-raw-cache"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "test": {},
+        "type": "asset",
+        "parser": {
+          "dataUrlCondition": {
+            "maxSize": 4096
+          }
+        },
+        "generator": {
+          "filename": "static/media/[name].[hash][ext]"
+        }
+      },
+      {
+        "test": {},
+        "type": "asset/resource",
+        "generator": {
+          "filename": "static/sounds/[name][ext]"
+        }
+      },
+      {
+        "test": {},
+        "type": "json"
+      }
+    ]
+  },
+  "resolve": {
+    "extensions": [
+      ".tsx",
+      ".ts",
+      ".js",
+      ".jsx"
+    ],
+    "alias": {
+      "@": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\src",
+      "~public": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+      "process": "process/browser.js",
+      "@assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets",
+      "/assets": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\assets"
+    },
+    "fallback": {
+      "path": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\path-browserify\\index.js",
+      "fs": false,
+      "crypto": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\crypto-browserify\\index.js",
+      "stream": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-browserify\\index.js",
+      "buffer": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\buffer\\index.js",
+      "util": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\util\\util.js",
+      "assert": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\assert\\build\\assert.js",
+      "http": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\stream-http\\index.js",
+      "https": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\https-browserify\\index.js",
+      "os": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\os-browserify\\browser.js",
+      "url": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\url\\url.js",
+      "zlib": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\node_modules\\browserify-zlib\\lib\\index.js",
+      "async_hooks": false
+    }
+  },
+  "optimization": {
+    "minimize": true,
+    "minimizer": [
+      {
+        "options": {
+          "test": {},
+          "extractComments": false,
+          "parallel": true,
+          "minimizer": {
+            "options": {
+              "compress": {
+                "drop_console": true,
+                "drop_debugger": true,
+                "pure_funcs": [
+                  "console.log"
+                ]
+              },
+              "format": {
+                "comments": false
+              },
+              "mangle": true
+            }
+          }
+        }
+      }
+    ],
+    "splitChunks": {
+      "chunks": "all",
+      "maxInitialRequests": 25,
+      "minSize": 10000,
+      "maxSize": 500000,
+      "cacheGroups": {
+        "mui": {
+          "test": {},
+          "name": "vendor.mui",
+          "chunks": "all",
+          "priority": 30,
+          "enforce": false,
+          "reuseExistingChunk": true
+        },
+        "vendor": {
+          "test": {},
+          "name": "vendor",
+          "chunks": "all",
+          "priority": 20,
+          "reuseExistingChunk": true
+        },
+        "common": {
+          "name": "common",
+          "minChunks": 2,
+          "priority": 10,
+          "reuseExistingChunk": true,
+          "enforce": true
+        },
+        "styles": {
+          "name": "styles",
+          "test": {},
+          "chunks": "all",
+          "enforce": true,
+          "priority": 30
+        }
+      }
+    },
+    "runtimeChunk": "single"
+  },
+  "plugins": [
+    {
+      "definitions": {
+        "process": "process/browser.js",
+        "Buffer": [
+          "buffer",
+          "Buffer"
+        ]
+      }
+    },
+    {
+      "definitions": {
+        "process.env.NODE_ENV": "\"production\""
+      }
+    },
+    {
+      "options": {
+        "banner": "window.webpackChunkBackupJapVoc = window.webpackChunkBackupJapVoc || [];",
+        "raw": true,
+        "entryOnly": true
+      }
+    },
+    {
+      "patterns": [
+        {
+          "from": "src/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/assets",
+          "to": "static/media",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/sounds",
+          "to": "static/sounds",
+          "noErrorOnMissing": true,
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store"
+            ]
+          }
+        },
+        {
+          "from": "public/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "node_modules/kuromoji/dict",
+          "to": "dict",
+          "noErrorOnMissing": true
+        },
+        {
+          "from": "public",
+          "to": ".",
+          "globOptions": {
+            "ignore": [
+              "**/.DS_Store",
+              "**/dict/**",
+              "**/assets/**",
+              "**/index.html"
+            ]
+          }
+        },
+        {
+          "from": "src/data/romaji-data.json",
+          "to": "romaji-data.json"
+        }
+      ],
+      "options": {}
+    },
+    {
+      "userOptions": {
+        "template": "public/index.html",
+        "inject": "body",
+        "minify": {
+          "removeComments": true,
+          "collapseWhitespace": true,
+          "removeRedundantAttributes": true,
+          "useShortDoctype": true,
+          "removeEmptyAttributes": true,
+          "removeStyleLinkTypeAttributes": true,
+          "keepClosingSlash": true,
+          "minifyJS": true,
+          "minifyCSS": true,
+          "minifyURLs": true
+        },
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ],
+        "csp": {
+          "default-src": "'self'",
+          "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src": "'self' 'unsafe-inline'",
+          "img-src": "'self' data: https:",
+          "connect-src": "'self' https:",
+          "font-src": "'self'",
+          "object-src": "'none'",
+          "media-src": "'self'",
+          "frame-src": "'none'"
+        }
+      },
+      "version": 5,
+      "options": {
+        "template": "public/index.html",
+        "templateContent": false,
+        "filename": "index.html",
+        "publicPath": "auto",
+        "hash": false,
+        "inject": "body",
+        "scriptLoading": "defer",
+        "compile": true,
+        "favicon": false,
+        "minify": {
+          "removeComments": true,
+          "collapseWhitespace": true,
+          "removeRedundantAttributes": true,
+          "useShortDoctype": true,
+          "removeEmptyAttributes": true,
+          "removeStyleLinkTypeAttributes": true,
+          "keepClosingSlash": true,
+          "minifyJS": true,
+          "minifyCSS": true,
+          "minifyURLs": true
+        },
+        "cache": true,
+        "showErrors": true,
+        "chunks": "all",
+        "excludeChunks": [],
+        "chunksSortMode": "auto",
+        "meta": {},
+        "base": false,
+        "title": "Webpack App",
+        "xhtml": false,
+        "preload": [
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/runtime-main.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.mui.js"
+          },
+          {
+            "rel": "preload",
+            "as": "script",
+            "href": "/static/js/vendor.kuromoji.js"
+          }
+        ],
+        "csp": {
+          "default-src": "'self'",
+          "script-src": "'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src": "'self' 'unsafe-inline'",
+          "img-src": "'self' data: https:",
+          "connect-src": "'self' https:",
+          "font-src": "'self'",
+          "object-src": "'none'",
+          "media-src": "'self'",
+          "frame-src": "'none'"
+        }
+      }
+    },
+    {
+      "options": {
+        "test": {},
+        "algorithm": "gzip",
+        "compressionOptions": {
+          "level": 9
+        },
+        "filename": "[path][base].gz",
+        "threshold": 10240,
+        "minRatio": 0.8,
+        "deleteOriginalAssets": false
+      }
+    },
+    {
+      "_sortedModulesCache": {},
+      "options": {
+        "filename": "static/css/[name].[contenthash:8].css",
+        "ignoreOrder": false,
+        "runtime": true,
+        "chunkFilename": "static/css/[name].[contenthash:8].chunk.css"
+      },
+      "runtimeOptions": {
+        "linkType": "text/css"
+      }
+    },
+    {
+      "asset": "[path].br[query]",
+      "test": {},
+      "threshold": 10240,
+      "minRatio": 0.8,
+      "deleteOriginalAssets": false
+    },
+    {
+      "options": {
+        "hashFuncNames": [
+          "sha384"
+        ],
+        "enabled": "auto",
+        "hashLoading": "eager"
+      }
+    },
+    {}
+  ],
+  "devServer": {
+    "static": [
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\public",
+        "publicPath": "/",
+        "watch": true
+      },
+      {
+        "directory": "C:\\Users\\siebe\\Cursor\\BackupJapVoc\\build",
+        "publicPath": "/",
+        "watch": true
+      }
+    ],
+    "historyApiFallback": {
+      "disableDotRule": true,
+      "rewrites": [
+        {
+          "from": {},
+          "to": "/index.html"
+        }
+      ]
+    },
+    "hot": "only",
+    "port": 3002,
+    "allowedHosts": "all",
+    "headers": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
+      "Cache-Control": "no-cache, no-store, must-revalidate"
+    },
+    "devMiddleware": {
+      "writeToDisk": false,
+      "publicPath": "/"
+    },
+    "client": {
+      "overlay": {
+        "errors": true,
+        "warnings": false
+      },
+      "progress": true,
+      "logging": "info",
+      "reconnect": true
+    },
+    "compress": true,
+    "open": true,
+    "proxy": {
+      "/api": {
+        "target": "http://localhost:3000",
+        "secure": false,
+        "changeOrigin": true
+      }
+    }
+  },
+  "devtool": "source-map",
+  "performance": {
+    "hints": "warning",
+    "maxEntrypointSize": 512000,
+    "maxAssetSize": 512000
+  },
+  "stats": {
+    "errorDetails": true,
+    "logging": "verbose",
+    "loggingDebug": [
+      "webpack",
+      "webpack"
+    ],
+    "loggingTrace": true,
+    "children": true
+  }
+}
+Build completed with stats:
+assets by status 2.58 MiB [cached] 54 assets
+assets by path audio/*.mp3 39.4 MiB 3113 assets
+assets by path static/ 636 KiB 42 assets
+assets by path anime/ 2.09 MiB 20 assets
+assets by path dict/*.gz 17 MiB 12 assets
+assets by path icons/*.png 90.2 KiB 11 assets
+assets by path splash/*.png 459 KiB 9 assets
+assets by path data/ 744 KiB 8 assets
+assets by path *.json 14.4 KiB 3 assets
+assets by path *.html 16.4 KiB 3 assets
+assets by path *.js 13.6 KiB 2 assets
+assets by path *.br 5.93 KiB 2 assets
++ 3 assets
+Entrypoint main [big] 2.13 MiB (8.92 MiB) = 29 assets 29 auxiliary assets
+chunk (runtime: runtime) static/js/vendor-536eaa00.f60c5aad.js (vendor-536eaa00) (id hint: vendor) 266 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-06bc7934.6d271a13.js (vendor-06bc7934) (id hint: vendor) 21.8 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/776.c47c4344.chunk.js 9.62 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-e7d3bc8e.232b890e.js (vendor.mui-e7d3bc8e) (id hint: mui) 156 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/1099.39f005ca.chunk.js 99.9 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-3837499c.e67755d9.js (vendor-3837499c) (id hint: vendor) 43.9 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-f966f08c.c84ce438.js (vendor-f966f08c) (id hint: vendor) 461 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor.mui-3fb7187e.c231aac8.js (vendor.mui-3fb7187e) (id hint: mui) 120 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/vendor-0fce2044.33a59d59.js (vendor-0fce2044) (id hint: vendor) 16.3 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/1741.1019199a.chunk.js 18.7 KiB [rendered]
+chunk (runtime: runtime) static/css/styles.e5cecbd7.css (styles) (id hint: styles) 56.4 KiB [initial] split chunk (cache group: styles) (name: styles)
+chunk (runtime: runtime) static/js/common.901abcc8.chunk.js (common) (id hint: common) 38.1 KiB [rendered] split chunk (cache group: common) (name: common)
+chunk (runtime: runtime) static/js/vendor.mui-58465378.d5235894.js (vendor.mui-58465378) (id hint: mui) 81.1 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/main-afbe97b7.794f2f4d.js (main-afbe97b7) 434 KiB [initial] [rendered]
+chunk (runtime: runtime) static/js/vendor-1b4271fd.3bf68c71.js (vendor-1b4271fd) (id hint: vendor) 50.9 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/3080.018d0c01.chunk.js 8.11 KiB [rendered]
+chunk (runtime: runtime) static/js/3166.6e2e33fc.chunk.js 24.7 KiB [rendered]
+chunk (runtime: runtime) static/js/main-52f0199e.a0e07cbf.js (main-52f0199e) 449 KiB [initial] [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-7e1a787a.e540d67c.js (vendor.mui-7e1a787a) (id hint: mui) 108 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/3929.2c17537a.chunk.js 11.8 KiB [rendered]
+chunk (runtime: runtime) static/js/4070.a498e722.chunk.js 58.9 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-4e952270.3202c0bd.js (vendor-4e952270) (id hint: vendor) 265 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-0bc0478e.9d4129a4.js (vendor-0bc0478e) (id hint: vendor) 153 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-bb3d84b5.cf36c892.js (vendor-bb3d84b5) (id hint: vendor) 405 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-b602250d.b27f8082.js (vendor-b602250d) (id hint: vendor) 419 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-4e0e0553.2936e51b.js (vendor-4e0e0553) (id hint: vendor) 953 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-866ab763.f1a45c2b.js (vendor-866ab763) (id hint: vendor) 36.2 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/vendor-25d586d3.cb4ee158.js (vendor-25d586d3) (id hint: vendor) 18.7 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/5120.11f7b45d.chunk.js 6.34 KiB [rendered]
+chunk (runtime: runtime) static/js/5137.a37b5cdf.chunk.js 26.3 KiB [rendered]
+chunk (runtime: runtime) static/js/5179.66293e6e.chunk.js 43 KiB [rendered]
+chunk (runtime: runtime) static/js/5282.36886a21.chunk.js 37.7 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-1d385dd4.98d45b75.js (vendor-1d385dd4) (id hint: vendor) 10.8 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/5419.5169e93b.chunk.js 6.59 KiB [rendered]
+chunk (runtime: runtime) static/js/6242.03b58390.chunk.js 25.2 KiB [rendered]
+chunk (runtime: runtime) static/js/6260.627ee42b.chunk.js 183 KiB [rendered]
+chunk (runtime: runtime) static/js/6283.70f67f09.chunk.js 43.8 KiB [rendered]
+chunk (runtime: runtime) static/js/6440.266e0260.chunk.js 229 bytes [rendered]
+chunk (runtime: runtime) static/js/vendor-f82e0cd2.80dcde37.js (vendor-f82e0cd2) (id hint: vendor) 281 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/7080.8b83e2a1.chunk.js 16.1 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-27545368.5e54a04b.js (vendor-27545368) (id hint: vendor) 198 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/main-af155fb1.ca4bbb48.js (main-af155fb1) 32.2 KiB [initial] [rendered]
+chunk (runtime: runtime) static/js/7458.b9f68397.chunk.js 7.39 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-cdd60c62.39403d95.js (vendor-cdd60c62) (id hint: vendor) 382 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/7638.1142532f.chunk.js 13.5 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor-5a94f17d.49ae8a55.js (vendor-5a94f17d) (id hint: vendor) 445 KiB [initial] [rendered] split chunk (cache group: vendor) (name: vendor)
+chunk (runtime: runtime) static/js/8828.3e7d1314.chunk.js 92.8 KiB [rendered]
+chunk (runtime: runtime) static/js/8856.11f229d4.chunk.js 9.65 KiB [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-712bd2d8.552ca3ef.js (vendor.mui-712bd2d8) (id hint: mui) 142 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/runtime.d448953d.js (runtime) 11.4 KiB [entry] [rendered]
+chunk (runtime: runtime) static/js/vendor.mui-f92f78ac.33a3cf7a.js (vendor.mui-f92f78ac) (id hint: mui) 412 KiB [initial] [rendered] split chunk (cache group: mui) (name: vendor.mui)
+chunk (runtime: runtime) static/js/9280.8ee3a5ea.chunk.js 27.2 KiB [rendered]
+chunk (runtime: runtime) static/js/9545.857697a6.chunk.js 64.6 KiB [rendered]
+orphan modules 10.2 MiB (javascript) 8.74 KiB (asset) 1.93 KiB (runtime) [orphan] 12571 modules
+runtime modules 11.4 KiB 17 modules
+cacheable modules 7.06 MiB (javascript) 56.4 KiB (css/mini-extract)
+  modules by path ./node_modules/ 5.32 MiB 809 modules
+  modules by path ./src/ 1.75 MiB (javascript) 56.4 KiB (css/mini-extract)
+    javascript modules 1.75 MiB 70 modules
+    css modules 56.4 KiB
+      css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/index.css 51 KiB [built] [code generated]
+      css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/App.css 85 bytes [built] [code generated]
+      css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[1].use[2]!./src/App.css (1) 5.25 KiB [built] [code generated]
+
+WARNING in asset size limit: The following asset(s) exceed the recommended size limit (500 KiB).
+This can impact web performance.
+Assets: 
+  dict/base.dat.gz (3.77 MiB)
+  dict/cc.dat.gz (1.61 MiB)
+  dict/check.dat.gz (2.97 MiB)
+  dict/tid.dat.gz (1.53 MiB)
+  dict/tid_map.dat.gz (1.42 MiB)
+  dict/tid_pos.dat.gz (5.64 MiB)
+  anime/rin-lonely.jpg (854 KiB)
+
+WARNING in entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (500 KiB). This can impact web performance.
+Entrypoints:
+  main (2.13 MiB)
+      static/js/runtime.d448953d.js
+      static/js/vendor.mui-3fb7187e.c231aac8.js
+      static/js/vendor.mui-e7d3bc8e.232b890e.js
+      static/js/vendor.mui-58465378.d5235894.js
+      static/js/vendor.mui-f92f78ac.33a3cf7a.js
+      static/js/vendor.mui-712bd2d8.552ca3ef.js
+      static/js/vendor.mui-7e1a787a.e540d67c.js
+      static/css/styles.e5cecbd7.css
+      static/js/vendor-cdd60c62.39403d95.js
+      static/js/vendor-536eaa00.f60c5aad.js
+      static/js/vendor-06bc7934.6d271a13.js
+      static/js/vendor-3837499c.e67755d9.js
+      static/js/vendor-1b4271fd.3bf68c71.js
+      static/js/vendor-4e0e0553.2936e51b.js
+      static/js/vendor-f966f08c.c84ce438.js
+      static/js/vendor-bb3d84b5.cf36c892.js
+      static/js/vendor-1d385dd4.98d45b75.js
+      static/js/vendor-f82e0cd2.80dcde37.js
+      static/js/vendor-0bc0478e.9d4129a4.js
+      static/js/vendor-5a94f17d.49ae8a55.js
+      static/js/vendor-25d586d3.cb4ee158.js
+      static/js/vendor-b602250d.b27f8082.js
+      static/js/vendor-4e952270.3202c0bd.js
+      static/js/vendor-27545368.5e54a04b.js
+      static/js/vendor-0fce2044.33a59d59.js
+      static/js/vendor-866ab763.f1a45c2b.js
+      static/js/main-af155fb1.ca4bbb48.js
+      static/js/main-52f0199e.a0e07cbf.js
+      static/js/main-afbe97b7.794f2f4d.js
+
+webpack 5.99.9 compiled with 2 warnings in 66853 ms

@@ -54,7 +54,7 @@ const CACHE_CONFIG = {
 
 // Database configuration
 const DB_NAME = 'JapVocDB';
-const DB_VERSION = 5;
+const DB_VERSION = 9;
 
 // Import push notification handler
 importScripts('/push-handler.js');

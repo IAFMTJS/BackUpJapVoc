@@ -165,7 +165,7 @@ function generateFrequencyData(words: DictionaryItem[]): WordFrequency[] {
 }
 
 // Add database version constant
-const DB_VERSION = 5; // Match version with databaseConfig.ts
+const DB_VERSION = 9; // Match version with databaseConfig.ts
 const DB_NAME = 'JapVocDB'; // Match name with databaseConfig.ts
 
 // Update the import function to handle async conversion

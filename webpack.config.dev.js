@@ -59,6 +59,12 @@ module.exports = (env, argv) => {
       removeAvailableModules: false,
       removeEmptyChunks: false,
       splitChunks: false,
+      runtimeChunk: false
+    },
+    output: {
+      ...base.output,
+      chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
+      chunkLoadTimeout: 120000
     },
     cache: {
       type: 'filesystem',

@@ -13,7 +13,7 @@ let forceReset = false;
 // Database configuration
 export const DB_CONFIG = {
   name: 'JapVocDB',
-  version: 7,
+  version: 9,
   stores: {
     words: {
       keyPath: 'id',
