@@ -1,35 +1,10 @@
 import { useState, useEffect } from 'react';
-
-// Safe localStorage utility functions
-const safeLocalStorage = {
-  getItem: (key: string): string | null => {
-    try {
-      if (typeof window === 'undefined') return null;
-      return window.localStorage.getItem(key);
-    } catch (error) {
-      console.warn(`Failed to read from localStorage for key "${key}":`, error);
-      return null;
-    }
-  },
-  setItem: (key: string, value: string): void => {
-    try {
-      if (typeof window === 'undefined') return;
-      window.localStorage.setItem(key, value);
-    } catch (error) {
-      console.warn(`Failed to write to localStorage for key "${key}":`, error);
-    }
-  }
-};
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   // Get from local storage then
   // parse stored json or return initialValue
   const readValue = (): T => {
-    // Prevent build error "window is undefined" but keep working
-    if (typeof window === 'undefined') {
-      return initialValue;
-    }
-
     try {
       const item = safeLocalStorage.getItem(key);
       return item ? (JSON.parse(item) as T) : initialValue;
@@ -76,15 +51,11 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
       }
     };
 
-    // this only works for other documents, not the current one
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage', handleStorageChange);
-      
-      // Remove event listener on cleanup
-      return () => window.removeEventListener('storage', handleStorageChange);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [key]);
 
   return [storedValue, setValue];
 } 

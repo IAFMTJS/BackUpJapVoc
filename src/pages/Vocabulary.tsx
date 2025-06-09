@@ -24,6 +24,7 @@ import {
   Check as CheckIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -193,15 +194,23 @@ const Vocabulary: React.FC = () => {
 
   // Load learned words from localStorage
   useEffect(() => {
-    const savedLearnedWords = localStorage.getItem('learnedWords');
-    if (savedLearnedWords) {
-      setLearnedWords(new Set(JSON.parse(savedLearnedWords)));
+    try {
+      const savedLearnedWords = safeLocalStorage.getItem('learnedWords');
+      if (savedLearnedWords) {
+        setLearnedWords(new Set(JSON.parse(savedLearnedWords)));
+      }
+    } catch (error) {
+      console.error('Error loading learned words:', error);
     }
   }, []);
 
   // Save learned words to localStorage
   useEffect(() => {
-    localStorage.setItem('learnedWords', JSON.stringify(Array.from(learnedWords)));
+    try {
+      safeLocalStorage.setItem('learnedWords', JSON.stringify(Array.from(learnedWords)));
+    } catch (error) {
+      console.error('Error saving learned words:', error);
+    }
   }, [learnedWords]);
 
   useEffect(() => {

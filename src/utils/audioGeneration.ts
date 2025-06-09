@@ -1,4 +1,5 @@
 import AudioService from '../services/AudioService';
+import safeLocalStorage from './safeLocalStorage';
 
 interface AudioGenerationOptions {
   text: string;
@@ -36,7 +37,7 @@ class AudioGenerationManager {
 
   private loadCache() {
     try {
-      const savedCache = localStorage.getItem('audioCache');
+      const savedCache = safeLocalStorage.getItem('audioCache');
       if (savedCache) {
         const parsed = JSON.parse(savedCache);
         this.cache = new Map(Object.entries(parsed));
@@ -51,7 +52,7 @@ class AudioGenerationManager {
   private saveCache() {
     try {
       const cacheObject = Object.fromEntries(this.cache);
-      localStorage.setItem('audioCache', JSON.stringify(cacheObject));
+      safeLocalStorage.setItem('audioCache', JSON.stringify(cacheObject));
     } catch (error) {
       console.error('Error saving audio cache:', error);
     }

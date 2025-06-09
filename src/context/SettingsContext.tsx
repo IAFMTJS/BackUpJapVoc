@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 interface Settings {
   useTimer: boolean;
@@ -24,25 +25,6 @@ const defaultSettings: Settings = {
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
-
-// Safe localStorage utility functions
-const safeLocalStorage = {
-  getItem: (key: string): string | null => {
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      console.warn(`Failed to read from localStorage for key "${key}":`, error);
-      return null;
-    }
-  },
-  setItem: (key: string, value: string): void => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      console.warn(`Failed to write to localStorage for key "${key}":`, error);
-    }
-  }
-};
 
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<Settings>(() => {

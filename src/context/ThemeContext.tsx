@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 type Theme = 'dark' | 'light' | 'neon';
 
@@ -91,25 +92,6 @@ const ThemeContext = createContext<ThemeContextType>(defaultThemeContextValue);
 interface ThemeProviderProps {
   children: ReactNode;
 }
-
-// Safe localStorage utility functions
-const safeLocalStorage = {
-  getItem: (key: string): string | null => {
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      console.warn(`Failed to read from localStorage for key "${key}":`, error);
-      return null;
-    }
-  },
-  setItem: (key: string, value: string): void => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      console.warn(`Failed to write to localStorage for key "${key}":`, error);
-    }
-  }
-};
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   // Load theme from localStorage or default to 'dark' with validation

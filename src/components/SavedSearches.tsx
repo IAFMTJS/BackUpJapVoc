@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Stack, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton, Divider, TextField, InputAdornment, Chip, Tooltip, Menu, MenuItem } from '@mui/material';
 import { Search as SearchIcon, Delete as DeleteIcon, Edit as EditIcon, MoreVert as MoreVertIcon, Save as SaveIcon, History as HistoryIcon, Bookmark as BookmarkIcon, Label as LabelIcon } from '@mui/icons-material';
 import { useTheme } from '../context/ThemeContext';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 interface SavedSearch {
   id: string;
@@ -44,27 +45,19 @@ const SavedSearches: React.FC<SavedSearchesProps> = ({
   const [newLabel, setNewLabel] = useState('');
 
   useEffect(() => {
-    // Load saved searches from localStorage
-    const loadSavedSearches = () => {
-      const saved = localStorage.getItem('savedSearches');
+    try {
+      const saved = safeLocalStorage.getItem('savedSearches');
       if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          setSearches(parsed.map((search: any) => ({
-            ...search,
-            lastUsed: new Date(search.lastUsed),
-            createdAt: new Date(search.createdAt)
-          })));
-        } catch (err) {
-          console.error('Failed to load saved searches:', err);
-        }
+        setSearches(JSON.parse(saved).map((search: any) => ({
+          ...search,
+          lastUsed: new Date(search.lastUsed),
+          createdAt: new Date(search.createdAt)
+        })));
       }
-    };
-
-    if (open) {
-      loadSavedSearches();
+    } catch (error) {
+      console.error('Error loading saved searches:', error);
     }
-  }, [open]);
+  }, []);
 
   const handleSaveSearch = (search: SavedSearch) => {
     const updatedSearches = [...searches];
@@ -77,14 +70,14 @@ const SavedSearches: React.FC<SavedSearchesProps> = ({
     }
 
     setSearches(updatedSearches);
-    localStorage.setItem('savedSearches', JSON.stringify(updatedSearches));
+    safeLocalStorage.setItem('savedSearches', JSON.stringify(updatedSearches));
     setEditingSearch(null);
   };
 
   const handleDeleteSearch = (searchId: string) => {
     const updatedSearches = searches.filter(s => s.id !== searchId);
     setSearches(updatedSearches);
-    localStorage.setItem('savedSearches', JSON.stringify(updatedSearches));
+    safeLocalStorage.setItem('savedSearches', JSON.stringify(updatedSearches));
     setMenuAnchor(null);
     setSelectedSearch(null);
   };

@@ -32,6 +32,7 @@ import ProfilePage from './pages/ProfilePage';
 import Login from './components/Login';
 import { AchievementProvider } from './context/AchievementContext';
 import { KanjiProvider } from './context/KanjiContext';
+import { initializeApp as initializeSafeApp, isRestrictedEnvironment } from './utils/initializeApp';
 
 // Lazy load all route components
 const Home = lazy(() => import('./pages/Home'));
@@ -220,71 +221,53 @@ const App: React.FC = () => {
   };
 
   const initializeApp = async () => {
-    setIsInitializing(true);
-    setInitError(null);
-    setInitStep(0);
-    updateProgress('Starting initialization...', 0);
-
     try {
-      console.log('[App] Starting application initialization');
+      updateProgress('Initializing safe storage...', 1);
       
-      // Initialize database through the DatabaseContext
-      updateProgress('Initializing database...', 1);
-      await databasePromise; // Wait for the database promise from DatabaseContext
-      console.log('[App] Database initialized successfully');
-
-      // Import words with timeout
-      updateProgress('Importing words...', 2);
-      const importPromise = importWords();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Word import timed out')), 30000)
-      );
-      const importResult = await Promise.race([importPromise, timeoutPromise]);
-      if (!importResult.success) {
-        console.warn('[App] Word import warning:', importResult.error);
-      }
-      console.log('[App] Word import completed');
-
-      // Import dictionary data with timeout
-      updateProgress('Importing dictionary data...', 3);
-      try {
-        const dictPromise = importDictionaryData();
-        const dictTimeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Dictionary import timed out')), 30000)
-        );
-        const dictResult = await Promise.race([dictPromise, dictTimeoutPromise]);
-        if (!dictResult.success) {
-          console.warn('[App] Dictionary import warning:', dictResult.error);
-        } else {
-          console.log(`[App] Dictionary import completed with ${dictResult.count} words`);
-        }
-      } catch (error) {
-        console.warn('[App] Dictionary import warning:', error);
+      // Initialize safe storage first
+      await initializeSafeApp();
+      
+      // Check if we're in a restricted environment
+      const restricted = isRestrictedEnvironment();
+      if (restricted) {
+        console.warn('Running in restricted environment - some features may be limited');
+        updateProgress('Limited storage mode - some features may not persist', 2);
+      } else {
+        updateProgress('Storage initialized successfully', 2);
       }
 
-      // Initialize mood words
-      updateProgress('Initializing mood words...', 4);
-      try {
-        await initializeMoodWords();
-        console.log('[App] Mood words initialized');
-      } catch (error) {
-        console.warn('[App] Mood words initialization warning:', error);
-      }
+      updateProgress('Initializing database...', 3);
+      await initializeDatabase();
+      updateProgress('Database initialized', 4);
 
-      // Mark initialization as complete
-      updateProgress('Initialization complete!', 5);
-      console.log('[App] Core initialization completed');
+      updateProgress('Loading words...', 5);
+      await importWords();
+      updateProgress('Words loaded', 6);
+
+      updateProgress('Loading dictionary data...', 7);
+      await importDictionaryData();
+      updateProgress('Dictionary data loaded', 8);
+
+      updateProgress('Initializing mood words...', 9);
+      await initializeMoodWords();
+      updateProgress('Mood words initialized', 10);
+
+      updateProgress('Initializing audio cache...', 11);
+      await initAudioCache();
+      updateProgress('Audio cache initialized', 12);
+
+      updateProgress('App ready!', 13);
       setIsInitializing(false);
-
-      // Start audio cache initialization in the background
-      console.log('[App] Starting background audio cache initialization...');
-      initAudioCache().catch(error => {
-        console.warn('[App] Audio cache initialization warning:', error);
-      });
-
     } catch (error) {
       console.error('[App] Initialization error:', error);
-      setInitError(error instanceof Error ? error.message : 'Failed to initialize application');
+      
+      // Handle specific database permission errors
+      if (error instanceof Error && error.message.includes('permission') || error.message.includes('access denied')) {
+        setInitError('Storage access denied. The app will work with limited functionality. Please check your browser settings or try a different browser mode.');
+      } else {
+        setInitError(`Initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      
       setIsInitializing(false);
     }
   };
@@ -302,7 +285,7 @@ const App: React.FC = () => {
           <div className="mt-4 w-64 bg-gray-200 rounded-full h-2.5">
             <div 
               className="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
-              style={{ width: `${(initStep / 5) * 100}%` }}
+              style={{ width: `${(initStep / 13) * 100}%` }}
             ></div>
           </div>
         </div>

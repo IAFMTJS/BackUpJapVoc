@@ -37,6 +37,7 @@ import { useTimelines } from '../hooks/useTimelines';
 import { useGraphs } from '../hooks/useGraphs';
 import { useMaps } from '../hooks/useMaps';
 import { useAvatars } from '../hooks/useAvatars';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 // Types for Achievement System
 type AchievementCategory = 'learning' | 'mastery' | 'streak' | 'challenge' | 'social' | 'special';
@@ -794,7 +795,7 @@ const Progress: React.FC = () => {
         setIsLoading(true);
         
         // Load data from local storage
-        const savedProgress = localStorage.getItem('progress_state');
+        const savedProgress = safeLocalStorage.getItem('progress_state');
         if (savedProgress) {
           setProgressState(JSON.parse(savedProgress));
         }
@@ -851,7 +852,7 @@ const Progress: React.FC = () => {
   // Save progress data when it changes
   useEffect(() => {
     if (!isLoading) {
-      localStorage.setItem('progress_state', JSON.stringify(progressState));
+      safeLocalStorage.setItem('progress_state', JSON.stringify(progressState));
     }
   }, [progressState, isLoading]);
 

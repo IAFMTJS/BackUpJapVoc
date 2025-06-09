@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AudioService from '../services/AudioService';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 interface AudioSettings {
   useTTS: boolean;
@@ -45,7 +46,7 @@ interface AudioProviderProps {
 export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
   const [settings, setSettings] = useState<AudioSettings>(() => {
     try {
-      const saved = localStorage.getItem('audioSettings');
+      const saved = safeLocalStorage.getItem('audioSettings');
       return saved ? JSON.parse(saved) : defaultSettings;
     } catch (error) {
       console.error('Error loading audio settings:', error);
@@ -77,11 +78,24 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
     }
   }, []);
 
+  useEffect(() => {
+    // Load saved audio settings
+    const saved = safeLocalStorage.getItem('audioSettings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSettings(parsed);
+      } catch (error) {
+        console.error('Error parsing audio settings:', error);
+      }
+    }
+  }, []);
+
   const updateSettings = (newSettings: Partial<AudioSettings>) => {
     try {
       setSettings(prev => {
         const updated = { ...prev, ...newSettings };
-        localStorage.setItem('audioSettings', JSON.stringify(updated));
+        safeLocalStorage.setItem('audioSettings', JSON.stringify(updated));
         return updated;
       });
     } catch (error) {

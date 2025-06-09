@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
-import { Container, Typography, Box, Paper, Grid, Button, Card, CardContent, CardActionArea, useMediaQuery, Chip, Avatar } from '@mui/material';
+import { Container, Typography, Box, Paper, Grid, Button, Card, CardContent, CardActionArea, useMediaQuery, Chip, Avatar, LinearProgress } from '@mui/material';
 import {
   School as SchoolIcon,
   MenuBook as MenuBookIcon,
@@ -19,10 +19,15 @@ import {
   FlashOn as FlashOnIcon,
   Psychology as PsychologyIcon,
   Language as LanguageIcon,
-  AutoAwesome as AutoAwesomeIcon
+  AutoAwesome as AutoAwesomeIcon,
+  EmojiEvents as TrophyIcon,
+  LocalFireDepartment as FireIcon,
+  AccessTime as TimeIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { ThemeWrapper } from '../App';
+import { useProgress } from '../context/ProgressContext';
+import { useAuth } from '../context/AuthContext';
 
 const QUICK_ACTIONS = [
   {
@@ -176,6 +181,22 @@ const FEATURE_CATEGORIES = [
 const HomeContent: React.FC = () => {
   const theme = useMuiTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { progress } = useProgress();
+  const { currentUser } = useAuth();
+
+  // Calculate progress stats
+  const totalWords = Object.keys(progress.words || {}).length;
+  const masteredWords = Object.values(progress.words || {}).filter((word: any) => word.mastery >= 0.8).length;
+  const inProgressWords = Object.values(progress.words || {}).filter((word: any) => word.mastery > 0 && word.mastery < 0.8).length;
+  const currentStreak = progress.statistics?.currentStreak || 0;
+  const totalStudyTime = progress.statistics?.totalStudyTime || 0;
+  const masteryPercentage = totalWords > 0 ? (masteredWords / totalWords) * 100 : 0;
+
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -278,6 +299,132 @@ const HomeContent: React.FC = () => {
           </Button>
         </Box>
       </Paper>
+
+      {/* Progress Summary Section */}
+      {currentUser && (
+        <Box sx={{ mb: 6 }}>
+          <Typography 
+            variant="h4" 
+            component="h2"
+            sx={{ 
+              fontWeight: 'bold',
+              mb: 1,
+              color: 'primary.main'
+            }}
+          >
+            Your Progress
+          </Typography>
+          <Typography 
+            variant="body1" 
+            color="text.secondary"
+            sx={{ mb: 4 }}
+          >
+            Track your learning journey
+          </Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Paper sx={{ p: 3, height: '100%' }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  Learning Overview
+                </Typography>
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Overall Mastery
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {Math.round(masteryPercentage)}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={masteryPercentage}
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={3}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="primary.main" sx={{ fontWeight: 'bold' }}>
+                        {masteredWords}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Mastered
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold' }}>
+                        {inProgressWords}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        In Progress
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold' }}>
+                        {currentStreak}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Day Streak
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="info.main" sx={{ fontWeight: 'bold' }}>
+                        {formatTime(totalStudyTime)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Study Time
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Paper sx={{ p: 3, height: '100%' }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  Quick Actions
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Button
+                    component={Link}
+                    to="/progress"
+                    variant="outlined"
+                    startIcon={<TrendingUpIcon />}
+                    fullWidth
+                  >
+                    View Detailed Progress
+                  </Button>
+                  <Button
+                    component={Link}
+                    to="/learning/quiz"
+                    variant="outlined"
+                    startIcon={<PsychologyIcon />}
+                    fullWidth
+                  >
+                    Take Daily Quiz
+                  </Button>
+                  <Button
+                    component={Link}
+                    to="/knowing"
+                    variant="outlined"
+                    startIcon={<SchoolIcon />}
+                    fullWidth
+                  >
+                    Continue Learning
+                  </Button>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
 
       {/* Quick Actions */}
       <Box sx={{ mb: 6 }}>

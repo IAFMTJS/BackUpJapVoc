@@ -1,5 +1,6 @@
 import { ProgressItem, PendingProgressItem, Settings } from '../types';
 import { DB_CONFIG as MainDBConfig } from './databaseConfig';
+import safeIndexedDB from './safeIndexedDB';
 
 // Use the same database configuration as databaseConfig.ts
 const DB_CONFIG = {
@@ -200,22 +201,18 @@ export const deleteDB = async (dbName: string): Promise<void> => {
       db.close();
     }
 
-    // Delete the database
-    const request = indexedDB.deleteDatabase(dbName);
-    
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        console.log(`Database ${dbName} deleted successfully`);
-        // Add a small delay to ensure cleanup is complete
-        setTimeout(resolve, 100);
-      };
-      request.onerror = (event) => {
-        console.error('Error deleting database:', event);
-        reject(new Error('Failed to delete database'));
-      };
-    });
+    // Use safe IndexedDB wrapper
+    await safeIndexedDB.deleteDatabase(dbName);
+    console.log(`Database ${dbName} deleted successfully`);
   } catch (error) {
     console.error('Error in deleteDB:', error);
+    
+    // Handle specific permission errors
+    if (error instanceof Error && (error.message.includes('access denied') || error.message.includes('permission'))) {
+      console.warn('IndexedDB deletion access denied - continuing without deletion');
+      return;
+    }
+    
     throw error;
   }
 };
@@ -291,6 +288,13 @@ export const openDB = async (retryCount = 0): Promise<IDBDatabase> => {
           event: event,
           timestamp: new Date().toISOString()
         });
+
+        // Handle specific permission errors
+        if (request.error?.name === 'NotAllowedError' || request.error?.name === 'SecurityError') {
+          console.warn('[IndexedDB] Access denied - likely due to privacy settings or incognito mode');
+          reject(new Error('IndexedDB access denied. Please check your browser settings or try a different browser mode.'));
+          return;
+        }
 
         // If we have retries left, try to recover
         if (retryCount < MAX_RETRIES) {

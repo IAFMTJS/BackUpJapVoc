@@ -23,6 +23,7 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import styled from '@emotion/styled';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 const NotificationButton = styled(IconButton)(({ theme }) => ({
   position: 'fixed',
@@ -61,7 +62,7 @@ const PushNotifications: React.FC = () => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [showSettings, setShowSettings] = useState(false);
   const [preferences, setPreferences] = useState<NotificationPreferences>(() => {
-    const saved = localStorage.getItem('notificationPreferences');
+    const saved = safeLocalStorage.getItem('notificationPreferences');
     return saved ? JSON.parse(saved) : defaultPreferences;
   });
   const [showSnackbar, setShowSnackbar] = useState(false);
@@ -75,7 +76,11 @@ const PushNotifications: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('notificationPreferences', JSON.stringify(preferences));
+    try {
+      safeLocalStorage.setItem('notificationPreferences', JSON.stringify(preferences));
+    } catch (error) {
+      console.error('Error saving notification preferences:', error);
+    }
   }, [preferences]);
 
   const requestPermission = useCallback(async () => {

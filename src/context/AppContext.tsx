@@ -1,23 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback, useRef } from 'react';
-
-// Safe localStorage utility functions
-const safeLocalStorage = {
-  getItem: (key: string): string | null => {
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      console.warn(`Failed to read from localStorage for key "${key}":`, error);
-      return null;
-    }
-  },
-  setItem: (key: string, value: string): void => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      console.warn(`Failed to write to localStorage for key "${key}":`, error);
-    }
-  }
-};
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 interface Progress {
   completed: number;

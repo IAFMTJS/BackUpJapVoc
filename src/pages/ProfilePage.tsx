@@ -17,7 +17,8 @@ import {
   CardContent,
   IconButton,
   Tooltip,
-  LinearProgress
+  LinearProgress,
+  Chip
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -196,6 +197,11 @@ const ProfilePage: React.FC = () => {
                 <Typography variant="body2" sx={{ opacity: 0.8 }}>
                   {userStats.masteredWords} mastered
                 </Typography>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={userStats.totalWords > 0 ? (userStats.masteredWords / userStats.totalWords) * 100 : 0}
+                  sx={{ mt: 1, height: 4, borderRadius: 2 }}
+                />
               </CardContent>
             </Card>
           </Grid>
@@ -226,8 +232,13 @@ const ProfilePage: React.FC = () => {
                   {userStats.unlockedAchievements}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                  of {userStats.totalAchievements} unlocked
+                  of {userStats.totalAchievements}
                 </Typography>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={userStats.totalAchievements > 0 ? (userStats.unlockedAchievements / userStats.totalAchievements) * 100 : 0}
+                  sx={{ mt: 1, height: 4, borderRadius: 2 }}
+                />
               </CardContent>
             </Card>
           </Grid>
@@ -235,11 +246,11 @@ const ProfilePage: React.FC = () => {
             <Card sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <StarIcon sx={{ mr: 1 }} />
+                  <TrendingUpIcon sx={{ mr: 1 }} />
                   <Typography variant="h6">Accuracy</Typography>
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {userStats.averageAccuracy}%
+                  {Math.round(userStats.averageAccuracy)}%
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.8 }}>
                   average
@@ -275,113 +286,163 @@ const ProfilePage: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* Tabs Section */}
+      {/* Tabs */}
       <Paper sx={{ width: '100%' }}>
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
+          indicatorColor="primary"
+          textColor="primary"
           variant={isMobile ? "fullWidth" : "standard"}
           centered={!isMobile}
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          sx={{ 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            bgcolor: 'background.paper'
+          }}
         >
-          <Tab
-            icon={<PersonIcon />}
-            label="Profile"
-            id="profile-tab-0"
-            aria-controls="profile-tabpanel-0"
-          />
-          <Tab
-            icon={<TimelineIcon />}
-            label="Progress"
-            id="profile-tab-1"
-            aria-controls="profile-tabpanel-1"
-          />
-          <Tab
-            icon={<SettingsIcon />}
-            label="Settings"
-            id="profile-tab-2"
-            aria-controls="profile-tabpanel-2"
-          />
+          <Tab label="Profile" />
+          <Tab label="Progress" />
+          <Tab label="Achievements" />
+          <Tab label="Settings" />
         </Tabs>
 
-        {/* Tab Panels */}
+        {/* Profile Tab */}
         <TabPanel value={tabValue} index={0}>
           <Grid container spacing={3}>
-            {/* Account Information */}
             <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Account Information
+                  Learning Progress Chart
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Grid container spacing={2}>
-                  <Grid item xs={4}>
-                    <Typography variant="body2" color="text.secondary">
-                      Email
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={8}>
-                    <Typography variant="body2">
-                      {currentUser?.email}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Typography variant="body2" color="text.secondary">
-                      Member Since
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={8}>
-                    <Typography variant="body2">
-                      {new Date(currentUser?.metadata.creationTime || '').toLocaleDateString()}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Typography variant="body2" color="text.secondary">
-                      Last Sign In
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={8}>
-                    <Typography variant="body2">
-                      {new Date(currentUser?.metadata.lastSignInTime || '').toLocaleDateString()}
-                    </Typography>
-                  </Grid>
-                </Grid>
+                <Box sx={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <RechartsTooltip />
+                      <Line 
+                        type="monotone" 
+                        dataKey="words" 
+                        stroke={theme.palette.primary.main} 
+                        name="Words Learned"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="accuracy" 
+                        stroke={theme.palette.success.main} 
+                        name="Accuracy %"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
               </Paper>
             </Grid>
-
-            {/* Recent Achievements */}
             <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Recent Achievements
+                  Recent Activity
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
-                {unlockedAchievements.slice(0, 3).map((achievement) => (
-                  <Box key={achievement.id} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <TrophyIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                      <Typography variant="subtitle1">
-                        {achievement.title}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+                      <SchoolIcon />
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        Completed Daily Quiz
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        2 hours ago
                       </Typography>
                     </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {achievement.description}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Unlocked {achievement.unlockedAt?.toLocaleDateString()}
-                    </Typography>
+                    <Chip label="+10 XP" size="small" color="success" />
                   </Box>
-                ))}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>
+                      <TrophyIcon />
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        Unlocked Achievement
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        1 day ago
+                      </Typography>
+                    </Box>
+                    <Chip label="First Steps" size="small" color="primary" />
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar sx={{ bgcolor: 'warning.main', width: 40, height: 40 }}>
+                      <FireIcon />
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        Extended Streak
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        3 days ago
+                      </Typography>
+                    </Box>
+                    <Chip label="7 days" size="small" color="warning" />
+                  </Box>
+                </Box>
               </Paper>
             </Grid>
           </Grid>
         </TabPanel>
 
+        {/* Progress Tab */}
         <TabPanel value={tabValue} index={1}>
           <ProgressPage />
         </TabPanel>
 
+        {/* Achievements Tab */}
         <TabPanel value={tabValue} index={2}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Paper sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Achievement Progress
+                </Typography>
+                <Grid container spacing={2}>
+                  {achievements.slice(0, 6).map((achievement) => {
+                    const isUnlocked = unlockedAchievements.some(u => u.id === achievement.id);
+                    return (
+                      <Grid item xs={12} sm={6} md={4} key={achievement.id}>
+                        <Card 
+                          sx={{ 
+                            p: 2, 
+                            opacity: isUnlocked ? 1 : 0.6,
+                            bgcolor: isUnlocked ? 'success.light' : 'background.paper'
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{ bgcolor: isUnlocked ? 'success.main' : 'grey.400' }}>
+                              {isUnlocked ? <TrophyIcon /> : <StarIcon />}
+                            </Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                {achievement.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {achievement.description}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Paper>
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Settings Tab */}
+        <TabPanel value={tabValue} index={3}>
           <Settings />
         </TabPanel>
       </Paper>

@@ -6,6 +6,7 @@ import type { Settings } from '../context/AppContext';
 import { getCacheStats, clearCache } from '../utils/AudioCache';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 type SettingsKey = keyof Settings;
 
@@ -33,16 +34,18 @@ const SettingsPanel: React.FC = () => {
   }, [clearing]);
 
   useEffect(() => {
-    // Load saved user settings from localStorage
-    const savedSettings = localStorage.getItem('userSettings');
+    // Load saved settings
+    const savedSettings = safeLocalStorage.getItem('userSettings');
     if (savedSettings) {
-      const parsedSettings = JSON.parse(savedSettings);
-      setDisplayName(parsedSettings.displayName || '');
-      setEmail(parsedSettings.email || '');
-      setDailyGoal(parsedSettings.dailyGoal || 10);
-      setPracticeMode(parsedSettings.practiceMode || 'word');
-      setDailyReminders(parsedSettings.dailyReminders || false);
-      setProgressUpdates(parsedSettings.progressUpdates || false);
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setDailyGoal(parsed.dailyGoal || 10);
+        setPracticeMode(parsed.practiceMode || 'mixed');
+        setDailyReminders(parsed.dailyReminders || false);
+        setProgressUpdates(parsed.progressUpdates || true);
+      } catch (error) {
+        console.error('Error parsing saved settings:', error);
+      }
     }
   }, []);
 
@@ -81,7 +84,7 @@ const SettingsPanel: React.FC = () => {
         dailyReminders,
         progressUpdates
       };
-      localStorage.setItem('userSettings', JSON.stringify(userSettings));
+      safeLocalStorage.setItem('userSettings', JSON.stringify(userSettings));
 
       // Update global settings
       updateGlobalSettings({

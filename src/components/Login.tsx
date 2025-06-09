@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
@@ -17,8 +18,8 @@ export default function Login() {
 
   useEffect(() => {
     // Check for stored login attempts and lockout time
-    const storedAttempts = localStorage.getItem('loginAttempts');
-    const storedLockoutTime = localStorage.getItem('lockoutEndTime');
+    const storedAttempts = safeLocalStorage.getItem('loginAttempts');
+    const storedLockoutTime = safeLocalStorage.getItem('lockoutEndTime');
     if (storedAttempts) {
       setLoginAttempts(parseInt(storedAttempts, 10));
     }
@@ -28,19 +29,19 @@ export default function Login() {
         setLockoutEndTime(lockoutTime);
       } else {
         // Clear expired lockout
-        localStorage.removeItem('lockoutEndTime');
-        localStorage.removeItem('loginAttempts');
+        safeLocalStorage.removeItem('lockoutEndTime');
+        safeLocalStorage.removeItem('loginAttempts');
       }
     }
   }, []);
 
   const updateLoginAttempts = (attempts: number) => {
     setLoginAttempts(attempts);
-    localStorage.setItem('loginAttempts', attempts.toString());
+    safeLocalStorage.setItem('loginAttempts', attempts.toString());
     if (attempts >= MAX_LOGIN_ATTEMPTS) {
       const lockoutTime = Date.now() + LOCKOUT_DURATION;
       setLockoutEndTime(lockoutTime);
-      localStorage.setItem('lockoutEndTime', lockoutTime.toString());
+      safeLocalStorage.setItem('lockoutEndTime', lockoutTime.toString());
     }
   };
 
@@ -56,8 +57,8 @@ export default function Login() {
       setLoading(true);
       await login(email, password);
       // Reset login attempts on successful login
-      localStorage.removeItem('loginAttempts');
-      localStorage.removeItem('lockoutEndTime');
+      safeLocalStorage.removeItem('loginAttempts');
+      safeLocalStorage.removeItem('lockoutEndTime');
       setLoginAttempts(0);
       setLockoutEndTime(null);
       navigate('/');

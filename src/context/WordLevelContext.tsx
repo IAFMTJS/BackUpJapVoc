@@ -14,6 +14,7 @@ import {
 } from '../data/wordLevels';
 import { useWord } from './WordContext';
 import { DictionaryItem } from '../types/dictionary';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 // Convert DictionaryItem to JapaneseWord
 const convertToJapaneseWord = (word: DictionaryItem): JapaneseWord => ({
@@ -159,12 +160,12 @@ const initialProgress: UserProgress = {
 
 export const WordLevelProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userProgress, setUserProgress] = useState<UserProgress>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PROGRESS);
+    const saved = safeLocalStorage.getItem(STORAGE_KEYS.PROGRESS);
     return saved ? JSON.parse(saved) : initialProgress;
   });
 
   const [settings, setSettings] = useState<WordLevelSettings>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    const saved = safeLocalStorage.getItem(STORAGE_KEYS.SETTINGS);
     return saved ? JSON.parse(saved) : initialSettings;
   });
 
@@ -174,13 +175,44 @@ export const WordLevelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Convert quizWords to JapaneseWord format
   const words = React.useMemo(() => quizWords.map(convertToJapaneseWord), [quizWords]);
 
-  // Save progress and settings to localStorage
+  // Load data from localStorage on mount
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(userProgress));
+    try {
+      const saved = safeLocalStorage.getItem(STORAGE_KEYS.PROGRESS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setUserProgress(parsed);
+      }
+    } catch (error) {
+      console.error('Error loading progress from localStorage:', error);
+    }
+
+    try {
+      const saved = safeLocalStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setSettings(parsed);
+      }
+    } catch (error) {
+      console.error('Error loading settings from localStorage:', error);
+    }
+  }, []);
+
+  // Save to localStorage when data changes
+  useEffect(() => {
+    try {
+      safeLocalStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(userProgress));
+    } catch (error) {
+      console.error('Error saving progress to localStorage:', error);
+    }
   }, [userProgress]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    try {
+      safeLocalStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    } catch (error) {
+      console.error('Error saving settings to localStorage:', error);
+    }
   }, [settings]);
 
   const getWordsForCurrentLevel = useCallback(() => {

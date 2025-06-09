@@ -45,6 +45,7 @@ import {
 import { SimpleDictionaryItem } from '../types/dictionary';
 import { useTheme as useAppTheme } from '../context/ThemeContext';
 import { playAudio } from '../utils/audio';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -246,7 +247,7 @@ const KnowingDictionary: React.FC = () => {
         setWords(wordList);
         
         // Load read words from localStorage
-        const savedReadWords = localStorage.getItem('readWords');
+        const savedReadWords = safeLocalStorage.getItem('readWords');
         if (savedReadWords) {
           setReadWords(new Set(JSON.parse(savedReadWords)));
         }
@@ -270,7 +271,7 @@ const KnowingDictionary: React.FC = () => {
         newReadWords.add(wordId);
       }
       // Save to localStorage
-      localStorage.setItem('readWords', JSON.stringify(Array.from(newReadWords)));
+      safeLocalStorage.setItem('readWords', JSON.stringify(Array.from(newReadWords)));
       return newReadWords;
     });
   };

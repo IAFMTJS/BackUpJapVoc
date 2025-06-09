@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 interface AccessibilitySettings {
   fontSize: 'small' | 'medium' | 'large';
@@ -28,22 +29,35 @@ const AccessibilityContext = createContext<AccessibilityContextType | undefined>
 
 export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<AccessibilitySettings>(() => {
-    const savedSettings = localStorage.getItem('accessibilitySettings');
+    const savedSettings = safeLocalStorage.getItem('accessibilitySettings');
     return savedSettings ? JSON.parse(savedSettings) : defaultSettings;
   });
 
-  const updateSettings = useCallback((newSettings: Partial<AccessibilitySettings>) => {
-    setSettings(prev => {
-      const updated = { ...prev, ...newSettings };
-      localStorage.setItem('accessibilitySettings', JSON.stringify(updated));
-      return updated;
-    });
+  useEffect(() => {
+    // Load saved accessibility settings
+    const savedSettings = safeLocalStorage.getItem('accessibilitySettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setSettings(parsed);
+      } catch (error) {
+        console.error('Error parsing accessibility settings:', error);
+      }
+    }
   }, []);
 
-  const resetSettings = useCallback(() => {
+  const updateSettings = (newSettings: Partial<AccessibilitySettings>) => {
+    setSettings(prev => {
+      const updated = { ...prev, ...newSettings };
+      safeLocalStorage.setItem('accessibilitySettings', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const resetSettings = () => {
     setSettings(defaultSettings);
-    localStorage.setItem('accessibilitySettings', JSON.stringify(defaultSettings));
-  }, []);
+    safeLocalStorage.setItem('accessibilitySettings', JSON.stringify(defaultSettings));
+  };
 
   // Apply accessibility settings to document
   useEffect(() => {

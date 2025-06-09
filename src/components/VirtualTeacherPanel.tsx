@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Confetti from 'react-confetti';
 import { useTheme } from '../context/ThemeContext';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 // Utility to get today's date as YYYY-MM-DD
 function getToday() {
@@ -10,29 +11,25 @@ function getToday() {
 // Utility to get/set quest progress in localStorage
 function getQuestProgress() {
   try {
-    return JSON.parse(localStorage.getItem('virtualTeacherQuest') || '{}');
+    return JSON.parse(safeLocalStorage.getItem('virtualTeacherQuest') || '{}');
   } catch {
     return {};
   }
 }
 function setQuestProgress(progress: any) {
-  localStorage.setItem('virtualTeacherQuest', JSON.stringify(progress));
+  safeLocalStorage.setItem('virtualTeacherQuest', JSON.stringify(progress));
 }
 function getQuestStreak() {
-  try {
-    return Number(localStorage.getItem('virtualTeacherQuestStreak') || '0');
-  } catch {
-    return 0;
-  }
+  return Number(safeLocalStorage.getItem('virtualTeacherQuestStreak') || '0');
 }
 function setQuestStreak(streak: number) {
-  localStorage.setItem('virtualTeacherQuestStreak', String(streak));
+  safeLocalStorage.setItem('virtualTeacherQuestStreak', String(streak));
 }
 function getPanelMinimized() {
-  return localStorage.getItem('virtualTeacherPanelMinimized') === 'true';
+  return safeLocalStorage.getItem('virtualTeacherPanelMinimized') === 'true';
 }
 function setPanelMinimized(val: boolean) {
-  localStorage.setItem('virtualTeacherPanelMinimized', String(val));
+  safeLocalStorage.setItem('virtualTeacherPanelMinimized', String(val));
 }
 
 const QUESTS = [

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { isValidEmail } from '../utils/security';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 const MAX_RESET_ATTEMPTS = 3;
 const RESET_COOLDOWN = 60 * 60 * 1000; // 1 hour in milliseconds
@@ -17,8 +18,8 @@ export default function ResetPassword() {
 
   useEffect(() => {
     // Check for stored reset attempts and cooldown time
-    const storedAttempts = localStorage.getItem('resetAttempts');
-    const storedCooldownTime = localStorage.getItem('resetCooldownTime');
+    const storedAttempts = safeLocalStorage.getItem('resetAttempts');
+    const storedCooldownTime = safeLocalStorage.getItem('resetCooldownTime');
     
     if (storedAttempts) {
       setResetAttempts(parseInt(storedAttempts, 10));
@@ -29,20 +30,20 @@ export default function ResetPassword() {
         setCooldownEndTime(cooldownTime);
       } else {
         // Clear expired cooldown
-        localStorage.removeItem('resetCooldownTime');
-        localStorage.removeItem('resetAttempts');
+        safeLocalStorage.removeItem('resetCooldownTime');
+        safeLocalStorage.removeItem('resetAttempts');
       }
     }
   }, []);
 
   const updateResetAttempts = (attempts: number) => {
     setResetAttempts(attempts);
-    localStorage.setItem('resetAttempts', attempts.toString());
+    safeLocalStorage.setItem('resetAttempts', attempts.toString());
     
     if (attempts >= MAX_RESET_ATTEMPTS) {
       const cooldownTime = Date.now() + RESET_COOLDOWN;
       setCooldownEndTime(cooldownTime);
-      localStorage.setItem('resetCooldownTime', cooldownTime.toString());
+      safeLocalStorage.setItem('resetCooldownTime', cooldownTime.toString());
     }
   };
 

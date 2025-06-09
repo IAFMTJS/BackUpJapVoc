@@ -45,6 +45,7 @@ import { useTheme as useAppTheme } from '../context/ThemeContext';
 import { playAudio } from '../utils/audio';
 import { getDatabase, getAllFromStore } from '../utils/databaseConfig';
 import { JapVocDB } from '../types/database';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -261,7 +262,7 @@ const Dictionary: React.FC = () => {
         console.log(`Successfully loaded ${wordList.length} words`);
         
         // Load read words from localStorage
-        const savedReadWords = localStorage.getItem('readWords');
+        const savedReadWords = safeLocalStorage.getItem('readWords');
         if (savedReadWords) {
           setReadWords(new Set(JSON.parse(savedReadWords)));
         }
@@ -276,6 +277,16 @@ const Dictionary: React.FC = () => {
     loadWords();
   }, []);
 
+  // Save read words to localStorage
+  useEffect(() => {
+    try {
+      const newReadWords = new Set([...readWords, ...newReadWords]);
+      safeLocalStorage.setItem('readWords', JSON.stringify(Array.from(newReadWords)));
+    } catch (error) {
+      console.error('Error saving read words:', error);
+    }
+  }, [readWords, newReadWords]);
+
   const handleMarkAsRead = (wordId: string) => {
     setReadWords(prev => {
       const newReadWords = new Set(prev);
@@ -284,8 +295,6 @@ const Dictionary: React.FC = () => {
       } else {
         newReadWords.add(wordId);
       }
-      // Save to localStorage
-      localStorage.setItem('readWords', JSON.stringify(Array.from(newReadWords)));
       return newReadWords;
     });
   };
