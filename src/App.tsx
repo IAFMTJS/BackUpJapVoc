@@ -37,7 +37,6 @@ import { KanjiProvider } from './context/KanjiContext';
 const Home = lazy(() => import('./pages/Home'));
 const Settings = lazy(() => import('./pages/Settings'));
 const LearningLayout = lazy(() => import('./pages/learning/LearningLayout'));
-const LearnKanji = lazy(() => import('./pages/LearnKanji'));
 const KanjiDictionary = lazy(() => import('./pages/learning/KanjiDictionary'));
 const Romaji = lazy(() => import('./pages/learning/Romaji'));
 const QuizPage = lazy(() => import('./pages/learning/QuizPage'));
@@ -373,13 +372,7 @@ const App: React.FC = () => {
                       <Route path="/learning" element={<LearningLayout />}>
                         <Route index element={<Navigate to="/learning/kana" replace />} />
                         <Route path="kana" element={<Kana />} />
-                        <Route path="kanji" element={
-                          <ErrorBoundary>
-                            <KanjiProvider>
-                              <LearnKanji />
-                            </KanjiProvider>
-                          </ErrorBoundary>
-                        } />
+                        <Route path="kanji" element={<Navigate to="/learning/kanji-dictionary" replace />} />
                         <Route path="kanji-dictionary" element={
                           <ErrorBoundary>
                             <KanjiProvider>

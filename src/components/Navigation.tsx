@@ -11,8 +11,21 @@ const Navigation: React.FC = () => {
   const themeClasses = getThemeClasses();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
+  const [openMobileSubmenus, setOpenMobileSubmenus] = useState<Set<string>>(new Set());
 
   const isActive = (path: string) => location.pathname === path;
+
+  const toggleMobileSubmenu = (menuPath: string) => {
+    setOpenMobileSubmenus(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(menuPath)) {
+        newSet.delete(menuPath);
+      } else {
+        newSet.add(menuPath);
+      }
+      return newSet;
+    });
+  };
 
   const navItems = [
     // Main sections
@@ -28,7 +41,7 @@ const Navigation: React.FC = () => {
   // Learning submenu items
   const learningRoutes = [
     { path: '/learning/kana', label: 'Kana' },
-    { path: '/learning/kanji', label: 'Kanji' },
+    { path: '/learning/kanji-dictionary', label: 'Kanji Dictionary' },
     { path: '/learning/romaji', label: 'Romaji' },
     { path: '/learning/quiz', label: 'Quiz' }
   ];
@@ -147,33 +160,56 @@ const Navigation: React.FC = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            {navItems.map(({ path, label }) => (
-              <React.Fragment key={path}>
-                <div className="relative">
-                  <Link
-                    to={path}
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive(path) ? themeClasses.nav.link.active : themeClasses.nav.link.default
-                    }`}
-                    onClick={() => {
-                      if (path !== '/learning' && path !== '/knowing' && path !== '/trivia' && path !== '/faq') {
-                        setIsMobileMenuOpen(false);
-                      }
-                    }}
-                  >
-                    {label}
-                  </Link>
-                  {(path === '/learning' || path === '/knowing' || path === '/trivia' || path === '/faq') && (
-                    <div className="pl-4">
-                      {(path === '/learning' ? learningRoutes : 
-                        path === '/knowing' ? knowingItems : 
-                        path === '/faq' ? faqItems :
-                        triviaItems).map((item) => (
+            {navItems.map(({ path, label }) => {
+              const hasSubmenu = path === '/learning' || path === '/knowing' || path === '/trivia' || path === '/faq';
+              const isSubmenuOpen = openMobileSubmenus.has(path);
+              const submenuItems = path === '/learning' ? learningRoutes : 
+                                 path === '/knowing' ? knowingItems : 
+                                 path === '/faq' ? faqItems :
+                                 triviaItems;
+
+              return (
+                <div key={path} className="relative">
+                  <div className="flex items-center justify-between">
+                    <Link
+                      to={path}
+                      className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${
+                        isActive(path) ? themeClasses.nav.link.active : themeClasses.nav.link.default
+                      }`}
+                      onClick={() => {
+                        if (!hasSubmenu) {
+                          setIsMobileMenuOpen(false);
+                        }
+                      }}
+                    >
+                      {label}
+                    </Link>
+                    {hasSubmenu && (
+                      <button
+                        onClick={() => toggleMobileSubmenu(path)}
+                        className={`px-2 py-2 ${themeClasses.nav.link.default} transition-transform duration-200`}
+                      >
+                        <svg
+                          className={`h-4 w-4 transition-transform duration-200 ${isSubmenuOpen ? 'rotate-180' : ''}`}
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  
+                  {hasSubmenu && isSubmenuOpen && (
+                    <div className="pl-4 mt-1 space-y-1">
+                      {submenuItems.map((item) => (
                         <Link
                           key={item.label}
                           to={item.path}
                           state={item.tabIndex !== undefined ? { activeTab: item.tabIndex } : undefined}
-                          className={`block px-3 py-2 text-sm ${
+                          className={`block px-3 py-2 text-sm rounded-md ${
                             isActive(item.path) ? themeClasses.nav.link.active : themeClasses.nav.link.default
                           }`}
                           onClick={() => setIsMobileMenuOpen(false)}
@@ -184,8 +220,8 @@ const Navigation: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </React.Fragment>
-            ))}
+              );
+            })}
             <div className="px-3 py-2">
               <ThemeToggle />
             </div>

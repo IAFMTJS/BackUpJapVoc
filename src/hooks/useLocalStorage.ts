@@ -1,5 +1,26 @@
 import { useState, useEffect } from 'react';
 
+// Safe localStorage utility functions
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      if (typeof window === 'undefined') return null;
+      return window.localStorage.getItem(key);
+    } catch (error) {
+      console.warn(`Failed to read from localStorage for key "${key}":`, error);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      if (typeof window === 'undefined') return;
+      window.localStorage.setItem(key, value);
+    } catch (error) {
+      console.warn(`Failed to write to localStorage for key "${key}":`, error);
+    }
+  }
+};
+
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   // Get from local storage then
   // parse stored json or return initialValue
@@ -10,7 +31,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
     }
 
     try {
-      const item = window.localStorage.getItem(key);
+      const item = safeLocalStorage.getItem(key);
       return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
@@ -33,9 +54,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
       setStoredValue(valueToStore);
       
       // Save to local storage
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      }
+      safeLocalStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
@@ -49,15 +68,21 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === key && e.newValue) {
-        setStoredValue(JSON.parse(e.newValue));
+        try {
+          setStoredValue(JSON.parse(e.newValue));
+        } catch (error) {
+          console.warn(`Error parsing localStorage value for key "${key}":`, error);
+        }
       }
     };
 
     // this only works for other documents, not the current one
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Remove event listener on cleanup
-    return () => window.removeEventListener('storage', handleStorageChange);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange);
+      
+      // Remove event listener on cleanup
+      return () => window.removeEventListener('storage', handleStorageChange);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 
 type Theme = 'dark' | 'light' | 'neon';
 
@@ -92,12 +92,31 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
+// Safe localStorage utility functions
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.warn(`Failed to read from localStorage for key "${key}":`, error);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.warn(`Failed to write to localStorage for key "${key}":`, error);
+    }
+  }
+};
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   // Load theme from localStorage or default to 'dark' with validation
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const savedTheme = localStorage.getItem('theme');
+        const savedTheme = safeLocalStorage.getItem('theme');
         return (savedTheme && ['dark', 'light', 'neon'].includes(savedTheme)) 
           ? (savedTheme as Theme) 
           : 'dark';
@@ -110,10 +129,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   });
 
   // Persist theme to localStorage and update body class
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined' && theme) {
       try {
-        localStorage.setItem('theme', theme);
+        safeLocalStorage.setItem('theme', theme);
         document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-neon');
         document.documentElement.classList.add(`theme-${theme}`);
       } catch (error) {

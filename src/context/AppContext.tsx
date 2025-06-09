@@ -1,5 +1,24 @@
 import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback, useRef } from 'react';
 
+// Safe localStorage utility functions
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.warn(`Failed to read from localStorage for key "${key}":`, error);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.warn(`Failed to write to localStorage for key "${key}":`, error);
+    }
+  }
+};
+
 interface Progress {
   completed: number;
   total: number;
@@ -67,9 +86,7 @@ const defaultProgress: ProgressData = {
       categories: {}
     }
   },
-  section2: { completed: 0, total: 0 },
   section3: { completed: 0, total: 0 },
-  section4: { completed: 0, total: 0 },
   section5: { completed: 0, total: 0 },
   section6: { completed: 0, total: 0 },
   section7: { completed: 0, total: 0 },
@@ -118,12 +135,12 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [progress, setProgress] = useState<ProgressData>(() => {
-    const savedProgress = localStorage.getItem('appProgress');
+    const savedProgress = safeLocalStorage.getItem('appProgress');
     return savedProgress ? JSON.parse(savedProgress) : defaultProgress;
   });
 
   const [settings, setSettings] = useState<Settings>(() => {
-    const savedSettings = localStorage.getItem('appSettings');
+    const savedSettings = safeLocalStorage.getItem('appSettings');
     return savedSettings ? JSON.parse(savedSettings) : defaultSettings;
   });
 
@@ -137,7 +154,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       clearTimeout(timeoutRef.current);
     }
     timeoutRef.current = setTimeout(() => {
-      localStorage.setItem(key, JSON.stringify(value));
+      safeLocalStorage.setItem(key, JSON.stringify(value));
       timeoutRef.current = undefined;
     }, 300); // Reduced debounce time for better responsiveness
   }, []);

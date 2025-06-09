@@ -165,6 +165,7 @@ const ProfilePage: React.FC = () => {
               <Button
                 variant="outlined"
                 startIcon={<ChartIcon />}
+                onClick={() => setTabValue(1)}
                 sx={{ 
                   borderColor: 'white', 
                   color: 'white',
