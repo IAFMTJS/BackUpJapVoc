@@ -66,7 +66,11 @@ const LearningEfficiencyAnalysis: React.FC = () => {
     }, {});
 
     const optimalStudyTime = Object.entries(timeSlotPerformance)
-      .sort(([, a]: any, [, b]: any) => (b.total / b.count) - (a.total / a.count))[0]?.[0] || 'No data';
+      .sort(([, a]: any, [, b]: any) => {
+        const aScore = a && a.count > 0 ? (a.total / a.count) : 0;
+        const bScore = b && b.count > 0 ? (b.total / b.count) : 0;
+        return bScore - aScore;
+      })[0]?.[0] || 'No data';
 
     // Calculate efficiency score (weighted average of learning speed, retention, and consistency)
     const consistencyScore = sessions.length > 0 ? Math.min(sessions.length / 30, 1) : 0;

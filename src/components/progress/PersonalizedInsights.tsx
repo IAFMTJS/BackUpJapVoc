@@ -114,7 +114,11 @@ const PersonalizedInsights: React.FC = () => {
     }, {});
 
     const bestTimeSlot = Object.entries(timeOfDayPerformance)
-      .sort(([, a]: any, [, b]: any) => (b.total / b.count) - (a.total / a.count))[0]?.[0];
+      .sort(([, a]: any, [, b]: any) => {
+        const aScore = a && a.count > 0 ? (a.total / a.count) : 0;
+        const bScore = b && b.count > 0 ? (b.total / b.count) : 0;
+        return bScore - aScore;
+      })[0]?.[0];
 
     if (bestTimeSlot) {
       insights.push({

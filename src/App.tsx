@@ -323,122 +323,122 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <WordProvider>
-        <DictionaryProvider>
-          <LearningProvider>
-            <AudioProvider>
-              <ThemeWrapper>
-                <Suspense fallback={<LoadingSpinner />}>
-                  <Routes>
-                    <Route path="/login" element={
-                      <ErrorBoundary>
-                        <Login />
-                      </ErrorBoundary>
-                    } />
-                    <Route element={
-                      <ErrorBoundary>
-                        <MainLayout>
-                          <Outlet />
-                        </MainLayout>
-                      </ErrorBoundary>
-                    }>
-                      <Route path="/" element={
-                        <ErrorBoundary>
-                          <Home />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/settings" element={
-                        <ErrorBoundary>
-                          <Settings />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/learning" element={<LearningLayout />}>
-                        <Route index element={<Navigate to="/learning/kana" replace />} />
-                        <Route path="kana" element={<Kana />} />
-                        <Route path="kanji" element={<Navigate to="/learning/kanji-dictionary" replace />} />
-                        <Route path="kanji-dictionary" element={
+      <ProgressProvider>
+        <AchievementProvider>
+          <WordProvider>
+            <DictionaryProvider>
+              <LearningProvider>
+                <AudioProvider>
+                  <ThemeWrapper>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Routes>
+                        <Route path="/login" element={
                           <ErrorBoundary>
-                            <KanjiProvider>
-                              <KanjiDictionary />
-                            </KanjiProvider>
+                            <Login />
                           </ErrorBoundary>
                         } />
-                        <Route path="romaji" element={<Romaji />} />
-                        <Route path="quiz" element={<QuizPage />} />
-                      </Route>
-                      <Route path="/srs" element={
-                        <ErrorBoundary>
-                          <SRSPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/games" element={
-                        <ErrorBoundary>
-                          <GamesPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/anime" element={
-                        <ErrorBoundary>
-                          <AnimeSection />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/progress" element={
-                        <ErrorBoundary>
-                          <ProgressProvider>
-                            <WordLevelProvider>
-                              <AchievementProvider>
-                                <ProgressPage />
-                              </AchievementProvider>
-                            </WordLevelProvider>
-                          </ProgressProvider>
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/profile" element={
-                        <ErrorBoundary>
-                          <ProfilePage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/knowing" element={
-                        <ErrorBoundary>
-                          <ProgressProvider>
-                            <KnowingNavigation>
+                        <Route element={
+                          <ErrorBoundary>
+                            <MainLayout>
                               <Outlet />
-                            </KnowingNavigation>
-                          </ProgressProvider>
-                        </ErrorBoundary>
-                      }>
-                        <Route index element={<KnowingCenter />} />
-                        <Route path="dictionary" element={<KnowingDictionary />} />
-                        <Route path="mood" element={<MoodPage />} />
-                        <Route path="culture" element={<CultureAndRules />} />
-                        <Route path="favorites" element={<FavoritesPage />} />
-                        <Route path="settings" element={<SettingsPage />} />
-                        <Route path="*" element={<Navigate to="/knowing" replace />} />
-                      </Route>
-                      <Route path="/trivia" element={
-                        <ErrorBoundary>
-                          <TriviaSection />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/faq" element={
-                        <ErrorBoundary>
-                          <Outlet />
-                        </ErrorBoundary>
-                      }>
-                        <Route index element={<FAQFeatures />} />
-                        <Route path="features" element={<FAQFeatures />} />
-                        <Route path="learning" element={<FAQLearning />} />
-                        <Route path="scoring" element={<FAQScoring />} />
-                        <Route path="progress" element={<FAQProgress />} />
-                        <Route path="*" element={<Navigate to="/faq" replace />} />
-                      </Route>
-                    </Route>
-                  </Routes>
-                </Suspense>
-              </ThemeWrapper>
-            </AudioProvider>
-          </LearningProvider>
-        </DictionaryProvider>
-      </WordProvider>
+                            </MainLayout>
+                          </ErrorBoundary>
+                        }>
+                          <Route path="/" element={
+                            <ErrorBoundary>
+                              <Home />
+                            </ErrorBoundary>
+                          } />
+                          <Route path="/settings" element={
+                            <ErrorBoundary>
+                              <Settings />
+                            </ErrorBoundary>
+                          } />
+                          <Route path="/learning" element={<LearningLayout />}>
+                            <Route index element={<Navigate to="/learning/kana" replace />} />
+                            <Route path="kana" element={<Kana />} />
+                            <Route path="kanji" element={<Navigate to="/learning/kanji-dictionary" replace />} />
+                            <Route path="kanji-dictionary" element={
+                              <ErrorBoundary>
+                                <KanjiProvider>
+                                  <KanjiDictionary />
+                                </KanjiProvider>
+                              </ErrorBoundary>
+                            } />
+                            <Route path="romaji" element={<Romaji />} />
+                            <Route path="quiz" element={<QuizPage />} />
+                          </Route>
+                          <Route path="/srs" element={
+                            <ErrorBoundary>
+                              <SRSPage />
+                            </ErrorBoundary>
+                          } />
+                          <Route path="/games" element={
+                            <ErrorBoundary>
+                              <GamesPage />
+                            </ErrorBoundary>
+                          } />
+                          <Route path="/anime" element={
+                            <ErrorBoundary>
+                              <AnimeSection />
+                            </ErrorBoundary>
+                          } />
+                          <Route path="/progress" element={
+                            <ErrorBoundary>
+                              <WordLevelProvider>
+                                <ProgressPage />
+                              </WordLevelProvider>
+                            </ErrorBoundary>
+                          } />
+                          <Route path="/profile" element={
+                            <ErrorBoundary>
+                              <ProfilePage />
+                            </ErrorBoundary>
+                          } />
+                          <Route path="/knowing" element={
+                            <ErrorBoundary>
+                              <WordLevelProvider>
+                                <KnowingNavigation>
+                                  <Outlet />
+                                </KnowingNavigation>
+                              </WordLevelProvider>
+                            </ErrorBoundary>
+                          }>
+                            <Route index element={<KnowingCenter />} />
+                            <Route path="dictionary" element={<KnowingDictionary />} />
+                            <Route path="mood" element={<MoodPage />} />
+                            <Route path="culture" element={<CultureAndRules />} />
+                            <Route path="favorites" element={<FavoritesPage />} />
+                            <Route path="settings" element={<SettingsPage />} />
+                            <Route path="*" element={<Navigate to="/knowing" replace />} />
+                          </Route>
+                          <Route path="/trivia" element={
+                            <ErrorBoundary>
+                              <TriviaSection />
+                            </ErrorBoundary>
+                          } />
+                          <Route path="/faq" element={
+                            <ErrorBoundary>
+                              <Outlet />
+                            </ErrorBoundary>
+                          }>
+                            <Route index element={<FAQFeatures />} />
+                            <Route path="features" element={<FAQFeatures />} />
+                            <Route path="learning" element={<FAQLearning />} />
+                            <Route path="scoring" element={<FAQScoring />} />
+                            <Route path="progress" element={<FAQProgress />} />
+                            <Route path="*" element={<Navigate to="/faq" replace />} />
+                          </Route>
+                        </Route>
+                      </Routes>
+                    </Suspense>
+                  </ThemeWrapper>
+                </AudioProvider>
+              </LearningProvider>
+            </DictionaryProvider>
+          </WordProvider>
+        </AchievementProvider>
+      </ProgressProvider>
     </ErrorBoundary>
   );
 };

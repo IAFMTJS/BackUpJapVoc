@@ -120,7 +120,8 @@ const kanaData = {
 const KanaQuiz: React.FC<KanaQuizProps> = ({ type, difficulty = 'beginner' }) => {
   const theme = useTheme();
   const { playAudio } = useAudio();
-  const { updateWordProgress, updateSectionProgress, addStudySession, progress } = useProgress();
+  const progressContext = useProgress();
+  const { updateWordProgress, updateSectionProgress, addStudySession, progress } = progressContext || {};
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [isAnswered, setIsAnswered] = useState(false);
@@ -186,17 +187,19 @@ const KanaQuiz: React.FC<KanaQuizProps> = ({ type, difficulty = 'beginner' }) =>
           incorrectAnswers: 0
         };
 
-        updateWordProgress(question.kana, {
-          lastReviewed: Date.now(),
-          reviewCount: (currentProgress.reviewCount || 0) + 1,
-          nextReviewDate: Date.now() + (isCorrect ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000),
-          category: type,
-          section: type,
-          difficulty: difficulty,
-          lastAnswerCorrect: isCorrect,
-          correctAnswers: isCorrect ? (currentProgress.correctAnswers || 0) + 1 : (currentProgress.correctAnswers || 0),
-          incorrectAnswers: !isCorrect ? (currentProgress.incorrectAnswers || 0) + 1 : (currentProgress.incorrectAnswers || 0)
-        });
+        if (updateWordProgress) {
+          updateWordProgress(question.kana, {
+            lastReviewed: Date.now(),
+            reviewCount: (currentProgress.reviewCount || 0) + 1,
+            nextReviewDate: Date.now() + (isCorrect ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000),
+            category: type,
+            section: type,
+            difficulty: difficulty,
+            lastAnswerCorrect: isCorrect,
+            correctAnswers: isCorrect ? (currentProgress.correctAnswers || 0) + 1 : (currentProgress.correctAnswers || 0),
+            incorrectAnswers: !isCorrect ? (currentProgress.incorrectAnswers || 0) + 1 : (currentProgress.incorrectAnswers || 0)
+          });
+        }
       });
     }
   }, [quizCompleted, score, questions, type, difficulty, answers, addStudySession, updateSectionProgress, updateWordProgress, progress]);

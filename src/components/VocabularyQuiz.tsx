@@ -1533,7 +1533,7 @@ export const VocabularyQuiz: React.FC<VocabularyQuizProps> = ({
     const byCategory: Record<QuizCategory, { correct: number; total: number; accuracy: number }> = {} as any;
     const byDifficulty: Record<Difficulty, { correct: number; total: number; accuracy: number }> = {} as any;
 
-    session.questions.forEach((question) => {
+    session.questions.forEach(question => {
       // Category performance
       if (!byCategory[question.category]) {
         byCategory[question.category] = { correct: 0, total: 0, accuracy: 0 };
@@ -1543,7 +1543,7 @@ export const VocabularyQuiz: React.FC<VocabularyQuizProps> = ({
         byCategory[question.category].correct++;
       }
       byCategory[question.category].accuracy =
-        (byCategory[question.category].correct / byCategory[question.category].total) * 100;
+        byCategory[question.category].total > 0 ? (byCategory[question.category].correct / byCategory[question.category].total) * 100 : 0;
 
       // Difficulty performance
       if (!byDifficulty[question.difficulty]) {
@@ -1554,7 +1554,7 @@ export const VocabularyQuiz: React.FC<VocabularyQuizProps> = ({
         byDifficulty[question.difficulty].correct++;
       }
       byDifficulty[question.difficulty].accuracy =
-        (byDifficulty[question.difficulty].correct / byDifficulty[question.difficulty].total) * 100;
+        byDifficulty[question.difficulty].total > 0 ? (byDifficulty[question.difficulty].correct / byDifficulty[question.difficulty].total) * 100 : 0;
     });
 
     return { byCategory, byDifficulty };

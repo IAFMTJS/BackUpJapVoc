@@ -36,6 +36,7 @@ import {
 } from '@mui/icons-material';
 import { useDictionary } from '../../context/DictionaryContext';
 import { useLearning } from '../../context/LearningContext';
+import { useAudio } from '../../context/AudioContext';
 import { DictionaryItem } from '../../types/dictionary';
 import { QuizState, QuizMode, Difficulty } from '../../types/quiz';
 import { useTheme } from '../../context/ThemeContext';
@@ -70,6 +71,7 @@ const QUESTIONS_PER_QUIZ = 10;
 const QuizPage: React.FC = () => {
   const { words, isLoading: isDictionaryLoading, error: dictionaryError } = useDictionary();
   const { updateProgress } = useLearning();
+  const { playAudio } = useAudio();
   const { theme } = useTheme();
   const [quizState, setQuizState] = useState<QuizState>({
     mode: 'japanese-to-english',
@@ -106,7 +108,7 @@ const QuizPage: React.FC = () => {
   // Add debug logging
   useEffect(() => {
     console.log('[QuizPage] Dictionary state:', {
-      wordsCount: words.length,
+      wordsCount: words?.length || 0,
       isLoading: isDictionaryLoading,
       error: dictionaryError
     });
@@ -136,9 +138,30 @@ const QuizPage: React.FC = () => {
     }
   }, [languageSettings, validateQuizMode]);
 
+  // Play audio for quiz start
+  const playQuizStartAudio = () => {
+    playAudio('クイズを始めましょう！', 'word', 'happy');
+  };
+
+  // Play audio for question skip
+  const playSkipAudio = () => {
+    playAudio('スキップしました', 'word', 'neutral');
+  };
+
+  // Play audio for next question
+  const playNextQuestionAudio = () => {
+    playAudio('次の問題', 'word', 'neutral');
+  };
+
   // Generate quiz questions based on selected mode and difficulty
   const generateQuiz = useCallback(() => {
-    if (!words.length) return;
+    // Safety check to ensure words array exists and has items
+    if (!words || !Array.isArray(words) || words.length === 0) {
+      console.warn('[QuizPage] Words array is undefined, empty, or not an array');
+      setError('No words available for quiz. Please try again later.');
+      setIsLoading(false);
+      return;
+    }
 
     const maxLevel = DIFFICULTY_LEVELS.find(d => d.value === difficulty)?.maxLevel || 4;
     
@@ -152,7 +175,7 @@ const QuizPage: React.FC = () => {
         case 'listening':
           return levelMatch && word.audioUrl; // Only include words with audio
         case 'examples':
-          return levelMatch && word.examples && word.examples.length > 0; // Only include words with examples
+          return levelMatch && word.examples && Array.isArray(word.examples) && word.examples.length > 0; // Only include words with examples
         case 'romaji-to-japanese':
           return levelMatch && word.romaji; // Only include words with romaji
         default:
@@ -162,6 +185,7 @@ const QuizPage: React.FC = () => {
     
     if (filteredWords.length < QUESTIONS_PER_QUIZ) {
       setError(`Not enough words available for ${quizState.mode} mode at ${difficulty} difficulty. Try a different mode or difficulty.`);
+      setIsLoading(false);
       return;
     }
 
@@ -184,7 +208,10 @@ const QuizPage: React.FC = () => {
       showCorrect: false,
     }));
     setIsLoading(false);
-  }, [words, difficulty, quizState.mode]);
+    
+    // Play quiz start audio
+    playQuizStartAudio();
+  }, [words, difficulty, quizState.mode, playQuizStartAudio]);
 
   // Initialize quiz
   useEffect(() => {
@@ -233,6 +260,9 @@ const QuizPage: React.FC = () => {
 
     // Update learning progress
     updateProgress(currentWord.id, isCorrect);
+
+    // Play audio feedback for correct/incorrect answers
+    playAnswerFeedback(isCorrect);
   };
 
   // Handle next question
@@ -247,6 +277,9 @@ const QuizPage: React.FC = () => {
         isCorrect: null,
         showCorrect: false,
       }));
+      
+      // Play next question audio
+      playNextQuestionAudio();
     } else {
       setQuizState(prev => ({
         ...prev,
@@ -262,6 +295,7 @@ const QuizPage: React.FC = () => {
       skippedQuestions: new Set([...prev.skippedQuestions, prev.currentQuestion]),
     }));
     handleNext();
+    playSkipAudio();
   };
 
   // Handle mark for review
@@ -275,9 +309,42 @@ const QuizPage: React.FC = () => {
   // Play audio for current word
   const handlePlayAudio = () => {
     const currentWord = quizState.currentWord;
-    if (currentWord?.audioUrl) {
-      const audio = new Audio(currentWord.audioUrl);
-      audio.play().catch(console.error);
+    if (currentWord) {
+      // Try to play the word audio first
+      if (currentWord.audioUrl) {
+        playAudio(currentWord.audioUrl, 'word', 'neutral');
+      } else if (currentWord.japanese) {
+        // Fallback to TTS if no audio file
+        playAudio(currentWord.japanese, 'word', 'neutral');
+      }
+    }
+  };
+
+  // Play audio feedback for correct/incorrect answers
+  const playAnswerFeedback = (isCorrect: boolean) => {
+    if (isCorrect) {
+      playAudio('正解です！', 'word', 'happy');
+    } else {
+      playAudio('不正解です', 'word', 'neutral');
+    }
+  };
+
+  // Play audio for quiz completion only once
+  useEffect(() => {
+    if (quizState.completed) {
+      playQuizCompletionAudio(quizState.score, quizState.totalQuestions);
+    }
+  }, [quizState.completed, quizState.score, quizState.totalQuestions]);
+
+  // Play audio for quiz completion
+  const playQuizCompletionAudio = (score: number, total: number) => {
+    const percentage = (score / total) * 100;
+    if (percentage >= 80) {
+      playAudio('素晴らしい！', 'word', 'happy');
+    } else if (percentage >= 60) {
+      playAudio('よくできました！', 'word', 'happy');
+    } else {
+      playAudio('もう一度頑張りましょう', 'word', 'neutral');
     }
   };
 
@@ -299,12 +366,26 @@ const QuizPage: React.FC = () => {
       );
     };
 
+    const renderAudioButton = () => (
+      <Tooltip title="Play pronunciation">
+        <IconButton 
+          onClick={handlePlayAudio} 
+          size="large"
+          color="primary"
+          sx={{ mb: 2 }}
+        >
+          <VolumeUpIcon />
+        </IconButton>
+      </Tooltip>
+    );
+
     switch (quizState.mode) {
       case 'japanese-to-english':
         return (
           <Box>
             {renderLanguageContent(currentWord.japanese, 'showJapanese')}
             {renderLanguageContent(currentWord.romaji, 'showRomaji')}
+            {renderAudioButton()}
             <Typography variant="subtitle1" color="textSecondary" gutterBottom>
               Translate to English
             </Typography>
@@ -315,6 +396,7 @@ const QuizPage: React.FC = () => {
           <Box>
             {renderLanguageContent(currentWord.english, 'showEnglish')}
             {renderLanguageContent(currentWord.romaji, 'showRomaji')}
+            {renderAudioButton()}
             <Typography variant="subtitle1" color="textSecondary" gutterBottom>
               Translate to Japanese
             </Typography>
@@ -325,6 +407,7 @@ const QuizPage: React.FC = () => {
           <Box>
             {renderLanguageContent(currentWord.romaji, 'showRomaji')}
             {renderLanguageContent(currentWord.english, 'showEnglish')}
+            {renderAudioButton()}
             <Typography variant="subtitle1" color="textSecondary" gutterBottom>
               Type the Japanese word
             </Typography>
@@ -335,6 +418,7 @@ const QuizPage: React.FC = () => {
           <Box>
             {renderLanguageContent(currentWord.japanese, 'showJapanese')}
             {renderLanguageContent(currentWord.english, 'showEnglish')}
+            {renderAudioButton()}
             <Typography variant="subtitle1" color="textSecondary" gutterBottom>
               Type the romaji
             </Typography>
@@ -343,11 +427,12 @@ const QuizPage: React.FC = () => {
       case 'listening':
         return (
           <Box>
-            <IconButton onClick={handlePlayAudio} size="large">
-              <VolumeUpIcon />
-            </IconButton>
+            <Typography variant="h6" color="textSecondary" gutterBottom>
+              Listen to the pronunciation:
+            </Typography>
+            {renderAudioButton()}
             <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-              Click to hear the word
+              What word did you hear?
             </Typography>
             {renderLanguageContent(currentWord.romaji, 'showRomaji')}
             {renderLanguageContent(currentWord.english, 'showEnglish')}
@@ -358,6 +443,7 @@ const QuizPage: React.FC = () => {
           <Box>
             {renderLanguageContent(currentWord.examples?.[0]?.example || 'No example available', 'showJapanese')}
             {renderLanguageContent(currentWord.examples?.[0]?.context || '', 'showRomaji')}
+            {renderAudioButton()}
             <Typography variant="subtitle1" color="textSecondary" gutterBottom>
               Translate the example
             </Typography>
@@ -372,6 +458,12 @@ const QuizPage: React.FC = () => {
   const generateOptions = () => {
     const currentWord = quizState.currentWord;
     if (!currentWord) return [];
+
+    // Safety check to ensure words array exists and has items
+    if (!words || !Array.isArray(words) || words.length === 0) {
+      console.warn('[QuizPage] Words array is undefined, empty, or not an array in generateOptions');
+      return ['No options available'];
+    }
 
     const allWords = [...words];
     const options = new Set<string>();
@@ -414,6 +506,8 @@ const QuizPage: React.FC = () => {
     // Add random options based on enabled languages
     while (options.size < 4) {
       const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
+      if (!randomWord) continue; // Skip if randomWord is undefined
+      
       let option = '';
       
       switch (quizState.mode) {

@@ -58,7 +58,8 @@ const KanjiPractice: React.FC<KanjiPracticeProps> = ({ initialKanji, jlptLevel }
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { playAudio } = useAudio();
-  const { updateWordProgress } = useProgress();
+  const progressContext = useProgress();
+  const { updateWordProgress } = progressContext || {};
   const { words } = useDictionary();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -210,7 +211,7 @@ const KanjiPractice: React.FC<KanjiPracticeProps> = ({ initialKanji, jlptLevel }
 
     setVerificationResult(result);
 
-    if (isCorrect) {
+    if (isCorrect && updateWordProgress) {
       updateWordProgress(currentKanji.kanji!, {
         masteryLevel: 1,
         lastReviewed: Date.now(),

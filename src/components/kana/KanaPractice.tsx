@@ -304,7 +304,8 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({ type, initialKana }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { playAudio } = useAudio();
-  const { updateWordProgress } = useProgress();
+  const progressContext = useProgress();
+  const { updateWordProgress } = progressContext || {};
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentKana, setCurrentKana] = useState(initialKana || 'あ');
@@ -494,17 +495,19 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({ type, initialKana }) => {
 
     if (isCorrect) {
       // Update progress when the character is drawn correctly
-      updateWordProgress(currentKana, {
-        masteryLevel: 1,
-        lastReviewed: Date.now(),
-        reviewCount: 1,
-        nextReviewDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
-        category: type,
-        section: 'writing',
-        difficulty: 'beginner',
-        consecutiveCorrect: 1,
-        lastAnswerCorrect: true
-      });
+      if (updateWordProgress) {
+        updateWordProgress(currentKana, {
+          masteryLevel: 1,
+          lastReviewed: Date.now(),
+          reviewCount: 1,
+          nextReviewDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
+          category: type,
+          section: 'writing',
+          difficulty: 'beginner',
+          consecutiveCorrect: 1,
+          lastAnswerCorrect: true
+        });
+      }
     }
   };
 

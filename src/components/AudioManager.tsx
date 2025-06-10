@@ -214,7 +214,7 @@ const AudioManager: React.FC = () => {
                         className={`h-2.5 rounded-full ${
                           progress.status === 'error' ? 'bg-red-500' : 'bg-blue-500'
                         }`}
-                        style={{ width: `${(progress.cached / progress.total) * 100}%` }}
+                        style={{ width: `${progress.total ? (progress.cached / progress.total) * 100 : 0}%` }}
                       ></div>
                     </div>
                   )}

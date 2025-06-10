@@ -173,7 +173,7 @@ const AudioDownloader: React.FC = () => {
                     className={`h-2.5 rounded-full ${
                       progress.status === 'error' ? 'bg-red-500' : 'bg-blue-500'
                     }`}
-                    style={{ width: `${(progress.progress / progress.total) * 100}%` }}
+                    style={{ width: `${progress.total ? (progress.progress / progress.total) * 100 : 0}%` }}
                   ></div>
                 </div>
               )}

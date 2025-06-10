@@ -100,6 +100,37 @@ const Kana: React.FC = () => {
 
   // Calculate comprehensive progress statistics
   const progressStats = useMemo(() => {
+    // Safety check to ensure progress.words exists
+    if (!progress?.words) {
+      return {
+        hiragana: {
+          mastered: 0,
+          inProgress: 0,
+          notStarted: hiraganaList.length,
+          total: hiraganaList.length,
+          percentComplete: 0,
+          avgMastery: 0
+        },
+        katakana: {
+          mastered: 0,
+          inProgress: 0,
+          notStarted: katakanaList.length,
+          total: katakanaList.length,
+          percentComplete: 0,
+          avgMastery: 0
+        },
+        overall: {
+          mastered: 0,
+          inProgress: 0,
+          notStarted: hiraganaList.length + katakanaList.length,
+          total: hiraganaList.length + katakanaList.length,
+          percentComplete: 0,
+          avgMastery: 0
+        },
+        chartData: []
+      };
+    }
+
     const hiraganaProgress = hiraganaList.map(kana => ({
       character: kana.character,
       progress: progress.words[kana.character] || {
@@ -335,12 +366,12 @@ const Kana: React.FC = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="text.secondary">
-                      Mastered: {progressStats.hiragana.mastered}/{progressStats.hiragana.total}
+                      Mastered: {progressStats.hiragana?.mastered || 0}/{progressStats.hiragana?.total || 0}
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="text.secondary">
-                      Avg Mastery: {Math.round(progressStats.hiragana.avgMastery * 100)}%
+                      Avg Mastery: {Math.round((progressStats.hiragana?.avgMastery || 0) * 100)}%
                     </Typography>
                   </Grid>
                 </Grid>
@@ -372,12 +403,12 @@ const Kana: React.FC = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="text.secondary">
-                      Mastered: {progressStats.katakana.mastered}/{progressStats.katakana.total}
+                      Mastered: {progressStats.katakana?.mastered || 0}/{progressStats.katakana?.total || 0}
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="text.secondary">
-                      Avg Mastery: {Math.round(progressStats.katakana.avgMastery * 100)}%
+                      Avg Mastery: {Math.round((progressStats.katakana?.avgMastery || 0) * 100)}%
                     </Typography>
                   </Grid>
                 </Grid>

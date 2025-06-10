@@ -40,12 +40,14 @@ import {
   CheckCircle as CheckCircleIcon,
   CheckCircleOutline as CheckCircleOutlineIcon
 } from '@mui/icons-material';
+import { openDB } from 'idb';
 import { DictionaryItem } from '../types/dictionary';
 import { useTheme as useAppTheme } from '../context/ThemeContext';
 import { playAudio } from '../utils/audio';
-import { getDatabase, getAllFromStore } from '../utils/databaseConfig';
+import { getDatabase, getAllFromStore, forceDatabaseReset } from '../utils/databaseConfig';
 import { JapVocDB } from '../types/database';
 import safeLocalStorage from '../utils/safeLocalStorage';
+import { importDictionaryData } from '../utils/importDictionaryData';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -168,14 +170,14 @@ const WordCard: React.FC<{
         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
           <Chip 
             icon={<CategoryIcon />} 
-            label={word.category} 
+            label={word.category || 'other'} 
             size="small" 
             color="primary" 
             variant="outlined" 
           />
           <Chip 
             icon={<StarIcon />} 
-            label={word.difficulty} 
+            label={getDifficultyFromLevel(word.level)} 
             size="small" 
             color="info" 
             variant="outlined" 
@@ -214,6 +216,27 @@ const WordCard: React.FC<{
       </CardContent>
     </Card>
   );
+};
+
+// Add database check function
+const isDictionaryInitialized = async (): Promise<boolean> => {
+  try {
+    const db = await openDB('DictionaryDB', 3);
+    const tx = db.transaction('words', 'readonly');
+    const store = tx.objectStore('words');
+    const count = await store.count();
+    return count > 0;
+  } catch (error) {
+    console.error('Error checking dictionary initialization:', error);
+    return false;
+  }
+};
+
+// Helper function to map level to difficulty
+const getDifficultyFromLevel = (level: number): string => {
+  if (level <= 3) return 'beginner';
+  if (level <= 6) return 'intermediate';
+  return 'advanced';
 };
 
 const Dictionary: React.FC = () => {
@@ -280,12 +303,11 @@ const Dictionary: React.FC = () => {
   // Save read words to localStorage
   useEffect(() => {
     try {
-      const newReadWords = new Set([...readWords, ...newReadWords]);
-      safeLocalStorage.setItem('readWords', JSON.stringify(Array.from(newReadWords)));
+      safeLocalStorage.setItem('readWords', JSON.stringify(Array.from(readWords)));
     } catch (error) {
       console.error('Error saving read words:', error);
     }
-  }, [readWords, newReadWords]);
+  }, [readWords]);
 
   const handleMarkAsRead = (wordId: string) => {
     setReadWords(prev => {
@@ -307,14 +329,14 @@ const Dictionary: React.FC = () => {
         word.romaji.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesCategory = selectedCategory === 'all' || word.category === selectedCategory;
-      const matchesDifficulty = selectedDifficulty === 'all' || word.difficulty === selectedDifficulty;
+      const matchesDifficulty = selectedDifficulty === 'all' || getDifficultyFromLevel(word.level) === selectedDifficulty;
 
       return matchesSearch && matchesCategory && matchesDifficulty;
     });
   }, [words, searchTerm, selectedCategory, selectedDifficulty]);
 
   const categories = useMemo(() => {
-    const uniqueCategories = new Set(words.map(word => word.category));
+    const uniqueCategories = new Set(words.map(word => word.category || 'other'));
     return Array.from(uniqueCategories).sort();
   }, [words]);
 

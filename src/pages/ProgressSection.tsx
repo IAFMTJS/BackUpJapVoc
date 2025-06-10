@@ -10,6 +10,25 @@ const ProgressSection: React.FC = () => {
 
   const formatPercent = (num: number) => `${Math.round(num * 100)}%`;
 
+  // Transform progress data to the expected format
+  const progressSections = [
+    {
+      name: 'Dictionary',
+      data: progressData.sections.dictionary,
+      key: 'dictionary'
+    },
+    {
+      name: 'Mood',
+      data: progressData.sections.mood,
+      key: 'mood'
+    },
+    {
+      name: 'Culture',
+      data: progressData.sections.culture,
+      key: 'culture'
+    }
+  ];
+
   return (
     <div className={themeClasses.container}>
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -23,12 +42,15 @@ const ProgressSection: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Object.entries(progressData).map(([section, data]) => {
-            const percent = Math.round(((data.correct || 0) / (data.total || 1)) * 100);
+          {progressSections.map(({ name, data, key }) => {
+            const total = data.totalItems || 0;
+            const mastered = data.masteredItems || 0;
+            const percent = total > 0 ? Math.round((mastered / total) * 100) : 0;
+            
             return (
-              <div key={section} className={themeClasses.card}>
+              <div key={key} className={themeClasses.card}>
                 <h2 className={`text-xl font-bold mb-4 ${themeClasses.text.primary}`}>
-                  {section}
+                  {name}
                 </h2>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -43,10 +65,10 @@ const ProgressSection: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className={themeClasses.text.muted}>
-                      Correct: {data.correct || 0}
+                      Mastered: {mastered}
                     </span>
                     <span className={themeClasses.text.muted}>
-                      Total: {data.total || 0}
+                      Total: {total}
                     </span>
                   </div>
                 </div>

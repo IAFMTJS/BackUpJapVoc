@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, TouchEvent } from 'react';
+import React, { useState, useCallback, useEffect, useRef, TouchEvent, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { useProgress } from '../context/ProgressContext';
@@ -133,7 +133,8 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
   const { getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
   const { settings } = useApp();
-  const { updateProgress, progress } = useProgress();
+  const progressContext = useProgress();
+  const { updateProgress, progress, updateWordProgress } = progressContext || {};
   const { checkAchievements } = useAchievements();
   const { playAudio } = useAudio();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -177,6 +178,21 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
   const [questionType, setQuestionType] = useState<QuestionType>('multiple-choice');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
+  // Cleanup effect to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Clear any active timers
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // Clear stroke history
+      strokeHistory.current = [];
+      historyIndex.current = -1;
+    };
+  }, []);
+
   // Initialize canvas for stroke input
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -196,33 +212,38 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
     ctx.lineJoin = 'round';
   }, [themeClasses]);
 
-  // Timer effect
+  // Timer effect - OPTIMIZED
   useEffect(() => {
     if (quizState.mode === 'quiz' && quizSettings.useTimer && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
+      const timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
             // Time's up - handle quiz completion
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-            }
             handleQuizComplete(score);
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
+      
+      timerRef.current = timer;
+      
+      return () => {
+        clearInterval(timer);
+        timerRef.current = null;
+      };
     }
-
+    
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, [quizState.mode, quizSettings.useTimer, timeLeft]);
+  }, [quizState.mode, quizSettings.useTimer, timeLeft, score]);
 
-  // Handle stroke input
-  const handleStrokeStart = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Handle stroke input - OPTIMIZED
+  const handleStrokeStart = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -243,11 +264,9 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
 
     ctx.beginPath();
     ctx.moveTo(point.x, point.y);
-  };
+  }, []);
 
-  const handleStrokeMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (quizState.currentStroke.length === 0) return;
-
+  const handleStrokeMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -258,51 +277,56 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
       timestamp: Date.now()
     };
 
-    setQuizState(prev => ({
-      ...prev,
-      currentStroke: [...prev.currentStroke, point]
-    }));
+    setQuizState(prev => {
+      if (prev.currentStroke.length === 0) return prev;
+      return {
+        ...prev,
+        currentStroke: [...prev.currentStroke, point]
+      };
+    });
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     ctx.lineTo(point.x, point.y);
     ctx.stroke();
-  };
+  }, []);
 
-  const handleStrokeEnd = () => {
-    if (quizState.currentStroke.length < 2) return;
+  const handleStrokeEnd = useCallback(() => {
+    setQuizState(prev => {
+      if (prev.currentStroke.length < 2) return prev;
 
-    const strokeData = analyzeStroke(quizState.currentStroke);
-    const newStrokes = [...quizState.strokes, strokeData];
-    
-    // Update history
-    historyIndex.current++;
-    strokeHistory.current = strokeHistory.current.slice(0, historyIndex.current);
-    strokeHistory.current.push(newStrokes);
-    setCanUndo(true);
-    setCanRedo(false);
-
-    setQuizState(prev => ({
-      ...prev,
-      strokes: newStrokes,
-      currentStroke: []
-    }));
-
-    // Validate stroke
-    if (quizSettings.mode === 'stroke' && currentKanji) {
-      const expectedStroke = currentKanji.strokes[quizState.strokes.length];
-      const validationResult = validateStrokeEnhanced(strokeData, expectedStroke);
-      setStrokeValidationResult(validationResult);
+      const strokeData = analyzeStroke(prev.currentStroke);
+      const newStrokes = [...prev.strokes, strokeData];
       
-      if (validationResult.isCorrect) {
-        setStreak(prev => prev + 1);
-        setStrokeGuideOpacity(prev => Math.max(0.1, prev - 0.05));
-      } else {
-        setStrokeGuideOpacity(prev => Math.min(0.5, prev + 0.1));
+      // Update history
+      historyIndex.current++;
+      strokeHistory.current = strokeHistory.current.slice(0, historyIndex.current);
+      strokeHistory.current.push(newStrokes);
+      setCanUndo(true);
+      setCanRedo(false);
+
+      // Validate stroke
+      if (quizSettings.mode === 'stroke' && currentKanji) {
+        const expectedStroke = currentKanji.strokes[prev.strokes.length];
+        const validationResult = validateStrokeEnhanced(strokeData, expectedStroke);
+        setStrokeValidationResult(validationResult);
+        
+        if (validationResult.isCorrect) {
+          setStreak(streak => streak + 1);
+          setStrokeGuideOpacity(opacity => Math.max(0.1, opacity - 0.05));
+        } else {
+          setStrokeGuideOpacity(opacity => Math.min(0.5, opacity + 0.1));
+        }
       }
-    }
-  };
+
+      return {
+        ...prev,
+        strokes: newStrokes,
+        currentStroke: []
+      };
+    });
+  }, [quizSettings.mode, currentKanji]);
 
   // Add touch support
   const handleTouchStart = (e: TouchEvent<HTMLCanvasElement>) => {
@@ -355,13 +379,22 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
     }
   };
 
-  const redrawCanvas = (strokes: StrokeData[]) => {
+  const redrawCanvas = useCallback((strokes: StrokeData[]) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Set canvas styles
+    ctx.strokeStyle = themeClasses.text.primary;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Draw strokes
     ctx.beginPath();
     strokes.forEach(stroke => {
       if (stroke.points.length > 0) {
@@ -372,7 +405,7 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
         ctx.stroke();
       }
     });
-  };
+  }, [themeClasses.text.primary]);
 
   // Helper function to generate compound word exercises
   const generateCompoundExercise = useCallback((word: CompoundWordData, difficulty: number) => {
@@ -409,7 +442,7 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
     };
   }, []);
 
-  // Helper function to generate meaning/reading questions
+  // Helper function to generate meaning/reading questions - MEMOIZED
   const generateQuestion = useCallback((kanji: Kanji, mode: 'meaning' | 'reading'): Question => {
     const types: QuestionType[] = ['multiple-choice', 'fill-in-blank', 'matching', 'context'];
     const type = types[Math.floor(Math.random() * types.length)];
@@ -456,7 +489,43 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
           audioUrl: mode === 'reading' ? kanji.audioUrl : undefined
         };
     }
-  }, [quizState.questions]);
+  }, []);
+
+  // Memoize expensive operations
+  const memoizedQuizSettings = useMemo(() => QUIZ_SETTINGS[difficulty], [difficulty]);
+  
+  // Memoize shuffled questions to prevent regeneration on every render
+  const shuffledQuestions = useMemo(() => {
+    if (kanji.length === 0) return [];
+    return shuffleArray(kanji).slice(0, memoizedQuizSettings.questionCount);
+  }, [kanji, memoizedQuizSettings.questionCount]);
+
+  // Memoize current question data
+  const currentQuestionData = useMemo(() => {
+    if (quizState.mode !== 'quiz' || !shuffledQuestions.length || currentQuestionIndex >= shuffledQuestions.length) {
+      return null;
+    }
+    
+    const kanjiItem = shuffledQuestions[currentQuestionIndex];
+    let exercise;
+    
+    if (memoizedQuizSettings.mode === 'compound') {
+      const availableWords = kanjiItem.compoundWords?.filter(word => 
+        calculateWordDifficulty(word) <= memoizedQuizSettings.difficulty
+      ) || [];
+      if (availableWords.length === 0) {
+        const word = kanjiItem.compoundWords?.[0];
+        if (word) exercise = generateCompoundExercise(word, 1);
+      } else {
+        const word = availableWords[Math.floor(Math.random() * availableWords.length)];
+        exercise = generateCompoundExercise(word, calculateWordDifficulty(word));
+      }
+    } else if (memoizedQuizSettings.mode === 'meaning' || memoizedQuizSettings.mode === 'reading') {
+      exercise = generateQuestion(kanjiItem, memoizedQuizSettings.mode);
+    }
+    
+    return { kanjiItem, exercise };
+  }, [quizState.mode, shuffledQuestions, currentQuestionIndex, memoizedQuizSettings, generateCompoundExercise, generateQuestion]);
 
   // Helper functions for question generation
   const generateOptions = (kanji: Kanji, mode: 'meaning' | 'reading'): string[] => {
@@ -535,9 +604,6 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
   const startQuiz = useCallback(() => {
     if (kanji.length === 0) return;
     
-    const settings = QUIZ_SETTINGS[difficulty];
-    const shuffledQuestions = shuffleArray(kanji).slice(0, settings.questionCount);
-    
     setQuizState({
       mode: 'quiz',
       currentQuestion: '',
@@ -552,45 +618,31 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
       strokes: [],
       currentStroke: [],
       compoundWordProgress: {},
-      questions: shuffledQuestions
+      questions: shuffledQuestions // Use memoized questions
     });
     
     setCurrentQuestionIndex(0);
-    setCurrentKanji(shuffledQuestions[0]);
     setScore(0);
     setStreak(0);
-    setTimeLeft(settings.timeLimit);
+    setTimeLeft(memoizedQuizSettings.timeLimit);
     setShowStrokeGuide(false);
-    setActiveTab(settings.mode === 'stroke' ? 0 : 
-                 settings.mode === 'compound' ? 1 :
-                 settings.mode === 'meaning' ? 2 : 3);
-  }, [kanji, difficulty]);
+    setActiveTab(memoizedQuizSettings.mode === 'stroke' ? 0 : 
+                 memoizedQuizSettings.mode === 'compound' ? 1 :
+                 memoizedQuizSettings.mode === 'meaning' ? 2 : 3);
+  }, [kanji.length, shuffledQuestions, memoizedQuizSettings]);
 
   // Auto-start quiz when component mounts or difficulty changes
   useEffect(() => {
     startQuiz();
   }, [startQuiz]);
 
-  // Load question for the current index
+  // Load question for the current index - OPTIMIZED
   useEffect(() => {
-    if (quizState.mode !== 'quiz' || !quizState.questions.length) return;
-    const kanjiItem = quizState.questions[currentQuestionIndex];
+    if (!currentQuestionData) return;
+    
+    const { kanjiItem, exercise } = currentQuestionData;
     setCurrentKanji(kanjiItem);
-    let exercise;
-    if (quizSettings.mode === 'compound') {
-      const availableWords = kanjiItem.compoundWords?.filter(word => 
-        calculateWordDifficulty(word) <= quizSettings.difficulty
-      ) || [];
-      if (availableWords.length === 0) {
-        const word = kanjiItem.compoundWords?.[0];
-        if (word) exercise = generateCompoundExercise(word, 1);
-      } else {
-        const word = availableWords[Math.floor(Math.random() * availableWords.length)];
-        exercise = generateCompoundExercise(word, calculateWordDifficulty(word));
-      }
-    } else if (quizSettings.mode === 'meaning' || quizSettings.mode === 'reading') {
-      exercise = generateQuestion(kanjiItem, quizSettings.mode);
-    }
+    
     if (exercise) {
       setQuizState(prev => ({
         ...prev,
@@ -608,15 +660,15 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
       setShowContext(false);
       setHintUsed(false);
     }
-  }, [quizState.mode, quizState.questions, currentQuestionIndex, quizSettings]);
+  }, [currentQuestionData]);
 
-  // Handle quiz completion
-  const handleQuizComplete = (finalScore: number) => {
+  // Handle quiz completion - OPTIMIZED
+  const handleQuizComplete = useCallback((finalScore: number) => {
     setScore(finalScore);
     setQuizState(prev => ({ ...prev, mode: 'result' }));
 
     // Update progress
-    if (currentKanji) {
+    if (currentKanji && updateWordProgress) {
       updateWordProgress(currentKanji.character, {
         masteryLevel: finalScore / 100, // Convert score to 0-1 range
         reviewCount: (progress.words[currentKanji.character]?.reviewCount || 0) + 1,
@@ -631,25 +683,73 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
         character: currentKanji.character,
         score: finalScore,
         streak: streak,
-        mode: quizSettings.mode
+        mode: memoizedQuizSettings.mode
       });
     }
-  };
+  }, [currentKanji, updateWordProgress, progress.words, streak, checkAchievements, memoizedQuizSettings.mode]);
 
-  // Play audio for readings
-  const playKanjiReading = (reading: string) => {
+  // Play audio for readings - ENHANCED
+  const playKanjiReading = useCallback((reading: string) => {
     if (reading) {
-      playAudio(reading);
+      playAudio(reading, 'word', 'neutral');
     }
-  };
+  }, [playAudio]);
 
-  // Render quiz content based on mode
-  const renderQuizContent = () => {
+  // Play audio for current question
+  const playCurrentQuestionAudio = useCallback(() => {
+    if (!currentKanji) return;
+    
+    switch (memoizedQuizSettings.mode) {
+      case 'reading':
+        // Play the kanji character
+        playAudio(currentKanji.character, 'word', 'neutral');
+        break;
+      case 'meaning':
+        // Play the correct reading when showing meaning
+        const reading = currentKanji.onyomi[0] || currentKanji.kunyomi[0];
+        if (reading) {
+          playAudio(reading, 'word', 'neutral');
+        }
+        break;
+      case 'compound':
+        // Play the compound word
+        if (quizState.currentQuestion) {
+          playAudio(quizState.currentQuestion, 'word', 'neutral');
+        }
+        break;
+      default:
+        break;
+    }
+  }, [currentKanji, memoizedQuizSettings.mode, quizState.currentQuestion, playAudio]);
+
+  // Play feedback audio
+  const playFeedbackAudio = useCallback((isCorrect: boolean) => {
+    if (isCorrect) {
+      // Play success sound
+      playAudio('正解です！', 'word', 'happy');
+    } else {
+      // Play correct answer
+      if (memoizedQuizSettings.mode === 'reading') {
+        const reading = currentKanji?.onyomi[0] || currentKanji?.kunyomi[0];
+        if (reading) {
+          playAudio(`正解は${reading}です`, 'word', 'neutral');
+        }
+      } else if (memoizedQuizSettings.mode === 'meaning') {
+        const reading = currentKanji?.onyomi[0] || currentKanji?.kunyomi[0];
+        if (reading) {
+          playAudio(`正解は${reading}です`, 'word', 'neutral');
+        }
+      }
+    }
+  }, [memoizedQuizSettings.mode, currentKanji, playAudio]);
+
+  // Render quiz content based on mode - OPTIMIZED
+  const renderQuizContent = useCallback(() => {
     if (!currentKanji) return null;
 
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {quizSettings.useTimer && (
+        {memoizedQuizSettings.useTimer && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Timer color="primary" />
             <Typography variant="h6" color={timeLeft <= 10 ? 'error' : 'text.primary'}>
@@ -662,7 +762,19 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
           <Typography variant="h4" sx={{ fontFamily: 'Noto Sans JP' }}>
             {currentKanji.character}
           </Typography>
-          {quizSettings.mode === 'reading' && (
+          
+          {/* Audio button for current question */}
+          <Tooltip title="Play question audio">
+            <IconButton 
+              size="small"
+              onClick={playCurrentQuestionAudio}
+              color="primary"
+            >
+              <VolumeUp fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          
+          {memoizedQuizSettings.mode === 'reading' && (
             <Box sx={{ display: 'flex', gap: 1 }}>
               {currentKanji.onyomi.map((reading, index) => (
                 <Tooltip key={`onyomi-${index}`} title={`Play ${reading}`}>
@@ -689,7 +801,7 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
         </Box>
 
         {(() => {
-          switch (quizSettings.mode) {
+          switch (memoizedQuizSettings.mode) {
             case 'stroke':
               return renderStrokeQuiz();
             case 'compound':
@@ -720,8 +832,8 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
                 <Typography>
                   {quizState.isCorrect
                     ? 'Correct!'
-                    : `Incorrect. ${quizSettings.mode === 'reading' ? 'The correct reading is: ' + currentKanji.onyomi[0] : 
-                       quizSettings.mode === 'meaning' ? 'The correct meaning is: ' + currentKanji.english :
+                    : `Incorrect. ${memoizedQuizSettings.mode === 'reading' ? 'The correct reading is: ' + currentKanji.onyomi[0] : 
+                       memoizedQuizSettings.mode === 'meaning' ? 'The correct meaning is: ' + currentKanji.english :
                        'Try again!'}`}
                 </Typography>
                 {quizState.isCorrect && (
@@ -737,7 +849,7 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
         )}
       </Box>
     );
-  };
+  }, [currentKanji, memoizedQuizSettings, timeLeft, streak, quizState.showFeedback, quizState.isCorrect, quizState.correctAnswer, playKanjiReading, playCurrentQuestionAudio, playAudio, playFeedbackAudio, renderStrokeQuiz, renderCompoundQuiz, renderMeaningQuiz, renderReadingQuiz]);
 
   // Render stroke practice quiz
   const renderStrokeQuiz = () => {
@@ -1318,8 +1430,8 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
     );
   };
 
-  // Update handleAnswer to advance to the next question
-  const handleAnswer = (answer: string) => {
+  // Update handleAnswer to advance to the next question - OPTIMIZED
+  const handleAnswer = useCallback((answer: string) => {
     let isCorrect = false;
     if (questionType === 'matching') {
       try {
@@ -1332,28 +1444,38 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
     } else {
       isCorrect = answer === quizState.correctAnswer;
     }
+    
     setQuizState(prev => ({
       ...prev,
       selectedAnswer: answer,
       showFeedback: true,
       isCorrect
     }));
+    
+    // Play audio feedback
+    playFeedbackAudio(isCorrect);
+    
     if (isCorrect) {
       setStreak(prev => prev + 1);
-      if (quizSettings.mode === 'reading' && currentKanji?.audioUrl) {
+      if (memoizedQuizSettings.mode === 'reading' && currentKanji?.audioUrl) {
         playAudio(currentKanji.audioUrl);
       }
     } else {
       setStreak(0);
     }
-    setTimeout(() => {
-      if (currentQuestionIndex + 1 < quizSettings.questionCount && currentQuestionIndex + 1 < quizState.questions.length) {
+    
+    // Use setTimeout to show feedback before advancing
+    const timeoutId = setTimeout(() => {
+      if (currentQuestionIndex + 1 < memoizedQuizSettings.questionCount && currentQuestionIndex + 1 < shuffledQuestions.length) {
         setCurrentQuestionIndex(idx => idx + 1);
       } else {
         handleQuizComplete(score);
       }
     }, 2000);
-  };
+    
+    // Cleanup timeout on unmount
+    return () => clearTimeout(timeoutId);
+  }, [questionType, quizState.correctAnswer, memoizedQuizSettings.mode, currentKanji, playAudio, currentQuestionIndex, memoizedQuizSettings.questionCount, shuffledQuestions.length, score, handleQuizComplete, playFeedbackAudio]);
 
   if (!kanji || !Array.isArray(kanji) || kanji.length === 0) {
     return (
