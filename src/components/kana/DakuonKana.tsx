@@ -74,7 +74,9 @@ const DakuonKana: React.FC = () => {
 
   // Preload audio when component mounts
   useEffect(() => {
-    preloadKanaAudio().catch(console.error);
+    if (preloadKanaAudio && typeof preloadKanaAudio === 'function') {
+      preloadKanaAudio().catch(console.error);
+    }
   }, []);
 
   const handleDisplayModeChange = (
@@ -96,7 +98,13 @@ const DakuonKana: React.FC = () => {
   };
 
   const handlePlayAudio = async (romaji: string) => {
-    await playKanaAudio(romaji);
+    try {
+      if (playKanaAudio && typeof playKanaAudio === 'function') {
+        await playKanaAudio(romaji);
+      }
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
   };
 
   const filteredKana = dakuonKana.filter(kana => 

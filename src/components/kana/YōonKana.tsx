@@ -71,7 +71,9 @@ const YōonKana: React.FC = () => {
 
   // Preload audio when component mounts
   useEffect(() => {
-    preloadKanaAudio().catch(console.error);
+    if (preloadKanaAudio && typeof preloadKanaAudio === 'function') {
+      preloadKanaAudio().catch(console.error);
+    }
   }, []);
 
   const handleDisplayModeChange = (
@@ -84,7 +86,13 @@ const YōonKana: React.FC = () => {
   };
 
   const handlePlayAudio = async (romaji: string) => {
-    await playKanaAudio(romaji);
+    try {
+      if (playKanaAudio && typeof playKanaAudio === 'function') {
+        await playKanaAudio(romaji);
+      }
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
   };
 
   return (

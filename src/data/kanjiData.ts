@@ -7,6 +7,16 @@ export interface KanjiExample {
   meaning: string;
 }
 
+export interface CompoundWordData {
+  word: string;
+  reading: string;
+  meaning: string;
+  kanji: string[];
+  difficulty: number;
+  examples: string[];
+  relatedWords: string[];
+}
+
 export interface Kanji {
   character: string;
   english: string;
@@ -16,6 +26,7 @@ export interface Kanji {
   category: KanjiCategory;
   hint?: string;
   examples?: KanjiExample[];
+  compoundWords?: CompoundWordData[];
   strokeCount: number;
   radicals: string[];
   jlptLevel?: 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
@@ -31,6 +42,35 @@ export const kanjiList: Kanji[] = [
       { word: '日本', reading: 'にほん', meaning: 'Japan' },
       { word: '今日', reading: 'きょう', meaning: 'today' },
       { word: '日曜日', reading: 'にちようび', meaning: 'Sunday' }
+    ],
+    compoundWords: [
+      {
+        word: '日本',
+        reading: 'にほん',
+        meaning: 'Japan',
+        kanji: ['日', '本'],
+        difficulty: 1,
+        examples: ['日本に行きたいです。', '日本の文化が好きです。'],
+        relatedWords: ['日本人', '日本語', '日本食']
+      },
+      {
+        word: '今日',
+        reading: 'きょう',
+        meaning: 'today',
+        kanji: ['今', '日'],
+        difficulty: 1,
+        examples: ['今日は良い天気です。', '今日の予定は何ですか？'],
+        relatedWords: ['昨日', '明日', '毎日']
+      },
+      {
+        word: '日曜日',
+        reading: 'にちようび',
+        meaning: 'Sunday',
+        kanji: ['日', '曜', '日'],
+        difficulty: 2,
+        examples: ['日曜日に映画を見ます。', '日曜日は休みです。'],
+        relatedWords: ['月曜日', '火曜日', '水曜日']
+      }
     ],
     difficulty: 'easy',
     category: 'nature',
@@ -49,6 +89,35 @@ export const kanjiList: Kanji[] = [
       { word: '一月', reading: 'いちがつ', meaning: 'January' },
       { word: '月見', reading: 'つきみ', meaning: 'moon viewing' }
     ],
+    compoundWords: [
+      {
+        word: '月曜日',
+        reading: 'げつようび',
+        meaning: 'Monday',
+        kanji: ['月', '曜', '日'],
+        difficulty: 2,
+        examples: ['月曜日から仕事が始まります。', '月曜日は忙しいです。'],
+        relatedWords: ['火曜日', '水曜日', '木曜日']
+      },
+      {
+        word: '一月',
+        reading: 'いちがつ',
+        meaning: 'January',
+        kanji: ['一', '月'],
+        difficulty: 1,
+        examples: ['一月は新しい年の始まりです。', '一月は寒いです。'],
+        relatedWords: ['二月', '三月', '四月']
+      },
+      {
+        word: '月見',
+        reading: 'つきみ',
+        meaning: 'moon viewing',
+        kanji: ['月', '見'],
+        difficulty: 2,
+        examples: ['月見をしながらお酒を飲みます。', '月見がきれいです。'],
+        relatedWords: ['花見', '雪見', '星見']
+      }
+    ],
     difficulty: 'easy',
     category: 'nature',
     hint: 'Looks like a crescent moon',
@@ -65,6 +134,35 @@ export const kanjiList: Kanji[] = [
       { word: '水曜日', reading: 'すいようび', meaning: 'Wednesday' },
       { word: '水泳', reading: 'すいえい', meaning: 'swimming' },
       { word: '水着', reading: 'みずぎ', meaning: 'swimsuit' }
+    ],
+    compoundWords: [
+      {
+        word: '水曜日',
+        reading: 'すいようび',
+        meaning: 'Wednesday',
+        kanji: ['水', '曜', '日'],
+        difficulty: 2,
+        examples: ['水曜日に会議があります。', '水曜日は半日です。'],
+        relatedWords: ['火曜日', '木曜日', '金曜日']
+      },
+      {
+        word: '水泳',
+        reading: 'すいえい',
+        meaning: 'swimming',
+        kanji: ['水', '泳'],
+        difficulty: 2,
+        examples: ['水泳が好きです。', '水泳を習っています。'],
+        relatedWords: ['泳ぐ', '水着', 'プール']
+      },
+      {
+        word: '水着',
+        reading: 'みずぎ',
+        meaning: 'swimsuit',
+        kanji: ['水', '着'],
+        difficulty: 2,
+        examples: ['水着を買いました。', '水着で泳ぎます。'],
+        relatedWords: ['着る', '水泳', '海']
+      }
     ],
     difficulty: 'easy',
     category: 'nature',
@@ -83,7 +181,36 @@ export const kanjiList: Kanji[] = [
       { word: '火山', reading: 'かざん', meaning: 'volcano' },
       { word: '火事', reading: 'かじ', meaning: 'fire' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '火曜日',
+        reading: 'かようび',
+        meaning: 'Tuesday',
+        kanji: ['火', '曜', '日'],
+        difficulty: 2,
+        examples: ['火曜日に会議があります。', '火曜日は忙しいです。'],
+        relatedWords: ['月曜日', '水曜日', '木曜日']
+      },
+      {
+        word: '火山',
+        reading: 'かざん',
+        meaning: 'volcano',
+        kanji: ['火', '山'],
+        difficulty: 2,
+        examples: ['富士山は火山です。', '火山が噴火しました。'],
+        relatedWords: ['山', '火事', '地震']
+      },
+      {
+        word: '火事',
+        reading: 'かじ',
+        meaning: 'fire',
+        kanji: ['火', '事'],
+        difficulty: 2,
+        examples: ['火事が起きました。', '火事に注意してください。'],
+        relatedWords: ['火', '消防車', '避難']
+      }
+    ],
+    difficulty: 'medium',
     category: 'nature',
     hint: 'Looks like flames',
     strokeCount: 4,
@@ -100,7 +227,36 @@ export const kanjiList: Kanji[] = [
       { word: '木村', reading: 'きむら', meaning: 'Kimura (surname)' },
       { word: '木造', reading: 'もくぞう', meaning: 'wooden' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '木曜日',
+        reading: 'もくようび',
+        meaning: 'Thursday',
+        kanji: ['木', '曜', '日'],
+        difficulty: 2,
+        examples: ['木曜日に映画を見ます。', '木曜日は半日です。'],
+        relatedWords: ['水曜日', '金曜日', '土曜日']
+      },
+      {
+        word: '木村',
+        reading: 'きむら',
+        meaning: 'Kimura (surname)',
+        kanji: ['木', '村'],
+        difficulty: 2,
+        examples: ['木村さんは先生です。', '木村さんに会いました。'],
+        relatedWords: ['村', '田村', '山田']
+      },
+      {
+        word: '木造',
+        reading: 'もくぞう',
+        meaning: 'wooden',
+        kanji: ['木', '造'],
+        difficulty: 3,
+        examples: ['この家は木造です。', '木造の建物が好きです。'],
+        relatedWords: ['造る', '建築', '家']
+      }
+    ],
+    difficulty: 'medium',
     category: 'nature',
     hint: 'Looks like a tree with branches',
     strokeCount: 4,
@@ -117,7 +273,36 @@ export const kanjiList: Kanji[] = [
       { word: '金魚', reading: 'きんぎょ', meaning: 'goldfish' },
       { word: 'お金', reading: 'おかね', meaning: 'money' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '金曜日',
+        reading: 'きんようび',
+        meaning: 'Friday',
+        kanji: ['金', '曜', '日'],
+        difficulty: 2,
+        examples: ['金曜日にパーティーがあります。', '金曜日は楽しいです。'],
+        relatedWords: ['木曜日', '土曜日', '週末']
+      },
+      {
+        word: '金魚',
+        reading: 'きんぎょ',
+        meaning: 'goldfish',
+        kanji: ['金', '魚'],
+        difficulty: 2,
+        examples: ['金魚を飼っています。', '金魚が泳いでいます。'],
+        relatedWords: ['魚', '水槽', 'ペット']
+      },
+      {
+        word: 'お金',
+        reading: 'おかね',
+        meaning: 'money',
+        kanji: ['金'],
+        difficulty: 1,
+        examples: ['お金がありません。', 'お金を払います。'],
+        relatedWords: ['金', '銀行', '給料']
+      }
+    ],
+    difficulty: 'medium',
     category: 'nature',
     hint: 'Looks like a treasure chest',
     strokeCount: 8,
@@ -134,7 +319,36 @@ export const kanjiList: Kanji[] = [
       { word: '土地', reading: 'とち', meaning: 'land' },
       { word: '土産', reading: 'みやげ', meaning: 'souvenir' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '土曜日',
+        reading: 'どようび',
+        meaning: 'Saturday',
+        kanji: ['土', '曜', '日'],
+        difficulty: 2,
+        examples: ['土曜日に買い物します。', '土曜日は休みです。'],
+        relatedWords: ['金曜日', '日曜日', '週末']
+      },
+      {
+        word: '土地',
+        reading: 'とち',
+        meaning: 'land',
+        kanji: ['土', '地'],
+        difficulty: 2,
+        examples: ['この土地を買いました。', '土地の値段が高いです。'],
+        relatedWords: ['地', '不動産', '家']
+      },
+      {
+        word: '土産',
+        reading: 'みやげ',
+        meaning: 'souvenir',
+        kanji: ['土', '産'],
+        difficulty: 3,
+        examples: ['土産を買いました。', '土産をあげます。'],
+        relatedWords: ['産', 'お土産', '旅行']
+      }
+    ],
+    difficulty: 'medium',
     category: 'nature',
     hint: 'Looks like soil in a field',
     strokeCount: 3,
@@ -151,10 +365,39 @@ export const kanjiList: Kanji[] = [
       { word: '一人', reading: 'ひとり', meaning: 'one person' },
       { word: '人口', reading: 'じんこう', meaning: 'population' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '日本人',
+        reading: 'にほんじん',
+        meaning: 'Japanese person',
+        kanji: ['日', '本', '人'],
+        difficulty: 2,
+        examples: ['日本人です。', '日本人の友達がいます。'],
+        relatedWords: ['日本', '人', '外国人']
+      },
+      {
+        word: '一人',
+        reading: 'ひとり',
+        meaning: 'one person',
+        kanji: ['一', '人'],
+        difficulty: 1,
+        examples: ['一人で行きます。', '一人暮らしです。'],
+        relatedWords: ['一', '人', '二人']
+      },
+      {
+        word: '人口',
+        reading: 'じんこう',
+        meaning: 'population',
+        kanji: ['人', '口'],
+        difficulty: 2,
+        examples: ['人口が増えています。', '日本の人口は多いです。'],
+        relatedWords: ['人', '口', '統計']
+      }
+    ],
+    difficulty: 'medium',
     category: 'people',
     hint: 'Looks like a person walking',
-    strokeCount: 4,
+    strokeCount: 2,
     radicals: ['人'],
     jlptLevel: 'N5'
   },
@@ -168,7 +411,36 @@ export const kanjiList: Kanji[] = [
       { word: '出口', reading: 'でぐち', meaning: 'exit' },
       { word: '入口', reading: 'いりぐち', meaning: 'entrance' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '人口',
+        reading: 'じんこう',
+        meaning: 'population',
+        kanji: ['人', '口'],
+        difficulty: 2,
+        examples: ['人口が増えています。', '日本の人口は多いです。'],
+        relatedWords: ['人', '口', '統計']
+      },
+      {
+        word: '出口',
+        reading: 'でぐち',
+        meaning: 'exit',
+        kanji: ['出', '口'],
+        difficulty: 2,
+        examples: ['出口はどこですか？', '出口から出ます。'],
+        relatedWords: ['出る', '口', '入口']
+      },
+      {
+        word: '入口',
+        reading: 'いりぐち',
+        meaning: 'entrance',
+        kanji: ['入', '口'],
+        difficulty: 2,
+        examples: ['入口から入ります。', '入口が分かりません。'],
+        relatedWords: ['入る', '口', '出口']
+      }
+    ],
+    difficulty: 'medium',
     category: 'body',
     hint: 'Looks like an open mouth',
     strokeCount: 3,
@@ -181,11 +453,40 @@ export const kanjiList: Kanji[] = [
     onyomi: ['シュ'],
     kunyomi: ['て'],
     examples: [
-      { word: '上手', reading: 'じょうず', meaning: 'skillful' },
-      { word: '下手', reading: 'へた', meaning: 'unskillful' },
-      { word: '手紙', reading: 'てがみ', meaning: 'letter' }
+      { word: '手紙', reading: 'てがみ', meaning: 'letter' },
+      { word: '右手', reading: 'みぎて', meaning: 'right hand' },
+      { word: '左手', reading: 'ひだりて', meaning: 'left hand' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '手紙',
+        reading: 'てがみ',
+        meaning: 'letter',
+        kanji: ['手', '紙'],
+        difficulty: 3,
+        examples: ['手紙を書きます。', '手紙を受け取りました。'],
+        relatedWords: ['手', '紙', 'メール']
+      },
+      {
+        word: '右手',
+        reading: 'みぎて',
+        meaning: 'right hand',
+        kanji: ['右', '手'],
+        difficulty: 2,
+        examples: ['右手で書きます。', '右手が痛いです。'],
+        relatedWords: ['右', '手', '左手']
+      },
+      {
+        word: '左手',
+        reading: 'ひだりて',
+        meaning: 'left hand',
+        kanji: ['左', '手'],
+        difficulty: 2,
+        examples: ['左手で持っています。', '左手が利き手です。'],
+        relatedWords: ['左', '手', '右手']
+      }
+    ],
+    difficulty: 'hard',
     category: 'body',
     hint: 'Looks like a hand with fingers',
     strokeCount: 4,
@@ -198,14 +499,43 @@ export const kanjiList: Kanji[] = [
     onyomi: ['モク', 'ボク'],
     kunyomi: ['め'],
     examples: [
-      { word: '目的', reading: 'もくてき', meaning: 'purpose' },
       { word: '目次', reading: 'もくじ', meaning: 'table of contents' },
+      { word: '目的', reading: 'もくてき', meaning: 'purpose' },
       { word: '目玉', reading: 'めだま', meaning: 'eyeball' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '目次',
+        reading: 'もくじ',
+        meaning: 'table of contents',
+        kanji: ['目', '次'],
+        difficulty: 3,
+        examples: ['目次を見てください。', '目次が分かりやすいです。'],
+        relatedWords: ['目', '次', '内容']
+      },
+      {
+        word: '目的',
+        reading: 'もくてき',
+        meaning: 'purpose',
+        kanji: ['目', '的'],
+        difficulty: 3,
+        examples: ['目的を達成しました。', '目的が明確です。'],
+        relatedWords: ['目', '的', '目標']
+      },
+      {
+        word: '目玉',
+        reading: 'めだま',
+        meaning: 'eyeball',
+        kanji: ['目', '玉'],
+        difficulty: 2,
+        examples: ['目玉が大きいです。', '目玉焼きを作ります。'],
+        relatedWords: ['目', '玉', '眼']
+      }
+    ],
+    difficulty: 'hard',
     category: 'body',
     hint: 'Looks like an eye with eyelashes',
-    strokeCount: 4,
+    strokeCount: 5,
     radicals: ['目'],
     jlptLevel: 'N5'
   },
@@ -219,7 +549,36 @@ export const kanjiList: Kanji[] = [
       { word: '耳鳴り', reading: 'みみなり', meaning: 'ringing in ears' },
       { word: '耳元', reading: 'みみもと', meaning: 'close to ear' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '耳鼻科',
+        reading: 'じびか',
+        meaning: 'ear, nose, and throat',
+        kanji: ['耳', '鼻', '科'],
+        difficulty: 3,
+        examples: ['耳鼻科に行きます。', '耳鼻科の先生です。'],
+        relatedWords: ['耳', '鼻', '科']
+      },
+      {
+        word: '耳鳴り',
+        reading: 'みみなり',
+        meaning: 'ringing in ears',
+        kanji: ['耳', '鳴'],
+        difficulty: 3,
+        examples: ['耳鳴りがします。', '耳鳴りが止まりません。'],
+        relatedWords: ['耳', '鳴る', '音']
+      },
+      {
+        word: '耳元',
+        reading: 'みみもと',
+        meaning: 'close to ear',
+        kanji: ['耳', '元'],
+        difficulty: 3,
+        examples: ['耳元で話します。', '耳元に近づきます。'],
+        relatedWords: ['耳', '元', '近い']
+      }
+    ],
+    difficulty: 'hard',
     category: 'body',
     hint: 'Looks like an ear',
     strokeCount: 6,
@@ -230,13 +589,42 @@ export const kanjiList: Kanji[] = [
     character: '足',
     english: 'foot, leg',
     onyomi: ['ソク'],
-    kunyomi: ['あし', 'た'],
+    kunyomi: ['あし'],
     examples: [
       { word: '足音', reading: 'あしおと', meaning: 'footsteps' },
-      { word: '足跡', reading: 'あしあと', meaning: 'footprints' },
-      { word: '満足', reading: 'まんぞく', meaning: 'satisfaction' }
+      { word: '手足', reading: 'てあし', meaning: 'hands and feet' },
+      { word: '足跡', reading: 'あしあと', meaning: 'footprints' }
     ],
-    difficulty: 'easy',
+    compoundWords: [
+      {
+        word: '足音',
+        reading: 'あしおと',
+        meaning: 'footsteps',
+        kanji: ['足', '音'],
+        difficulty: 2,
+        examples: ['足音が聞こえます。', '足音を立てないでください。'],
+        relatedWords: ['足', '音', '歩く']
+      },
+      {
+        word: '手足',
+        reading: 'てあし',
+        meaning: 'hands and feet',
+        kanji: ['手', '足'],
+        difficulty: 2,
+        examples: ['手足が冷たいです。', '手足を動かします。'],
+        relatedWords: ['手', '足', '体']
+      },
+      {
+        word: '足跡',
+        reading: 'あしあと',
+        meaning: 'footprints',
+        kanji: ['足', '跡'],
+        difficulty: 3,
+        examples: ['足跡が残っています。', '足跡を追います。'],
+        relatedWords: ['足', '跡', '印']
+      }
+    ],
+    difficulty: 'medium',
     category: 'body',
     hint: 'Looks like a foot with toes',
     strokeCount: 7,

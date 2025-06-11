@@ -756,7 +756,13 @@ const KanaPractice: React.FC<KanaPracticeProps> = ({ type, initialKana }) => {
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="Listen">
-                  <IconButton onClick={() => playAudio(currentRomaji)}>
+                  <IconButton onClick={() => {
+                    if (playAudio && typeof playAudio === 'function') {
+                      playAudio(currentRomaji).catch(error => {
+                        console.error('Error playing audio:', error);
+                      });
+                    }
+                  }}>
                     <VolumeIcon />
                   </IconButton>
                 </Tooltip>

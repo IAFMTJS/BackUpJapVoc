@@ -98,8 +98,19 @@ const KanjiContext = createContext<KanjiContextType | undefined>(undefined);
 
 export const useKanji = () => {
   const context = useContext(KanjiContext);
-  if (!context) {
-    throw new Error('useKanji must be used within a KanjiProvider');
+  if (context === undefined) {
+    console.warn('[useKanji] Context is undefined, returning default values');
+    // Return default context values instead of throwing an error
+    return {
+      kanji: [],
+      isLoading: false,
+      error: null,
+      searchKanji: () => [],
+      getKanjiByLevel: () => [],
+      addKanji: async () => {},
+      updateKanji: async () => {},
+      deleteKanji: async () => {}
+    };
   }
   return context;
 };

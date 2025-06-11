@@ -177,6 +177,8 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
   const [hintUsed, setHintUsed] = useState(false);
   const [questionType, setQuestionType] = useState<QuestionType>('multiple-choice');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [quizStartTime, setQuizStartTime] = useState(0);
+  const [quizCompleted, setQuizCompleted] = useState(false);
 
   // Cleanup effect to prevent memory leaks
   useEffect(() => {
@@ -489,15 +491,20 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
           audioUrl: mode === 'reading' ? kanji.audioUrl : undefined
         };
     }
-  }, []);
+  }, [shuffledQuestions]);
 
   // Memoize expensive operations
   const memoizedQuizSettings = useMemo(() => QUIZ_SETTINGS[difficulty], [difficulty]);
   
   // Memoize shuffled questions to prevent regeneration on every render
   const shuffledQuestions = useMemo(() => {
-    if (kanji.length === 0) return [];
-    return shuffleArray(kanji).slice(0, memoizedQuizSettings.questionCount);
+    // If no kanji are available for the selected difficulty, use all kanji as fallback
+    const availableKanji = kanji.length > 0 ? kanji : kanjiList;
+    if (availableKanji.length === 0) return [];
+    
+    // Limit the number of questions to the available kanji count
+    const maxQuestions = Math.min(memoizedQuizSettings.questionCount, availableKanji.length);
+    return shuffleArray(availableKanji).slice(0, maxQuestions);
   }, [kanji, memoizedQuizSettings.questionCount]);
 
   // Memoize current question data
@@ -529,7 +536,16 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
 
   // Helper functions for question generation
   const generateOptions = (kanji: Kanji, mode: 'meaning' | 'reading'): string[] => {
-    const otherKanji = quizState.questions.filter(k => k.character !== kanji.character);
+    // Use shuffledQuestions instead of quizState.questions to avoid undefined errors
+    const otherKanji = shuffledQuestions.filter(k => k.character !== kanji.character);
+    if (otherKanji.length === 0) {
+      // Fallback to all kanji if no other kanji available
+      const allOtherKanji = kanjiList.filter(k => k.character !== kanji.character);
+      const options = getRandomSubset(allOtherKanji, 3).map(k => 
+        mode === 'meaning' ? k.english : (k.onyomi[0] || k.kunyomi[0])
+      );
+      return shuffleArray([...options, mode === 'meaning' ? kanji.english : (kanji.onyomi[0] || kanji.kunyomi[0])]);
+    }
     const options = getRandomSubset(otherKanji, 3).map(k => 
       mode === 'meaning' ? k.english : (k.onyomi[0] || k.kunyomi[0])
     );
@@ -561,11 +577,21 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
 
   const generateMatchingPairs = (current: Kanji, mode: 'meaning' | 'reading'): { correct: [string, string][]; options: string[] } => {
     const pairs: [string, string][] = [[current.character, mode === 'meaning' ? current.english : (current.onyomi[0] || current.kunyomi[0])]];
-    const otherKanji = quizState.questions.filter(k => k.character !== current.character);
-    const randomOthers = getRandomSubset(otherKanji, 2);
-    randomOthers.forEach(k => {
-      pairs.push([k.character, mode === 'meaning' ? k.english : (k.onyomi[0] || k.kunyomi[0])]);
-    });
+    // Use shuffledQuestions instead of quizState.questions to avoid undefined errors
+    const otherKanji = shuffledQuestions.filter(k => k.character !== current.character);
+    if (otherKanji.length === 0) {
+      // Fallback to all kanji if no other kanji available
+      const allOtherKanji = kanjiList.filter(k => k.character !== current.character);
+      const randomOthers = getRandomSubset(allOtherKanji, 2);
+      randomOthers.forEach(k => {
+        pairs.push([k.character, mode === 'meaning' ? k.english : (k.onyomi[0] || k.kunyomi[0])]);
+      });
+    } else {
+      const randomOthers = getRandomSubset(otherKanji, 2);
+      randomOthers.forEach(k => {
+        pairs.push([k.character, mode === 'meaning' ? k.english : (k.onyomi[0] || k.kunyomi[0])]);
+      });
+    }
     return {
       correct: pairs,
       options: shuffleArray(pairs.map(([char, value]) => `${char} - ${value}`))
@@ -629,6 +655,7 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
     setActiveTab(memoizedQuizSettings.mode === 'stroke' ? 0 : 
                  memoizedQuizSettings.mode === 'compound' ? 1 :
                  memoizedQuizSettings.mode === 'meaning' ? 2 : 3);
+    setQuizStartTime(Date.now());
   }, [kanji.length, shuffledQuestions, memoizedQuizSettings]);
 
   // Auto-start quiz when component mounts or difficulty changes
@@ -1301,11 +1328,32 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
 
   // Render quiz setup
   const renderQuizSetup = () => {
+    const availableKanji = kanji.length > 0 ? kanji : kanjiList;
+    const isUsingFallback = kanji.length === 0 && kanjiList.length > 0;
+    
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <Typography variant="h5">Quiz Settings</Typography>
         <Typography variant="subtitle1" color="text.secondary">
           Current Difficulty: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+        </Typography>
+
+        {isUsingFallback && (
+          <Box sx={{ 
+            backgroundColor: 'warning.light', 
+            color: 'warning.contrastText', 
+            p: 2, 
+            borderRadius: 1,
+            mb: 2
+          }}>
+            <Typography variant="body2">
+              <strong>Note:</strong> No kanji available for {difficulty} difficulty. Using all available kanji instead.
+            </Typography>
+          </Box>
+        )}
+
+        <Typography variant="body2" color="text.secondary">
+          Available kanji: {availableKanji.length}
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1314,23 +1362,28 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
             onChange={(_, newValue) => setActiveTab(newValue)}
             sx={{ borderBottom: 1, borderColor: 'divider' }}
           >
-            <Tab icon={<Brush />} label="Stroke Practice" disabled={difficulty === 'easy'} />
-            <Tab icon={<School />} label="Compound Words" disabled={difficulty !== 'hard'} />
-            <Tab icon={<Translate />} label="Meaning Quiz" disabled={difficulty === 'hard'} />
-            <Tab icon={<Info />} label="Reading Quiz" disabled={difficulty === 'easy'} />
+            <Tab icon={<Brush />} label="Stroke Practice" />
+            <Tab icon={<School />} label="Compound Words" />
+            <Tab icon={<Translate />} label="Meaning Quiz" />
+            <Tab icon={<Info />} label="Reading Quiz" />
           </Tabs>
 
           <Box sx={{ mt: 2 }}>
             {activeTab === 0 && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Typography>Practice writing kanji with stroke order validation</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {difficulty === 'easy' ? 'Basic stroke practice for beginners' : 
+                   difficulty === 'medium' ? 'Intermediate stroke practice with feedback' : 
+                   'Advanced stroke practice with detailed validation'}
+                </Typography>
                 <Button
                   variant="contained"
+                  disabled={availableKanji.length === 0}
                   onClick={() => {
                     setQuizSettings(prev => ({ ...prev, mode: 'stroke' }));
                     startQuiz();
                   }}
-                  disabled={difficulty === 'easy'}
                 >
                   Start Stroke Practice
                 </Button>
@@ -1340,13 +1393,18 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
             {activeTab === 1 && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Typography>Practice compound words using the kanji</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {difficulty === 'easy' ? 'Simple compound words for beginners' : 
+                   difficulty === 'medium' ? 'Intermediate compound word practice' : 
+                   'Advanced compound word exercises with context'}
+                </Typography>
                 <Button
                   variant="contained"
+                  disabled={availableKanji.length === 0}
                   onClick={() => {
                     setQuizSettings(prev => ({ ...prev, mode: 'compound' }));
                     startQuiz();
                   }}
-                  disabled={difficulty !== 'hard'}
                 >
                   Start Compound Word Practice
                 </Button>
@@ -1356,13 +1414,18 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
             {activeTab === 2 && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Typography>Test your knowledge of kanji meanings</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {difficulty === 'easy' ? 'Basic meaning recognition' : 
+                   difficulty === 'medium' ? 'Intermediate meaning practice with context' : 
+                   'Advanced meaning exercises with usage examples'}
+                </Typography>
                 <Button
                   variant="contained"
+                  disabled={availableKanji.length === 0}
                   onClick={() => {
                     setQuizSettings(prev => ({ ...prev, mode: 'meaning' }));
                     startQuiz();
                   }}
-                  disabled={difficulty === 'hard'}
                 >
                   Start Meaning Quiz
                 </Button>
@@ -1372,13 +1435,18 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
             {activeTab === 3 && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Typography>Test your knowledge of kanji readings</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {difficulty === 'easy' ? 'Basic reading practice (onyomi/kunyomi)' : 
+                   difficulty === 'medium' ? 'Intermediate reading practice with context' : 
+                   'Advanced reading exercises with compound words'}
+                </Typography>
                 <Button
                   variant="contained"
+                  disabled={availableKanji.length === 0}
                   onClick={() => {
                     setQuizSettings(prev => ({ ...prev, mode: 'reading' }));
                     startQuiz();
                   }}
-                  disabled={difficulty === 'easy'}
                 >
                   Start Reading Quiz
                 </Button>
@@ -1476,6 +1544,53 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
     // Cleanup timeout on unmount
     return () => clearTimeout(timeoutId);
   }, [questionType, quizState.correctAnswer, memoizedQuizSettings.mode, currentKanji, playAudio, currentQuestionIndex, memoizedQuizSettings.questionCount, shuffledQuestions.length, score, handleQuizComplete, playFeedbackAudio]);
+
+  // Complete quiz and update progress
+  const completeQuiz = useCallback(() => {
+    if (!quizState.questions.length) return;
+
+    const accuracy = (score / quizState.questions.length) * 100;
+    const timeSpent = Math.round((Date.now() - quizStartTime) / 1000); // Convert to seconds
+
+    // Track quiz completion using the unified progress system
+    if (progressContext?.trackQuizCompletion) {
+      progressContext.trackQuizCompletion({
+        quizType: `kanji-${quizSettings.mode}`,
+        score: score,
+        totalQuestions: quizState.questions.length,
+        timeSpent: timeSpent,
+        wordsUsed: quizState.questions.map(q => q.character),
+        category: 'kanji'
+      });
+    }
+
+    // Update individual kanji progress
+    quizState.questions.forEach((kanji, index) => {
+      const isCorrect = score > index; // Simplified logic - you might want to track individual answers
+      
+      if (updateWordProgress) {
+        updateWordProgress(kanji.character, {
+          lastReviewed: Date.now(),
+          reviewCount: (progress.words[kanji.character]?.reviewCount || 0) + 1,
+          nextReviewDate: Date.now() + (isCorrect ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000),
+          category: 'kanji',
+          section: 'kanji',
+          difficulty: difficulty,
+          lastAnswerCorrect: isCorrect,
+          correctAnswers: (progress.words[kanji.character]?.correctAnswers || 0) + (isCorrect ? 1 : 0),
+          incorrectAnswers: (progress.words[kanji.character]?.incorrectAnswers || 0) + (isCorrect ? 0 : 1),
+          consecutiveCorrect: isCorrect ? 
+            (progress.words[kanji.character]?.consecutiveCorrect || 0) + 1 : 0,
+          masteryLevel: Math.min(5, Math.max(0, 
+            ((progress.words[kanji.character]?.correctAnswers || 0) + (isCorrect ? 1 : 0)) / 
+            ((progress.words[kanji.character]?.correctAnswers || 0) + (progress.words[kanji.character]?.incorrectAnswers || 0) + 1) * 5
+          ))
+        });
+      }
+    });
+
+    setQuizCompleted(true);
+  }, [quizState.questions, score, quizStartTime, quizSettings.mode, difficulty, progressContext, updateWordProgress, progress]);
 
   if (!kanji || !Array.isArray(kanji) || kanji.length === 0) {
     return (

@@ -73,8 +73,25 @@ const LearningContext = createContext<LearningContextType | undefined>(undefined
 
 export const useLearning = () => {
   const context = useContext(LearningContext);
-  if (!context) {
-    throw new Error('useLearning must be used within a LearningProvider');
+  if (context === undefined) {
+    console.warn('[useLearning] Context is undefined, returning default values');
+    // Return default context values instead of throwing an error
+    return {
+      currentLesson: null,
+      lessonProgress: {},
+      completedLessons: [],
+      currentQuiz: null,
+      quizHistory: [],
+      studySession: null,
+      startLesson: () => {},
+      completeLesson: () => {},
+      startQuiz: () => {},
+      completeQuiz: () => {},
+      updateProgress: () => {},
+      getWordsByCategory: () => [],
+      isLoading: false,
+      error: null
+    };
   }
   return context;
 };

@@ -24,7 +24,12 @@ class AudioService {
         // Initialize Web Speech API
         if ('speechSynthesis' in window) {
           this.loadVoices();
-          window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
+          
+          // Listen for voice changes and reload
+          window.speechSynthesis.onvoiceschanged = () => {
+            console.log('Voices changed, reloading...');
+            this.loadVoices();
+          };
         }
         this.isInitialized = true;
       }
@@ -46,16 +51,25 @@ class AudioService {
     try {
       if ('speechSynthesis' in window) {
         const allVoices = window.speechSynthesis.getVoices();
-        // Only keep Kyoko voice
+        
+        // First try to find Japanese voices, then any available voice
         this.ttsVoices = allVoices.filter(voice => 
-          voice.name.toLowerCase().includes('kyoko')
+          voice.lang.includes('ja') || voice.lang.includes('JP')
         );
         
-        // Set default voice to Kyoko, or null if not available
+        // If no Japanese voices found, use any available voice
+        if (this.ttsVoices.length === 0) {
+          this.ttsVoices = allVoices;
+          console.warn('No Japanese voices found, using any available voice');
+        }
+        
+        // Set default voice to first available
         this.defaultVoice = this.ttsVoices[0] || null;
         
         if (this.ttsVoices.length === 0) {
-          console.warn('Kyoko voice not found. Text-to-speech may not work as expected.');
+          console.warn('No voices found. Text-to-speech may not work.');
+        } else {
+          console.log(`Loaded ${this.ttsVoices.length} voices for TTS`);
         }
       }
     } catch (error) {
@@ -120,17 +134,34 @@ class AudioService {
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = options.voice ? 
-      this.ttsVoices.find(v => v.name === options.voice) || this.defaultVoice :
-      this.defaultVoice;
+    
+    // Try to set voice if specified and available
+    if (options.voice && this.ttsVoices.length > 0) {
+      const selectedVoice = this.ttsVoices.find(v => v.name === options.voice);
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+    } else if (this.defaultVoice) {
+      utterance.voice = this.defaultVoice;
+    }
+    
     utterance.rate = options.rate || 1;
     utterance.pitch = options.pitch || 1;
     utterance.lang = 'ja-JP';
 
     return new Promise<void>((resolve, reject) => {
       utterance.onend = () => resolve();
-      utterance.onerror = (error) => reject(error);
-      window.speechSynthesis.speak(utterance);
+      utterance.onerror = (error) => {
+        console.error('TTS error:', error);
+        reject(error);
+      };
+      
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.error('Error starting TTS:', error);
+        reject(error);
+      }
     });
   }
 
@@ -143,46 +174,28 @@ class AudioService {
     // Stop any currently playing audio
     this.stopAudio();
 
-    // For iOS, prefer TTS for better performance
-    if (this.isIOS && (options.useTTS !== false)) {
-      return this.playTTS(text, options);
-    }
-
+    // Always try TTS first for better reliability
     try {
-      // Initialize AudioContext on first use
-      await this.initializeAudioContext();
-
-      // Try to get pre-recorded audio first
-      const audioUrl = await this.getAudioGenerator().getAudio({
-        text,
-        voice: options.voice,
-        rate: options.rate,
-        pitch: options.pitch
-      });
-
-      // Create and play audio element
-      const audio = new Audio(audioUrl);
-      this.currentAudio = audio;
-      
-      return new Promise<void>((resolve, reject) => {
-        audio.onended = () => {
-          this.currentAudio = null;
-          resolve();
-        };
-        audio.onerror = (error) => {
-          this.currentAudio = null;
-          reject(error);
-        };
-        audio.play().catch(error => {
-          // If playback fails, fall back to TTS
-          console.log('Falling back to TTS for:', text);
-          this.playTTS(text, options).then(resolve).catch(reject);
-        });
-      });
+      return await this.playTTS(text, options);
     } catch (error) {
-      // Fallback to TTS if pre-recorded audio generation fails
-      console.log('Falling back to TTS for:', text);
-      return this.playTTS(text, options);
+      console.error('TTS failed, trying fallback:', error);
+      
+      // Fallback: try to use any available voice without specific requirements
+      try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ja-JP';
+        utterance.rate = options.rate || 1;
+        utterance.pitch = options.pitch || 1;
+        
+        return new Promise<void>((resolve, reject) => {
+          utterance.onend = () => resolve();
+          utterance.onerror = (error) => reject(error);
+          window.speechSynthesis.speak(utterance);
+        });
+      } catch (fallbackError) {
+        console.error('All TTS methods failed:', fallbackError);
+        throw new Error('Text-to-speech is not available');
+      }
     }
   }
 
@@ -208,10 +221,8 @@ class AudioService {
   }
 
   public getAvailableVoices(): SpeechSynthesisVoice[] {
-    // Return only Kyoko voice
-    return this.ttsVoices.filter(voice => 
-      voice.name.toLowerCase().includes('kyoko')
-    );
+    // Return all available voices
+    return this.ttsVoices;
   }
 
   public isTTSSupported(): boolean {
@@ -231,6 +242,19 @@ class AudioService {
 
   public clearAudioCache() {
     this.getAudioGenerator().clearCache();
+  }
+
+  public reloadVoices() {
+    this.loadVoices();
+  }
+
+  public getTTSStatus() {
+    return {
+      supported: 'speechSynthesis' in window,
+      voicesLoaded: this.ttsVoices.length,
+      defaultVoice: this.defaultVoice?.name || 'None',
+      availableVoices: this.ttsVoices.map(v => ({ name: v.name, lang: v.lang }))
+    };
   }
 }
 

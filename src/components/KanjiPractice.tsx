@@ -1,42 +1,32 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useProgress } from '../context/ProgressContext';
+import { useAudio } from '../context/AudioContext';
 import {
   Box,
-  Paper,
   Typography,
   Button,
+  Card,
+  CardContent,
+  Grid,
+  CircularProgress,
+  Alert,
   IconButton,
   Tooltip,
-  useTheme,
-  useMediaQuery,
-  Grid,
-  Alert,
-  LinearProgress,
-  Slider,
+  Paper,
+  Divider,
+  Chip
 } from '@mui/material';
 import {
-  Undo as UndoIcon,
-  Delete as DeleteIcon,
-  VolumeUp as VolumeIcon,
-  Check as CheckIcon,
   PlayArrow as PlayArrowIcon,
   Pause as PauseIcon,
-  Help as HelpIcon,
+  Stop as StopIcon,
+  Refresh as RefreshIcon,
+  VolumeUp as VolumeUpIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  Help as HelpIcon
 } from '@mui/icons-material';
-import { useAudio } from '../context/AudioContext';
-import { useProgress } from '../context/ProgressContext';
-import { Kanji } from '../data/kanjiData';
-import { Point, Stroke, StrokeData, StrokeFeedback } from '../types/stroke';
-import { analyzeStroke, validateStroke, calculateStrokeOrderScore } from '../utils/strokeValidation';
-import { getStrokeData, saveStrokeData } from '../utils/offlineSupport';
-
-interface Stroke {
-  points: { x: number; y: number }[];
-  color: string;
-}
-
-interface KanjiWithStrokes extends Kanji {
-  strokes?: StrokeData[];
-}
+import { kanjiData } from '../data/kanjiData';
 
 interface KanjiPracticeProps {
   kanji: Kanji[];
@@ -48,166 +38,9 @@ interface PracticeMode {
   showGuide: boolean;
 }
 
-// Helper function to analyze SVG path and convert to stroke data
-const analyzeSvgPath = (path: string): Partial<StrokeData> => {
-  // Parse the SVG path commands
-  const commands = path.match(/[MLHVCSQTAZmlhvcsqtaz][^MLHVCSQTAZmlhvcsqtaz]*/g) || [];
-  
-  // Extract points from the path
-  const points: Point[] = [];
-  let currentX = 0;
-  let currentY = 0;
-  
-  commands.forEach(cmd => {
-    const type = cmd[0];
-    const values = cmd.slice(1).trim().split(/[\s,]+/).map(Number);
-    
-    switch (type) {
-      case 'M': // Move to
-        currentX = values[0];
-        currentY = values[1];
-        points.push({ x: currentX, y: currentY });
-        break;
-      case 'L': // Line to
-        currentX = values[0];
-        currentY = values[1];
-        points.push({ x: currentX, y: currentY });
-        break;
-      case 'H': // Horizontal line
-        currentX = values[0];
-        points.push({ x: currentX, y: currentY });
-        break;
-      case 'V': // Vertical line
-        currentY = values[0];
-        points.push({ x: currentX, y: currentY });
-        break;
-      // Add more cases for other SVG path commands if needed
-    }
-  });
-  
-  if (points.length < 2) {
-    return {
-      type: 'point',
-      direction: 0,
-      length: 0
-    };
-  }
-  
-  // Calculate stroke direction and length
-  const start = points[0];
-  const end = points[points.length - 1];
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const length = Math.sqrt(dx * dx + dy * dy);
-  const direction = Math.atan2(dy, dx);
-  
-  // Determine stroke type based on path characteristics
-  let type: StrokeData['type'] = 'line';
-  if (length < 5) {
-    type = 'dot';
-  } else if (Math.abs(dx) < 5) {
-    type = 'vertical';
-  } else if (Math.abs(dy) < 5) {
-    type = 'horizontal';
-  } else if (points.length > 2) {
-    // Check if the path is curved
-    const isCurved = points.some((p, i) => {
-      if (i < 2) return false;
-      const prev = points[i - 1];
-      const next = points[i + 1];
-      if (!next) return false;
-      
-      // Calculate if the point deviates significantly from a straight line
-      const lineLength = Math.sqrt(
-        Math.pow(next.x - prev.x, 2) + Math.pow(next.y - prev.y, 2)
-      );
-      const pointDist = Math.abs(
-        (next.y - prev.y) * p.x - (next.x - prev.x) * p.y + next.x * prev.y - next.y * prev.x
-      ) / lineLength;
-      
-      return pointDist > 5;
-    });
-    
-    if (isCurved) {
-      type = 'curve';
-    }
-  }
-  
-  return {
-    type,
-    direction,
-    length
-  };
-};
-
-// Basic stroke data for common kanji
-const basicStrokeData: Record<string, StrokeData[]> = {
-  '人': [
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 1, path: 'M 50 20 L 50 80' },
-    { type: 'curve', direction: Math.PI/4, length: 0.8, order: 2, path: 'M 20 50 Q 35 35 50 50' }
-  ],
-  '日': [
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 1, path: 'M 50 20 L 50 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 2, path: 'M 20 50 L 80 50' },
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 3, path: 'M 20 20 L 20 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 4, path: 'M 20 20 L 80 20' }
-  ],
-  '月': [
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 1, path: 'M 20 20 L 20 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 2, path: 'M 20 20 L 80 20' },
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 3, path: 'M 80 20 L 80 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 4, path: 'M 20 80 L 80 80' }
-  ],
-  '時': [
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 1, path: 'M 20 20 L 20 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 2, path: 'M 20 20 L 80 20' },
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 3, path: 'M 80 20 L 80 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 4, path: 'M 20 80 L 80 80' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 5, path: 'M 50 20 L 50 40' },
-    { type: 'horizontal', direction: 0, length: 0.5, order: 6, path: 'M 35 50 L 65 50' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 7, path: 'M 50 60 L 50 80' }
-  ],
-  '分': [
-    { type: 'horizontal', direction: 0, length: 1, order: 1, path: 'M 20 20 L 80 20' },
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 2, path: 'M 50 20 L 50 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 3, path: 'M 20 50 L 80 50' },
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 4, path: 'M 20 80 L 80 80' }
-  ],
-  '今': [
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 1, path: 'M 50 20 L 50 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 2, path: 'M 20 50 L 80 50' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 3, path: 'M 20 20 L 20 40' },
-    { type: 'horizontal', direction: 0, length: 0.5, order: 4, path: 'M 20 20 L 40 20' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 5, path: 'M 80 20 L 80 40' },
-    { type: 'horizontal', direction: 0, length: 0.5, order: 6, path: 'M 60 20 L 80 20' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 7, path: 'M 20 60 L 20 80' },
-    { type: 'horizontal', direction: 0, length: 0.5, order: 8, path: 'M 20 60 L 40 60' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 9, path: 'M 80 60 L 80 80' }
-  ],
-  '先': [
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 1, path: 'M 50 20 L 50 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 2, path: 'M 20 50 L 80 50' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 3, path: 'M 20 20 L 20 40' },
-    { type: 'horizontal', direction: 0, length: 0.5, order: 4, path: 'M 20 20 L 40 20' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 5, path: 'M 80 20 L 80 40' },
-    { type: 'horizontal', direction: 0, length: 0.5, order: 6, path: 'M 60 20 L 80 20' }
-  ],
-  '後': [
-    { type: 'vertical', direction: Math.PI/2, length: 1, order: 1, path: 'M 50 20 L 50 80' },
-    { type: 'horizontal', direction: 0, length: 1, order: 2, path: 'M 20 50 L 80 50' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 3, path: 'M 20 20 L 20 40' },
-    { type: 'horizontal', direction: 0, length: 0.5, order: 4, path: 'M 20 20 L 40 20' },
-    { type: 'vertical', direction: Math.PI/2, length: 0.5, order: 5, path: 'M 80 20 L 80 40' },
-    { type: 'horizontal', direction: 0, length: 0.5, order: 6, path: 'M 60 20 L 80 20' }
-  ]
-};
-
 const KanjiPractice: React.FC<KanjiPracticeProps> = ({ kanji }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { playAudio } = useAudio();
-  const { updateProgress } = useProgress();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { updateProgress, trackPracticeSession } = useProgress();
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentKanji, setCurrentKanji] = useState<KanjiWithStrokes | null>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -232,100 +65,220 @@ const KanjiPractice: React.FC<KanjiPracticeProps> = ({ kanji }) => {
     similarity: number;
     feedback: string;
   } | null>(null);
+  const [strokeOrder, setStrokeOrder] = useState<number>(0);
+  const [score, setScore] = useState<number>(0);
+  const [totalStrokes, setTotalStrokes] = useState<number>(0);
+  const [isComplete, setIsComplete] = useState<boolean>(false);
+  const [sessionStartTime, setSessionStartTime] = useState<number>(Date.now());
+
+  // Track practice session completion
+  const completePracticeSession = useCallback(() => {
+    const sessionDuration = Math.round((Date.now() - sessionStartTime) / 1000); // in seconds
+    const accuracy = totalStrokes > 0 ? score / totalStrokes : 0;
+
+    trackPracticeSession({
+      practiceType: 'writing',
+      timeSpent: sessionDuration,
+      wordsPracticed: [currentKanji?.character || ''],
+      accuracy,
+      strokesCorrect: score,
+      totalStrokes
+    });
+  }, [trackPracticeSession, sessionStartTime, totalStrokes, score, currentKanji]);
+
+  // Call completePracticeSession when practice is finished
+  useEffect(() => {
+    if (isComplete) {
+      completePracticeSession();
+    }
+  }, [isComplete, completePracticeSession]);
 
   // Load stroke data for a kanji
   const loadStrokeData = async (kanjiChar: string): Promise<StrokeData[] | undefined> => {
     try {
       console.log(`Loading stroke data for kanji: ${kanjiChar}`);
       
-      // First try to get from local database
-      const strokeData = await getStrokeData(kanjiChar);
-      if (strokeData && strokeData.strokes && strokeData.strokes.length > 0) {
-        console.log(`Found stroke data in database for ${kanjiChar}`);
-        return strokeData.strokes;
-      }
-
-      // If not in database, check if we have basic stroke data
+      // First check if we have basic stroke data
       if (basicStrokeData[kanjiChar]) {
         console.log(`Using basic stroke data for ${kanjiChar}`);
-        const basicData = basicStrokeData[kanjiChar];
-        
-        // Save to database for future use
-        try {
-          await saveStrokeData({
-            id: kanjiChar,
-            kanji: kanjiChar,
-            strokes: basicData,
-            timestamp: new Date()
-          });
-          console.log(`Saved basic stroke data to database for ${kanjiChar}`);
-        } catch (saveErr) {
-          console.warn(`Failed to save basic stroke data to database for ${kanjiChar}:`, saveErr);
-        }
-        
-        return basicData;
+        return basicStrokeData[kanjiChar];
       }
 
-      // If no basic data, try to fetch from KanjiVG API
-      console.log(`Attempting to fetch stroke data from KanjiVG for ${kanjiChar}`);
-      try {
-        const response = await fetch(`https://kanjivg.tagaini.net/kanji/${encodeURIComponent(kanjiChar)}.svg`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch stroke data: ${response.status} ${response.statusText}`);
-        }
-        
-        const svgText = await response.text();
-        const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
-        
-        // Extract stroke paths and their order
-        const strokeElements = svgDoc.querySelectorAll('path[data-stroke]');
-        if (strokeElements.length === 0) {
-          console.warn(`No stroke elements found in SVG for ${kanjiChar}`);
-          return undefined;
-        }
-
-        const analyzedStrokes: StrokeData[] = Array.from(strokeElements).map((element, index) => {
-          const path = element.getAttribute('d') || '';
-          const order = parseInt(element.getAttribute('data-stroke') || `${index + 1}`);
-          
-          // Analyze the SVG path to determine stroke characteristics
-          const analysis = analyzeSvgPath(path);
-          
-          return {
-            ...analysis,
-            order,
-            path
-          } as StrokeData;
-        });
-
-        if (analyzedStrokes.length === 0) {
-          console.warn(`No valid strokes analyzed for ${kanjiChar}`);
-          return undefined;
-        }
-
-        // Save to database for future use
-        try {
-          await saveStrokeData({
-            id: kanjiChar,
-            kanji: kanjiChar,
-            strokes: analyzedStrokes,
-            timestamp: new Date()
-          });
-          console.log(`Saved KanjiVG stroke data to database for ${kanjiChar}`);
-        } catch (saveErr) {
-          console.warn(`Failed to save KanjiVG stroke data to database for ${kanjiChar}:`, saveErr);
-        }
-
-        return analyzedStrokes;
-      } catch (err) {
-        console.warn(`Failed to fetch stroke data for ${kanjiChar} from KanjiVG:`, err);
-        return undefined;
+      // Generate fallback stroke data for kanji without predefined data
+      console.log(`Generating fallback stroke data for ${kanjiChar}`);
+      const fallbackData = generateFallbackStrokeData(kanjiChar);
+      if (fallbackData && fallbackData.length > 0) {
+        console.log(`Generated fallback stroke data for ${kanjiChar}`);
+        return fallbackData;
       }
+
+      // If all else fails, create a simple stroke
+      console.log(`Creating simple stroke data for ${kanjiChar}`);
+      const simpleStroke: StrokeData = {
+        type: 'horizontal',
+        direction: 0,
+        length: 1,
+        curvature: 0,
+        points: [{ x: 20, y: 50 }, { x: 80, y: 50 }],
+        order: 1,
+        path: 'M 20 50 L 80 50'
+      };
+      
+      return [simpleStroke];
     } catch (err) {
       console.error(`Failed to load stroke data for ${kanjiChar}:`, err);
-      return undefined;
+      
+      // Return a simple fallback stroke
+      const fallbackStroke: StrokeData = {
+        type: 'horizontal',
+        direction: 0,
+        length: 1,
+        curvature: 0,
+        points: [{ x: 20, y: 50 }, { x: 80, y: 50 }],
+        order: 1,
+        path: 'M 20 50 L 80 50'
+      };
+      
+      return [fallbackStroke];
     }
+  };
+
+  // Generate fallback stroke data for kanji without predefined data
+  const generateFallbackStrokeData = (kanjiChar: string): StrokeData[] => {
+    // Simple fallback: create basic strokes based on character complexity
+    const strokes: StrokeData[] = [];
+    const strokeCount = getKanjiStrokeCount(kanjiChar);
+    
+    if (strokeCount <= 0) return [];
+    
+    // Generate basic strokes based on stroke count
+    for (let i = 0; i < strokeCount; i++) {
+      const strokeType = i % 4 === 0 ? 'horizontal' : 
+                        i % 4 === 1 ? 'vertical' : 
+                        i % 4 === 2 ? 'curve' : 'diagonal';
+      
+      const direction = (i * Math.PI / 4) % (2 * Math.PI);
+      const length = 0.8 + (Math.random() * 0.4); // Random length between 0.8 and 1.2
+      const curvature = strokeType === 'curve' ? 0.5 : 0;
+      
+      // Generate points for the stroke
+      const centerX = 50;
+      const centerY = 50;
+      const baseLength = 30;
+      const actualLength = baseLength * length;
+      
+      let startX, startY, endX, endY;
+      
+      switch (strokeType) {
+        case 'horizontal':
+          startX = centerX - actualLength / 2;
+          startY = centerY + (i - 2) * 10;
+          endX = centerX + actualLength / 2;
+          endY = startY;
+          break;
+        case 'vertical':
+          startX = centerX + (i - 2) * 10;
+          startY = centerY - actualLength / 2;
+          endX = startX;
+          endY = centerY + actualLength / 2;
+          break;
+        case 'curve':
+          startX = centerX - actualLength / 2;
+          startY = centerY + actualLength / 2;
+          endX = centerX + actualLength / 2;
+          endY = centerY - actualLength / 2;
+          break;
+        case 'diagonal':
+          startX = centerX - actualLength / 2;
+          startY = centerY - actualLength / 2;
+          endX = centerX + actualLength / 2;
+          endY = centerY + actualLength / 2;
+          break;
+        default:
+          startX = centerX - actualLength / 2;
+          startY = centerY;
+          endX = centerX + actualLength / 2;
+          endY = centerY;
+      }
+      
+      const points = [
+        { x: startX, y: startY },
+        { x: endX, y: endY }
+      ];
+      
+      strokes.push({
+        type: strokeType,
+        direction,
+        length,
+        curvature,
+        points,
+        order: i + 1,
+        path: generateStrokePath(strokeType, direction, length, i)
+      });
+    }
+    
+    return strokes;
+  };
+
+  // Get stroke count for a kanji character
+  const getKanjiStrokeCount = (kanjiChar: string): number => {
+    // Look up stroke count from kanji data
+    const kanjiData = kanjiList.find(k => k.character === kanjiChar);
+    if (kanjiData && kanjiData.strokeCount) {
+      return kanjiData.strokeCount;
+    }
+    
+    // Fallback: estimate stroke count based on character complexity
+    const complexity = kanjiChar.length;
+    if (complexity <= 1) return 1;
+    if (complexity <= 3) return 2;
+    if (complexity <= 5) return 3;
+    if (complexity <= 7) return 4;
+    return 5; // Default for complex characters
+  };
+
+  // Generate SVG path for a stroke
+  const generateStrokePath = (type: string, direction: number, length: number, index: number): string => {
+    const centerX = 50;
+    const centerY = 50;
+    const baseLength = 30;
+    const actualLength = baseLength * length;
+    
+    let startX, startY, endX, endY;
+    
+    switch (type) {
+      case 'horizontal':
+        startX = centerX - actualLength / 2;
+        startY = centerY + (index - 2) * 10;
+        endX = centerX + actualLength / 2;
+        endY = startY;
+        break;
+      case 'vertical':
+        startX = centerX + (index - 2) * 10;
+        startY = centerY - actualLength / 2;
+        endX = startX;
+        endY = centerY + actualLength / 2;
+        break;
+      case 'curve':
+        startX = centerX - actualLength / 2;
+        startY = centerY + actualLength / 2;
+        endX = centerX + actualLength / 2;
+        endY = centerY - actualLength / 2;
+        return `M ${startX} ${startY} Q ${centerX} ${centerY} ${endX} ${endY}`;
+      case 'diagonal':
+        startX = centerX - actualLength / 2;
+        startY = centerY - actualLength / 2;
+        endX = centerX + actualLength / 2;
+        endY = centerY + actualLength / 2;
+        break;
+      default:
+        startX = centerX - actualLength / 2;
+        startY = centerY;
+        endX = centerX + actualLength / 2;
+        endY = centerY;
+    }
+    
+    return `M ${startX} ${startY} L ${endX} ${endY}`;
   };
 
   // Initialize current kanji with stroke data
@@ -885,7 +838,7 @@ const KanjiPractice: React.FC<KanjiPracticeProps> = ({ kanji }) => {
           <Typography variant="h6" gutterBottom>
             Loading stroke data...
           </Typography>
-          <LinearProgress sx={{ width: '100%', maxWidth: 300 }} />
+          <CircularProgress sx={{ width: '100%', maxWidth: 300 }} />
         </Box>
       );
     }
@@ -894,11 +847,18 @@ const KanjiPractice: React.FC<KanjiPracticeProps> = ({ kanji }) => {
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3 }}>
           <Typography variant="h6" color="error" gutterBottom>
-            No valid kanji available
+            No valid kanji available for practice
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Please select a different kanji or try again later.
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+            The selected kanji don't have stroke data available. Try selecting different kanji or check your internet connection.
           </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => window.location.reload()}
+            sx={{ mt: 1 }}
+          >
+            Reload Page
+          </Button>
         </Box>
       );
     }

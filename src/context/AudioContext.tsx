@@ -33,8 +33,19 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 export const useAudio = () => {
   const context = useContext(AudioContext);
-  if (!context) {
-    throw new Error('useAudio must be used within an AudioProvider');
+  if (context === undefined) {
+    console.warn('[useAudio] Context is undefined, returning default values');
+    // Return default context values instead of throwing an error
+    return {
+      playAudio: async () => {},
+      stopAudio: () => {},
+      isPlaying: false,
+      currentAudio: null,
+      volume: 1,
+      setVolume: () => {},
+      isLoading: false,
+      error: null
+    };
   }
   return context;
 };

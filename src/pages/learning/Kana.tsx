@@ -44,6 +44,7 @@ import KanaChart from '../../components/kana/KanaChart';
 import KanaPractice from '../../components/kana/KanaPractice';
 import KanaQuiz from '../../components/kana/KanaQuiz';
 import { hiraganaList, katakanaList } from '../../data/kanaData';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -81,10 +82,20 @@ function a11yProps(index: number) {
 const Kana: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { progress } = useProgress();
+  const progressContext = useProgress();
+  const progress = progressContext?.progress || { words: {}, sections: {}, preferences: {}, statistics: {} };
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedKanaType, setSelectedKanaType] = useState<'hiragana' | 'katakana'>('hiragana');
   const [quizDifficulty, setQuizDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Set loading to false when progress is available
+  React.useEffect(() => {
+    if (progress) {
+      setIsLoading(false);
+    }
+  }, [progress]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
@@ -98,148 +109,170 @@ const Kana: React.FC = () => {
     setQuizDifficulty(difficulty);
   };
 
+  // Generate progress chart data
+  const generateProgressChartData = (progressData: any, avgMastery: number = 0) => {
+    try {
+      const data = [];
+      const today = new Date();
+      
+      // Generate last 7 days of data
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        // Count kana practiced on this date with safety checks
+        const kanaPracticed = Object.entries(progressData.words || {})
+          .filter(([key, value]: [string, any]) => {
+            if (!value || typeof value !== 'object') return false;
+            if (value.category !== 'hiragana' && value.category !== 'katakana') return false;
+            const lastReviewed = new Date(value.lastReviewed || 0);
+            return lastReviewed.toISOString().split('T')[0] === dateStr;
+          }).length;
+
+        data.push({
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          kanaPracticed,
+          masteryLevel: avgMastery
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error generating chart data:', error);
+      // Return empty data array if there's an error
+      return [];
+    }
+  };
+
   // Calculate comprehensive progress statistics
   const progressStats = useMemo(() => {
-    // Safety check to ensure progress.words exists
-    if (!progress?.words) {
+    try {
+      // Safety check to ensure progress.words exists
+      if (!progress?.words || typeof progress.words !== 'object') {
+        return {
+          hiragana: {
+            mastered: 0,
+            inProgress: 0,
+            notStarted: hiraganaList.length,
+            total: hiraganaList.length,
+            percentComplete: 0,
+            avgMastery: 0
+          },
+          katakana: {
+            mastered: 0,
+            inProgress: 0,
+            notStarted: katakanaList.length,
+            total: katakanaList.length,
+            percentComplete: 0,
+            avgMastery: 0
+          },
+          overall: {
+            mastered: 0,
+            inProgress: 0,
+            notStarted: hiraganaList.length + katakanaList.length,
+            total: hiraganaList.length + katakanaList.length,
+            percentComplete: 0,
+            avgMastery: 0
+          },
+          chartData: []
+        };
+      }
+
+      const hiraganaProgress = hiraganaList.map(kana => ({
+        character: kana.character,
+        progress: progress.words[kana.character] || {
+          masteryLevel: 0,
+          consecutiveCorrect: 0,
+          correctAnswers: 0,
+          incorrectAnswers: 0,
+          lastReviewed: 0
+        }
+      }));
+
+      const katakanaProgress = katakanaList.map(kana => ({
+        character: kana.character,
+        progress: progress.words[kana.character] || {
+          masteryLevel: 0,
+          consecutiveCorrect: 0,
+          correctAnswers: 0,
+          incorrectAnswers: 0,
+          lastReviewed: 0
+        }
+      }));
+
+      const hiraganaMastered = hiraganaProgress.filter(p => 
+        p.progress.masteryLevel >= 5 && p.progress.consecutiveCorrect >= 2
+      ).length;
+      const katakanaMastered = katakanaProgress.filter(p => 
+        p.progress.masteryLevel >= 5 && p.progress.consecutiveCorrect >= 2
+      ).length;
+
+      const hiraganaInProgress = hiraganaProgress.filter(p => 
+        p.progress.masteryLevel > 0 && p.progress.masteryLevel < 5
+      ).length;
+      const katakanaInProgress = katakanaProgress.filter(p => 
+        p.progress.masteryLevel > 0 && p.progress.masteryLevel < 5
+      ).length;
+
+      const hiraganaNotStarted = hiraganaList.length - hiraganaMastered - hiraganaInProgress;
+      const katakanaNotStarted = katakanaList.length - katakanaMastered - katakanaInProgress;
+
+      const totalKana = hiraganaList.length + katakanaList.length;
+      const totalMastered = hiraganaMastered + katakanaMastered;
+      const totalInProgress = hiraganaInProgress + katakanaInProgress;
+      const totalNotStarted = hiraganaNotStarted + katakanaNotStarted;
+
+      // Calculate average mastery levels with safety checks
+      const hiraganaAvgMastery = hiraganaList.length > 0 
+        ? hiraganaProgress.reduce((sum, p) => sum + (p.progress.masteryLevel || 0), 0) / hiraganaList.length 
+        : 0;
+      const katakanaAvgMastery = katakanaList.length > 0 
+        ? katakanaProgress.reduce((sum, p) => sum + (p.progress.masteryLevel || 0), 0) / katakanaList.length 
+        : 0;
+      const totalAvgMastery = (hiraganaAvgMastery + katakanaAvgMastery) / 2;
+
+      // Generate chart data for progress over time
+      const chartData = generateProgressChartData(progress, totalAvgMastery);
+
       return {
         hiragana: {
-          mastered: 0,
-          inProgress: 0,
-          notStarted: hiraganaList.length,
+          mastered: hiraganaMastered,
+          inProgress: hiraganaInProgress,
+          notStarted: hiraganaNotStarted,
           total: hiraganaList.length,
-          percentComplete: 0,
-          avgMastery: 0
+          percentComplete: hiraganaList.length > 0 ? (hiraganaMastered / hiraganaList.length) * 100 : 0,
+          avgMastery: hiraganaAvgMastery
         },
         katakana: {
-          mastered: 0,
-          inProgress: 0,
-          notStarted: katakanaList.length,
+          mastered: katakanaMastered,
+          inProgress: katakanaInProgress,
+          notStarted: katakanaNotStarted,
           total: katakanaList.length,
-          percentComplete: 0,
-          avgMastery: 0
+          percentComplete: katakanaList.length > 0 ? (katakanaMastered / katakanaList.length) * 100 : 0,
+          avgMastery: katakanaAvgMastery
         },
         overall: {
-          mastered: 0,
-          inProgress: 0,
-          notStarted: hiraganaList.length + katakanaList.length,
-          total: hiraganaList.length + katakanaList.length,
-          percentComplete: 0,
-          avgMastery: 0
+          mastered: totalMastered,
+          inProgress: totalInProgress,
+          notStarted: totalNotStarted,
+          total: totalKana,
+          percentComplete: totalKana > 0 ? (totalMastered / totalKana) * 100 : 0,
+          avgMastery: totalAvgMastery
         },
+        chartData
+      };
+    } catch (error) {
+      console.error('Error calculating progress stats:', error);
+      setError('Failed to load progress data. Please refresh the page.');
+      return {
+        hiragana: { mastered: 0, inProgress: 0, notStarted: 0, total: 0, percentComplete: 0, avgMastery: 0 },
+        katakana: { mastered: 0, inProgress: 0, notStarted: 0, total: 0, percentComplete: 0, avgMastery: 0 },
+        overall: { mastered: 0, inProgress: 0, notStarted: 0, total: 0, percentComplete: 0, avgMastery: 0 },
         chartData: []
       };
     }
-
-    const hiraganaProgress = hiraganaList.map(kana => ({
-      character: kana.character,
-      progress: progress.words[kana.character] || {
-        masteryLevel: 0,
-        consecutiveCorrect: 0,
-        correctAnswers: 0,
-        incorrectAnswers: 0,
-        lastReviewed: 0
-      }
-    }));
-
-    const katakanaProgress = katakanaList.map(kana => ({
-      character: kana.character,
-      progress: progress.words[kana.character] || {
-        masteryLevel: 0,
-        consecutiveCorrect: 0,
-        correctAnswers: 0,
-        incorrectAnswers: 0,
-        lastReviewed: 0
-      }
-    }));
-
-    const hiraganaMastered = hiraganaProgress.filter(p => 
-      p.progress.masteryLevel >= 5 && p.progress.consecutiveCorrect >= 2
-    ).length;
-    const katakanaMastered = katakanaProgress.filter(p => 
-      p.progress.masteryLevel >= 5 && p.progress.consecutiveCorrect >= 2
-    ).length;
-
-    const hiraganaInProgress = hiraganaProgress.filter(p => 
-      p.progress.masteryLevel > 0 && p.progress.masteryLevel < 5
-    ).length;
-    const katakanaInProgress = katakanaProgress.filter(p => 
-      p.progress.masteryLevel > 0 && p.progress.masteryLevel < 5
-    ).length;
-
-    const hiraganaNotStarted = hiraganaList.length - hiraganaMastered - hiraganaInProgress;
-    const katakanaNotStarted = katakanaList.length - katakanaMastered - katakanaInProgress;
-
-    const totalKana = hiraganaList.length + katakanaList.length;
-    const totalMastered = hiraganaMastered + katakanaMastered;
-    const totalInProgress = hiraganaInProgress + katakanaInProgress;
-    const totalNotStarted = hiraganaNotStarted + katakanaNotStarted;
-
-    // Calculate average mastery levels
-    const hiraganaAvgMastery = hiraganaProgress.reduce((sum, p) => sum + p.progress.masteryLevel, 0) / hiraganaList.length;
-    const katakanaAvgMastery = katakanaProgress.reduce((sum, p) => sum + p.progress.masteryLevel, 0) / katakanaList.length;
-    const totalAvgMastery = (hiraganaAvgMastery + katakanaAvgMastery) / 2;
-
-    // Generate chart data for progress over time
-    const chartData = generateProgressChartData(progress);
-
-    return {
-      hiragana: {
-        mastered: hiraganaMastered,
-        inProgress: hiraganaInProgress,
-        notStarted: hiraganaNotStarted,
-        total: hiraganaList.length,
-        percentComplete: hiraganaList.length > 0 ? (hiraganaMastered / hiraganaList.length) * 100 : 0,
-        avgMastery: hiraganaAvgMastery
-      },
-      katakana: {
-        mastered: katakanaMastered,
-        inProgress: katakanaInProgress,
-        notStarted: katakanaNotStarted,
-        total: katakanaList.length,
-        percentComplete: katakanaList.length > 0 ? (katakanaMastered / katakanaList.length) * 100 : 0,
-        avgMastery: katakanaAvgMastery
-      },
-      overall: {
-        mastered: totalMastered,
-        inProgress: totalInProgress,
-        notStarted: totalNotStarted,
-        total: totalKana,
-        percentComplete: totalKana > 0 ? (totalMastered / totalKana) * 100 : 0,
-        avgMastery: totalAvgMastery
-      },
-      chartData
-    };
   }, [progress]);
-
-  // Generate progress chart data
-  const generateProgressChartData = (progressData: any) => {
-    const data = [];
-    const today = new Date();
-    
-    // Generate last 7 days of data
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      // Count kana practiced on this date
-      const kanaPracticed = Object.entries(progressData.words || {})
-        .filter(([key, value]: [string, any]) => {
-          if (value.category !== 'hiragana' && value.category !== 'katakana') return false;
-          const lastReviewed = new Date(value.lastReviewed || 0);
-          return lastReviewed.toISOString().split('T')[0] === dateStr;
-        }).length;
-
-      data.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        kanaPracticed,
-        masteryLevel: progressStats.overall.avgMastery
-      });
-    }
-    
-    return data;
-  };
 
   // Pie chart data for mastery distribution
   const masteryDistributionData = [
@@ -247,6 +280,42 @@ const Kana: React.FC = () => {
     { name: 'In Progress', value: progressStats.overall.inProgress, color: theme.palette.warning.main },
     { name: 'Not Started', value: progressStats.overall.notStarted, color: theme.palette.grey[400] }
   ];
+
+  // Render different states based on conditions
+  if (error) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ py: 4 }}>
+          <Typography variant="h4" color="error" gutterBottom>
+            Error Loading Kana Page
+          </Typography>
+          <Typography variant="body1" color="text.secondary" paragraph>
+            {error}
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => setError(null)}
+            sx={{ mt: 2 }}
+          >
+            Retry
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ py: 4, textAlign: 'center' }}>
+          <Typography variant="h4" gutterBottom>
+            Loading Kana Learning...
+          </Typography>
+          <LinearProgress sx={{ mt: 2 }} />
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">
@@ -484,40 +553,46 @@ const Kana: React.FC = () => {
           </Tabs>
 
           <TabPanel value={selectedTab} index={0}>
-            <KanaChart type={selectedKanaType} />
+            <ErrorBoundary>
+              <KanaChart type={selectedKanaType} />
+            </ErrorBoundary>
           </TabPanel>
 
           <TabPanel value={selectedTab} index={1}>
-            <KanaPractice type={selectedKanaType} />
+            <ErrorBoundary>
+              <KanaPractice type={selectedKanaType} />
+            </ErrorBoundary>
           </TabPanel>
 
           <TabPanel value={selectedTab} index={2}>
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Quiz Difficulty
-              </Typography>
-              <Button
-                variant={quizDifficulty === 'beginner' ? 'contained' : 'outlined'}
-                onClick={() => handleDifficultyChange('beginner')}
-                sx={{ mr: 1 }}
-              >
-                Beginner
-              </Button>
-              <Button
-                variant={quizDifficulty === 'intermediate' ? 'contained' : 'outlined'}
-                onClick={() => handleDifficultyChange('intermediate')}
-                sx={{ mr: 1 }}
-              >
-                Intermediate
-              </Button>
-              <Button
-                variant={quizDifficulty === 'advanced' ? 'contained' : 'outlined'}
-                onClick={() => handleDifficultyChange('advanced')}
-              >
-                Advanced
-              </Button>
-            </Box>
-            <KanaQuiz type={selectedKanaType} difficulty={quizDifficulty} />
+            <ErrorBoundary>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Quiz Difficulty
+                </Typography>
+                <Button
+                  variant={quizDifficulty === 'beginner' ? 'contained' : 'outlined'}
+                  onClick={() => handleDifficultyChange('beginner')}
+                  sx={{ mr: 1 }}
+                >
+                  Beginner
+                </Button>
+                <Button
+                  variant={quizDifficulty === 'intermediate' ? 'contained' : 'outlined'}
+                  onClick={() => handleDifficultyChange('intermediate')}
+                  sx={{ mr: 1 }}
+                >
+                  Intermediate
+                </Button>
+                <Button
+                  variant={quizDifficulty === 'advanced' ? 'contained' : 'outlined'}
+                  onClick={() => handleDifficultyChange('advanced')}
+                >
+                  Advanced
+                </Button>
+              </Box>
+              <KanaQuiz type={selectedKanaType} difficulty={quizDifficulty} />
+            </ErrorBoundary>
           </TabPanel>
         </Paper>
       </Box>

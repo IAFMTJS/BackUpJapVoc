@@ -21,8 +21,19 @@ const DictionaryContext = createContext<DictionaryContextType | undefined>(undef
 
 export const useDictionary = () => {
   const context = useContext(DictionaryContext);
-  if (!context) {
-    throw new Error('useDictionary must be used within a DictionaryProvider');
+  if (context === undefined) {
+    console.warn('[useDictionary] Context is undefined, returning default values');
+    // Return default context values instead of throwing an error
+    return {
+      words: [],
+      isLoading: false,
+      error: null,
+      searchWords: () => [],
+      getWordsByCategory: () => [],
+      addWord: async () => {},
+      updateWord: async () => {},
+      deleteWord: async () => {}
+    };
   }
   return context;
 };

@@ -121,8 +121,12 @@ const KanaChart: React.FC<KanaChartProps> = ({ type, onSelectKana }) => {
     if (onSelectKana) {
       onSelectKana(kana);
     }
-    // Play audio for the kana
-    playAudio(romaji);
+    // Play audio for the kana with safety check
+    if (playAudio && typeof playAudio === 'function') {
+      playAudio(romaji).catch(error => {
+        console.error('Error playing audio:', error);
+      });
+    }
   };
 
   const handlePracticeClick = (kana: string) => {

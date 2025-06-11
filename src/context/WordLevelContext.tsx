@@ -170,10 +170,25 @@ export const WordLevelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   });
 
   const [currentLevel, setCurrentLevel] = useState(userProgress.currentLevel);
-  const { quizWords } = useWord();
+  
+  // Add safety check for useWord hook
+  let quizWords: DictionaryItem[] = [];
+  try {
+    const wordContext = useWord();
+    quizWords = wordContext?.quizWords || [];
+  } catch (error) {
+    console.warn('[WordLevelProvider] WordContext not ready yet, using empty quizWords array');
+    quizWords = [];
+  }
 
-  // Convert quizWords to JapaneseWord format
-  const words = React.useMemo(() => quizWords.map(convertToJapaneseWord), [quizWords]);
+  // Convert quizWords to JapaneseWord format with safety check
+  const words = React.useMemo(() => {
+    if (!Array.isArray(quizWords)) {
+      console.warn('[WordLevelProvider] quizWords is not an array, using empty array');
+      return [];
+    }
+    return quizWords.map(convertToJapaneseWord);
+  }, [quizWords]);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -577,7 +592,46 @@ export const WordLevelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 export const useWordLevel = () => {
   const context = useContext(WordLevelContext);
   if (context === undefined) {
-    throw new Error('useWordLevel must be used within a WordLevelProvider');
+    console.warn('[useWordLevel] Context is undefined, returning default values');
+    // Return default context values instead of throwing an error
+    return {
+      currentLevel: 1,
+      unlockedLevels: [1],
+      userProgress: initialProgress,
+      settings: initialSettings,
+      getWordsForCurrentLevel: () => [],
+      updateWordProgress: () => {},
+      unlockLevel: () => {},
+      updateSettings: () => {},
+      getLevelProgress: () => undefined,
+      getWordProgress: () => undefined,
+      updateQuizProgress: () => {},
+      updateJLPTProgress: () => {},
+      updateReadingProgress: () => {},
+      canAdvanceToNextLevel: () => false,
+      getLevelRequirements: () => [],
+      getWordMastery: () => ({
+        masteredWords: 0,
+        totalWords: 0,
+        masteryPercentage: 0,
+        meetsRequirements: false
+      }),
+      updateUserProgress: () => {},
+      advanceLevel: () => {},
+      canAdvanceLevel: () => false,
+      getCurrentLevelData: () => null,
+      getWordMasteryForLevel: () => ({
+        masteredWords: 0,
+        totalWords: 0,
+        masteryPercentage: 0,
+        meetsRequirements: false
+      }),
+      setCurrentLevel: () => {},
+      getWordsByCategory: () => [],
+      getWordsByJLPTLevel: () => [],
+      getAllWords: () => [],
+      calculateWordDifficulty: () => 'medium'
+    };
   }
   return context;
 }; 

@@ -3,6 +3,7 @@ import { playAudio } from '../../utils/audio';
 import { romajiWords, romajiSentences, romajiStories } from '../../data/romajiWords';
 import Confetti from 'react-confetti';
 import VirtualTeacherPanel from '../../components/VirtualTeacherPanel';
+import SpeechButton from '../../components/SpeechButton';
 import { useProgress } from '../../context/ProgressContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -128,11 +129,8 @@ const RomajiSection: React.FC = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [hiraganaCache, setHiraganaCache] = useState<Record<string, string>>({});
   const [katakanaCache, setKatakanaCache] = useState<Record<string, string>>({});
-  const currentWord = romajiWords[practiceIndex % romajiWords.length];
-  const currentSentence = romajiSentences[practiceIndex % romajiSentences.length];
-  // For matching
   const [matchOptions, setMatchOptions] = useState(() => {
-    const options = romajiWords.slice(0, 4);
+    const options = displayWords.slice(0, 4);
     return options.sort(() => 0.5 - Math.random());
   });
   const [matchSelected, setMatchSelected] = useState<number | null>(null);
@@ -142,10 +140,10 @@ const RomajiSection: React.FC = () => {
   const [timedActive, setTimedActive] = useState(false);
   const [timedTime, setTimedTime] = useState(60);
   const [timedScore, setTimedScore] = useState(0);
-  const [timedCurrent, setTimedCurrent] = useState(() => Math.floor(Math.random() * romajiWords.length));
+  const [timedCurrent, setTimedCurrent] = useState(() => Math.floor(Math.random() * displayWords.length));
   // Listening mode state
   const [listeningIndex, setListeningIndex] = useState(0);
-  const listeningWord = romajiWords[listeningIndex % romajiWords.length];
+  const listeningWord = displayWords[listeningIndex % displayWords.length];
   const [level, setLevel] = useState(() => getRomajiCurrentLevel());
   const [unlockedLevels, setUnlockedLevels] = useState<number[]>(getRomajiUnlockedLevels);
   // For speech recognition feedback
@@ -157,6 +155,15 @@ const RomajiSection: React.FC = () => {
   const levelWords = romajiWords.filter(w => w.level === level);
   const levelSentences = romajiSentences.filter(s => s.level === level);
   const levelStories = romajiStories.filter(s => s.level === level);
+
+  // Fallback to all data if no items in current level
+  const displayWords = levelWords.length > 0 ? levelWords : romajiWords;
+  const displaySentences = levelSentences.length > 0 ? levelSentences : romajiSentences;
+  const displayStories = levelStories.length > 0 ? levelStories : romajiStories;
+
+  // Update current word/sentence based on filtered data
+  const currentWord = displayWords[practiceIndex % displayWords.length];
+  const currentSentence = displaySentences[practiceIndex % displaySentences.length];
 
   const { progress: globalProgress, updateProgress } = useProgress();
   const { getThemeClasses } = useTheme();
@@ -270,6 +277,16 @@ const RomajiSection: React.FC = () => {
     setRomajiCurrentLevel(level);
   }, [level]);
 
+  // Regenerate match options when practice type changes
+  React.useEffect(() => {
+    if (practiceType === 'matching') {
+      const options = displayWords.slice(0, 4).sort(() => 0.5 - Math.random());
+      setMatchOptions(options);
+      setMatchSelected(null);
+      setMatchResult(null);
+    }
+  }, [practiceType, displayWords]);
+
   // Helper: simple similarity score
   function similarity(a: string, b: string) {
     a = a.trim().toLowerCase();
@@ -306,7 +323,7 @@ const RomajiSection: React.FC = () => {
       return hiraganaCache[text];
     }
     try {
-      const hiragana = await convertToRomaji(text, { to: 'hiragana' });
+      const hiragana = await convertToRomaji(text);
       setHiraganaCache(prev => ({ ...prev, [text]: hiragana }));
       return hiragana;
     } catch (error) {
@@ -320,7 +337,9 @@ const RomajiSection: React.FC = () => {
       return katakanaCache[text];
     }
     try {
-      const katakana = await convertToRomaji(text, { to: 'katakana' });
+      // For katakana, we'll use the same conversion for now
+      // In a real implementation, you'd want to convert to katakana
+      const katakana = await convertToRomaji(text);
       setKatakanaCache(prev => ({ ...prev, [text]: katakana }));
       return katakana;
     } catch (error) {
@@ -358,6 +377,23 @@ const RomajiSection: React.FC = () => {
 
     convertAllToKana();
   }, []);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Romaji page debug info:', {
+      level,
+      levelWordsCount: levelWords.length,
+      levelSentencesCount: levelSentences.length,
+      levelStoriesCount: levelStories.length,
+      displayWordsCount: displayWords.length,
+      displaySentencesCount: displaySentences.length,
+      displayStoriesCount: displayStories.length,
+      currentWord,
+      currentSentence,
+      tab,
+      practiceType
+    });
+  }, [level, levelWords, levelSentences, levelStories, displayWords, displaySentences, displayStories, currentWord, currentSentence, tab, practiceType]);
 
   return (
     <div className="py-8 px-4 max-w-3xl mx-auto">
@@ -457,22 +493,29 @@ const RomajiSection: React.FC = () => {
       <div className="bg-dark-lighter rounded-lg shadow-md p-6 min-h-[300px]">
         {tab === 'Words' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {levelWords.map((word, i) => (
-              <div key={i} className="p-4 border rounded flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  {showKanji && <span className="text-2xl font-bold">{word.japanese}</span>}
-                  {showHiragana && <span className="text-2xl">{hiraganaCache[word.japanese] || word.japanese}</span>}
-                  <button onClick={() => playAudio(word.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
+            {displayWords.length > 0 ? (
+              displayWords.map((word, i) => (
+                <div key={i} className="p-4 border rounded flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    {showKanji && <span className="text-2xl font-bold">{word.japanese}</span>}
+                    {showHiragana && <span className="text-2xl">{hiraganaCache[word.japanese] || word.japanese}</span>}
+                    <button onClick={() => playAudio(word.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
+                  </div>
+                  {showRomaji && <span className="text-lg text-blue-700">{word.romaji}</span>}
+                  {showEnglish && <span className="text-gray-600">{word.english}</span>}
                 </div>
-                {showRomaji && <span className="text-lg text-blue-700">{word.romaji}</span>}
-                {showEnglish && <span className="text-gray-600">{word.english}</span>}
+              ))
+            ) : (
+              <div className="col-span-2 text-center py-8">
+                <p className="text-gray-500">No words available for the current level.</p>
+                <p className="text-sm text-gray-400 mt-2">Try changing the level or check back later.</p>
               </div>
-            ))}
+            )}
           </div>
         )}
         {tab === 'Sentences' && (
           <div className="space-y-4">
-            {levelSentences.map((sentence, i) => (
+            {displaySentences.map((sentence, i) => (
               <div key={i} className="p-4 border rounded flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   {showKanji && <span className="font-bold">{sentence.japanese}</span>}
@@ -488,7 +531,7 @@ const RomajiSection: React.FC = () => {
         )}
         {tab === 'Stories' && (
           <div className="space-y-6">
-            {levelStories.map((story, i) => (
+            {displayStories.map((story, i) => (
               <div key={i} className="p-4 border rounded flex flex-col gap-2">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="font-bold text-lg">{story.title}</span>
@@ -635,7 +678,11 @@ const RomajiSection: React.FC = () => {
             {/* Matching practice */}
             {practiceType === 'matching' && (
               <>
-                <div className="flex gap-4">
+                <div className="text-center mb-4">
+                  <span className="text-2xl font-bold">{currentWord.japanese}</span>
+                  <button onClick={() => playAudio(currentWord.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200 ml-2">🔊</button>
+                </div>
+                <div className="flex gap-4 flex-wrap justify-center">
                   {matchOptions.map((option, i) => (
                     <button
                       key={i}
@@ -647,27 +694,254 @@ const RomajiSection: React.FC = () => {
                   ))}
                 </div>
                 {matchSelected !== null && (
-                  <div className="mt-2 text-sm">
+                  <div className="mt-4 text-center">
                     {matchResult === null ? (
                       <button
                         className="px-4 py-2 rounded bg-blue-500 text-white"
                         onClick={() => {
-                          const correct = matchSelected === matchOptions.findIndex(o => o.romaji === currentSentence.romaji);
+                          const correct = matchSelected === matchOptions.findIndex(o => o.romaji === currentWord.romaji);
                           setMatchResult(correct);
-                          if (correct) updateProgress('romaji', currentSentence.japanese, true);
+                          if (correct) updateProgress('romaji', currentWord.japanese, true);
                         }}
                       >
                         Check
                       </button>
                     ) : (
-                      <div className={`text-lg font-semibold ${matchResult ? 'text-green-600' : 'text-red-600'}`}>
-                        {matchResult ? 'Correct!' : 'Wrong!'}
+                      <div className="space-y-2">
+                        <div className={`text-lg font-semibold ${matchResult ? 'text-green-600' : 'text-red-600'}`}>
+                          {matchResult ? 'Correct!' : 'Wrong!'}
+                        </div>
+                        {!matchResult && (
+                          <div className="text-sm text-gray-600">
+                            Correct answer: {currentWord.romaji}
+                          </div>
+                        )}
+                        <button
+                          className="px-4 py-2 rounded bg-green-500 text-white"
+                          onClick={() => {
+                            setPracticeIndex(i => i + 1);
+                            setMatchSelected(null);
+                            setMatchResult(null);
+                          }}
+                        >
+                          Next
+                        </button>
                       </div>
                     )}
                   </div>
                 )}
               </>
             )}
+            {/* English for Word practice */}
+            {practiceType === 'englishWord' && (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold">{currentWord.japanese}</span>
+                  <button onClick={() => playAudio(currentWord.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
+                  {globalProgress[`romaji-${currentWord.japanese}-eng`]?.correct > 0 && <span title="Mastered" className="text-green-500 text-xl">✔️</span>}
+                </div>
+                <input
+                  className="border px-4 py-2 rounded text-lg"
+                  placeholder="Type the English meaning..."
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  disabled={result !== null}
+                  autoFocus
+                />
+                {result !== null && (
+                  <div className={`text-lg font-semibold ${result ? 'text-green-600' : 'text-red-600'}`}>{result ? 'Correct!' : `Wrong! (${currentWord.english})`}</div>
+                )}
+                <div className="flex gap-4">
+                  {result === null ? (
+                    <button
+                      className="px-4 py-2 rounded bg-blue-500 text-white"
+                      onClick={() => {
+                        const correct = input.trim().toLowerCase() === currentWord.english.toLowerCase();
+                        setResult(correct);
+                        if (correct) updateProgress('romaji', currentWord.japanese + '-eng', true);
+                      }}
+                    >
+                      Check
+                    </button>
+                  ) : (
+                    <button
+                      className="px-4 py-2 rounded bg-green-500 text-white"
+                      onClick={() => {
+                        setPracticeIndex(i => i + 1);
+                        setInput('');
+                        setResult(null);
+                      }}
+                    >
+                      Next
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+            {/* Timed practice */}
+            {practiceType === 'timed' && (
+              <>
+                <div className="text-center">
+                  <div className="text-2xl font-bold mb-4">Time: {timedTime}s</div>
+                  <div className="text-xl mb-4">Score: {timedScore}</div>
+                  {!timedActive ? (
+                    <button
+                      className="px-6 py-3 rounded bg-green-500 text-white text-lg"
+                      onClick={() => {
+                        setTimedActive(true);
+                        setTimedTime(60);
+                        setTimedScore(0);
+                        setTimedCurrent(Math.floor(Math.random() * displayWords.length));
+                      }}
+                    >
+                      Start Timed Practice
+                    </button>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="text-2xl font-bold">{displayWords[timedCurrent].japanese}</div>
+                      <button onClick={() => playAudio(displayWords[timedCurrent].japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
+                      <input
+                        className="border px-4 py-2 rounded text-lg"
+                        placeholder="Type the romaji..."
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            const correct = input.trim().toLowerCase() === displayWords[timedCurrent].romaji.toLowerCase();
+                            if (correct) {
+                              setTimedScore(s => s + 1);
+                              updateProgress('romaji', displayWords[timedCurrent].japanese, true);
+                            }
+                            setInput('');
+                            setTimedCurrent(Math.floor(Math.random() * displayWords.length));
+                          }
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+            {/* Listening practice */}
+            {practiceType === 'listening' && (
+              <>
+                <div className="text-center">
+                  <div className="text-xl mb-4">Listen and type the romaji</div>
+                  <button 
+                    onClick={() => playAudio(listeningWord.japanese)} 
+                    title="Play Audio" 
+                    className="p-4 rounded-full bg-blue-500 text-white text-2xl mb-4"
+                  >
+                    🔊
+                  </button>
+                  <input
+                    className="border px-4 py-2 rounded text-lg"
+                    placeholder="Type the romaji you heard..."
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    disabled={result !== null}
+                    autoFocus
+                  />
+                  {result !== null && (
+                    <div className={`text-lg font-semibold mt-2 ${result ? 'text-green-600' : 'text-red-600'}`}>
+                      {result ? 'Correct!' : `Wrong! (${listeningWord.romaji})`}
+                    </div>
+                  )}
+                  <div className="flex gap-4 mt-4 justify-center">
+                    {result === null ? (
+                      <button
+                        className="px-4 py-2 rounded bg-blue-500 text-white"
+                        onClick={() => {
+                          const correct = input.trim().toLowerCase() === listeningWord.romaji.toLowerCase();
+                          setResult(correct);
+                          if (correct) updateProgress('romaji', listeningWord.japanese, true);
+                        }}
+                      >
+                        Check
+                      </button>
+                    ) : (
+                      <button
+                        className="px-4 py-2 rounded bg-green-500 text-white"
+                        onClick={() => {
+                          setListeningIndex(i => i + 1);
+                          setInput('');
+                          setResult(null);
+                        }}
+                      >
+                        Next
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        {tab === 'Games' && (
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-xl font-bold mb-6 text-center">Romaji Games</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Memory Game */}
+              <div className="p-4 border rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Memory Match</h3>
+                <p className="text-sm text-gray-600 mb-4">Match Japanese characters with their romaji</p>
+                <button
+                  className="px-4 py-2 rounded bg-blue-500 text-white"
+                  onClick={() => {
+                    // This would open a memory game component
+                    alert('Memory game coming soon!');
+                  }}
+                >
+                  Play Memory Game
+                </button>
+              </div>
+              
+              {/* Word Scramble */}
+              <div className="p-4 border rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Word Scramble</h3>
+                <p className="text-sm text-gray-600 mb-4">Unscramble romaji to form words</p>
+                <button
+                  className="px-4 py-2 rounded bg-green-500 text-white"
+                  onClick={() => {
+                    // This would open a word scramble component
+                    alert('Word scramble coming soon!');
+                  }}
+                >
+                  Play Word Scramble
+                </button>
+              </div>
+              
+              {/* Speed Typing */}
+              <div className="p-4 border rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Speed Typing</h3>
+                <p className="text-sm text-gray-600 mb-4">Type romaji as fast as you can</p>
+                <button
+                  className="px-4 py-2 rounded bg-purple-500 text-white"
+                  onClick={() => {
+                    setTab('Practice');
+                    setPracticeType('timed');
+                  }}
+                >
+                  Play Speed Typing
+                </button>
+              </div>
+              
+              {/* Listening Challenge */}
+              <div className="p-4 border rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Listening Challenge</h3>
+                <p className="text-sm text-gray-600 mb-4">Listen and type the correct romaji</p>
+                <button
+                  className="px-4 py-2 rounded bg-orange-500 text-white"
+                  onClick={() => {
+                    setTab('Practice');
+                    setPracticeType('listening');
+                  }}
+                >
+                  Play Listening Challenge
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

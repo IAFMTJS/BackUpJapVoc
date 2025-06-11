@@ -153,56 +153,58 @@ const KanaQuiz: React.FC<KanaQuizProps> = ({ type, difficulty = 'beginner' }) =>
       // Calculate quiz statistics
       const accuracy = (score / questions.length) * 100;
       const duration = Date.now() - quizStartTime;
-      const minutes = Math.round(duration / 60000);
+      const timeSpent = Math.round(duration / 1000); // Convert to seconds
 
-      // Update study session
-      addStudySession({
-        timestamp: Date.now(),
-        duration: minutes,
-        wordsLearned: score,
-        accuracy,
-        averageMastery: score / questions.length
-      });
+      // Track quiz completion using the unified progress system
+      if (progressContext?.trackQuizCompletion) {
+        progressContext.trackQuizCompletion({
+          quizType: `${type}-quiz`,
+          score: score,
+          totalQuestions: questions.length,
+          timeSpent: timeSpent,
+          wordsUsed: questions.map(q => q.kana),
+          category: type
+        });
+      }
 
-      // Update section progress
-      updateSectionProgress(type, {
-        totalItems: questions.length,
-        masteredItems: score,
-        inProgressItems: questions.length - score,
-        notStartedItems: 0,
-        lastStudied: Date.now(),
-        streak: 1, // This will be updated by the streak system
-        averageMastery: score / questions.length
-      });
-
-      // Update individual kana progress
+      // Update individual kana progress with proper section assignment
       questions.forEach((question, index) => {
         const userAnswer = answers[index];
         const isCorrect = userAnswer === question.correctAnswer;
-        const currentProgress = progress.words[question.kana] || {
-          masteryLevel: 0,
-          consecutiveCorrect: 0,
-          lastAnswerCorrect: false,
-          correctAnswers: 0,
-          incorrectAnswers: 0
-        };
-
+        
         if (updateWordProgress) {
           updateWordProgress(question.kana, {
             lastReviewed: Date.now(),
-            reviewCount: (currentProgress.reviewCount || 0) + 1,
+            reviewCount: (progress.words[question.kana]?.reviewCount || 0) + 1,
             nextReviewDate: Date.now() + (isCorrect ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000),
             category: type,
-            section: type,
+            section: type, // This will be 'hiragana' or 'katakana'
             difficulty: difficulty,
             lastAnswerCorrect: isCorrect,
-            correctAnswers: isCorrect ? (currentProgress.correctAnswers || 0) + 1 : (currentProgress.correctAnswers || 0),
-            incorrectAnswers: !isCorrect ? (currentProgress.incorrectAnswers || 0) + 1 : (currentProgress.incorrectAnswers || 0)
+            correctAnswers: (progress.words[question.kana]?.correctAnswers || 0) + (isCorrect ? 1 : 0),
+            incorrectAnswers: (progress.words[question.kana]?.incorrectAnswers || 0) + (isCorrect ? 0 : 1),
+            consecutiveCorrect: isCorrect ? 
+              (progress.words[question.kana]?.consecutiveCorrect || 0) + 1 : 0,
+            masteryLevel: Math.min(5, Math.max(0, 
+              ((progress.words[question.kana]?.correctAnswers || 0) + (isCorrect ? 1 : 0)) / 
+              ((progress.words[question.kana]?.correctAnswers || 0) + (progress.words[question.kana]?.incorrectAnswers || 0) + 1) * 5
+            ))
           });
         }
       });
+
+      // Add study session
+      if (addStudySession) {
+        addStudySession({
+          timestamp: Date.now(),
+          duration: Math.round(duration / 60000), // Convert to minutes
+          wordsLearned: score,
+          accuracy,
+          averageMastery: score / questions.length
+        });
+      }
     }
-  }, [quizCompleted, score, questions, type, difficulty, answers, addStudySession, updateSectionProgress, updateWordProgress, progress]);
+  }, [quizCompleted, score, questions, type, difficulty, answers, progressContext, updateWordProgress, progress, addStudySession]);
 
   const generateQuestions = (type: 'hiragana' | 'katakana', difficulty: string): QuizQuestion[] => {
     const allKana: { kana: string; romaji: string }[] = [];

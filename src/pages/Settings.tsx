@@ -55,6 +55,7 @@ import { useDatabase } from '../context/DatabaseContext';
 import AudioService from '../services/AudioService';
 import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
 import { getCacheStats, clearCache } from '../utils/AudioCache';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 interface AudioSettings {
   useTTS: boolean;
@@ -95,6 +96,8 @@ const SettingsPage: React.FC = () => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importData, setImportData] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
@@ -125,6 +128,20 @@ const SettingsPage: React.FC = () => {
     const voices = audioService.getAvailableVoices();
     setAvailableVoices(voices);
     
+    // Load saved audio settings
+    try {
+      const savedAudioSettings = safeLocalStorage.getItem('audioSettings');
+      if (savedAudioSettings) {
+        const parsed = JSON.parse(savedAudioSettings);
+        setAudioSettings(prev => ({
+          ...prev,
+          ...parsed
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading audio settings:', error);
+    }
+    
     // Set default voice if not set
     if (!audioSettings.preferredVoice && voices.length > 0) {
       const japaneseVoice = voices.find(v => v.lang.includes('ja')) || voices[0];
@@ -143,9 +160,70 @@ const SettingsPage: React.FC = () => {
     });
   }, []);
 
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Add keyboard shortcut for saving (Ctrl+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges && !isSaving) {
+          handleSaveSettings();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasUnsavedChanges, isSaving]);
+
   // Handlers
   const handlePreferenceChange = (key: string, value: any) => {
     updateGlobalSettings({ [key]: value });
+    setHasUnsavedChanges(true);
+  };
+
+  const handleAudioSettingsChange = (key: keyof AudioSettings, value: any) => {
+    setAudioSettings(prev => ({ ...prev, [key]: value }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      // Save audio settings to localStorage
+      safeLocalStorage.setItem('audioSettings', JSON.stringify(audioSettings));
+      
+      // Global settings are already saved by the context
+      // Accessibility settings are already saved by the context
+      
+      setHasUnsavedChanges(false);
+      setNotification({
+        open: true,
+        message: 'Settings saved successfully!',
+        severity: 'success',
+      });
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to save settings',
+        severity: 'error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleResetProgress = async () => {
@@ -307,86 +385,128 @@ const SettingsPage: React.FC = () => {
         <Link to="/" style={{ textDecoration: 'none', marginRight: 2 }}>
           <Button startIcon={<SettingsIcon />}>Back to Home</Button>
         </Link>
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
           Settings
+          {hasUnsavedChanges && (
+            <Typography 
+              component="span" 
+              variant="caption" 
+              sx={{ 
+                ml: 1, 
+                color: 'warning.main',
+                fontWeight: 'bold'
+              }}
+            >
+              (Unsaved Changes)
+            </Typography>
+          )}
         </Typography>
+        <Tooltip title="Ctrl+S">
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<SaveIcon />}
+            onClick={handleSaveSettings}
+            disabled={!hasUnsavedChanges || isSaving}
+            sx={{ 
+              ml: 2,
+              ...(hasUnsavedChanges && {
+                backgroundColor: 'warning.main',
+                '&:hover': {
+                  backgroundColor: 'warning.dark',
+                }
+              })
+            }}
+          >
+            {isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+          </Button>
+        </Tooltip>
       </Box>
 
       <Grid container spacing={3} sx={{ position: 'relative', zIndex: 1 }}>
-        {/* App Settings */}
+        {/* Learning Settings */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
-              App Settings
+              Learning Settings
             </Typography>
-            {isSettingsLoading ? (
-              <LoadingSpinner text="Loading app settings..." />
-            ) : (
-              <List>
-                <ListItem>
-                  <ListItemText
-                    primary="Dark Mode"
-                    secondary="Enable dark theme for the application"
+            <List>
+              <ListItem>
+                <ListItemText
+                  primary="Daily Goal"
+                  secondary="Set your daily study time goal in minutes"
+                />
+                <ListItemSecondaryAction>
+                  <TextField
+                    type="number"
+                    size="small"
+                    value={globalSettings.dailyGoal || 20}
+                    onChange={(e) => handlePreferenceChange('dailyGoal', parseInt(e.target.value) || 20)}
+                    inputProps={{ min: 5, max: 300, step: 5 }}
+                    sx={{ width: 100 }}
                   />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.darkMode}
-                      onChange={(e) => handlePreferenceChange('darkMode', e.target.checked)}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Show Romaji"
-                    secondary="Display romaji for Japanese text"
+                  <Typography variant="caption" sx={{ ml: 1 }}>
+                    min
+                  </Typography>
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Show Romaji"
+                  secondary="Display romanized pronunciation"
+                />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    checked={globalSettings.showRomaji || false}
+                    onChange={(e) => handlePreferenceChange('showRomaji', e.target.checked)}
                   />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.showRomaji}
-                      onChange={(e) => handlePreferenceChange('showRomaji', e.target.checked)}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Show Hints"
-                    secondary="Display hints during exercises"
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Show Hints"
+                  secondary="Display helpful hints during practice"
+                />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    checked={globalSettings.showHints || false}
+                    onChange={(e) => handlePreferenceChange('showHints', e.target.checked)}
                   />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.showHints}
-                      onChange={(e) => handlePreferenceChange('showHints', e.target.checked)}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Default Difficulty"
-                    secondary="Set default difficulty for exercises"
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Sound Effects"
+                  secondary="Play audio feedback during practice"
+                />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    checked={globalSettings.soundEnabled || false}
+                    onChange={(e) => handlePreferenceChange('soundEnabled', e.target.checked)}
                   />
-                  <ListItemSecondaryAction>
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                      <Select
-                        value={globalSettings.difficulty || 'medium'}
-                        onChange={(e: SelectChangeEvent) =>
-                          handlePreferenceChange('difficulty', e.target.value)
-                        }
-                      >
-                        <MenuItem value="easy">Easy</MenuItem>
-                        <MenuItem value="medium">Medium</MenuItem>
-                        <MenuItem value="hard">Hard</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              </List>
-            )}
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Safe Mode"
+                  secondary="Enable safer learning with reduced pressure and more hints"
+                />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    checked={globalSettings.safeMode || false}
+                    onChange={(e) => handlePreferenceChange('safeMode', e.target.checked)}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+            </List>
           </Paper>
         </Grid>
 
@@ -406,7 +526,7 @@ const SettingsPage: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={audioSettings.useTTS}
-                    onChange={(e) => setAudioSettings(prev => ({ ...prev, useTTS: e.target.checked }))}
+                    onChange={(e) => handleAudioSettingsChange('useTTS', e.target.checked)}
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -420,7 +540,7 @@ const SettingsPage: React.FC = () => {
                   <FormControl size="small" sx={{ minWidth: 150 }}>
                     <Select
                       value={audioSettings.preferredVoice}
-                      onChange={(e) => setAudioSettings(prev => ({ ...prev, preferredVoice: e.target.value }))}
+                      onChange={(e) => handleAudioSettingsChange('preferredVoice', e.target.value)}
                       disabled={!audioSettings.useTTS}
                     >
                       {availableVoices.map((voice) => (
@@ -442,7 +562,7 @@ const SettingsPage: React.FC = () => {
                   <Switch
                     edge="end"
                     checked={audioSettings.autoPlay}
-                    onChange={(e) => setAudioSettings(prev => ({ ...prev, autoPlay: e.target.checked }))}
+                    onChange={(e) => handleAudioSettingsChange('autoPlay', e.target.checked)}
                     disabled={!audioSettings.useTTS}
                   />
                 </ListItemSecondaryAction>
@@ -487,7 +607,10 @@ const SettingsPage: React.FC = () => {
                     <Switch
                       edge="end"
                       checked={accessibilitySettings.highContrast}
-                      onChange={(e) => updateAccessibilitySettings({ highContrast: e.target.checked })}
+                      onChange={(e) => {
+                        updateAccessibilitySettings({ highContrast: e.target.checked });
+                        setHasUnsavedChanges(true);
+                      }}
                     />
                   </ListItemSecondaryAction>
                 </ListItem>
@@ -501,7 +624,10 @@ const SettingsPage: React.FC = () => {
                     <Switch
                       edge="end"
                       checked={accessibilitySettings.reducedMotion}
-                      onChange={(e) => updateAccessibilitySettings({ reducedMotion: e.target.checked })}
+                      onChange={(e) => {
+                        updateAccessibilitySettings({ reducedMotion: e.target.checked });
+                        setHasUnsavedChanges(true);
+                      }}
                     />
                   </ListItemSecondaryAction>
                 </ListItem>
@@ -515,7 +641,10 @@ const SettingsPage: React.FC = () => {
                     <Switch
                       edge="end"
                       checked={accessibilitySettings.screenReader}
-                      onChange={(e) => updateAccessibilitySettings({ screenReader: e.target.checked })}
+                      onChange={(e) => {
+                        updateAccessibilitySettings({ screenReader: e.target.checked });
+                        setHasUnsavedChanges(true);
+                      }}
                     />
                   </ListItemSecondaryAction>
                 </ListItem>
@@ -529,7 +658,197 @@ const SettingsPage: React.FC = () => {
                     <Switch
                       edge="end"
                       checked={accessibilitySettings.keyboardNavigation}
-                      onChange={(e) => updateAccessibilitySettings({ keyboardNavigation: e.target.checked })}
+                      onChange={(e) => {
+                        updateAccessibilitySettings({ keyboardNavigation: e.target.checked });
+                        setHasUnsavedChanges(true);
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </List>
+            )}
+          </Paper>
+        </Grid>
+
+        {/* Navigation Settings */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Navigation Settings
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Customize which menu items are visible in the navigation bar
+            </Typography>
+            {isSettingsLoading ? (
+              <LoadingSpinner text="Loading navigation settings..." />
+            ) : (
+              <List>
+                <ListItem>
+                  <ListItemText
+                    primary="Home"
+                    secondary="Show the home page link"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showHome ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showHome: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Learning"
+                    secondary="Show the learning section"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showLearning ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showLearning: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="VSensei"
+                    secondary="Show the VSensei learning path"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showVSensei ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showVSensei: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="SRS"
+                    secondary="Show the spaced repetition system"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showSRS ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showSRS: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Games"
+                    secondary="Show the games section"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showGames ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showGames: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Progress"
+                    secondary="Show the progress tracking"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showProgress ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showProgress: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Dictionary"
+                    secondary="Show the dictionary section"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showDictionary ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showDictionary: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Knowing"
+                    secondary="Show the knowing center"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showKnowing ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showKnowing: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Anime"
+                    secondary="Show the anime section"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showAnime ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showAnime: e.target.checked
+                      })}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Settings"
+                    secondary="Show the settings link"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={globalSettings.navigationSettings?.showSettings ?? true}
+                      onChange={(e) => handlePreferenceChange('navigationSettings', {
+                        ...globalSettings.navigationSettings,
+                        showSettings: e.target.checked
+                      })}
                     />
                   </ListItemSecondaryAction>
                 </ListItem>

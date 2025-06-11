@@ -52,10 +52,11 @@ const getRandomSubset = <T,>(array: T[], count: number): T[] => {
 };
 
 const WordPractice: React.FC = () => {
-  const { theme, getThemeClasses } = useTheme();
+  const theme = useTheme();
   const themeClasses = getThemeClasses();
   const { playSound } = useSound();
-  const { updateProgress } = useProgress();
+  const progressContext = useProgress();
+  const { updateProgress, progress, updateWordProgress } = progressContext || {};
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('easy');
   const [selectedCategory, setSelectedCategory] = useState<Category>('food');
   const [questionCount, setQuestionCount] = useState(10);
@@ -205,6 +206,39 @@ const WordPractice: React.FC = () => {
     setShowResult(true);
     setTimerActive(false);
     setFeedbackMessage(getFeedbackMessage(isAnswerCorrect, streak));
+
+    // Track practice session using unified progress system
+    if (progressContext?.trackPracticeSession) {
+      const timeSpent = Math.round((60 - timeLeft) / 1000); // Convert to seconds
+      progressContext.trackPracticeSession({
+        practiceType: 'reading',
+        timeSpent: timeSpent,
+        wordsPracticed: [currentWord.japanese],
+        accuracy: isAnswerCorrect ? 1.0 : 0.0
+      });
+    }
+
+    // Update word progress
+    if (updateWordProgress) {
+      const wordId = currentWord.id || currentWord.japanese;
+      updateWordProgress(wordId, {
+        lastReviewed: Date.now(),
+        reviewCount: (progress.words[wordId]?.reviewCount || 0) + 1,
+        nextReviewDate: Date.now() + (isAnswerCorrect ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000),
+        category: 'word-practice',
+        section: 'dictionary',
+        difficulty: 'medium',
+        lastAnswerCorrect: isAnswerCorrect,
+        correctAnswers: (progress.words[wordId]?.correctAnswers || 0) + (isAnswerCorrect ? 1 : 0),
+        incorrectAnswers: (progress.words[wordId]?.incorrectAnswers || 0) + (isAnswerCorrect ? 0 : 1),
+        consecutiveCorrect: isAnswerCorrect ? 
+          (progress.words[wordId]?.consecutiveCorrect || 0) + 1 : 0,
+        masteryLevel: Math.min(5, Math.max(0, 
+          ((progress.words[wordId]?.correctAnswers || 0) + (isAnswerCorrect ? 1 : 0)) / 
+          ((progress.words[wordId]?.correctAnswers || 0) + (progress.words[wordId]?.incorrectAnswers || 0) + 1) * 5
+        ))
+      });
+    }
 
     // Check if quiz is complete
     if (newTotalQuestions >= questionCount) {

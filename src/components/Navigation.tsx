@@ -1,234 +1,358 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  IconButton,
+  Box,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Avatar,
+  useMediaQuery
+} from '@mui/material';
+import {
+  Home as HomeIcon,
+  School as SchoolIcon,
+  Psychology as KnowingIcon,
+  Repeat as SRSIcon,
+  SportsEsports as TriviaIcon,
+  Help as FAQIcon,
+  Person as ProfileIcon,
+  Menu as MenuIcon,
+  Quiz as QuizIcon,
+  Translate as TranslateIcon,
+  EmojiEmotions as MoodIcon,
+  Culture as CultureIcon,
+  Animation as AnimeIcon,
+  Games as GamesIcon
+} from '@mui/icons-material';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
-  const { getThemeClasses } = useTheme();
-  const { currentUser } = useAuth();
-  const themeClasses = getThemeClasses();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
-  const [openMobileSubmenus, setOpenMobileSubmenus] = useState<Set<string>>(new Set());
+  const navigate = useNavigate();
+  const { mode } = useTheme();
+  const { currentUser, signOut } = useAuth();
+  const { settings } = useSettings();
+  const isMobile = useMediaQuery('(max-width:900px)');
+  const [anchorEls, setAnchorEls] = useState<{ [key: string]: HTMLElement | null }>({});
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
-  const toggleMobileSubmenu = (menuPath: string) => {
-    setOpenMobileSubmenus(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(menuPath)) {
-        newSet.delete(menuPath);
-      } else {
-        newSet.add(menuPath);
-      }
-      return newSet;
-    });
+  const handleMenuOpen = (key: string, event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEls(prev => ({ ...prev, [key]: event.currentTarget }));
+  };
+  
+  const handleMenuClose = (key: string) => {
+    setAnchorEls(prev => ({ ...prev, [key]: null }));
   };
 
+  // Main navigation structure with updated dropdowns
   const navItems = [
-    // Main sections
-    { path: '/', label: 'Home' },
-    { path: '/learning', label: 'Learning' },
-    { path: '/knowing', label: 'Knowing' },
-    { path: '/srs', label: 'SRS' },
-    { path: '/trivia', label: 'Trivia' },
-    { path: '/faq', label: 'FAQ' },
-    { path: '/profile', label: 'Profile' }
+    {
+      key: 'home',
+      text: 'Home',
+      icon: <HomeIcon />,
+      path: '/',
+      subpages: []
+    },
+    {
+      key: 'vsensei',
+      text: 'VSensei',
+      icon: <SchoolIcon />,
+      path: '/learning-path',
+      subpages: []
+    },
+    {
+      key: 'learning',
+      text: 'Learning',
+      icon: <SchoolIcon />,
+      path: '/learning',
+      subpages: [
+        { label: 'Kana', path: '/learning/kana', icon: <TranslateIcon fontSize="small" /> },
+        { label: 'Kanji Dictionary', path: '/learning/kanji-dictionary', icon: <SchoolIcon fontSize="small" /> },
+        { label: 'Romaji', path: '/learning/romaji', icon: <TranslateIcon fontSize="small" /> },
+        { label: 'Quiz', path: '/learning/quiz', icon: <QuizIcon fontSize="small" /> }
+      ]
+    },
+    {
+      key: 'knowing',
+      text: 'Knowing',
+      icon: <KnowingIcon />,
+      path: '/knowing',
+      subpages: [
+        { label: 'Dictionary', path: '/knowing/dictionary', icon: <SchoolIcon fontSize="small" /> },
+        { label: 'Mood', path: '/knowing/mood', icon: <MoodIcon fontSize="small" /> },
+        { label: 'Culture', path: '/knowing/culture', icon: <CultureIcon fontSize="small" /> }
+      ]
+    },
+    {
+      key: 'srs',
+      text: 'SRS',
+      icon: <SRSIcon />,
+      path: '/srs',
+      subpages: []
+    },
+    {
+      key: 'trivia',
+      text: 'Trivia',
+      icon: <TriviaIcon />,
+      path: '/trivia',
+      subpages: [
+        { label: 'Anime', path: '/trivia/anime', icon: <AnimeIcon fontSize="small" /> },
+        { label: 'Games', path: '/trivia/games', icon: <GamesIcon fontSize="small" /> }
+      ]
+    },
+    {
+      key: 'faq',
+      text: 'FAQ',
+      icon: <FAQIcon />,
+      path: '/faq/scoring',
+      subpages: []
+    }
   ];
 
-  // Learning submenu items
-  const learningRoutes = [
-    { path: '/learning/kana', label: 'Kana' },
-    { path: '/learning/kanji-dictionary', label: 'Kanji Dictionary' },
-    { path: '/learning/romaji', label: 'Romaji' },
-    { path: '/learning/quiz', label: 'Quiz' }
+  // Profile dropdown
+  const profileMenu = [
+    { label: 'Profile', path: '/profile', icon: <ProfileIcon fontSize="small" /> },
+    { label: 'Settings', path: '/settings', icon: <FAQIcon fontSize="small" /> },
+    { label: 'FAQ', path: '/faq/scoring', icon: <FAQIcon fontSize="small" /> },
+    { label: 'Logout', path: '/login', icon: <ProfileIcon fontSize="small" />, action: async () => { await signOut(); navigate('/login'); } }
   ];
 
-  // Knowing submenu items
-  const knowingItems = [
-    { path: '/knowing/dictionary', label: 'Dictionary' },
-    { path: '/knowing/mood', label: 'Mood & Emotions' },
-    { path: '/knowing/culture', label: 'Culture & Rules' }
-  ];
-
-  // Trivia submenu items
-  const triviaItems = [
-    { path: '/trivia', label: 'Anime & Manga', tabIndex: 0 },
-    { path: '/trivia', label: 'Japanese Games', tabIndex: 1 },
-    { path: '/trivia', label: 'Shintoism', tabIndex: 2 },
-    { path: '/trivia', label: 'Japanese History', tabIndex: 3 },
-    { path: '/trivia', label: 'Japanese Cuisine', tabIndex: 4 },
-    { path: '/trivia', label: 'Japanese Mythology', tabIndex: 5 }
-  ];
-
-  // FAQ submenu items
-  const faqItems = [
-    { path: '/faq/scoring', label: 'Scoring & Progress' },
-    { path: '/faq/learning', label: 'Learning Guide' },
-    { path: '/faq/features', label: 'Features & Tips' }
-  ];
-
-  const renderSubmenu = (items: typeof triviaItems, basePath: string) => {
-    if (hoveredMenu !== basePath) return null;
-
-    return (
-      <div className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5">
-        <div className="py-1" role="menu" aria-orientation="vertical">
-          {items.map((item) => (
-            <Link
-              key={item.label}
-              to={item.path}
-              state={item.tabIndex !== undefined ? { activeTab: item.tabIndex } : undefined}
-              className={`block px-4 py-2 text-sm ${
-                isActive(item.path) ? themeClasses.nav.link.active : themeClasses.nav.link.default
-              }`}
-              role="menuitem"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  // Safety check for currentUser
+  const userPhotoURL = currentUser?.photoURL || undefined;
 
   return (
-    <nav className={`${themeClasses.nav.background} sticky top-0 z-50 shadow-md`}>
-      <div className="container mx-auto px-2">
-        <div className="flex items-center justify-between h-14">
-          <div className="flex items-center">
-            <Link to="/" className={`text-xl font-bold ${themeClasses.text.primary} tracking-wider hover:opacity-80 transition-opacity`}>
-              JAPVOC
-            </Link>
-          </div>
-
-          <div className="hidden md:flex items-center space-x-2 flex-nowrap justify-end">
-            {navItems.map(({ path, label }) => (
-              <div 
-                key={path} 
-                className="relative group"
-                onMouseEnter={() => setHoveredMenu(path)}
-                onMouseLeave={() => setHoveredMenu(null)}
+    <AppBar position="sticky" elevation={2}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Typography
+          variant="h6"
+          component={Link}
+          to="/"
+          sx={{
+            textDecoration: 'none',
+            color: 'inherit',
+            fontWeight: 'bold',
+            letterSpacing: '0.1em'
+          }}
+        >
+          JAPVOC
+        </Typography>
+        
+        {/* Desktop Navigation */}
+        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
+          {navItems.map(item => (
+            <Box key={item.key} sx={{ position: 'relative' }}>
+              <Button
+                component={Link}
+                to={item.path}
+                startIcon={item.icon}
+                sx={{
+                  color: isActive(item.path) ? 'primary.main' : 'inherit',
+                  textTransform: 'none',
+                  minWidth: 'auto',
+                  px: 2,
+                  py: 1,
+                  backgroundColor: isActive(item.path) ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+                onMouseEnter={item.subpages.length ? (e) => handleMenuOpen(item.key, e) : undefined}
+                onMouseLeave={item.subpages.length ? () => handleMenuClose(item.key) : undefined}
+                aria-haspopup={item.subpages.length ? 'true' : undefined}
+                aria-controls={item.subpages.length ? `${item.key}-menu` : undefined}
               >
-                <Link
-                  to={path}
-                  className={`${isActive(path) ? themeClasses.nav.link.active : themeClasses.nav.link.default} 
-                    text-xs px-3 py-1.5 rounded-md whitespace-nowrap transition-colors duration-200`}
+                {item.text}
+              </Button>
+              {item.subpages.length > 0 && (
+                <Menu
+                  id={`${item.key}-menu`}
+                  anchorEl={anchorEls[item.key]}
+                  open={Boolean(anchorEls[item.key])}
+                  onClose={() => handleMenuClose(item.key)}
+                  MenuListProps={{ 
+                    onMouseLeave: () => handleMenuClose(item.key),
+                    onMouseEnter: () => {} // Keep menu open when hovering over menu items
+                  }}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  sx={{
+                    '& .MuiPaper-root': {
+                      minWidth: 200,
+                      mt: 1
+                    }
+                  }}
                 >
-                  {label}
-                </Link>
-                {path === '/learning' && renderSubmenu(learningRoutes, '/learning')}
-                {path === '/knowing' && renderSubmenu(knowingItems, '/knowing')}
-                {path === '/trivia' && renderSubmenu(triviaItems, '/trivia')}
-                {path === '/faq' && renderSubmenu(faqItems, '/faq')}
-              </div>
-            ))}
-            <div className="ml-2">
-              <ThemeToggle />
-            </div>
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`${themeClasses.nav.link.default} inline-flex items-center justify-center p-2 rounded-md`}
-            >
-              <span className="sr-only">Open main menu</span>
-              <svg
-                className="h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            {navItems.map(({ path, label }) => {
-              const hasSubmenu = path === '/learning' || path === '/knowing' || path === '/trivia' || path === '/faq';
-              const isSubmenuOpen = openMobileSubmenus.has(path);
-              const submenuItems = path === '/learning' ? learningRoutes : 
-                                 path === '/knowing' ? knowingItems : 
-                                 path === '/faq' ? faqItems :
-                                 triviaItems;
-
-              return (
-                <div key={path} className="relative">
-                  <div className="flex items-center justify-between">
-                    <Link
-                      to={path}
-                      className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${
-                        isActive(path) ? themeClasses.nav.link.active : themeClasses.nav.link.default
-                      }`}
-                      onClick={() => {
-                        if (!hasSubmenu) {
-                          setIsMobileMenuOpen(false);
+                  {item.subpages.map(sub => (
+                    <MenuItem
+                      key={sub.path}
+                      component={Link}
+                      to={sub.path}
+                      selected={isActive(sub.path)}
+                      onClick={() => handleMenuClose(item.key)}
+                      sx={{
+                        py: 1.5,
+                        '&:hover': {
+                          backgroundColor: 'action.hover'
                         }
                       }}
                     >
-                      {label}
-                    </Link>
-                    {hasSubmenu && (
-                      <button
-                        onClick={() => toggleMobileSubmenu(path)}
-                        className={`px-2 py-2 ${themeClasses.nav.link.default} transition-transform duration-200`}
-                      >
-                        <svg
-                          className={`h-4 w-4 transition-transform duration-200 ${isSubmenuOpen ? 'rotate-180' : ''}`}
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                  
-                  {hasSubmenu && isSubmenuOpen && (
-                    <div className="pl-4 mt-1 space-y-1">
-                      {submenuItems.map((item) => (
-                        <Link
-                          key={item.label}
-                          to={item.path}
-                          state={item.tabIndex !== undefined ? { activeTab: item.tabIndex } : undefined}
-                          className={`block px-3 py-2 text-sm rounded-md ${
-                            isActive(item.path) ? themeClasses.nav.link.active : themeClasses.nav.link.default
-                          }`}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            <div className="px-3 py-2">
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      )}
-    </nav>
+                      {sub.icon && (
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          {sub.icon}
+                        </ListItemIcon>
+                      )}
+                      <ListItemText primary={sub.label || 'Unknown'} />
+                    </MenuItem>
+                  ))}
+                </Menu>
+              )}
+            </Box>
+          ))}
+          
+          {/* Profile dropdown */}
+          <Box sx={{ position: 'relative', ml: 2 }}>
+            <IconButton
+              onClick={(e) => handleMenuOpen('profile', e)}
+              color="inherit"
+              size="large"
+              sx={{ p: 0.5 }}
+            >
+              <Avatar src={userPhotoURL} />
+            </IconButton>
+            <Menu
+              id="profile-menu"
+              anchorEl={anchorEls['profile']}
+              open={Boolean(anchorEls['profile'])}
+              onClose={() => handleMenuClose('profile')}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              {profileMenu.map((item, idx) => (
+                <MenuItem
+                  key={item.label}
+                  component={item.path ? Link : 'button'}
+                  to={item.path}
+                  onClick={async () => {
+                    handleMenuClose('profile');
+                    if (item.action) await item.action();
+                  }}
+                >
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText>{item.label || 'Unknown'}</ListItemText>
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
+          <ThemeToggle />
+        </Box>
+
+        {/* Mobile Navigation */}
+        <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1 }}>
+          <IconButton
+            color="inherit"
+            onClick={(e) => handleMenuOpen('mobile', e)}
+            sx={{ p: 0.5 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          
+          <Menu
+            id="mobile-menu"
+            anchorEl={anchorEls['mobile']}
+            open={Boolean(anchorEls['mobile'])}
+            onClose={() => handleMenuClose('mobile')}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            sx={{
+              '& .MuiPaper-root': {
+                minWidth: 250,
+                maxHeight: '80vh',
+                overflow: 'auto'
+              }
+            }}
+          >
+            {navItems.map(item => (
+              <Box key={item.key}>
+                <MenuItem
+                  component={Link}
+                  to={item.path}
+                  selected={isActive(item.path)}
+                  onClick={() => handleMenuClose('mobile')}
+                  sx={{
+                    py: 1.5,
+                    '&:hover': {
+                      backgroundColor: 'action.hover'
+                    }
+                  }}
+                >
+                  <ListItemIcon>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </MenuItem>
+                
+                {/* Mobile submenu items */}
+                {item.subpages.length > 0 && item.subpages.map(sub => (
+                  <MenuItem
+                    key={sub.path}
+                    component={Link}
+                    to={sub.path}
+                    selected={isActive(sub.path)}
+                    onClick={() => handleMenuClose('mobile')}
+                    sx={{
+                      py: 1,
+                      pl: 6,
+                      '&:hover': {
+                        backgroundColor: 'action.hover'
+                      }
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      {sub.icon}
+                    </ListItemIcon>
+                    <ListItemText primary={sub.label || 'Unknown'} />
+                  </MenuItem>
+                ))}
+                
+                {item.subpages.length > 0 && <Divider />}
+              </Box>
+            ))}
+            
+            <Divider />
+            
+            {/* Mobile profile menu */}
+            {profileMenu.map((item, idx) => (
+              <MenuItem
+                key={item.label}
+                component={item.path ? Link : 'button'}
+                to={item.path}
+                onClick={async () => {
+                  handleMenuClose('mobile');
+                  if (item.action) await item.action();
+                }}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText>{item.label || 'Unknown'}</ListItemText>
+              </MenuItem>
+            ))}
+          </Menu>
+          
+          <ThemeToggle />
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 };
 

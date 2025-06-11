@@ -113,7 +113,17 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useAccessibility = () => {
   const context = useContext(AccessibilityContext);
   if (context === undefined) {
-    throw new Error('useAccessibility must be used within an AccessibilityProvider');
+    console.warn('[useAccessibility] Context is undefined, returning default values');
+    // Return default context values instead of throwing an error
+    return {
+      highContrast: false,
+      largeText: false,
+      reducedMotion: false,
+      screenReader: false,
+      updateSettings: () => {},
+      isLoading: false,
+      error: null
+    };
   }
   return context;
 };

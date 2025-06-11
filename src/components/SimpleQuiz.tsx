@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { DictionaryItem } from '../types/dictionary';
 import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface SimpleQuizProps {
   words: DictionaryItem[];
   onComplete?: (results: QuizResults) => void;
+  onCancel?: () => void;
 }
 
 interface QuizResults {
@@ -27,7 +28,7 @@ interface QuizState {
   endTime: Date | null;
 }
 
-const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
+const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete, onCancel }) => {
   const { theme } = useTheme();
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
@@ -39,22 +40,18 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
     endTime: null
   });
 
-  const [shuffledWords, setShuffledWords] = useState<DictionaryItem[]>([]);
-  const [options, setOptions] = useState<string[]>([]);
-
-  // Initialize quiz
-  useEffect(() => {
-    // Shuffle words and take first 10
-    const shuffled = [...words]
+  // Memoize shuffled words to prevent re-shuffling on every render
+  const shuffledWords = useMemo(() => {
+    return [...words]
       .sort(() => Math.random() - 0.5)
-      .slice(0, 10);
-    setShuffledWords(shuffled);
-    setQuizState(prev => ({ ...prev, startTime: new Date() }));
+      .slice(0, Math.min(words.length, 10));
   }, [words]);
 
-  // Generate options for current question
-  useEffect(() => {
-    if (shuffledWords.length === 0) return;
+  // Memoize options for current question to prevent re-generation
+  const options = useMemo(() => {
+    if (shuffledWords.length === 0 || quizState.currentQuestionIndex >= shuffledWords.length) {
+      return [];
+    }
 
     const currentWord = shuffledWords[quizState.currentQuestionIndex];
     const otherWords = shuffledWords.filter(w => w !== currentWord);
@@ -64,13 +61,20 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
       .map(w => w.english);
     
     // Add correct answer and shuffle
-    const allOptions = [...randomOptions, currentWord.english]
+    return [...randomOptions, currentWord.english]
       .sort(() => Math.random() - 0.5);
-    
-    setOptions(allOptions);
-  }, [quizState.currentQuestionIndex, shuffledWords]);
+  }, [shuffledWords, quizState.currentQuestionIndex]);
+
+  // Initialize quiz
+  useEffect(() => {
+    if (shuffledWords.length > 0) {
+      setQuizState(prev => ({ ...prev, startTime: new Date() }));
+    }
+  }, [shuffledWords]);
 
   const handleAnswerSelect = useCallback((answer: string) => {
+    if (quizState.showFeedback) return; // Prevent multiple selections
+
     const currentWord = shuffledWords[quizState.currentQuestionIndex];
     const isCorrect = answer === currentWord.english;
 
@@ -83,7 +87,7 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
     }));
 
     // Move to next question after delay
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (quizState.currentQuestionIndex < shuffledWords.length - 1) {
         setQuizState(prev => ({
           ...prev,
@@ -109,10 +113,19 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
         }
       }
     }, 1500);
-  }, [quizState.currentQuestionIndex, shuffledWords, onComplete]);
+
+    return () => clearTimeout(timer);
+  }, [quizState.currentQuestionIndex, quizState.showFeedback, shuffledWords, onComplete]);
 
   if (shuffledWords.length === 0) {
-    return <div className="text-center p-4">Loading quiz...</div>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-lg">Loading quiz...</p>
+        </div>
+      </div>
+    );
   }
 
   const currentWord = shuffledWords[quizState.currentQuestionIndex];
@@ -120,25 +133,36 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-        <div 
-          className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-          style={{ width: `${progress}%` }}
-        />
+      {/* Header with progress and cancel button */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex-1">
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="text-sm text-gray-600">
+            Question {quizState.currentQuestionIndex + 1} of {shuffledWords.length}
+          </div>
+        </div>
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            className="ml-4 px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+        )}
       </div>
 
-      {/* Question counter */}
-      <div className="text-sm text-gray-600 mb-4">
-        Question {quizState.currentQuestionIndex + 1} of {shuffledWords.length}
-      </div>
-
-      {/* Question card */}
+      {/* Question card with stable animations */}
       <motion.div
-        key={quizState.currentQuestionIndex}
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
+        key={`question-${quizState.currentQuestionIndex}`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
         className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6"
       >
         <h2 className="text-2xl font-bold mb-4 text-center">
@@ -154,15 +178,16 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
         <div className="grid gap-3">
           {options.map((option, index) => (
             <motion.button
-              key={index}
+              key={`option-${quizState.currentQuestionIndex}-${index}`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`p-4 rounded-lg text-left transition-colors ${
+              transition={{ duration: 0.1 }}
+              className={`p-4 rounded-lg text-left transition-colors duration-200 ${
                 quizState.selectedAnswer === option
                   ? quizState.isCorrect
-                    ? 'bg-green-100 dark:bg-green-900'
-                    : 'bg-red-100 dark:bg-red-900'
-                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ? 'bg-green-100 dark:bg-green-900 border-2 border-green-500'
+                    : 'bg-red-100 dark:bg-red-900 border-2 border-red-500'
+                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-2 border-transparent'
               }`}
               onClick={() => !quizState.showFeedback && handleAnswerSelect(option)}
               disabled={quizState.showFeedback}
@@ -172,20 +197,22 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete }) => {
           ))}
         </div>
 
-        {/* Feedback */}
-        <AnimatePresence>
+        {/* Feedback with stable animation */}
+        <AnimatePresence mode="wait">
           {quizState.showFeedback && (
             <motion.div
+              key={`feedback-${quizState.currentQuestionIndex}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className={`mt-4 p-4 rounded-lg text-center ${
+              transition={{ duration: 0.2 }}
+              className={`mt-4 p-4 rounded-lg text-center font-semibold ${
                 quizState.isCorrect
                   ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                   : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
               }`}
             >
-              {quizState.isCorrect ? 'Correct!' : 'Incorrect!'}
+              {quizState.isCorrect ? '✓ Correct!' : '✗ Incorrect!'}
             </motion.div>
           )}
         </AnimatePresence>

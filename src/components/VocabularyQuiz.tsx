@@ -1500,6 +1500,45 @@ export const VocabularyQuiz: React.FC<VocabularyQuizProps> = ({
       performance: calculatePerformance(session),
     };
 
+    // Track quiz completion using unified progress system
+    if (progressContext?.trackQuizCompletion) {
+      progressContext.trackQuizCompletion({
+        quizType: 'vocabulary-quiz',
+        score: session.progress.correctAnswers,
+        totalQuestions: session.questions.length,
+        timeSpent: session.progress.timeSpent,
+        wordsUsed: session.questions.map(q => q.id || q.japanese),
+        category: settings.category || 'dictionary'
+      });
+    }
+
+    // Update individual word progress
+    session.questions.forEach((question, index) => {
+      const word = session.questions[index];
+      if (word && updateWordProgress) {
+        const wordId = word.id || word.japanese;
+        const isCorrect = session.progress.correctAnswers > index; // Simplified logic
+        
+        updateWordProgress(wordId, {
+          lastReviewed: Date.now(),
+          reviewCount: (progress.words[wordId]?.reviewCount || 0) + 1,
+          nextReviewDate: Date.now() + (isCorrect ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000),
+          category: settings.category || 'dictionary',
+          section: 'dictionary',
+          difficulty: settings.difficulty,
+          lastAnswerCorrect: isCorrect,
+          correctAnswers: (progress.words[wordId]?.correctAnswers || 0) + (isCorrect ? 1 : 0),
+          incorrectAnswers: (progress.words[wordId]?.incorrectAnswers || 0) + (isCorrect ? 0 : 1),
+          consecutiveCorrect: isCorrect ? 
+            (progress.words[wordId]?.consecutiveCorrect || 0) + 1 : 0,
+          masteryLevel: Math.min(5, Math.max(0, 
+            ((progress.words[wordId]?.correctAnswers || 0) + (isCorrect ? 1 : 0)) / 
+            ((progress.words[wordId]?.correctAnswers || 0) + (progress.words[wordId]?.incorrectAnswers || 0) + 1) * 5
+          ))
+        });
+      }
+    });
+
     // Update progress
     updateProgress({
       quizzesCompleted: 1,
@@ -1510,19 +1549,6 @@ export const VocabularyQuiz: React.FC<VocabularyQuizProps> = ({
 
     // Check achievements
     checkAchievements(result, checkAchievements);
-
-    // Update word progress
-    session.questions.forEach((question, index) => {
-      const word = session.questions[index];
-      if (word) {
-        const mastery = calculateMastery(
-          session.progress.correctAnswers,
-          session.progress.incorrectAnswers,
-          session.progress.timeSpent
-        );
-        updateWordProgress(word.id, mastery);
-      }
-    });
 
     setIsComplete(true);
     onQuizComplete?.(session.id, result.score === session.totalPoints);

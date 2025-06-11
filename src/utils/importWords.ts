@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
-import { DictionaryItem, EmotionalContext } from '../types/dictionary';
+import { DictionaryItem, EmotionalContext, EmotionalCategory } from '../types/dictionary';
 import { DB_CONFIG } from './databaseConfig';
-import { EMOTIONAL_CATEGORIES } from './processMoodWords';
+import { EMOTIONAL_CATEGORIES } from './emotionalConstants';
 
 // Function to convert common words to dictionary items
 async function convertToDictionaryItems(words: any[]): Promise<DictionaryItem[]> {
@@ -13,7 +13,7 @@ async function convertToDictionaryItems(words: any[]): Promise<DictionaryItem[]>
       // Find the matching emotional category
       const category = Object.keys(EMOTIONAL_CATEGORIES).find(cat => 
         word.english.toLowerCase().includes(cat.toLowerCase())
-      );
+      ) as EmotionalCategory | undefined;
       
       if (category) {
         emotionalContext = {

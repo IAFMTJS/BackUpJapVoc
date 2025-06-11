@@ -243,12 +243,14 @@ interface WritingPracticeState {
   searchTerm: string;
   selectedCategory: string;
   selectedDifficulty: string;
+  startTime: number;
 }
 
 const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, onComplete }) => {
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const { updateProgress, updateSectionProgress } = useProgress();
+  const progressContext = useProgress();
+  const { updateProgress, updateSectionProgress, progress, updateWordProgress } = progressContext || {};
   const { isDarkMode, getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -321,7 +323,8 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     currentIndex: 0,
     searchTerm: '',
     selectedCategory: 'all',
-    selectedDifficulty: 'all'
+    selectedDifficulty: 'all',
+    startTime: Date.now()
   }));
 
   // Initialize character list based on mode
@@ -843,79 +846,71 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
   const handleSubmit = useCallback(() => {
     if (!state.currentWord) return;
 
-    // For drawing mode, analyze the strokes
-    if (inputMode === 'draw') {
-      const strokeOrder = getStrokeOrder(state.currentWord);
-      if (!strokeOrder) return;
+    const now = Date.now();
+    const timeSpent = Math.round((now - state.startTime) / 1000); // Convert to seconds
 
-      let totalAccuracy = 0;
-      const strokeAccuracies: number[] = [];
+    if (mode === 'stroke' || mode === 'kanji') {
+      // For stroke practice, analyze and validate strokes
+      const strokeAnalysis = analyzeStrokeAdvanced(strokes);
+      const strokeValidation = validateStrokeAdvanced(strokes, state.currentWord.japanese);
+      const strokeScore = calculateStrokeOrderScoreAdvanced(strokes, state.currentWord.japanese);
+      
+      const averageAccuracy = strokeScore;
+      const strokeAccuracies = strokes.map((stroke, index) => ({
+        strokeIndex: index,
+        accuracy: strokeValidation[index]?.accuracy || 0,
+        feedback: strokeValidation[index]?.feedback || 'No feedback available'
+      }));
 
-      // Calculate accuracy for each stroke
-      strokes.forEach((stroke, index) => {
-        if (index < strokeOrder.length && stroke && stroke.length > 0) {
-          const accuracy = calculateStrokeAccuracy(stroke, strokeOrder[index]);
-          strokeAccuracies.push(accuracy);
-          totalAccuracy += accuracy;
-        }
-      });
+      const isCorrect = averageAccuracy >= 0.8;
 
-      const averageAccuracy = Math.round(totalAccuracy / Math.max(strokes.length, 1));
-      const isCorrect = averageAccuracy >= 50; // Lowered threshold from 70% to 50%
-
-      // Get the last stroke for feedback, ensuring it exists
-      const lastStroke = strokes[strokes.length - 1] || [];
-      const lastStrokeType = lastStroke.length > 0 ? analyzeStrokeAdvanced(lastStroke) : 'horizontal';
-
-      // Build detailed per-stroke feedback
-      const perStrokeFeedback = strokeAccuracies.map((acc, i) => {
-        let msg = `Stroke ${i + 1}: ${acc}%`;
-        if (acc < 50) msg += ' (needs improvement)';
-        else if (acc < 70) msg += ' (almost there)';
-        else msg += ' (good)';
-        return msg;
-      });
-
-      // Update state with feedback but don't clear strokes
       setState(prev => ({
         ...prev,
         isCorrect,
-        feedback: {
-          isCorrect,
-          message: isCorrect
-            ? `Great job! Accuracy: ${averageAccuracy}%. ${strokeAccuracies.length < strokeOrder.length ? 'Complete all strokes for full credit.' : 'You can improve individual strokes for a higher score.'}`
-            : `Try again! Accuracy: ${averageAccuracy}%. ${strokeAccuracies.length < strokeOrder.length ? 'Complete all strokes.' : 'Focus on stroke shape and position.'}`,
-          expectedStroke: strokeOrder[strokes.length - 1] || 'horizontal',
-          actualStroke: lastStrokeType,
-          confidence: averageAccuracy,
-          suggestions: [
-            ...perStrokeFeedback,
-            ...strokeAccuracies.map((acc, i) => acc < 50 ? `Stroke ${i + 1} is below 50%. Try to match the direction, length, and type more closely.` : null).filter(Boolean)
-          ]
-        }
+        score: isCorrect ? prev.score + 1 : prev.score,
+        totalAttempts: prev.totalAttempts + 1,
+        strokeAnalysis,
+        strokeValidation,
+        strokeAccuracies
       }));
 
-      // Update progress
-      if (isCorrect) {
-        updateProgress(mode, {
-          totalQuestions: 1,
-          correctAnswers: 1,
-          bestStreak: state.score + 1,
-          highScore: state.score + 1,
-          lastAttempt: new Date().toISOString()
-        });
-        updateWritingScore(mode, averageAccuracy);
-      } else {
-        updateProgress(mode, {
-          totalQuestions: 1,
-          correctAnswers: 0,
-          lastAttempt: new Date().toISOString()
+      // Track practice session using unified progress system
+      if (progressContext?.trackPracticeSession) {
+        progressContext.trackPracticeSession({
+          practiceType: 'writing',
+          timeSpent: timeSpent,
+          wordsPracticed: [state.currentWord.japanese],
+          accuracy: averageAccuracy,
+          strokesCorrect: strokeAccuracies.filter(s => s.accuracy >= 0.8).length,
+          totalStrokes: strokes.length
         });
       }
 
-      // Play feedback sound
-      if (settings.soundEnabled) {
-        playDynamicAudio(isCorrect ? 'correct' : 'incorrect');
+      // Update word progress
+      if (updateWordProgress) {
+        const section = mode === 'kanji' ? 'kanji' : 
+                       state.currentWord.isHiragana ? 'hiragana' : 
+                       state.currentWord.isKatakana ? 'katakana' : 'dictionary';
+        
+        updateWordProgress(state.currentWord.japanese, {
+          lastReviewed: now,
+          reviewCount: (progress.words[state.currentWord.japanese]?.reviewCount || 0) + 1,
+          lastPracticeDate: now,
+          practiceHistory: [...(progress.words[state.currentWord.japanese]?.practiceHistory || []), {
+            date: now,
+            score: averageAccuracy,
+            type: 'writing'
+          }],
+          strokeOrderProgress: {
+            correctStrokes: strokeAccuracies.filter(s => s.accuracy >= 0.8).length,
+            totalStrokes: strokes.length,
+            lastScore: averageAccuracy
+          },
+          section: section,
+          lastAnswerCorrect: isCorrect,
+          correctAnswers: (progress.words[state.currentWord.japanese]?.correctAnswers || 0) + (isCorrect ? 1 : 0),
+          incorrectAnswers: (progress.words[state.currentWord.japanese]?.incorrectAnswers || 0) + (isCorrect ? 0 : 1)
+        });
       }
 
       // Save practice session
@@ -947,28 +942,46 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
       isTranslationCorrect = state.translationInput.trim().toLowerCase() === expectedTranslation.toLowerCase();
     }
 
+    const finalCorrect = isCorrect && (!requireTranslation || isTranslationCorrect);
+    const accuracy = finalCorrect ? 1.0 : 0.0;
+
     setState(prev => ({
       ...prev,
       isCorrect,
       isTranslationCorrect: requireTranslation ? isTranslationCorrect : null,
-      score: isCorrect && (!requireTranslation || isTranslationCorrect) ? prev.score + 1 : prev.score,
+      score: finalCorrect ? prev.score + 1 : prev.score,
       totalAttempts: prev.totalAttempts + 1
     }));
 
-    // Update progress
-    if (isCorrect && (!requireTranslation || isTranslationCorrect)) {
-      updateProgress(mode, {
-        totalQuestions: 1,
-        correctAnswers: 1,
-        bestStreak: state.score + 1,
-        highScore: state.score + 1,
-        lastAttempt: new Date().toISOString()
+    // Track practice session using unified progress system
+    if (progressContext?.trackPracticeSession) {
+      progressContext.trackPracticeSession({
+        practiceType: 'writing',
+        timeSpent: timeSpent,
+        wordsPracticed: [state.currentWord.japanese],
+        accuracy: accuracy
       });
-    } else {
-      updateProgress(mode, {
-        totalQuestions: 1,
-        correctAnswers: 0,
-        lastAttempt: new Date().toISOString()
+    }
+
+    // Update word progress
+    if (updateWordProgress) {
+      const section = state.currentWord.isHiragana ? 'hiragana' : 
+                     state.currentWord.isKatakana ? 'katakana' : 
+                     state.currentWord.isKanji ? 'kanji' : 'dictionary';
+      
+      updateWordProgress(state.currentWord.japanese, {
+        lastReviewed: now,
+        reviewCount: (progress.words[state.currentWord.japanese]?.reviewCount || 0) + 1,
+        lastPracticeDate: now,
+        practiceHistory: [...(progress.words[state.currentWord.japanese]?.practiceHistory || []), {
+          date: now,
+          score: accuracy,
+          type: 'writing'
+        }],
+        section: section,
+        lastAnswerCorrect: finalCorrect,
+        correctAnswers: (progress.words[state.currentWord.japanese]?.correctAnswers || 0) + (finalCorrect ? 1 : 0),
+        incorrectAnswers: (progress.words[state.currentWord.japanese]?.incorrectAnswers || 0) + (finalCorrect ? 0 : 1)
       });
     }
 
@@ -977,19 +990,8 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
       playDynamicAudio(isCorrect ? 'correct' : 'incorrect');
     }
 
-    // Save practice session
-    savePracticeSession({
-      mode,
-      character: state.currentWord.japanese,
-      input: state.userInput,
-      translation: state.translationInput,
-      isCorrect,
-      isTranslationCorrect,
-      timestamp: new Date().toISOString()
-    });
-
     // Check if practice is complete
-    if (state.score + (isCorrect && (!requireTranslation || isTranslationCorrect) ? 1 : 0) >= 10) {
+    if (state.score + (finalCorrect ? 1 : 0) >= 10) {
       if (onComplete) onComplete();
       else navigate('/');
     }
@@ -1014,7 +1016,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
     calculateStrokeAccuracy,
     analyzeStrokeAdvanced,
     playDynamicAudio,
-    savePracticeSession
+    savePracticeSession,
+    progressContext,
+    updateWordProgress,
+    progress
   ]);
 
   // Update startNewPractice to clear strokes only when moving to next question

@@ -61,7 +61,7 @@ export interface WordProgress {
   favorite: boolean;
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
-  section: 'dictionary' | 'mood' | 'culture';
+  section: 'hiragana' | 'katakana' | 'kanji' | 'dictionary' | 'mood' | 'culture' | 'trivia' | 'anime';
   consecutiveCorrect: number;
   lastAnswerCorrect: boolean;
   correctAnswers: number; // Total number of correct answers
@@ -92,9 +92,14 @@ export interface SectionProgress {
 export interface ProgressState {
   words: { [key: string]: WordProgress };
   sections: {
+    hiragana: SectionProgress;
+    katakana: SectionProgress;
+    kanji: SectionProgress;
     dictionary: SectionProgress;
     mood: SectionProgress;
     culture: SectionProgress;
+    trivia: SectionProgress;
+    anime: SectionProgress;
   };
   preferences: {
     showRomaji: boolean;
@@ -118,12 +123,82 @@ export interface ProgressState {
       accuracy: number;
       averageMastery: number;
     }[];
+    totalQuizzes: number;
+    averageQuizScore: number;
+    bestQuizScore: number;
+    totalStudyTime: number;
+    lastQuizDate: number;
+    quizHistory: {
+      timestamp: number;
+      type: string;
+      score: number;
+      totalQuestions: number;
+      timeSpent: number;
+      category: string;
+    }[];
+    lessonsCompleted: number;
+    lastLessonDate: number;
+    lessonHistory: {
+      timestamp: number;
+      lessonId: string;
+      timeSpent: number;
+      wordsLearned: number;
+      exercisesCompleted: number;
+      totalExercises: number;
+    }[];
+    practiceSessions: number;
+    lastPracticeDate: number;
+    practiceHistory: {
+      timestamp: number;
+      type: 'writing' | 'reading' | 'listening' | 'speaking';
+      timeSpent: number;
+      wordsPracticed: number;
+      accuracy: number;
+    }[];
+    srsReviews: number;
+    lastSRSDate: number;
+    achievements: {
+      id: string;
+      title: string;
+      description: string;
+      points: number;
+      category: string;
+      unlockedAt: number;
+    }[];
+    totalPoints: number;
   };
 }
 
 const defaultProgress: ProgressState = {
   words: {},
   sections: {
+    hiragana: {
+      totalItems: 0,
+      masteredItems: 0,
+      inProgressItems: 0,
+      notStartedItems: 0,
+      lastStudied: 0,
+      streak: 0,
+      averageMastery: 0
+    },
+    katakana: {
+      totalItems: 0,
+      masteredItems: 0,
+      inProgressItems: 0,
+      notStartedItems: 0,
+      lastStudied: 0,
+      streak: 0,
+      averageMastery: 0
+    },
+    kanji: {
+      totalItems: 0,
+      masteredItems: 0,
+      inProgressItems: 0,
+      notStartedItems: 0,
+      lastStudied: 0,
+      streak: 0,
+      averageMastery: 0
+    },
     dictionary: {
       totalItems: 0,
       masteredItems: 0,
@@ -150,6 +225,24 @@ const defaultProgress: ProgressState = {
       lastStudied: 0,
       streak: 0,
       averageMastery: 0
+    },
+    trivia: {
+      totalItems: 0,
+      masteredItems: 0,
+      inProgressItems: 0,
+      notStartedItems: 0,
+      lastStudied: 0,
+      streak: 0,
+      averageMastery: 0
+    },
+    anime: {
+      totalItems: 0,
+      masteredItems: 0,
+      inProgressItems: 0,
+      notStartedItems: 0,
+      lastStudied: 0,
+      streak: 0,
+      averageMastery: 0
     }
   },
   preferences: {
@@ -167,7 +260,23 @@ const defaultProgress: ProgressState = {
     longestStreak: 0,
     lastStudyDate: 0,
     dailyProgress: {},
-    studySessions: []
+    studySessions: [],
+    totalQuizzes: 0,
+    averageQuizScore: 0,
+    bestQuizScore: 0,
+    totalStudyTime: 0,
+    lastQuizDate: 0,
+    quizHistory: [],
+    lessonsCompleted: 0,
+    lastLessonDate: 0,
+    lessonHistory: [],
+    practiceSessions: 0,
+    lastPracticeDate: 0,
+    practiceHistory: [],
+    srsReviews: 0,
+    lastSRSDate: 0,
+    achievements: [],
+    totalPoints: 0
   }
 };
 
@@ -198,6 +307,42 @@ interface ProgressContextType {
   toggleFavorite: (wordId: string) => void;
   addStudyTime: (minutes: number) => void;
   updateStreak: () => void;
+  trackQuizCompletion: (quizData: {
+    quizType: string;
+    score: number;
+    totalQuestions: number;
+    timeSpent: number;
+    wordsUsed: string[];
+    category?: string;
+  }) => void;
+  trackLessonCompletion: (lessonData: {
+    lessonId: string;
+    timeSpent: number;
+    wordsLearned: string[];
+    exercisesCompleted: number;
+    totalExercises: number;
+  }) => void;
+  trackPracticeSession: (practiceData: {
+    practiceType: 'writing' | 'reading' | 'listening' | 'speaking';
+    timeSpent: number;
+    wordsPracticed: string[];
+    accuracy: number;
+    strokesCorrect?: number;
+    totalStrokes?: number;
+  }) => void;
+  trackSRSReview: (srsData: {
+    wordId: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+    timeSpent: number;
+    nextReviewInterval: number;
+  }) => void;
+  trackAchievement: (achievementData: {
+    achievementId: string;
+    title: string;
+    description: string;
+    points: number;
+    category: string;
+  }) => void;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -296,7 +441,12 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (!currentUser) {
           console.log('[ProgressContext] No user, using local progress');
-          setProgress(localProgress);
+          const migratedLocalProgress = migrateProgressData(localProgress);
+          setProgress(migratedLocalProgress);
+          // Update local storage with migrated data
+          if (migratedLocalProgress !== localProgress) {
+            setLocalProgress(migratedLocalProgress);
+          }
           setIsLoading(false);
           return;
         }
@@ -316,23 +466,30 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               if (doc.exists()) {
                 console.log('[ProgressContext] Progress data found in Firebase');
                 const firebaseProgress = doc.data() as ProgressState;
-                setProgress(firebaseProgress);
+                const migratedProgress = migrateProgressData(firebaseProgress);
+                setProgress(migratedProgress);
                 // Update local storage as backup
-                setLocalProgress(firebaseProgress);
+                setLocalProgress(migratedProgress);
               } else {
                 console.log('[ProgressContext] No progress in Firebase, initializing with local data');
-                // If no progress exists in Firebase, initialize with local progress
-                setDoc(userProgressRef, localProgress).catch(err => {
+                const migratedLocalProgress = migrateProgressData(localProgress);
+                // If no progress exists in Firebase, initialize with migrated local progress
+                setDoc(userProgressRef, migratedLocalProgress).catch(err => {
                   console.error('[ProgressContext] Failed to initialize Firebase progress:', err);
                   setError('Failed to initialize progress data. Using local backup.');
                 });
-                setProgress(localProgress);
+                setProgress(migratedLocalProgress);
+                // Update local storage with migrated data
+                if (migratedLocalProgress !== localProgress) {
+                  setLocalProgress(migratedLocalProgress);
+                }
               }
               setLastSyncTime(Date.now());
             } catch (err) {
               console.error('[ProgressContext] Error processing progress data:', err);
               setError('Error processing progress data. Using local backup.');
-              setProgress(localProgress);
+              const migratedLocalProgress = migrateProgressData(localProgress);
+              setProgress(migratedLocalProgress);
             } finally {
               setIsLoading(false);
             }
@@ -340,14 +497,16 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           (error) => {
             console.error('[ProgressContext] Firebase listener error:', error);
             setError('Failed to load progress data. Using local backup.');
-            setProgress(localProgress);
+            const migratedLocalProgress = migrateProgressData(localProgress);
+            setProgress(migratedLocalProgress);
             setIsLoading(false);
           }
         );
       } catch (error) {
         console.error('[ProgressContext] Error setting up progress listener:', error);
         setError('Failed to connect to progress database. Using local backup.');
-        setProgress(localProgress);
+        const migratedLocalProgress = migrateProgressData(localProgress);
+        setProgress(migratedLocalProgress);
         setIsLoading(false);
       }
     };
@@ -360,7 +519,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         unsubscribe();
       }
     };
-  }, [currentUser]);
+  }, [currentUser, migrateProgressData]);
 
   // Update progress in Firebase when it changes
   const updateProgress = useCallback(async (newProgress: ProgressState) => {
@@ -389,89 +548,229 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [currentUser, setLocalProgress]);
 
-  // Update word progress
-  const updateWordProgress = useCallback((wordId: string, progress: Partial<WordProgress>) => {
+  // Helper function to recalculate section progress based on word progress
+  const recalculateSectionProgress = useCallback((words: { [key: string]: WordProgress }) => {
+    const sectionStats = {
+      hiragana: { total: 0, mastered: 0, inProgress: 0, notStarted: 0, totalMastery: 0 },
+      katakana: { total: 0, mastered: 0, inProgress: 0, notStarted: 0, totalMastery: 0 },
+      kanji: { total: 0, mastered: 0, inProgress: 0, notStarted: 0, totalMastery: 0 },
+      dictionary: { total: 0, mastered: 0, inProgress: 0, notStarted: 0, totalMastery: 0 },
+      mood: { total: 0, mastered: 0, inProgress: 0, notStarted: 0, totalMastery: 0 },
+      culture: { total: 0, mastered: 0, inProgress: 0, notStarted: 0, totalMastery: 0 },
+      trivia: { total: 0, mastered: 0, inProgress: 0, notStarted: 0, totalMastery: 0 },
+      anime: { total: 0, mastered: 0, inProgress: 0, notStarted: 0, totalMastery: 0 }
+    };
+
+    // Count words by section
+    Object.values(words).forEach(word => {
+      const section = word.section;
+      if (sectionStats[section]) {
+        sectionStats[section].total++;
+        sectionStats[section].totalMastery += word.masteryLevel;
+
+        if (word.masteryLevel >= 4) {
+          sectionStats[section].mastered++;
+        } else if (word.masteryLevel > 0) {
+          sectionStats[section].inProgress++;
+        } else {
+          sectionStats[section].notStarted++;
+        }
+      }
+    });
+
+    // Convert to SectionProgress format
+    const updatedSections: ProgressState['sections'] = {
+      hiragana: {
+        totalItems: sectionStats.hiragana.total,
+        masteredItems: sectionStats.hiragana.mastered,
+        inProgressItems: sectionStats.hiragana.inProgress,
+        notStartedItems: sectionStats.hiragana.notStarted,
+        lastStudied: Date.now(),
+        streak: 0, // This would need to be calculated separately
+        averageMastery: sectionStats.hiragana.total > 0 ? sectionStats.hiragana.totalMastery / sectionStats.hiragana.total : 0
+      },
+      katakana: {
+        totalItems: sectionStats.katakana.total,
+        masteredItems: sectionStats.katakana.mastered,
+        inProgressItems: sectionStats.katakana.inProgress,
+        notStartedItems: sectionStats.katakana.notStarted,
+        lastStudied: Date.now(),
+        streak: 0,
+        averageMastery: sectionStats.katakana.total > 0 ? sectionStats.katakana.totalMastery / sectionStats.katakana.total : 0
+      },
+      kanji: {
+        totalItems: sectionStats.kanji.total,
+        masteredItems: sectionStats.kanji.mastered,
+        inProgressItems: sectionStats.kanji.inProgress,
+        notStartedItems: sectionStats.kanji.notStarted,
+        lastStudied: Date.now(),
+        streak: 0,
+        averageMastery: sectionStats.kanji.total > 0 ? sectionStats.kanji.totalMastery / sectionStats.kanji.total : 0
+      },
+      dictionary: {
+        totalItems: sectionStats.dictionary.total,
+        masteredItems: sectionStats.dictionary.mastered,
+        inProgressItems: sectionStats.dictionary.inProgress,
+        notStartedItems: sectionStats.dictionary.notStarted,
+        lastStudied: Date.now(),
+        streak: 0,
+        averageMastery: sectionStats.dictionary.total > 0 ? sectionStats.dictionary.totalMastery / sectionStats.dictionary.total : 0
+      },
+      mood: {
+        totalItems: sectionStats.mood.total,
+        masteredItems: sectionStats.mood.mastered,
+        inProgressItems: sectionStats.mood.inProgress,
+        notStartedItems: sectionStats.mood.notStarted,
+        lastStudied: Date.now(),
+        streak: 0,
+        averageMastery: sectionStats.mood.total > 0 ? sectionStats.mood.totalMastery / sectionStats.mood.total : 0
+      },
+      culture: {
+        totalItems: sectionStats.culture.total,
+        masteredItems: sectionStats.culture.mastered,
+        inProgressItems: sectionStats.culture.inProgress,
+        notStartedItems: sectionStats.culture.notStarted,
+        lastStudied: Date.now(),
+        streak: 0,
+        averageMastery: sectionStats.culture.total > 0 ? sectionStats.culture.totalMastery / sectionStats.culture.total : 0
+      },
+      trivia: {
+        totalItems: sectionStats.trivia.total,
+        masteredItems: sectionStats.trivia.mastered,
+        inProgressItems: sectionStats.trivia.inProgress,
+        notStartedItems: sectionStats.trivia.notStarted,
+        lastStudied: Date.now(),
+        streak: 0,
+        averageMastery: sectionStats.trivia.total > 0 ? sectionStats.trivia.totalMastery / sectionStats.trivia.total : 0
+      },
+      anime: {
+        totalItems: sectionStats.anime.total,
+        masteredItems: sectionStats.anime.mastered,
+        inProgressItems: sectionStats.anime.inProgress,
+        notStartedItems: sectionStats.anime.notStarted,
+        lastStudied: Date.now(),
+        streak: 0,
+        averageMastery: sectionStats.anime.total > 0 ? sectionStats.anime.totalMastery / sectionStats.anime.total : 0
+      }
+    };
+
+    return updatedSections;
+  }, []);
+
+  // Helper function to migrate old progress data to new format
+  const migrateProgressData = useCallback((oldProgress: any): ProgressState => {
+    // If it's already the new format, return as is
+    if (oldProgress.sections && 
+        oldProgress.sections.hiragana && 
+        oldProgress.sections.katakana && 
+        oldProgress.sections.kanji && 
+        oldProgress.sections.trivia && 
+        oldProgress.sections.anime) {
+      return oldProgress as ProgressState;
+    }
+
+    console.log('[ProgressContext] Migrating progress data to new format');
+    
+    // Start with default progress
+    const migratedProgress: ProgressState = {
+      ...defaultProgress,
+      // Preserve existing data
+      words: oldProgress.words || {},
+      preferences: oldProgress.preferences || defaultProgress.preferences,
+      statistics: oldProgress.statistics || defaultProgress.statistics
+    };
+
+    // Migrate existing sections if they exist
+    if (oldProgress.sections) {
+      if (oldProgress.sections.dictionary) {
+        migratedProgress.sections.dictionary = oldProgress.sections.dictionary;
+      }
+      if (oldProgress.sections.mood) {
+        migratedProgress.sections.mood = oldProgress.sections.mood;
+      }
+      if (oldProgress.sections.culture) {
+        migratedProgress.sections.culture = oldProgress.sections.culture;
+      }
+    }
+
+    // Update word sections to use new section types
+    const updatedWords: { [key: string]: WordProgress } = {};
+    Object.entries(migratedProgress.words).forEach(([wordId, word]) => {
+      updatedWords[wordId] = {
+        ...word,
+        // Ensure all words have a valid section
+        section: word.section && ['hiragana', 'katakana', 'kanji', 'dictionary', 'mood', 'culture', 'trivia', 'anime'].includes(word.section) 
+          ? word.section 
+          : 'dictionary'
+      };
+    });
+    migratedProgress.words = updatedWords;
+
+    // Recalculate section progress based on migrated words
+    migratedProgress.sections = recalculateSectionProgress(updatedWords);
+
+    return migratedProgress;
+  }, [recalculateSectionProgress]);
+
+  // Update word progress with debouncing and better error handling
+  const updateWordProgress = useCallback((wordId: string, progressUpdate: Partial<WordProgress>) => {
     setProgress(prev => {
       const currentProgress = prev.words[wordId] || {
         id: wordId,
         lastReviewed: Date.now(),
         reviewCount: 0,
         masteryLevel: 0,
-        nextReviewDate: Date.now(),
+        nextReviewDate: Date.now() + 24 * 60 * 60 * 1000, // 1 day from now
+        notes: '',
         favorite: false,
-        difficulty: 'medium',
-        category: 'dictionary',
-        section: 'dictionary',
+        difficulty: 'medium' as const,
+        category: '',
+        section: 'dictionary' as const,
         consecutiveCorrect: 0,
         lastAnswerCorrect: false,
         correctAnswers: 0,
-        incorrectAnswers: 0,
-        practiceHistory: []
+        incorrectAnswers: 0
       };
-
-      // Update consecutive correct answers based on previous state
-      let newConsecutiveCorrect = currentProgress.consecutiveCorrect;
-      if (progress.lastAnswerCorrect !== undefined) {
-        if (progress.lastAnswerCorrect) {
-          newConsecutiveCorrect = currentProgress.consecutiveCorrect + 1;
-        } else {
-          newConsecutiveCorrect = 0;
-        }
-      }
-
-      // Calculate new mastery level based on correct/incorrect answers and streak
-      let newMasteryLevel = currentProgress.masteryLevel;
-      if (progress.correctAnswers !== undefined || progress.incorrectAnswers !== undefined) {
-        const totalAnswers = (progress.correctAnswers || currentProgress.correctAnswers) + 
-                            (progress.incorrectAnswers || currentProgress.incorrectAnswers);
-        const correctRatio = (progress.correctAnswers || currentProgress.correctAnswers) / totalAnswers;
-        
-        // Base mastery on correct ratio and consecutive correct answers
-        const streakBonus = Math.min(newConsecutiveCorrect * 0.1, 0.5);
-        newMasteryLevel = Math.min(5, Math.max(0, (correctRatio * 4) + streakBonus));
-      }
-
-      // For kana, require two consecutive correct answers for mastery
-      const isKana = currentProgress.category === 'hiragana' || currentProgress.category === 'katakana';
-      if (isKana) {
-        if (newConsecutiveCorrect >= 2) {
-          newMasteryLevel = 5; // Full mastery for kana
-        } else {
-          newMasteryLevel = Math.min(newMasteryLevel, 4); // Cap at 4 until two consecutive correct
-        }
-      }
-
-      // Add practice history entry if score is provided
-      const practiceHistory = [...(currentProgress.practiceHistory || [])];
-      if (progress.strokeOrderProgress?.lastScore !== undefined) {
-        practiceHistory.push({
-          date: Date.now(),
-          score: progress.strokeOrderProgress.lastScore,
-          type: 'writing'
-        });
-      }
 
       const updatedProgress = {
         ...currentProgress,
-        ...progress,
-        masteryLevel: newMasteryLevel,
-        consecutiveCorrect: newConsecutiveCorrect,
-        lastReviewed: Date.now(),
-        practiceHistory: practiceHistory.slice(-10) // Keep last 10 practice sessions
+        ...progressUpdate,
+        lastReviewed: Date.now()
       };
 
-      return {
-        ...prev,
-        words: {
-          ...prev.words,
-          [wordId]: updatedProgress
-        }
+      const updatedWords = {
+        ...prev.words,
+        [wordId]: updatedProgress
       };
+
+      // Recalculate section progress based on updated words
+      const updatedSections = recalculateSectionProgress(updatedWords);
+
+      const newProgress = {
+        ...prev,
+        words: updatedWords,
+        sections: updatedSections
+      };
+
+      // Update local storage immediately for better UX
+      setLocalProgress(newProgress);
+
+      // Debounce Firebase update to prevent excessive writes
+      const timeoutId = setTimeout(() => {
+        if (currentUser) {
+          updateProgress(newProgress).catch(err => {
+            console.error('[ProgressContext] Failed to sync word progress:', err);
+            setError('Progress sync failed. Changes saved locally.');
+          });
+        }
+      }, 1000);
+
+      return newProgress;
     });
-  }, []);
+  }, [currentUser, setLocalProgress, updateProgress, recalculateSectionProgress]);
 
   // Update section progress
-  const updateSectionProgress = useCallback((section: keyof ProgressState['sections'], sectionProgress: Partial<SectionProgress>) => {
+  const updateSectionProgress = useCallback((section: keyof ProgressState['sections'], progressUpdate: Partial<SectionProgress>) => {
     setProgress(prev => {
       const newProgress = {
         ...prev,
@@ -479,46 +778,77 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           ...prev.sections,
           [section]: {
             ...prev.sections[section],
-            ...sectionProgress,
-            lastUpdated: Date.now()
+            ...progressUpdate
           }
         }
       };
-      updateProgress(newProgress);
+
+      // Update local storage immediately
+      setLocalProgress(newProgress);
+
+      // Sync to Firebase if user is authenticated
+      if (currentUser) {
+        updateProgress(newProgress).catch(err => {
+          console.error('[ProgressContext] Failed to sync section progress:', err);
+          setError('Progress sync failed. Changes saved locally.');
+        });
+      }
+
       return newProgress;
     });
-  }, [updateProgress]);
+  }, [currentUser, setLocalProgress, updateProgress]);
 
-  // Update preferences
-  const updatePreferences = useCallback((preferences: Partial<ProgressState['preferences']>) => {
+  // Update preferences with immediate local update
+  const updatePreferences = useCallback((preferencesUpdate: Partial<ProgressState['preferences']>) => {
     setProgress(prev => {
       const newProgress = {
         ...prev,
         preferences: {
           ...prev.preferences,
-          ...preferences
+          ...preferencesUpdate
         }
       };
-      updateProgress(newProgress);
+
+      // Update local storage immediately
+      setLocalProgress(newProgress);
+
+      // Sync to Firebase if user is authenticated
+      if (currentUser) {
+        updateProgress(newProgress).catch(err => {
+          console.error('[ProgressContext] Failed to sync preferences:', err);
+          setError('Settings sync failed. Changes saved locally.');
+        });
+      }
+
       return newProgress;
     });
-  }, [updateProgress]);
+  }, [currentUser, setLocalProgress, updateProgress]);
 
-  // Update statistics
-  const updateStatistics = useCallback((stats: Partial<ProgressState['statistics']>) => {
+  // Update statistics with better error handling
+  const updateStatistics = useCallback((statsUpdate: Partial<ProgressState['statistics']>) => {
     setProgress(prev => {
       const newProgress = {
         ...prev,
         statistics: {
           ...prev.statistics,
-          ...stats,
-          lastUpdated: Date.now()
+          ...statsUpdate
         }
       };
-      updateProgress(newProgress);
+
+      // Update local storage immediately
+      setLocalProgress(newProgress);
+
+      // Sync to Firebase if user is authenticated
+      if (currentUser) {
+        updateProgress(newProgress).catch(err => {
+          console.error('[ProgressContext] Failed to sync statistics:', err);
+          setError('Statistics sync failed. Changes saved locally.');
+        });
+      }
+
       return newProgress;
     });
-  }, [updateProgress]);
+  }, [currentUser, setLocalProgress, updateProgress]);
 
   // Add a study session
   const addStudySession = useCallback((session: {
@@ -600,31 +930,45 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const toggleFavorite = (wordId: string) => {
-    setProgress(prev => ({
-      ...prev,
-      words: {
-        ...prev.words,
-        [wordId]: {
-          ...prev.words[wordId],
-          favorite: !prev.words[wordId]?.favorite
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        words: {
+          ...prev.words,
+          [wordId]: {
+            ...prev.words[wordId],
+            favorite: !prev.words[wordId]?.favorite
+          }
         }
-      }
-    }));
+      };
+      
+      // Persist changes
+      updateProgress(newProgress);
+      
+      return newProgress;
+    });
   };
 
   const addStudyTime = (minutes: number) => {
-    setProgress(prev => ({
-      ...prev,
-      statistics: {
-        ...prev.statistics,
-        totalStudyTime: prev.statistics.totalStudyTime + minutes,
-        dailyProgress: {
-          ...prev.statistics.dailyProgress,
-          [new Date().toISOString().split('T')[0]]: 
-            (prev.statistics.dailyProgress[new Date().toISOString().split('T')[0]] || 0) + minutes
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          totalStudyTime: prev.statistics.totalStudyTime + minutes,
+          dailyProgress: {
+            ...prev.statistics.dailyProgress,
+            [new Date().toISOString().split('T')[0]]: 
+              (prev.statistics.dailyProgress[new Date().toISOString().split('T')[0]] || 0) + minutes
+          }
         }
-      }
-    }));
+      };
+      
+      // Persist changes
+      updateProgress(newProgress);
+      
+      return newProgress;
+    });
   };
 
   // Sync progress with server
@@ -729,6 +1073,335 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [isOnline, isSyncing, progress.words, settings]);
   
+  // Comprehensive progress tracking methods
+  const trackQuizCompletion = useCallback((quizData: {
+    quizType: string;
+    score: number;
+    totalQuestions: number;
+    timeSpent: number;
+    wordsUsed: string[];
+    category?: string;
+  }) => {
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          totalQuizzes: (prev.statistics.totalQuizzes || 0) + 1,
+          averageQuizScore: ((prev.statistics.averageQuizScore || 0) * (prev.statistics.totalQuizzes || 0) + quizData.score) / 
+                           ((prev.statistics.totalQuizzes || 0) + 1),
+          bestQuizScore: Math.max(prev.statistics.bestQuizScore || 0, quizData.score),
+          totalStudyTime: prev.statistics.totalStudyTime + quizData.timeSpent,
+          lastQuizDate: Date.now(),
+          quizHistory: [...(prev.statistics.quizHistory || []), {
+            timestamp: Date.now(),
+            type: quizData.quizType,
+            score: quizData.score,
+            totalQuestions: quizData.totalQuestions,
+            timeSpent: quizData.timeSpent,
+            category: quizData.category
+          }]
+        }
+      };
+
+      // Update word progress for words used in quiz
+      const updatedWords = { ...prev.words };
+      quizData.wordsUsed.forEach(wordId => {
+        const currentWord = updatedWords[wordId] || {
+          id: wordId,
+          lastReviewed: Date.now(),
+          reviewCount: 0,
+          masteryLevel: 0,
+          nextReviewDate: Date.now() + 24 * 60 * 60 * 1000,
+          notes: '',
+          favorite: false,
+          difficulty: 'medium' as const,
+          category: quizData.category || 'general',
+          section: 'dictionary' as const,
+          consecutiveCorrect: 0,
+          lastAnswerCorrect: false,
+          correctAnswers: 0,
+          incorrectAnswers: 0
+        };
+
+        updatedWords[wordId] = {
+          ...currentWord,
+          reviewCount: currentWord.reviewCount + 1,
+          lastReviewed: Date.now(),
+          lastAnswerCorrect: quizData.score >= quizData.totalQuestions * 0.8,
+          correctAnswers: currentWord.correctAnswers + (quizData.score >= quizData.totalQuestions * 0.8 ? 1 : 0),
+          incorrectAnswers: currentWord.incorrectAnswers + (quizData.score < quizData.totalQuestions * 0.8 ? 1 : 0),
+          consecutiveCorrect: quizData.score >= quizData.totalQuestions * 0.8 ? 
+            currentWord.consecutiveCorrect + 1 : 0,
+          masteryLevel: Math.min(5, Math.max(0, 
+            (currentWord.correctAnswers + (quizData.score >= quizData.totalQuestions * 0.8 ? 1 : 0)) / 
+            (currentWord.correctAnswers + currentWord.incorrectAnswers + 1) * 5
+          ))
+        };
+      });
+
+      newProgress.words = updatedWords;
+      
+      // Persist changes
+      updateProgress(newProgress);
+      
+      return newProgress;
+    });
+  }, [updateProgress]);
+
+  const trackLessonCompletion = useCallback((lessonData: {
+    lessonId: string;
+    timeSpent: number;
+    wordsLearned: string[];
+    exercisesCompleted: number;
+    totalExercises: number;
+  }) => {
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          lessonsCompleted: (prev.statistics.lessonsCompleted || 0) + 1,
+          totalStudyTime: prev.statistics.totalStudyTime + lessonData.timeSpent,
+          lastLessonDate: Date.now(),
+          lessonHistory: [...(prev.statistics.lessonHistory || []), {
+            timestamp: Date.now(),
+            lessonId: lessonData.lessonId,
+            timeSpent: lessonData.timeSpent,
+            wordsLearned: lessonData.wordsLearned.length,
+            exercisesCompleted: lessonData.exercisesCompleted,
+            totalExercises: lessonData.totalExercises
+          }]
+        }
+      };
+
+      // Update word progress for words learned in lesson
+      const updatedWords = { ...prev.words };
+      lessonData.wordsLearned.forEach(wordId => {
+        const currentWord = updatedWords[wordId] || {
+          id: wordId,
+          lastReviewed: Date.now(),
+          reviewCount: 0,
+          masteryLevel: 0,
+          nextReviewDate: Date.now() + 24 * 60 * 60 * 1000,
+          notes: '',
+          favorite: false,
+          difficulty: 'medium' as const,
+          category: 'lesson',
+          section: 'dictionary' as const,
+          consecutiveCorrect: 0,
+          lastAnswerCorrect: false,
+          correctAnswers: 0,
+          incorrectAnswers: 0
+        };
+
+        updatedWords[wordId] = {
+          ...currentWord,
+          reviewCount: currentWord.reviewCount + 1,
+          lastReviewed: Date.now(),
+          masteryLevel: Math.min(5, currentWord.masteryLevel + 1)
+        };
+      });
+
+      newProgress.words = updatedWords;
+      
+      // Persist changes
+      updateProgress(newProgress);
+      
+      return newProgress;
+    });
+  }, [updateProgress]);
+
+  const trackPracticeSession = useCallback((practiceData: {
+    practiceType: 'writing' | 'reading' | 'listening' | 'speaking';
+    timeSpent: number;
+    wordsPracticed: string[];
+    accuracy: number;
+    strokesCorrect?: number;
+    totalStrokes?: number;
+  }) => {
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          practiceSessions: (prev.statistics.practiceSessions || 0) + 1,
+          totalStudyTime: prev.statistics.totalStudyTime + practiceData.timeSpent,
+          lastPracticeDate: Date.now(),
+          practiceHistory: [...(prev.statistics.practiceHistory || []), {
+            timestamp: Date.now(),
+            type: practiceData.practiceType,
+            timeSpent: practiceData.timeSpent,
+            wordsPracticed: practiceData.wordsPracticed.length,
+            accuracy: practiceData.accuracy
+          }]
+        }
+      };
+
+      // Update word progress for practiced words
+      const updatedWords = { ...prev.words };
+      practiceData.wordsPracticed.forEach(wordId => {
+        const currentWord = updatedWords[wordId] || {
+          id: wordId,
+          lastReviewed: Date.now(),
+          reviewCount: 0,
+          masteryLevel: 0,
+          nextReviewDate: Date.now() + 24 * 60 * 60 * 1000,
+          notes: '',
+          favorite: false,
+          difficulty: 'medium' as const,
+          category: 'practice',
+          section: 'dictionary' as const,
+          consecutiveCorrect: 0,
+          lastAnswerCorrect: false,
+          correctAnswers: 0,
+          incorrectAnswers: 0
+        };
+
+        const isCorrect = practiceData.accuracy >= 0.8;
+        updatedWords[wordId] = {
+          ...currentWord,
+          reviewCount: currentWord.reviewCount + 1,
+          lastReviewed: Date.now(),
+          lastAnswerCorrect: isCorrect,
+          correctAnswers: currentWord.correctAnswers + (isCorrect ? 1 : 0),
+          incorrectAnswers: currentWord.incorrectAnswers + (isCorrect ? 0 : 1),
+          consecutiveCorrect: isCorrect ? currentWord.consecutiveCorrect + 1 : 0,
+          lastPracticeDate: Date.now(),
+          practiceHistory: [...(currentWord.practiceHistory || []), {
+            date: Date.now(),
+            score: practiceData.accuracy,
+            type: practiceData.practiceType
+          }],
+          ...(practiceData.strokesCorrect && practiceData.totalStrokes && {
+            strokeOrderProgress: {
+              correctStrokes: practiceData.strokesCorrect,
+              totalStrokes: practiceData.totalStrokes,
+              lastScore: practiceData.accuracy
+            }
+          })
+        };
+      });
+
+      newProgress.words = updatedWords;
+      
+      // Persist changes
+      updateProgress(newProgress);
+      
+      return newProgress;
+    });
+  }, [updateProgress]);
+
+  const trackSRSReview = useCallback((srsData: {
+    wordId: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+    timeSpent: number;
+    nextReviewInterval: number;
+  }) => {
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          srsReviews: (prev.statistics.srsReviews || 0) + 1,
+          totalStudyTime: prev.statistics.totalStudyTime + srsData.timeSpent,
+          lastSRSDate: Date.now()
+        }
+      };
+
+      // Update word progress for SRS review
+      const currentWord = prev.words[srsData.wordId];
+      if (currentWord) {
+        const difficultyMultiplier = srsData.difficulty === 'easy' ? 1.5 : 
+                                   srsData.difficulty === 'medium' ? 1.0 : 0.5;
+        
+        newProgress.words = {
+          ...prev.words,
+          [srsData.wordId]: {
+            ...currentWord,
+            reviewCount: currentWord.reviewCount + 1,
+            lastReviewed: Date.now(),
+            nextReviewDate: Date.now() + srsData.nextReviewInterval,
+            difficulty: srsData.difficulty,
+            masteryLevel: Math.min(5, currentWord.masteryLevel + difficultyMultiplier)
+          }
+        };
+      }
+
+      // Persist changes
+      updateProgress(newProgress);
+      
+      return newProgress;
+    });
+  }, [updateProgress]);
+
+  const trackAchievement = useCallback((achievementData: {
+    achievementId: string;
+    title: string;
+    description: string;
+    points: number;
+    category: string;
+  }) => {
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          achievements: [...(prev.statistics.achievements || []), {
+            id: achievementData.achievementId,
+            title: achievementData.title,
+            description: achievementData.description,
+            points: achievementData.points,
+            category: achievementData.category,
+            unlockedAt: Date.now()
+          }],
+          totalPoints: (prev.statistics.totalPoints || 0) + achievementData.points
+        }
+      };
+
+      // Persist changes
+      updateProgress(newProgress);
+
+      return newProgress;
+    });
+  }, [updateProgress]);
+
+  const updateStreak = useCallback(() => {
+    setProgress(prev => {
+      const today = new Date().toDateString();
+      const lastStudyDate = prev.statistics.lastStudyDate;
+      const lastStudyDay = lastStudyDate ? new Date(lastStudyDate).toDateString() : null;
+      
+      let newStreak = prev.statistics.currentStreak || 0;
+      
+      if (lastStudyDay === today) {
+        // Already studied today, no change
+        return prev;
+      } else if (lastStudyDay === new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString()) {
+        // Studied yesterday, increment streak
+        newStreak += 1;
+      } else if (lastStudyDay !== today) {
+        // Missed a day, reset streak
+        newStreak = 1;
+      }
+
+      const newProgress = {
+        ...prev,
+        statistics: {
+          ...prev.statistics,
+          currentStreak: newStreak,
+          longestStreak: Math.max(prev.statistics.longestStreak || 0, newStreak),
+          lastStudyDate: Date.now()
+        }
+      };
+
+      // Persist changes
+      updateProgress(newProgress);
+
+      return newProgress;
+    });
+  }, [updateProgress]);
+
   const value: ProgressContextType = {
     progress,
     isLoading,
@@ -749,9 +1422,12 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     getNextReviewDate,
     toggleFavorite,
     addStudyTime,
-    updateStreak: () => {
-      // Implementation needed
-    }
+    updateStreak,
+    trackQuizCompletion,
+    trackLessonCompletion,
+    trackPracticeSession,
+    trackSRSReview,
+    trackAchievement
   };
   
   return (
@@ -763,8 +1439,28 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 export const useProgress = () => {
   const context = useContext(ProgressContext);
-  if (!context) {
-    throw new Error('useProgress must be used within a ProgressProvider');
+  if (context === undefined) {
+    console.warn('[useProgress] Context is undefined, returning default values');
+    // Return default context values instead of throwing an error
+    return {
+      progress: defaultProgress,
+      statistics: defaultProgress.statistics,
+      sections: defaultProgress.sections,
+      updateProgress: () => {},
+      trackQuizCompletion: () => {},
+      trackLessonCompletion: () => {},
+      trackPracticeSession: () => {},
+      trackSRSReview: () => {},
+      trackAchievement: () => {},
+      updateWordProgress: () => {},
+      toggleFavorite: () => {},
+      addStudyTime: () => {},
+      updateStreak: () => {},
+      getSectionProgress: () => ({ totalItems: 0, masteredItems: 0, inProgressItems: 0, notStartedItems: 0, percentComplete: 0, averageMastery: 0, lastStudied: 0, streak: 0 }),
+      getWordProgress: () => ({ mastery: 0, lastStudied: 0, reviewCount: 0, nextReview: 0, favorite: false }),
+      isLoading: false,
+      error: null
+    };
   }
   return context;
 }; 

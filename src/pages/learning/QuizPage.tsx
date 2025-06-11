@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Container,
@@ -24,6 +24,7 @@ import {
   Divider,
   Switch,
   FormGroup,
+  Checkbox,
 } from '@mui/material';
 import {
   VolumeUp as VolumeUpIcon,
@@ -33,6 +34,9 @@ import {
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   Help as HelpIcon,
+  MenuBook as MenuBookIcon,
+  Translate as TranslateIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { useDictionary } from '../../context/DictionaryContext';
 import { useLearning } from '../../context/LearningContext';
@@ -40,6 +44,7 @@ import { useAudio } from '../../context/AudioContext';
 import { DictionaryItem } from '../../types/dictionary';
 import { QuizState, QuizMode, Difficulty } from '../../types/quiz';
 import { useTheme } from '../../context/ThemeContext';
+import { useProgress } from '../../context/ProgressContext';
 
 // Language settings type
 type LanguageSettings = {
@@ -73,6 +78,19 @@ const QuizPage: React.FC = () => {
   const { updateProgress } = useLearning();
   const { playAudio } = useAudio();
   const { theme } = useTheme();
+  const { progress, updateWordProgress, trackQuizCompletion, updateStreak } = useProgress();
+  
+  // Separate state for mode to prevent infinite loop
+  const [currentMode, setCurrentMode] = useState<QuizMode>('japanese-to-english');
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [languageSettings, setLanguageSettings] = useState<LanguageSettings>({
+    showJapanese: true,
+    showRomaji: true,
+    showEnglish: true,
+  });
+
   const [quizState, setQuizState] = useState<QuizState>({
     mode: 'japanese-to-english',
     currentQuestion: 0,
@@ -94,16 +112,12 @@ const QuizPage: React.FC = () => {
     pronunciationPractice: null,
     currentComparison: null,
   });
-  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showRomajiQuestion, setShowRomajiQuestion] = useState(false);
+
+  // Add ref to track if quiz has been initialized
+  const quizInitializedRef = useRef(false);
+
+  // Add state for showRomajiAnswers
   const [showRomajiAnswers, setShowRomajiAnswers] = useState(false);
-  const [languageSettings, setLanguageSettings] = useState<LanguageSettings>({
-    showJapanese: true,
-    showRomaji: true,
-    showEnglish: true,
-  });
 
   // Add debug logging
   useEffect(() => {
@@ -140,21 +154,23 @@ const QuizPage: React.FC = () => {
 
   // Play audio for quiz start
   const playQuizStartAudio = () => {
-    playAudio('クイズを始めましょう！', 'word', 'happy');
+    playAudio('クイズを始めましょう！');
   };
 
   // Play audio for question skip
   const playSkipAudio = () => {
-    playAudio('スキップしました', 'word', 'neutral');
+    playAudio('スキップしました');
   };
 
   // Play audio for next question
   const playNextQuestionAudio = () => {
-    playAudio('次の問題', 'word', 'neutral');
+    playAudio('次の問題');
   };
 
   // Generate quiz questions based on selected mode and difficulty
   const generateQuiz = useCallback(() => {
+    console.log('[QuizPage] Generating quiz with mode:', currentMode);
+    
     // Safety check to ensure words array exists and has items
     if (!words || !Array.isArray(words) || words.length === 0) {
       console.warn('[QuizPage] Words array is undefined, empty, or not an array');
@@ -171,7 +187,7 @@ const QuizPage: React.FC = () => {
       const levelMatch = word.level <= maxLevel;
       
       // Mode-specific filters
-      switch (quizState.mode) {
+      switch (currentMode) {
         case 'listening':
           return levelMatch && word.audioUrl; // Only include words with audio
         case 'examples':
@@ -184,7 +200,7 @@ const QuizPage: React.FC = () => {
     });
     
     if (filteredWords.length < QUESTIONS_PER_QUIZ) {
-      setError(`Not enough words available for ${quizState.mode} mode at ${difficulty} difficulty. Try a different mode or difficulty.`);
+      setError(`Not enough words available for ${currentMode} mode at ${difficulty} difficulty. Try a different mode or difficulty.`);
       setIsLoading(false);
       return;
     }
@@ -195,6 +211,7 @@ const QuizPage: React.FC = () => {
 
     setQuizState(prev => ({
       ...prev,
+      mode: currentMode,
       questions: selectedWords,
       currentQuestion: 0,
       currentWord: selectedWords[0],
@@ -211,58 +228,68 @@ const QuizPage: React.FC = () => {
     
     // Play quiz start audio
     playQuizStartAudio();
-  }, [words, difficulty, quizState.mode, playQuizStartAudio]);
+  }, [words, difficulty, currentMode, playAudio]);
 
-  // Initialize quiz
+  // Initialize quiz only once when dictionary loads
   useEffect(() => {
-    if (!isDictionaryLoading) {
+    if (!isDictionaryLoading && !quizInitializedRef.current) {
       generateQuiz();
+      quizInitializedRef.current = true;
     }
   }, [isDictionaryLoading, generateQuiz]);
 
+  // Reset quiz when mode or difficulty changes
+  useEffect(() => {
+    if (!isDictionaryLoading) {
+      quizInitializedRef.current = false;
+      generateQuiz();
+      quizInitializedRef.current = true;
+    }
+  }, [currentMode, difficulty]);
+
   // Handle answer selection
-  const handleAnswerSelect = (answer: string) => {
-    if (quizState.showFeedback) return;
+  const handleAnswer = (selectedAnswer: string) => {
+    if (quizState.isAnswered) return;
 
-    const currentWord = quizState.currentWord;
-    if (!currentWord) return;
+    const isCorrect = selectedAnswer === quizState.currentWord?.correctAnswer;
+    const newScore = isCorrect ? quizState.score + 1 : quizState.score;
+    const newTotalAnswered = quizState.totalAnswered + 1;
 
-    let isCorrect = false;
-    switch (quizState.mode) {
-      case 'japanese-to-english':
-        isCorrect = answer === currentWord.english;
-        break;
-      case 'english-to-japanese':
-        isCorrect = answer === currentWord.japanese;
-        break;
-      case 'romaji-to-japanese':
-        isCorrect = answer === currentWord.japanese;
-        break;
-      case 'japanese-to-romaji':
-        isCorrect = answer === currentWord.romaji;
-        break;
-      case 'listening':
-        isCorrect = answer === currentWord.japanese;
-        break;
-      case 'examples':
-        isCorrect = answer === currentWord.examples?.[0]?.translation;
-        break;
+    // Update progress for the current word
+    if (quizState.currentWord) {
+      const wordId = quizState.currentWord.id || quizState.currentWord.japanese;
+      updateWordProgress(wordId, {
+        lastReviewed: Date.now(),
+        reviewCount: (progress.words[wordId]?.reviewCount || 0) + 1,
+        lastAnswerCorrect: isCorrect,
+        correctAnswers: (progress.words[wordId]?.correctAnswers || 0) + (isCorrect ? 1 : 0),
+        incorrectAnswers: (progress.words[wordId]?.incorrectAnswers || 0) + (isCorrect ? 0 : 1),
+        consecutiveCorrect: isCorrect ? 
+          (progress.words[wordId]?.consecutiveCorrect || 0) + 1 : 0,
+        masteryLevel: Math.min(5, Math.max(0, 
+          ((progress.words[wordId]?.correctAnswers || 0) + (isCorrect ? 1 : 0)) / 
+          ((progress.words[wordId]?.correctAnswers || 0) + (progress.words[wordId]?.incorrectAnswers || 0) + 1) * 5
+        ))
+      });
     }
 
     setQuizState(prev => ({
       ...prev,
-      selectedAnswer: answer,
-      showFeedback: true,
-      isCorrect,
-      score: isCorrect ? prev.score + 1 : prev.score,
-      mistakes: isCorrect ? prev.mistakes : [...prev.mistakes, { word: currentWord, userAnswer: answer }],
+      isAnswered: true,
+      selectedAnswer,
+      score: newScore,
+      totalAnswered: newTotalAnswered,
+      isCorrect
     }));
 
-    // Update learning progress
-    updateProgress(currentWord.id, isCorrect);
-
-    // Play audio feedback for correct/incorrect answers
-    playAnswerFeedback(isCorrect);
+    // Auto-advance after a delay
+    setTimeout(() => {
+      if (newTotalAnswered < quizState.totalQuestions) {
+        nextQuestion();
+      } else {
+        finishQuiz();
+      }
+    }, 1500);
   };
 
   // Handle next question
@@ -309,23 +336,50 @@ const QuizPage: React.FC = () => {
   // Play audio for current word
   const handlePlayAudio = () => {
     const currentWord = quizState.currentWord;
-    if (currentWord) {
-      // Try to play the word audio first
-      if (currentWord.audioUrl) {
-        playAudio(currentWord.audioUrl, 'word', 'neutral');
-      } else if (currentWord.japanese) {
-        // Fallback to TTS if no audio file
-        playAudio(currentWord.japanese, 'word', 'neutral');
-      }
-    }
-  };
+    if (!currentWord) return;
 
-  // Play audio feedback for correct/incorrect answers
-  const playAnswerFeedback = (isCorrect: boolean) => {
-    if (isCorrect) {
-      playAudio('正解です！', 'word', 'happy');
-    } else {
-      playAudio('不正解です', 'word', 'neutral');
+    let textToPlay = '';
+
+    // Determine what audio to play based on quiz mode
+    switch (currentMode) {
+      case 'japanese-to-english':
+        // Play the Japanese word being asked about
+        textToPlay = currentWord.japanese;
+        break;
+      case 'english-to-japanese':
+        // Play the English word being asked about
+        textToPlay = currentWord.english;
+        break;
+      case 'romaji-to-japanese':
+        // Play the romaji being asked about
+        textToPlay = currentWord.romaji;
+        break;
+      case 'japanese-to-romaji':
+        // Play the Japanese word being asked about
+        textToPlay = currentWord.japanese;
+        break;
+      case 'listening':
+        // Play the Japanese word for listening practice
+        textToPlay = currentWord.japanese;
+        break;
+      case 'examples':
+        // Play the example sentence
+        textToPlay = currentWord.examples?.[0]?.example || currentWord.japanese;
+        break;
+      default:
+        // Fallback to Japanese word
+        textToPlay = currentWord.japanese;
+        break;
+    }
+
+    if (textToPlay) {
+      // Try to play the word audio first if available
+      if (currentWord.audioUrl) {
+        playAudio(currentWord.audioUrl);
+      } else {
+        // Fallback to TTS
+        playAudio(textToPlay);
+      }
     }
   };
 
@@ -340,11 +394,11 @@ const QuizPage: React.FC = () => {
   const playQuizCompletionAudio = (score: number, total: number) => {
     const percentage = (score / total) * 100;
     if (percentage >= 80) {
-      playAudio('素晴らしい！', 'word', 'happy');
+      playAudio('素晴らしい！');
     } else if (percentage >= 60) {
-      playAudio('よくできました！', 'word', 'happy');
+      playAudio('よくできました！');
     } else {
-      playAudio('もう一度頑張りましょう', 'word', 'neutral');
+      playAudio('もう一度頑張りましょう');
     }
   };
 
@@ -379,7 +433,7 @@ const QuizPage: React.FC = () => {
       </Tooltip>
     );
 
-    switch (quizState.mode) {
+    switch (currentMode) {
       case 'japanese-to-english':
         return (
           <Box>
@@ -469,7 +523,7 @@ const QuizPage: React.FC = () => {
     const options = new Set<string>();
     
     // Add correct answer based on mode and language settings
-    switch (quizState.mode) {
+    switch (currentMode) {
       case 'japanese-to-english':
         if (languageSettings.showEnglish) {
           options.add(currentWord.english);
@@ -510,7 +564,7 @@ const QuizPage: React.FC = () => {
       
       let option = '';
       
-      switch (quizState.mode) {
+      switch (currentMode) {
         case 'japanese-to-english':
           if (languageSettings.showEnglish) {
             option = randomWord.english;
@@ -567,9 +621,37 @@ const QuizPage: React.FC = () => {
     return Array.from(options).sort(() => Math.random() - 0.5);
   };
 
-  // Update loading check to include error state
+  const finishQuiz = () => {
+    const endTime = Date.now();
+    const timeSpent = Math.round((endTime - quizState.startTime) / 1000); // in seconds
+    const score = quizState.score;
+    const totalQuestions = quizState.totalQuestions;
+    const accuracy = score / totalQuestions;
+
+    // Track quiz completion
+    trackQuizCompletion({
+      quizType: currentMode,
+      score: accuracy,
+      totalQuestions,
+      timeSpent,
+      wordsUsed: quizState.usedWords.map(word => word.id || word.japanese),
+      category: selectedCategory || 'general'
+    });
+
+    // Update streak
+    updateStreak();
+
+    setQuizState(prev => ({
+      ...prev,
+      isFinished: true,
+      endTime,
+      timeSpent,
+      accuracy
+    }));
+  };
+
+  // Loading state
   if (isLoading || isDictionaryLoading) {
-    console.log('[QuizPage] Loading state:', { isLoading, isDictionaryLoading });
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
@@ -580,8 +662,8 @@ const QuizPage: React.FC = () => {
     );
   }
 
+  // Error state
   if (error || dictionaryError) {
-    console.error('[QuizPage] Error state:', { error, dictionaryError });
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -594,6 +676,7 @@ const QuizPage: React.FC = () => {
     );
   }
 
+  // Quiz completed state
   if (quizState.completed) {
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
@@ -643,6 +726,7 @@ const QuizPage: React.FC = () => {
     );
   }
 
+  // Main quiz interface
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Grid container spacing={3}>
@@ -653,44 +737,80 @@ const QuizPage: React.FC = () => {
                 {/* Language Settings */}
                 <Box>
                   <Typography variant="h6" gutterBottom>Language Settings</Typography>
-                  <FormGroup row>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={languageSettings.showJapanese}
-                          onChange={(e) => setLanguageSettings(prev => ({
+                  <Paper 
+                    elevation={0}
+                    sx={{ 
+                      p: 2,
+                      mb: 3,
+                      borderRadius: 2,
+                      bgcolor: 'background.paper',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      flexWrap: 'wrap'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Display Languages:
+                      </Typography>
+                      <Tooltip title="Japanese (日本語)">
+                        <IconButton
+                          onClick={() => setLanguageSettings(prev => ({
                             ...prev,
-                            showJapanese: e.target.checked
+                            showJapanese: !prev.showJapanese
                           }))}
-                        />
-                      }
-                      label="Show Japanese"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={languageSettings.showRomaji}
-                          onChange={(e) => setLanguageSettings(prev => ({
+                          color={languageSettings.showJapanese ? 'primary' : 'default'}
+                          sx={{ 
+                            bgcolor: languageSettings.showJapanese ? 'primary.light' : 'transparent',
+                            '&:hover': {
+                              bgcolor: languageSettings.showJapanese ? 'primary.light' : 'action.hover'
+                            }
+                          }}
+                        >
+                          <MenuBookIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Romaji (ローマ字)">
+                        <IconButton
+                          onClick={() => setLanguageSettings(prev => ({
                             ...prev,
-                            showRomaji: e.target.checked
+                            showRomaji: !prev.showRomaji
                           }))}
-                        />
-                      }
-                      label="Show Romaji"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={languageSettings.showEnglish}
-                          onChange={(e) => setLanguageSettings(prev => ({
+                          color={languageSettings.showRomaji ? 'primary' : 'default'}
+                          sx={{ 
+                            bgcolor: languageSettings.showRomaji ? 'primary.light' : 'transparent',
+                            '&:hover': {
+                              bgcolor: languageSettings.showRomaji ? 'primary.light' : 'action.hover'
+                            }
+                          }}
+                        >
+                          <TranslateIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="English">
+                        <IconButton
+                          onClick={() => setLanguageSettings(prev => ({
                             ...prev,
-                            showEnglish: e.target.checked
+                            showEnglish: !prev.showEnglish
                           }))}
-                        />
-                      }
-                      label="Show English"
-                    />
-                  </FormGroup>
+                          color={languageSettings.showEnglish ? 'primary' : 'default'}
+                          sx={{ 
+                            bgcolor: languageSettings.showEnglish ? 'primary.light' : 'transparent',
+                            '&:hover': {
+                              bgcolor: languageSettings.showEnglish ? 'primary.light' : 'action.hover'
+                            }
+                          }}
+                        >
+                          <VisibilityIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    <Divider orientation="vertical" flexItem />
+                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                      Toggle languages to display. At least one language must be active for quiz modes to work properly.
+                    </Typography>
+                  </Paper>
                 </Box>
 
                 {/* Quiz Mode and Difficulty */}
@@ -698,11 +818,11 @@ const QuizPage: React.FC = () => {
                   <FormControl sx={{ minWidth: 200 }}>
                     <FormLabel>Quiz Mode</FormLabel>
                     <Select
-                      value={quizState.mode}
+                      value={currentMode}
                       onChange={(e) => {
                         const newMode = e.target.value as QuizMode;
                         if (validateQuizMode(newMode)) {
-                          setQuizState(prev => ({ ...prev, mode: newMode }));
+                          setCurrentMode(newMode);
                         }
                       }}
                     >
@@ -733,18 +853,6 @@ const QuizPage: React.FC = () => {
                   </FormControl>
                 </Box>
 
-                {/* Romaji toggles */}
-                <FormGroup row sx={{ mb: 2 }}>
-                  <FormControlLabel
-                    control={<Switch checked={showRomajiQuestion} onChange={() => setShowRomajiQuestion(v => !v)} />}
-                    label="Show Romaji for Question"
-                  />
-                  <FormControlLabel
-                    control={<Switch checked={showRomajiAnswers} onChange={() => setShowRomajiAnswers(v => !v)} />}
-                    label="Show Romaji for Answers"
-                  />
-                </FormGroup>
-
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Typography variant="h6">
                     Question {quizState.currentQuestion + 1} of {quizState.totalQuestions}
@@ -760,14 +868,26 @@ const QuizPage: React.FC = () => {
                   {renderQuestion()}
                 </Box>
 
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={showRomajiAnswers}
+                      onChange={e => setShowRomajiAnswers(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label="Show romaji under answer options"
+                  sx={{ mb: 2 }}
+                />
+
                 <FormControl component="fieldset" fullWidth>
                   <RadioGroup
                     value={quizState.selectedAnswer || ''}
-                    onChange={(e) => handleAnswerSelect(e.target.value)}
+                    onChange={(e) => handleAnswer(e.target.value)}
                   >
                     {generateOptions().map((option, index) => {
                       const isCorrectAnswer = (() => {
-                        switch (quizState.mode) {
+                        switch (currentMode) {
                           case 'japanese-to-english':
                             return option === quizState.currentWord?.english;
                           case 'english-to-japanese':

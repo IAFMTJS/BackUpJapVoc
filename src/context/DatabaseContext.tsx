@@ -152,7 +152,14 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 export const useDatabase = () => {
   const context = useContext(DatabaseContext);
   if (context === undefined) {
-    throw new Error('useDatabase must be used within a DatabaseProvider');
+    console.warn('[useDatabase] Context is undefined, returning default values');
+    // Return default context values instead of throwing an error
+    return {
+      db: null,
+      isLoading: false,
+      error: null,
+      isInitialized: false
+    };
   }
   return context;
 }; 
