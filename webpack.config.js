@@ -29,7 +29,9 @@ module.exports = (env, argv) => {
       assetModuleFilename: 'static/media/[name].[hash][ext][query]',
       chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
       chunkLoadTimeout: 120000,
-      globalObject: 'this'
+      globalObject: 'this',
+      chunkLoading: 'jsonp',
+      chunkFormat: 'array-push'
     },
     module: {
       rules: [
@@ -166,8 +168,8 @@ module.exports = (env, argv) => {
       splitChunks: {
         chunks: 'all',
         maxInitialRequests: 25,
-        minSize: 10000,
-        maxSize: 500000,
+        minSize: 20000,
+        maxSize: 300000,
         cacheGroups: {
           mui: {
             test: /[\\/]node_modules[\\/]@mui[\\/]/,
@@ -335,7 +337,23 @@ module.exports = (env, argv) => {
         //   generateStatsFile: true,
         //   statsFilename: 'bundle-stats.json'
         // }),
-      ] : [])
+      ] : []),
+      // Add chunk loading error handler
+      {
+        apply: (compiler) => {
+          compiler.hooks.compilation.tap('ChunkLoadingErrorHandler', (compilation) => {
+            compilation.hooks.afterOptimizeChunkModules.tap('ChunkLoadingErrorHandler', (chunks, modules) => {
+              // Add chunk loading error handling
+              compilation.mainTemplate.hooks.requireEnsure.tap('ChunkLoadingErrorHandler', (source, chunk, hash) => {
+                return source.replace(
+                  /__webpack_require__\.e\s*\(\s*([^)]+)\s*\)/g,
+                  '__webpack_require__.e($1).catch(function(err) { console.error("Chunk loading failed:", err); return Promise.reject(err); })'
+                );
+              });
+            });
+          });
+        }
+      },
     ],
     devServer: {
       static: [

@@ -15,10 +15,20 @@
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
+      "src": "/static/js/(.*)",
       "headers": {
         "cache-control": "public, max-age=31536000, immutable",
-        "x-vercel-cache": "HIT"
+        "x-vercel-cache": "HIT",
+        "access-control-allow-origin": "*"
+      },
+      "continue": true
+    },
+    {
+      "src": "/static/css/(.*)",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable",
+        "x-vercel-cache": "HIT",
+        "access-control-allow-origin": "*"
       },
       "continue": true
     },
@@ -26,7 +36,8 @@
       "src": "/static/media/(.*)",
       "headers": {
         "cache-control": "public, max-age=31536000, immutable",
-        "x-vercel-cache": "HIT"
+        "x-vercel-cache": "HIT",
+        "access-control-allow-origin": "*"
       },
       "continue": true
     },
@@ -69,5 +80,10 @@
     "silent": true,
     "autoAlias": true
   },
-  "regions": ["fra1"]
+  "regions": ["fra1"],
+  "functions": {
+    "build/static/js/**/*.js": {
+      "maxDuration": 30
+    }
+  }
 } 

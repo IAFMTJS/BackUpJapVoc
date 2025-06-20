@@ -33,6 +33,7 @@ import Login from './components/Login';
 import { AchievementProvider } from './context/AchievementContext';
 import { KanjiProvider } from './context/KanjiContext';
 import { initializeApp as initializeSafeApp, isRestrictedEnvironment } from './utils/initializeApp';
+import { setupChunkErrorHandling } from './utils/chunkErrorHandler';
 
 // Lazy load all route components
 const Home = lazy(() => import('./pages/Home'));
@@ -152,6 +153,11 @@ const App: React.FC = () => {
   const [initProgress, setInitProgress] = useState<string>('Initializing...');
   const [initStep, setInitStep] = useState<number>(0);
   const { db } = useDatabase();
+
+  // Add global chunk loading error handler
+  useEffect(() => {
+    setupChunkErrorHandling();
+  }, []);
 
   // Function to update progress with step tracking
   const updateProgress = (message: string, step: number) => {

@@ -1,14 +1,16 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Box, Typography, Button, Paper, Alert } from '@mui/material';
+import { Refresh as RefreshIcon, Home as HomeIcon } from '@mui/icons-material';
 
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  isChunkError: boolean;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -17,74 +19,158 @@ class ErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
+      isChunkError: false
     };
   }
 
   static getDerivedStateFromError(error: Error): State {
+    // Check if this is a chunk loading error
+    const isChunkError = error.message.includes('Loading chunk') || 
+                        error.message.includes('ChunkLoadError') ||
+                        error.message.includes('99.505cc745.chunk.js');
+    
     return {
       hasError: true,
       error,
-      errorInfo: null
+      errorInfo: null,
+      isChunkError
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by boundary:', error);
-    console.error('Component stack:', errorInfo.componentStack);
-    
-    // Log additional context information
-    if (error.message.includes('undefined') && error.message.includes('call')) {
-      console.error('Context-related error detected. This might be due to a context not being properly initialized.');
-      console.error('Current component stack:', errorInfo.componentStack);
-    }
-
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error,
-      errorInfo
+      errorInfo,
+      isChunkError: error.message.includes('Loading chunk') || 
+                   error.message.includes('ChunkLoadError') ||
+                   error.message.includes('99.505cc745.chunk.js')
     });
   }
 
+  handleRefresh = () => {
+    // Clear any cached chunks and reload
+    if (this.state.isChunkError) {
+      // Clear webpack chunk cache
+      if (window.webpackChunkBackupJapVoc) {
+        window.webpackChunkBackupJapVoc = [];
+      }
+      
+      // Clear any cached chunks from localStorage
+      try {
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.includes('webpack') || key.includes('chunk')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.warn('Could not clear localStorage:', e);
+      }
+    }
+    
+    window.location.reload();
+  };
+
+  handleGoHome = () => {
+    window.location.href = '/';
+  };
+
   render() {
     if (this.state.hasError) {
-      // Custom fallback UI
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
-      // Default error UI
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-          <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">
-              Something went wrong
-            </h2>
-            <div className="bg-gray-100 dark:bg-gray-700 rounded p-4 mb-4 overflow-auto max-h-60">
-              <p className="text-sm font-mono text-gray-800 dark:text-gray-200 mb-2">
-                {this.state.error?.message}
-              </p>
-              {this.state.errorInfo && (
-                <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                  {this.state.errorInfo.componentStack}
-                </pre>
-              )}
-            </div>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        <Box
+          sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            p: 3,
+            bgcolor: 'background.default'
+          }}
+        >
+          <Paper
+            elevation={3}
+            sx={{
+              p: 4,
+              maxWidth: 600,
+              textAlign: 'center',
+              borderRadius: 2
+            }}
+          >
+            <Alert 
+              severity={this.state.isChunkError ? "warning" : "error"}
+              sx={{ mb: 3 }}
+            >
+              {this.state.isChunkError 
+                ? "Chunk Loading Error" 
+                : "Something went wrong"
+              }
+            </Alert>
+            
+            <Typography variant="h5" component="h1" gutterBottom>
+              {this.state.isChunkError 
+                ? "Failed to load application component" 
+                : "Application Error"
+              }
+            </Typography>
+            
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              {this.state.isChunkError 
+                ? "The application failed to load a required component. This is usually a temporary issue that can be resolved by refreshing the page."
+                : "An unexpected error occurred. Please try refreshing the page or contact support if the problem persists."
+              }
+            </Typography>
+
+            {this.state.isChunkError && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Error details: {this.state.error?.message}
+              </Typography>
+            )}
+
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                startIcon={<RefreshIcon />}
+                onClick={this.handleRefresh}
+                sx={{ minWidth: 140 }}
               >
-                Reload Page
-              </button>
-              <button
-                onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                Refresh Page
+              </Button>
+              
+              <Button
+                variant="outlined"
+                startIcon={<HomeIcon />}
+                onClick={this.handleGoHome}
+                sx={{ minWidth: 140 }}
               >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
+                Go Home
+              </Button>
+            </Box>
+
+            {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+              <Box sx={{ mt: 3, textAlign: 'left' }}>
+                <Typography variant="h6" gutterBottom>
+                  Error Details (Development)
+                </Typography>
+                <Paper
+                  sx={{
+                    p: 2,
+                    bgcolor: 'grey.100',
+                    maxHeight: 200,
+                    overflow: 'auto',
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  <pre>{this.state.error?.stack}</pre>
+                  <pre>{this.state.errorInfo.componentStack}</pre>
+                </Paper>
+              </Box>
+            )}
+          </Paper>
+        </Box>
       );
     }
 
