@@ -31,7 +31,7 @@ import {
   Quiz as QuizIcon,
   Translate as TranslateIcon,
   EmojiEmotions as MoodIcon,
-  Culture as CultureIcon,
+  Public as CultureIcon,
   Animation as AnimeIcon,
   Games as GamesIcon
 } from '@mui/icons-material';

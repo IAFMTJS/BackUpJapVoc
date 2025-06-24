@@ -17,7 +17,7 @@ import {
   Menu as MenuIcon,
   Book as DictionaryIcon,
   Mood as MoodIcon,
-  School as CultureIcon,
+  Public as CultureIcon,
   Home as HomeIcon,
   Star as StarIcon,
   Timeline as ProgressIcon,
