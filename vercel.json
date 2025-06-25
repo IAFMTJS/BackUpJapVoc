@@ -80,10 +80,5 @@
     "silent": true,
     "autoAlias": true
   },
-  "regions": ["fra1"],
-  "functions": {
-    "build/static/js/**/*.js": {
-      "maxDuration": 30
-    }
-  }
+  "regions": ["fra1"]
 } 
