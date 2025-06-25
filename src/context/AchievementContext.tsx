@@ -16,7 +16,7 @@ import {
 const AchievementContext = createContext<AchievementContextType | undefined>(undefined);
 
 export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { progress: userProgress } = useProgress();
   const { currentLevel, unlockedLevels } = useWordLevel();
   const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
@@ -28,13 +28,13 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Load achievements from Firestore
   useEffect(() => {
     const loadAchievements = async () => {
-      if (!user) {
+      if (!currentUser) {
         setIsLoading(false);
         return;
       }
 
       try {
-        const userAchievementsRef = doc(db, 'users', user.uid, 'achievements', 'progress');
+        const userAchievementsRef = doc(db, 'users', currentUser.uid, 'achievements', 'progress');
         const docSnap = await getDoc(userAchievementsRef);
 
         if (docSnap.exists()) {
@@ -68,12 +68,12 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
 
     loadAchievements();
-  }, [user]);
+  }, [currentUser]);
 
   // Update achievement progress based on user actions
   useEffect(() => {
     const updateAchievementProgress = async () => {
-      if (!user) return;
+      if (!currentUser) return;
 
       const updates: Partial<AchievementProgress> = {};
       
@@ -111,7 +111,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       if (Object.keys(updates).length > 0) {
         try {
-          const userAchievementsRef = doc(db, 'users', user.uid, 'achievements', 'progress');
+          const userAchievementsRef = doc(db, 'users', currentUser.uid, 'achievements', 'progress');
           await updateDoc(userAchievementsRef, updates);
           setProgress(prev => ({ ...prev, ...updates }));
           
@@ -140,7 +140,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
 
     updateAchievementProgress();
-  }, [user, userProgress, achievements, progress]);
+  }, [currentUser, userProgress, achievements, progress]);
 
   const calculateStreak = (progress: Record<string, any>) => {
     const dates = Object.values(progress)
@@ -172,7 +172,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const checkAchievements = useCallback((category: AchievementCategory, value: number) => {
-    if (!user) return;
+    if (!currentUser) return;
 
     const updates: Partial<AchievementProgress> = {};
     
@@ -195,7 +195,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
 
     if (Object.keys(updates).length > 0) {
-      const userAchievementsRef = doc(db, 'users', user.uid, 'achievements', 'progress');
+      const userAchievementsRef = doc(db, 'users', currentUser.uid, 'achievements', 'progress');
       updateDoc(userAchievementsRef, updates)
         .then(() => {
           setProgress(prev => ({ ...prev, ...updates }));
@@ -221,7 +221,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
           setError('Failed to update achievements');
         });
     }
-  }, [user, achievements, progress]);
+  }, [currentUser, achievements, progress]);
 
   const getAchievementProgress = useCallback((achievementId: string) => {
     return progress[achievementId]?.progress || 0;

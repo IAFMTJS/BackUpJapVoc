@@ -21,7 +21,7 @@ export const useAchievements = () => {
 };
 
 export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
   const [progress, setProgress] = useState<AchievementProgress>({});
   const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([]);
@@ -29,9 +29,9 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Load achievements progress from Firestore
   useEffect(() => {
     const loadAchievementsProgress = async () => {
-      if (!user) return;
+      if (!currentUser) return;
 
-      const userAchievementsRef = doc(db, 'users', user.uid, 'achievements', 'progress');
+      const userAchievementsRef = doc(db, 'users', currentUser.uid, 'achievements', 'progress');
       const docSnap = await getDoc(userAchievementsRef);
 
       if (docSnap.exists()) {
@@ -59,16 +59,16 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
 
     loadAchievementsProgress();
-  }, [user]);
+  }, [currentUser]);
 
   const updateAchievementProgress = async (
     achievementId: string, 
     newProgress: number, 
     unlocked: boolean = false
   ) => {
-    if (!user) return;
+    if (!currentUser) return;
 
-    const userAchievementsRef = doc(db, 'users', user.uid, 'achievements', 'progress');
+    const userAchievementsRef = doc(db, 'users', currentUser.uid, 'achievements', 'progress');
     const updateData: Partial<AchievementProgress> = {
       [achievementId]: {
         progress: newProgress,

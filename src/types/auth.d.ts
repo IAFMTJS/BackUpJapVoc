@@ -46,6 +46,7 @@ export interface AuthContextType {
   resetSessionTimer: () => void;
   error: AuthErrorResponse | null;
   clearError: () => void;
+  forceClearAuth: () => Promise<void>;
 }
 
 // Form input types

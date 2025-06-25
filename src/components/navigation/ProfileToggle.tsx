@@ -11,10 +11,20 @@ import { useAuth } from '../../context/AuthContext';
 
 const ProfileToggle: React.FC = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { currentUser, logout, forceClearAuth } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  if (!user) return null;
+  // Debug logging
+  console.log('ProfileToggle: currentUser =', currentUser);
+  console.log('ProfileToggle: currentUser?.email =', currentUser?.email);
+  console.log('ProfileToggle: currentUser?.uid =', currentUser?.uid);
+
+  if (!currentUser) {
+    console.log('ProfileToggle: No currentUser, returning null');
+    return null;
+  }
+
+  console.log('ProfileToggle: Rendering with user:', currentUser.email);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -31,10 +41,20 @@ const ProfileToggle: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();
       navigate('/login');
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  // Debug function to force clear auth state
+  const handleForceClearAuth = async () => {
+    try {
+      await forceClearAuth();
+      console.log('Auth state force cleared');
+    } catch (error) {
+      console.error('Error force clearing auth:', error);
     }
   };
 
@@ -125,6 +145,13 @@ const ProfileToggle: React.FC = () => {
             {renderIcon(<LogoutIcon fontSize="small" />)}
           </ListItemIcon>
           <ListItemText>Sign Out</ListItemText>
+        </MenuItem>
+        {/* Debug menu item - remove in production */}
+        <MenuItem onClick={handleForceClearAuth}>
+          <ListItemIcon>
+            {renderIcon(<div>🐛</div>)}
+          </ListItemIcon>
+          <ListItemText>Debug: Force Clear Auth</ListItemText>
         </MenuItem>
       </Menu>
     </Box>

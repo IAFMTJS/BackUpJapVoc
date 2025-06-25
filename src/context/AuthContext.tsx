@@ -9,6 +9,7 @@ import {
   onAuthStateChanged,
   updateProfile,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateEmail,
   updatePassword,
   deleteUser,
@@ -47,7 +48,7 @@ export const useAuth = () => {
       updateUserProfile: async () => {},
       clearError: () => {},
       resetSessionTimer: () => {},
-      signOut: async () => {}
+      forceClearAuth: async () => {}
     };
   }
   return context;
@@ -82,8 +83,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               hasUser: !!user,
               email: user?.email,
               emailVerified: user?.emailVerified,
+              uid: user?.uid,
               timestamp: new Date().toISOString()
             });
+            
+            // Additional debugging
+            if (user) {
+              console.log('AuthProvider: User is signed in:', {
+                email: user.email,
+                uid: user.uid,
+                emailVerified: user.emailVerified,
+                displayName: user.displayName,
+                photoURL: user.photoURL
+              });
+            } else {
+              console.log('AuthProvider: No user signed in');
+            }
+            
             setCurrentUser(user);
             setIsEmailVerified(user?.emailVerified ?? false);
             setLoading(false);
@@ -183,9 +199,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       clearError();
+      console.log('AuthProvider: Attempting to sign out user...');
       await firebaseSignOut(auth);
+      console.log('AuthProvider: User signed out successfully');
     } catch (error: unknown) {
+      console.error('AuthProvider: Error during sign out:', error);
       handleError(error);
+    }
+  };
+
+  // Force clear auth state (for debugging)
+  const forceClearAuth = async () => {
+    try {
+      console.log('AuthProvider: Force clearing auth state...');
+      await firebaseSignOut(auth);
+      setCurrentUser(null);
+      setIsEmailVerified(false);
+      console.log('AuthProvider: Auth state cleared successfully');
+    } catch (error: unknown) {
+      console.error('AuthProvider: Error force clearing auth state:', error);
     }
   };
 
@@ -268,7 +300,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionWarning,
     resetSessionTimer,
     error,
-    clearError
+    clearError,
+    forceClearAuth
   };
 
   if (loading) {

@@ -43,7 +43,7 @@ const Navigation: React.FC = () => {
   const navigate = useNavigate();
   const { mode } = useTheme();
   const theme = useMuiTheme();
-  const { currentUser, signOut } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { settings } = useSettings();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEls, setAnchorEls] = useState<{ [key: string]: HTMLElement | null }>({});
@@ -129,7 +129,7 @@ const Navigation: React.FC = () => {
     { label: 'Profile', path: '/profile', icon: <ProfileIcon fontSize="small" /> },
     { label: 'Settings', path: '/settings', icon: <FAQIcon fontSize="small" /> },
     { label: 'FAQ', path: '/faq/scoring', icon: <FAQIcon fontSize="small" /> },
-    { label: 'Logout', path: '/login', icon: <ProfileIcon fontSize="small" />, action: async () => { await signOut(); navigate('/login'); } }
+    { label: 'Logout', path: '/login', icon: <ProfileIcon fontSize="small" />, action: async () => { await logout(); navigate('/login'); } }
   ];
 
   // Safety check for currentUser
