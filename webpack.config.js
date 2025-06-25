@@ -28,7 +28,7 @@ module.exports = (env, argv) => {
       crossOriginLoading: 'anonymous',
       assetModuleFilename: 'static/media/[name].[hash][ext][query]',
       chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
-      chunkLoadTimeout: 120000,
+      chunkLoadTimeout: 30000,
       globalObject: 'this',
       chunkLoading: 'jsonp',
       chunkFormat: 'array-push'
@@ -167,9 +167,9 @@ module.exports = (env, argv) => {
       ],
       splitChunks: {
         chunks: 'all',
-        maxInitialRequests: 25,
+        maxInitialRequests: 10,
         minSize: 20000,
-        maxSize: 300000,
+        maxSize: 244000,
         cacheGroups: {
           mui: {
             test: /[\\/]node_modules[\\/]@mui[\\/]/,
@@ -179,17 +179,31 @@ module.exports = (env, argv) => {
             enforce: false,
             reuseExistingChunk: true
           },
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: 'vendor.react',
+            chunks: 'all',
+            priority: 25,
+            reuseExistingChunk: true
+          },
+          firebase: {
+            test: /[\\/]node_modules[\\/]@?firebase[\\/]/,
+            name: 'vendor.firebase',
+            chunks: 'all',
+            priority: 20,
+            reuseExistingChunk: true
+          },
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendor',
             chunks: 'all',
-            priority: 20,
+            priority: 10,
             reuseExistingChunk: true
           },
           common: {
             name: 'common',
             minChunks: 2,
-            priority: 10,
+            priority: 5,
             reuseExistingChunk: true,
             enforce: true
           },

@@ -127,19 +127,145 @@ export const handleChunkError = (error: Error): void => {
   }
 };
 
-export const setupChunkErrorHandling = (): void => {
-  // Add global error listener
+// Chunk loading error handler for mobile devices
+export const setupChunkErrorHandling = () => {
+  // Store retry attempts for each chunk
+  const retryAttempts = new Map<string, number>();
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 2000; // 2 seconds
+
+  // Override webpack chunk loading to add retry logic
+  if (typeof window !== 'undefined' && window.webpackChunkBackupJapVoc) {
+    const originalPush = window.webpackChunkBackupJapVoc.push;
+    
+    window.webpackChunkBackupJapVoc.push = function(chunk: any) {
+      try {
+        return originalPush.call(this, chunk);
+      } catch (error) {
+        console.error('Chunk loading error:', error);
+        
+        // Try to identify which chunk failed
+        const chunkId = chunk?.[0] || 'unknown';
+        const attempts = retryAttempts.get(chunkId) || 0;
+        
+        if (attempts < MAX_RETRIES) {
+          retryAttempts.set(chunkId, attempts + 1);
+          console.log(`Retrying chunk ${chunkId} (attempt ${attempts + 1}/${MAX_RETRIES})`);
+          
+          // Retry after delay
+          setTimeout(() => {
+            try {
+              originalPush.call(this, chunk);
+            } catch (retryError) {
+              console.error(`Chunk retry failed for ${chunkId}:`, retryError);
+            }
+          }, RETRY_DELAY);
+        } else {
+          console.error(`Max retries exceeded for chunk ${chunkId}`);
+          // Show user-friendly error message
+          showChunkErrorToUser(chunkId);
+        }
+        
+        return [];
+      }
+    };
+  }
+
+  // Handle webpack chunk loading errors
   window.addEventListener('error', (event) => {
-    if (event.error && chunkErrorHandler.isChunkError(event.error)) {
-      handleChunkError(event.error);
+    if (event.error && event.error.message && event.error.message.includes('Loading chunk')) {
+      console.error('Chunk loading error detected:', event.error);
+      
+      // Extract chunk ID from error message
+      const chunkMatch = event.error.message.match(/Loading chunk (\d+) failed/);
+      if (chunkMatch) {
+        const chunkId = chunkMatch[1];
+        const attempts = retryAttempts.get(chunkId) || 0;
+        
+        if (attempts < MAX_RETRIES) {
+          retryAttempts.set(chunkId, attempts + 1);
+          console.log(`Retrying failed chunk ${chunkId} (attempt ${attempts + 1}/${MAX_RETRIES})`);
+          
+          // Force page reload as fallback
+          setTimeout(() => {
+            console.log('Reloading page due to chunk loading failure');
+            window.location.reload();
+          }, RETRY_DELAY);
+        } else {
+          showChunkErrorToUser(chunkId);
+        }
+      }
     }
   });
 
-  // Add unhandled rejection listener
+  // Handle unhandled promise rejections (common with chunk loading)
   window.addEventListener('unhandledrejection', (event) => {
-    if (event.reason && chunkErrorHandler.isChunkError(event.reason)) {
-      handleChunkError(event.reason);
-      event.preventDefault(); // Prevent default browser error handling
+    if (event.reason && typeof event.reason === 'string' && event.reason.includes('Loading chunk')) {
+      console.error('Unhandled chunk loading rejection:', event.reason);
+      event.preventDefault(); // Prevent default error handling
+      
+      // Show user-friendly error message
+      showChunkErrorToUser('unknown');
     }
   });
-}; 
+};
+
+// Show user-friendly error message
+const showChunkErrorToUser = (chunkId: string) => {
+  // Create error notification
+  const errorDiv = document.createElement('div');
+  errorDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #ef4444;
+    color: white;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 10000;
+    max-width: 300px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  `;
+  
+  errorDiv.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 8px;">Loading Error</div>
+    <div style="font-size: 14px; margin-bottom: 12px;">
+      There was an issue loading part of the application. Please try refreshing the page.
+    </div>
+    <button onclick="window.location.reload()" style="
+      background: white;
+      color: #ef4444;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    ">Refresh Page</button>
+    <button onclick="this.parentElement.remove()" style="
+      background: transparent;
+      color: white;
+      border: 1px solid white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 8px;
+    ">Dismiss</button>
+  `;
+  
+  document.body.appendChild(errorDiv);
+  
+  // Auto-remove after 10 seconds
+  setTimeout(() => {
+    if (errorDiv.parentElement) {
+      errorDiv.remove();
+    }
+  }, 10000);
+};
+
+// Add global webpack chunk loading global
+declare global {
+  interface Window {
+    webpackChunkBackupJapVoc: any[];
+  }
+} 

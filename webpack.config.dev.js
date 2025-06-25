@@ -58,13 +58,59 @@ module.exports = (env, argv) => {
     optimization: {
       removeAvailableModules: false,
       removeEmptyChunks: false,
-      splitChunks: false,
-      runtimeChunk: false
+      // Enable code splitting for development to prevent large bundles
+      splitChunks: {
+        chunks: 'all',
+        maxInitialRequests: 10,
+        minSize: 20000,
+        maxSize: 244000, // Smaller chunks for mobile
+        cacheGroups: {
+          mui: {
+            test: /[\\/]node_modules[\\/]@mui[\\/]/,
+            name: 'vendor.mui',
+            chunks: 'all',
+            priority: 30,
+            enforce: false,
+            reuseExistingChunk: true
+          },
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: 'vendor.react',
+            chunks: 'all',
+            priority: 25,
+            reuseExistingChunk: true
+          },
+          firebase: {
+            test: /[\\/]node_modules[\\/]@?firebase[\\/]/,
+            name: 'vendor.firebase',
+            chunks: 'all',
+            priority: 20,
+            reuseExistingChunk: true
+          },
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendor',
+            chunks: 'all',
+            priority: 10,
+            reuseExistingChunk: true
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            priority: 5,
+            reuseExistingChunk: true,
+            enforce: true
+          }
+        }
+      },
+      runtimeChunk: 'single'
     },
     output: {
       ...base.output,
       chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
-      chunkLoadTimeout: 120000
+      chunkLoadTimeout: 30000, // Reduced timeout for mobile
+      chunkLoading: 'jsonp',
+      chunkFormat: 'array-push'
     },
     cache: {
       type: 'filesystem',
