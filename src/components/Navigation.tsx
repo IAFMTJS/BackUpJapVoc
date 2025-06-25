@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -34,16 +35,17 @@ import {
   Public as CultureIcon,
   Animation as AnimeIcon,
   Games as GamesIcon,
-  Person as PersonIcon
+  AccountCircle as PersonIcon
 } from '@mui/icons-material';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { mode } = useTheme();
+  const theme = useMuiTheme();
   const { currentUser, signOut } = useAuth();
   const { settings } = useSettings();
-  const isMobile = useMediaQuery('(max-width:900px)');
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEls, setAnchorEls] = useState<{ [key: string]: HTMLElement | null }>({});
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -136,12 +138,42 @@ const Navigation: React.FC = () => {
   // Safety check function for rendering icons
   const renderIcon = (icon: React.ReactNode, fallback: React.ReactNode = <SchoolIcon fontSize="small" />) => {
     try {
-      return icon || fallback;
+      // Check if icon is a valid React element
+      if (!icon || typeof icon === 'undefined' || icon === null) {
+        console.warn('Icon is undefined or null, using fallback');
+        return fallback;
+      }
+      
+      // Check if it's a valid React element
+      if (React.isValidElement(icon)) {
+        return icon;
+      }
+      
+      console.warn('Icon is not a valid React element, using fallback');
+      return fallback;
     } catch (error) {
       console.error('Error rendering icon:', error);
       return fallback;
     }
   };
+
+  // Safety check for navigation items
+  const safeNavItems = navItems.filter(item => {
+    if (!item || !item.key || !item.text) {
+      console.warn('Invalid navigation item found:', item);
+      return false;
+    }
+    return true;
+  });
+
+  // Safety check for profile menu
+  const safeProfileMenu = profileMenu.filter(item => {
+    if (!item || !item.label) {
+      console.warn('Invalid profile menu item found:', item);
+      return false;
+    }
+    return true;
+  });
 
   return (
     <AppBar position="sticky" elevation={2}>
@@ -162,7 +194,7 @@ const Navigation: React.FC = () => {
         
         {/* Desktop Navigation */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
-          {navItems.map(item => (
+          {safeNavItems.map(item => (
             <Box key={item.key} sx={{ position: 'relative' }}>
               <Button
                 component={Link}
@@ -248,7 +280,7 @@ const Navigation: React.FC = () => {
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
-              {profileMenu.map((item, idx) => (
+              {safeProfileMenu.map((item, idx) => (
                 <MenuItem
                   key={item.label}
                   component={item.path ? Link : 'button'}
@@ -264,7 +296,14 @@ const Navigation: React.FC = () => {
               ))}
             </Menu>
           </Box>
-          {renderIcon(<ThemeToggle />, <div>Theme</div>)}
+          {(() => {
+            try {
+              return renderIcon(<ThemeToggle />, <div>Theme</div>);
+            } catch (error) {
+              console.error('Error rendering ThemeToggle:', error);
+              return <div>Theme</div>;
+            }
+          })()}
         </Box>
 
         {/* Mobile Navigation */}
@@ -292,7 +331,7 @@ const Navigation: React.FC = () => {
               }
             }}
           >
-            {navItems.map(item => (
+            {safeNavItems.map(item => (
               <Box key={item.key}>
                 <MenuItem
                   component={Link}
@@ -342,7 +381,7 @@ const Navigation: React.FC = () => {
             <Divider />
             
             {/* Mobile profile menu */}
-            {profileMenu.map((item, idx) => (
+            {safeProfileMenu.map((item, idx) => (
               <MenuItem
                 key={item.label}
                 component={item.path ? Link : 'button'}
@@ -358,7 +397,14 @@ const Navigation: React.FC = () => {
             ))}
           </Menu>
           
-          {renderIcon(<ThemeToggle />, <div>Theme</div>)}
+          {(() => {
+            try {
+              return renderIcon(<ThemeToggle />, <div>Theme</div>);
+            } catch (error) {
+              console.error('Error rendering ThemeToggle:', error);
+              return <div>Theme</div>;
+            }
+          })()}
         </Box>
       </Toolbar>
     </AppBar>

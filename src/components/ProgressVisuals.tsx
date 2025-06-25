@@ -207,7 +207,7 @@ const ProgressVisuals: React.FC = () => {
   const { progress, currentStreak, bestStreak } = useProgress();
   const { achievements = [], unlockedAchievements = [] } = useAchievements();
   const [activeTab, setActiveTab] = useState(0);
-  const isMobile = useMediaQuery('(max-width:600px)');
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const [isThemeReady, setIsThemeReady] = useState(false);
 
   // Wait for theme to be ready
