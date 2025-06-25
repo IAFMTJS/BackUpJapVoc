@@ -419,9 +419,11 @@ const App: React.FC = () => {
                               <Route path="/knowing" element={
                                 <ErrorBoundary>
                                   <WordLevelProvider>
-                                    <KnowingNavigation>
-                                      <Outlet />
-                                    </KnowingNavigation>
+                                    <ErrorBoundary>
+                                      <KnowingNavigation>
+                                        <Outlet />
+                                      </KnowingNavigation>
+                                    </ErrorBoundary>
                                   </WordLevelProvider>
                                 </ErrorBoundary>
                               }>

@@ -188,7 +188,7 @@ export const KnowingNavigation: React.FC<KnowingNavigationProps> = ({ children }
       >
         {children}
       </Box>
-      <ProfileToggle />
+      {ProfileToggle && <ProfileToggle />}
     </Box>
   );
 }; 

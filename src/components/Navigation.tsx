@@ -33,7 +33,8 @@ import {
   EmojiEmotions as MoodIcon,
   Public as CultureIcon,
   Animation as AnimeIcon,
-  Games as GamesIcon
+  Games as GamesIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 
 const Navigation: React.FC = () => {
@@ -208,11 +209,9 @@ const Navigation: React.FC = () => {
                         }
                       }}
                     >
-                      {sub.icon && (
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                          {sub.icon}
-                        </ListItemIcon>
-                      )}
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        {sub.icon || <SchoolIcon fontSize="small" />}
+                      </ListItemIcon>
                       <ListItemText primary={sub.label || 'Unknown'} />
                     </MenuItem>
                   ))}
@@ -249,7 +248,7 @@ const Navigation: React.FC = () => {
                     if (item.action) await item.action();
                   }}
                 >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemIcon>{item.icon || <PersonIcon fontSize="small" />}</ListItemIcon>
                   <ListItemText>{item.label || 'Unknown'}</ListItemText>
                 </MenuItem>
               ))}
@@ -320,7 +319,7 @@ const Navigation: React.FC = () => {
                     }}
                   >
                     <ListItemIcon sx={{ minWidth: 36 }}>
-                      {sub.icon}
+                      {sub.icon || <SchoolIcon fontSize="small" />}
                     </ListItemIcon>
                     <ListItemText primary={sub.label || 'Unknown'} />
                   </MenuItem>
@@ -343,7 +342,7 @@ const Navigation: React.FC = () => {
                   if (item.action) await item.action();
                 }}
               >
-                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemIcon>{item.icon || <PersonIcon fontSize="small" />}</ListItemIcon>
                 <ListItemText>{item.label || 'Unknown'}</ListItemText>
               </MenuItem>
             ))}
