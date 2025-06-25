@@ -77,8 +77,16 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
       
       // Set default voice if not set
       if (!settings.preferredVoice && voices.length > 0) {
-        const japaneseVoice = voices.find(v => v.lang.includes('ja')) || voices[0];
+        // Prioritize Japanese voices for better pronunciation
+        const japaneseVoice = voices.find(v => 
+          v.lang.includes('ja') || 
+          v.lang.includes('JP') ||
+          v.name.toLowerCase().includes('kyoko') ||
+          v.name.toLowerCase().includes('haruka')
+        ) || voices[0];
+        
         updateSettings({ preferredVoice: japaneseVoice.name });
+        console.log(`Auto-selected voice: ${japaneseVoice.name} (${japaneseVoice.lang})`);
       }
 
       setIsInitialized(true);
@@ -127,8 +135,8 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
       await audioService.playAudio(text, {
         useTTS: settings.useTTS,
         voice: settings.preferredVoice,
-        rate: settings.rate,
-        pitch: settings.pitch
+        rate: settings.rate || 0.9,  // Default to slightly slower for better clarity
+        pitch: settings.pitch || 1
       });
     } catch (error) {
       console.error('Error playing audio:', error);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useProgress } from '../context/ProgressContext';
 import { useAudio } from '../context/AudioContext';
 import {
@@ -14,7 +14,8 @@ import {
   Tooltip,
   Paper,
   Divider,
-  Chip
+  Chip,
+  useTheme
 } from '@mui/material';
 import {
   PlayArrow as PlayArrowIcon,
@@ -26,7 +27,12 @@ import {
   Cancel as CancelIcon,
   Help as HelpIcon
 } from '@mui/icons-material';
-import { kanjiData } from '../data/kanjiData';
+import { kanjiList } from '../data/kanjiData';
+import { StrokeData, Stroke, StrokeFeedback } from '../types/stroke';
+import { Kanji, KanjiWithStrokes } from '../types/kanji';
+
+// Basic stroke data for common kanji
+const basicStrokeData: Record<string, StrokeData[]> = {};
 
 interface KanjiPracticeProps {
   kanji: Kanji[];
@@ -41,6 +47,8 @@ interface PracticeMode {
 const KanjiPractice: React.FC<KanjiPracticeProps> = ({ kanji }) => {
   const { playAudio } = useAudio();
   const { updateProgress, trackPracticeSession } = useProgress();
+  const theme = useTheme();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentKanji, setCurrentKanji] = useState<KanjiWithStrokes | null>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -568,6 +576,20 @@ const KanjiPractice: React.FC<KanjiPracticeProps> = ({ kanji }) => {
         }
       });
     }
+  };
+
+  // Helper function to validate stroke accuracy
+  const validateStroke = (drawnStroke: Stroke, referenceStroke: StrokeData) => {
+    const accuracy = calculateStrokeAccuracy(drawnStroke, referenceStroke);
+    const isCorrect = accuracy >= 0.5; // Threshold for correctness
+    const suggestions = generateStrokeSuggestions(drawnStroke, referenceStroke);
+    
+    return {
+      isCorrect,
+      accuracy,
+      message: isCorrect ? 'Good stroke!' : suggestions.join(', '),
+      suggestions
+    };
   };
 
   // Helper function to calculate stroke accuracy

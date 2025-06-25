@@ -415,13 +415,17 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Add message handling
+// Handle messages from clients
 self.addEventListener('message', (event) => {
-  if (!event.data) return;
+  // Add validation to prevent undefined message type errors
+  if (!event.data || typeof event.data.type === 'undefined') {
+    console.log('Received message without type:', event.data);
+    return;
+  }
 
   switch (event.data.type) {
     case 'SKIP_WAITING':
-      console.log('Skipping waiting...');
+      console.log('Skip waiting requested');
       self.skipWaiting();
       break;
     case 'CLIENT_UNLOADING':

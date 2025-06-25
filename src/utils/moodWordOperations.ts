@@ -6,17 +6,17 @@ const STORE_NAME = 'moodWords';
 
 // Map JSON categories to application categories
 const CATEGORY_MAP: Record<string, EmotionalCategory> = {
-  'romantic': 'love',
-  'angry': 'anger',
+  'romantic': 'romantic',
+  'angry': 'angry',
   'happy': 'happiness',
   'sad': 'sadness',
   'scared': 'fear',
-  'annoyed': 'anger',
-  'indifferent': 'neutral',
-  'motivational': 'determination',
-  'empathetic': 'empathy',
+  'annoyed': 'annoyed',
+  'indifferent': 'indifferent',
+  'motivational': 'motivational',
+  'empathetic': 'empathetic',
   'respect': 'respect',
-  'flirting': 'love',
+  'flirting': 'romantic',
   'gratitude': 'gratitude',
   'pride': 'happiness',
   'embarrassment': 'neutral',
@@ -24,7 +24,16 @@ const CATEGORY_MAP: Record<string, EmotionalCategory> = {
   'loneliness': 'sadness',
   'nostalgia': 'sadness',
   'determination': 'determination',
-  'relief': 'happiness'
+  'relief': 'happiness',
+  'playful': 'playful',
+  'positive': 'positive',
+  'anger': 'anger',
+  'love': 'love',
+  'fear': 'fear',
+  'surprise': 'surprise',
+  'disgust': 'disgust',
+  'neutral': 'neutral',
+  'empathy': 'empathy'
 };
 
 // Load additional mood words from JSON file
@@ -79,7 +88,15 @@ function getEmojiForCategory(category: EmotionalCategory): string {
     'gratitude': '🙏',
     'empathy': '🤝',
     'respect': '🙇',
-    'determination': '💪'
+    'determination': '💪',
+    'romantic': '💕',
+    'angry': '😡',
+    'annoyed': '😤',
+    'empathetic': '🤗',
+    'motivational': '🔥',
+    'playful': '😋',
+    'positive': '✨',
+    'indifferent': '😑'
   };
   return emojiMap[category] || '😐';
 }

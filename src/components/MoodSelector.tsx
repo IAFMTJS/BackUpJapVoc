@@ -19,45 +19,83 @@ interface MoodSelectorProps {
 
 const moodGroups = [
   {
-    name: "Positive Feelings",
+    name: "Romantic & Love",
     icon: <SentimentSatisfiedIcon />,
     moods: [
-      "happiness",
       "love",
-      "gratitude",
-      "empathy",
-      "respect",
-      "determination"
+      "romantic"
     ] as EmotionalCategory[]
   },
   {
-    name: "Social Emotions",
-    icon: <EmojiEmotionsIcon />,
-    moods: [
-      "happiness",
-      "love",
-      "gratitude",
-      "empathy"
-    ] as EmotionalCategory[]
-  },
-  {
-    name: "Challenging Emotions",
+    name: "Anger & Frustration",
     icon: <SentimentDissatisfiedIcon />,
     moods: [
       "anger",
-      "fear",
-      "disgust",
+      "angry",
+      "annoyed"
+    ] as EmotionalCategory[]
+  },
+  {
+    name: "Positive Emotions",
+    icon: <EmojiEmotionsIcon />,
+    moods: [
+      "happiness",
+      "positive",
+      "playful"
+    ] as EmotionalCategory[]
+  },
+  {
+    name: "Social & Respect",
+    icon: <PsychologyIcon />,
+    moods: [
+      "empathy",
+      "empathetic",
+      "respect"
+    ] as EmotionalCategory[]
+  },
+  {
+    name: "Motivation & Determination",
+    icon: <SentimentSatisfiedIcon />,
+    moods: [
+      "determination",
+      "motivational"
+    ] as EmotionalCategory[]
+  },
+  {
+    name: "Neutral & Indifferent",
+    icon: <SentimentDissatisfiedIcon />,
+    moods: [
+      "neutral",
+      "indifferent"
+    ] as EmotionalCategory[]
+  },
+  {
+    name: "Fear & Anxiety",
+    icon: <SentimentDissatisfiedIcon />,
+    moods: [
+      "fear"
+    ] as EmotionalCategory[]
+  },
+  {
+    name: "Surprise & Disgust",
+    icon: <SentimentDissatisfiedIcon />,
+    moods: [
+      "surprise",
+      "disgust"
+    ] as EmotionalCategory[]
+  },
+  {
+    name: "Sadness & Grief",
+    icon: <SentimentDissatisfiedIcon />,
+    moods: [
       "sadness"
     ] as EmotionalCategory[]
   },
   {
-    name: "Complex Feelings",
-    icon: <PsychologyIcon />,
+    name: "Gratitude & Appreciation",
+    icon: <SentimentSatisfiedIcon />,
     moods: [
-      "surprise",
-      "neutral",
-      "determination",
-      "respect"
+      "gratitude"
     ] as EmotionalCategory[]
   }
 ];

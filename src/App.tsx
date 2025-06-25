@@ -3,35 +3,35 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Box, CircularProgress, Typography, CssBaseline } from '@mui/material';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import Navigation from './components/Navigation';
-import { useTheme } from './context/ThemeContext';
-import { useProgress } from './context/ProgressContext';
-import { useSettings } from './context/SettingsContext';
-import { useAccessibility } from './context/AccessibilityContext';
-import { useAchievements } from './context/AchievementContext';
-import { useAudio } from './context/AudioContext';
-import { useAuth } from './context/AuthContext';
-import { useNotifications } from './context/NotificationContext';
-import { useProfile } from './context/ProfileContext';
-import { useQuiz } from './context/QuizContext';
-import { useSRS } from './context/SRSContext';
-import { useVocabulary } from './context/VocabularyContext';
-import { useVirtualSensei } from './context/VirtualSenseiContext';
+import { useTheme } from './context/ThemeContext.tsx';
+import { useProgress } from './context/ProgressContext.tsx';
+import { useSettings } from './context/SettingsContext.tsx';
+import { useAccessibility } from './context/AccessibilityContext.tsx';
+import { useAchievements } from './context/AchievementContext.tsx';
+import { useAudio } from './context/AudioContext.tsx';
+import { useAuth } from './context/AuthContext.tsx';
+import { useNotifications } from './context/NotificationContext.tsx';
+import { useProfile } from './context/ProfileContext.tsx';
+import { useQuiz } from './context/QuizContext.tsx';
+import { useSRS } from './context/SRSContext.tsx';
+import { useVocabulary } from './context/VocabularyContext.tsx';
+import { useVirtualSensei } from './context/VirtualSenseiContext.tsx';
 
 // Import all context providers
-import { ThemeProvider } from './context/ThemeContext';
-import { ProgressProvider } from './context/ProgressContext';
-import { SettingsProvider } from './context/SettingsContext';
-import { AccessibilityProvider } from './context/AccessibilityContext';
-import { AchievementProvider } from './context/AchievementContext';
-import { AudioProvider } from './context/AudioContext';
-import { AuthProvider } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
-import { ProfileProvider } from './context/ProfileContext';
-import { QuizProvider } from './context/QuizContext';
-import { SRSProvider } from './context/SRSContext';
-import { VocabularyProvider } from './context/VocabularyContext';
-import { VirtualSenseiProvider } from './context/VirtualSenseiContext';
-import { AppProvider } from './context/AppContext';
+import { ThemeProvider } from './context/ThemeContext.tsx';
+import { ProgressProvider } from './context/ProgressContext.tsx';
+import { SettingsProvider } from './context/SettingsContext.tsx';
+import { AccessibilityProvider } from './context/AccessibilityContext.tsx';
+import { AchievementProvider } from './context/AchievementContext.tsx';
+import { AudioProvider } from './context/AudioContext.tsx';
+import { AuthProvider } from './context/AuthContext.tsx';
+import { NotificationProvider } from './context/NotificationContext.tsx';
+import { ProfileProvider } from './context/ProfileContext.tsx';
+import { QuizProvider } from './context/QuizContext.tsx';
+import { SRSProvider } from './context/SRSContext.tsx';
+import { VocabularyProvider } from './context/VocabularyContext.tsx';
+import { VirtualSenseiProvider } from './context/VirtualSenseiContext.tsx';
+import { AppProvider } from './context/AppContext.tsx';
 
 // Error boundary component for better error handling
 const ErrorFallback: React.FC<{ componentName: string; error: Error }> = ({ componentName, error }) => {

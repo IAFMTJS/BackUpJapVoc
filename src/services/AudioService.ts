@@ -52,10 +52,35 @@ class AudioService {
       if ('speechSynthesis' in window) {
         const allVoices = window.speechSynthesis.getVoices();
         
-        // First try to find Japanese voices, then any available voice
-        this.ttsVoices = allVoices.filter(voice => 
-          voice.lang.includes('ja') || voice.lang.includes('JP')
+        // Priority list of preferred Japanese voices (in order of preference)
+        const preferredJapaneseVoices = [
+          'Kyoko',           // macOS Japanese voice
+          'Haruka',          // Windows Japanese voice
+          'Microsoft Haruka Desktop',
+          'Google 日本語',
+          'Google 日本語 (Female)',
+          'Google 日本語 (Male)',
+          'Samantha',        // Sometimes good for Japanese
+          'Alex'             // Sometimes good for Japanese
+        ];
+        
+        // First try to find preferred Japanese voices
+        this.ttsVoices = [];
+        for (const preferredVoice of preferredJapaneseVoices) {
+          const found = allVoices.find(voice => 
+            voice.name.toLowerCase().includes(preferredVoice.toLowerCase())
+          );
+          if (found) {
+            this.ttsVoices.push(found);
+          }
+        }
+        
+        // Then add any other Japanese voices
+        const otherJapaneseVoices = allVoices.filter(voice => 
+          (voice.lang.includes('ja') || voice.lang.includes('JP')) &&
+          !this.ttsVoices.some(v => v.name === voice.name)
         );
+        this.ttsVoices.push(...otherJapaneseVoices);
         
         // If no Japanese voices found, use any available voice
         if (this.ttsVoices.length === 0) {
@@ -63,13 +88,14 @@ class AudioService {
           console.warn('No Japanese voices found, using any available voice');
         }
         
-        // Set default voice to first available
+        // Set default voice to the best available Japanese voice
         this.defaultVoice = this.ttsVoices[0] || null;
         
         if (this.ttsVoices.length === 0) {
           console.warn('No voices found. Text-to-speech may not work.');
         } else {
           console.log(`Loaded ${this.ttsVoices.length} voices for TTS`);
+          console.log('Available voices:', this.ttsVoices.map(v => `${v.name} (${v.lang})`));
         }
       }
     } catch (error) {
@@ -140,17 +166,29 @@ class AudioService {
       const selectedVoice = this.ttsVoices.find(v => v.name === options.voice);
       if (selectedVoice) {
         utterance.voice = selectedVoice;
+        console.log(`Using specified voice: ${selectedVoice.name}`);
+      } else {
+        console.warn(`Specified voice "${options.voice}" not found, using best available`);
+        utterance.voice = this.defaultVoice;
       }
     } else if (this.defaultVoice) {
       utterance.voice = this.defaultVoice;
+      console.log(`Using default voice: ${this.defaultVoice.name}`);
+    } else {
+      console.warn('No suitable voice found, using system default');
     }
     
-    utterance.rate = options.rate || 1;
+    // Optimize settings for Japanese pronunciation
+    utterance.rate = options.rate || 0.9; // Slightly slower for better clarity
     utterance.pitch = options.pitch || 1;
     utterance.lang = 'ja-JP';
+    utterance.volume = 1; // Ensure full volume
 
     return new Promise<void>((resolve, reject) => {
-      utterance.onend = () => resolve();
+      utterance.onend = () => {
+        console.log('TTS playback completed');
+        resolve();
+      };
       utterance.onerror = (error) => {
         console.error('TTS error:', error);
         reject(error);
@@ -253,8 +291,13 @@ class AudioService {
       supported: 'speechSynthesis' in window,
       voicesLoaded: this.ttsVoices.length,
       defaultVoice: this.defaultVoice?.name || 'None',
-      availableVoices: this.ttsVoices.map(v => ({ name: v.name, lang: v.lang }))
+      availableVoices: this.ttsVoices.map(v => ({ name: v.name, lang: v.lang })),
+      bestVoice: this.getBestVoice()?.name || 'None'
     };
+  }
+
+  public getBestVoice(): SpeechSynthesisVoice | null {
+    return this.defaultVoice;
   }
 }
 

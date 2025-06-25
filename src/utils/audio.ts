@@ -22,118 +22,32 @@ const initializeAudio = async () => {
   }
 };
 
-// Define voice types for different contexts
-type VoiceContext = 'happy' | 'serious' | 'neutral';
-
-// Cache for available voices
-let availableVoices: SpeechSynthesisVoice[] = [];
-
-// Initialize voices
-const initializeVoices = () => {
-  if ('speechSynthesis' in window) {
-    // Get all voices
-    availableVoices = window.speechSynthesis.getVoices();
-    
-    // If voices aren't loaded yet, wait for them
-    if (availableVoices.length === 0) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        availableVoices = window.speechSynthesis.getVoices();
-      };
-    }
-  }
-};
-
-// Get appropriate voice based on context
-const getVoiceForContext = (context: VoiceContext): SpeechSynthesisVoice | null => {
-  if (!availableVoices.length) {
-    initializeVoices();
-  }
-
-  // Filter Japanese voices
-  const japaneseVoices = availableVoices.filter(voice => 
-    voice.lang.includes('ja') || voice.lang.includes('JP')
-  );
-
-  if (japaneseVoices.length === 0) {
-    return null;
-  }
-
-  // Try to find voices with specific characteristics
-  switch (context) {
-    case 'happy':
-      // Prefer female voices for happy context
-      return japaneseVoices.find(voice => 
-        voice.name.toLowerCase().includes('female') || 
-        voice.name.toLowerCase().includes('kyoko') ||
-        voice.name.toLowerCase().includes('haruka')
-      ) || japaneseVoices[0];
-    
-    case 'serious':
-      // Prefer male voices for serious context
-      return japaneseVoices.find(voice => 
-        voice.name.toLowerCase().includes('male') || 
-        voice.name.toLowerCase().includes('takumi') ||
-        voice.name.toLowerCase().includes('daichi')
-      ) || japaneseVoices[0];
-    
-    default:
-      // For neutral context, just use the first available Japanese voice
-      return japaneseVoices[0];
-  }
-};
-
-// Enhanced audio playback function with context
-export const playAudioWithContext = async (
-  text: string, 
-  context: VoiceContext = 'neutral',
-  options: { rate?: number; pitch?: number } = {}
-): Promise<void> => {
-  if (!('speechSynthesis' in window)) {
-    throw new Error('Speech synthesis not supported');
-  }
-
-  // Cancel any ongoing speech
-  window.speechSynthesis.cancel();
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'ja-JP';
-  
-  // Get appropriate voice for context
-  const voice = getVoiceForContext(context);
-  if (voice) {
-    utterance.voice = voice;
-  }
-
-  // Apply custom options
-  utterance.rate = options.rate || 1;
-  utterance.pitch = options.pitch || 1;
-
-  return new Promise<void>((resolve, reject) => {
-    utterance.onend = () => resolve();
-    utterance.onerror = (error) => reject(error);
-    window.speechSynthesis.speak(utterance);
-  });
-};
-
-// Update the existing playAudio function to use context
+// Simplified audio playback function that uses AudioService consistently
 export const playAudio = async (
   text: string, 
-  type: 'word' | 'example' = 'word',
-  context: VoiceContext = 'neutral'
+  type: 'word' | 'example' = 'word'
 ): Promise<void> => {
   if (!isInitialized) {
     await initializeAudio();
   }
 
   try {
-    // Try to use the audio service first
+    // Always use AudioService for consistent voice selection
     await audioService.playAudio(text, {
-      useTTS: isIOS, // Prefer TTS on iOS
+      useTTS: true, // Always prefer TTS for better Japanese pronunciation
+      rate: 0.9,    // Slightly slower for better clarity
+      pitch: 1
     });
   } catch (error) {
     console.error('[playAudio] Error playing audio:', error);
-    // Fallback to Web Speech API with context
-    await playAudioWithContext(text, context);
+    // Fallback to basic TTS if AudioService fails
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
   }
 };
 
@@ -178,4 +92,23 @@ export const generateMoodWordAudio = async (word: string): Promise<string | unde
 };
 
 // Export AudioService for direct access if needed
-export { audioService as AudioService }; 
+export { audioService as AudioService };
+
+// Debug function to help identify voice issues
+export const debugVoices = () => {
+  if (!('speechSynthesis' in window)) {
+    console.log('Speech synthesis not supported');
+    return;
+  }
+
+  const allVoices = window.speechSynthesis.getVoices();
+  const audioService = AudioService.getInstance();
+  const status = audioService.getTTSStatus();
+  
+  console.log('=== VOICE DEBUG INFO ===');
+  console.log('All available voices:', allVoices.map(v => `${v.name} (${v.lang})`));
+  console.log('AudioService status:', status);
+  console.log('Best voice:', status.bestVoice);
+  console.log('Japanese voices:', allVoices.filter(v => v.lang.includes('ja') || v.lang.includes('JP')));
+  console.log('========================');
+}; 

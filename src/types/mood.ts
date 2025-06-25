@@ -10,7 +10,15 @@ export type EmotionalCategory =
   | 'gratitude'
   | 'empathy'
   | 'respect'
-  | 'determination';
+  | 'determination'
+  | 'romantic'
+  | 'angry'
+  | 'annoyed'
+  | 'empathetic'
+  | 'motivational'
+  | 'playful'
+  | 'positive'
+  | 'indifferent';
 
 export type FormalityLevel = 'casual' | 'polite' | 'formal';
 
@@ -106,5 +114,45 @@ export const EMOTIONAL_CATEGORIES: Record<EmotionalCategory, {
     name: 'Determination',
     emoji: '💪',
     description: 'Expressions of resolve, willpower, and perseverance'
+  },
+  romantic: {
+    name: 'Romantic',
+    emoji: '💕',
+    description: 'Expressions of romantic love and passion'
+  },
+  angry: {
+    name: 'Angry',
+    emoji: '😡',
+    description: 'Expressions of strong anger and frustration'
+  },
+  annoyed: {
+    name: 'Annoyed',
+    emoji: '😤',
+    description: 'Expressions of irritation and annoyance'
+  },
+  empathetic: {
+    name: 'Empathetic',
+    emoji: '🤗',
+    description: 'Expressions of deep empathy and understanding'
+  },
+  motivational: {
+    name: 'Motivational',
+    emoji: '🔥',
+    description: 'Expressions of motivation and encouragement'
+  },
+  playful: {
+    name: 'Playful',
+    emoji: '😋',
+    description: 'Expressions of playfulness and fun'
+  },
+  positive: {
+    name: 'Positive',
+    emoji: '✨',
+    description: 'Expressions of positivity and optimism'
+  },
+  indifferent: {
+    name: 'Indifferent',
+    emoji: '😑',
+    description: 'Expressions of indifference and apathy'
   }
 }; 

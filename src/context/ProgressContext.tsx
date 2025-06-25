@@ -343,6 +343,10 @@ interface ProgressContextType {
     points: number;
     category: string;
   }) => void;
+  // Lesson completion functions
+  markLessonCompleted: (lessonId: string) => void;
+  isLessonCompleted: (lessonId: string) => boolean;
+  getCompletedLessons: () => string[];
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -372,6 +376,37 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     progress: true,
     streakData: true
   });
+
+  // Add lesson completion tracking
+  const [completedLessons, setCompletedLessons] = useState<string[]>(() => {
+    const saved = localStorage.getItem('completedLessons');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Save completed lessons to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('completedLessons', JSON.stringify(completedLessons));
+  }, [completedLessons]);
+
+  // Function to mark a lesson as completed
+  const markLessonCompleted = useCallback((lessonId: string) => {
+    setCompletedLessons(prev => {
+      if (!prev.includes(lessonId)) {
+        return [...prev, lessonId];
+      }
+      return prev;
+    });
+  }, []);
+
+  // Function to check if a lesson is completed
+  const isLessonCompleted = useCallback((lessonId: string) => {
+    return completedLessons.includes(lessonId);
+  }, [completedLessons]);
+
+  // Function to get all completed lessons
+  const getCompletedLessons = useCallback(() => {
+    return completedLessons;
+  }, [completedLessons]);
 
   // Helper function to update loading states
   const updateLoadingState = (key: keyof typeof loadingStates, value: boolean) => {
@@ -1427,7 +1462,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     trackLessonCompletion,
     trackPracticeSession,
     trackSRSReview,
-    trackAchievement
+    trackAchievement,
+    markLessonCompleted,
+    isLessonCompleted,
+    getCompletedLessons
   };
   
   return (

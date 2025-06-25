@@ -1,57 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  LinearProgress,
+  Chip,
+  Dialog,
+  DialogContent,
+  Alert
+} from '@mui/material';
+import { School, Lock, CheckCircle, PlayArrow, Star, Timer } from '@mui/icons-material';
 import { useTheme } from '../context/ThemeContext';
 import { useProgress } from '../context/ProgressContext';
-import { 
-  Box, 
-  Typography, 
-  Card, 
-  CardContent, 
-  Button, 
-  Grid, 
-  LinearProgress, 
-  Chip, 
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions
-} from '@mui/material';
-import { 
-  School, 
-  CheckCircle, 
-  Lock, 
-  PlayArrow, 
-  Star,
-  TrendingUp,
-  EmojiEvents,
-  Timer
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import { senseiLessons, getLessonById, getPrerequisitesMet } from '../data/senseiLessons';
+import { senseiLessons, getPrerequisitesMet } from '../data/senseiLessons';
+import LessonComponent from '../components/LessonNumbers';
 import VirtualSensei from '../components/VirtualSensei';
 
 const LearningPathPage: React.FC = () => {
   const navigate = useNavigate();
   const { getThemeClasses } = useTheme();
   const themeClasses = getThemeClasses();
-  const { progress } = useProgress();
+  const { progress, getCompletedLessons, isLessonCompleted } = useProgress();
   
   const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
   const [showLessonDialog, setShowLessonDialog] = useState(false);
   const [senseiVisible, setSenseiVisible] = useState(true);
 
-  // Get user's completed lessons from progress
-  const completedLessons = Object.keys(progress?.words || {})
-    .filter(wordId => {
-      const wordProgress = progress.words[wordId];
-      return wordProgress?.masteryLevel >= 3; // Consider mastered if level 3+
-    })
-    .map(wordId => {
-      // Map word IDs to lesson IDs (this is a simplified mapping)
-      // In a real implementation, you'd have a proper mapping
-      return 'numbers'; // Placeholder
-    });
+  // Get user's completed lessons from proper lesson tracking
+  const completedLessons = getCompletedLessons();
 
   // Calculate overall progress
   const totalLessons = senseiLessons.length;
@@ -67,38 +47,32 @@ const LearningPathPage: React.FC = () => {
   };
 
   const handleLessonClick = (lessonId: string) => {
-    const lesson = getLessonById(lessonId);
-    if (!lesson) return;
-
-    // Check if prerequisites are met
-    if (!getPrerequisitesMet(lessonId, completedLessons)) {
-      alert('Complete the prerequisite lessons first!');
-      return;
+    const status = getLessonStatus(lessonId);
+    if (status === 'locked') {
+      setSelectedLesson(lessonId);
+      setShowLessonDialog(true);
+    } else {
+      setSelectedLesson(lessonId);
+      setShowLessonDialog(true);
     }
-
-    setSelectedLesson(lessonId);
-    setShowLessonDialog(true);
   };
 
-  const handleStartLesson = () => {
-    if (selectedLesson) {
-      setShowLessonDialog(false);
-      // Navigate to lesson page or start lesson component
-      navigate(`/learning-path/lesson/${selectedLesson}`);
-    }
+  const handleCloseLesson = () => {
+    setSelectedLesson(null);
+    setShowLessonDialog(false);
   };
 
   const getLessonStatus = (lessonId: string) => {
     // First lesson should always be available
     if (lessonId === 'numbers') {
-      if (completedLessons.includes(lessonId)) {
+      if (isLessonCompleted(lessonId)) {
         return 'completed';
       }
       return 'available';
     }
     
     // For other lessons, check prerequisites
-    if (completedLessons.includes(lessonId)) {
+    if (isLessonCompleted(lessonId)) {
       return 'completed';
     }
     if (getPrerequisitesMet(lessonId, completedLessons)) {
@@ -114,11 +88,13 @@ const LearningPathPage: React.FC = () => {
     const isLocked = status === 'locked';
 
     return (
-      <motion.div
+      <Box
         key={lesson.id}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.1 }}
+        sx={{
+          opacity: 1,
+          transform: 'translateY(0)',
+          transition: 'all 0.3s ease'
+        }}
       >
         <Card 
           sx={{ 
@@ -192,7 +168,7 @@ const LearningPathPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
-      </motion.div>
+      </Box>
     );
   };
 
@@ -279,16 +255,18 @@ const LearningPathPage: React.FC = () => {
         
         <Grid container spacing={3}>
           {senseiLessons.map((lesson, index) => {
-            const isCompleted = completedLessons.includes(lesson.id);
-            const prerequisitesMet = getPrerequisitesMet(lesson.prerequisites, completedLessons);
+            const isCompleted = isLessonCompleted(lesson.id);
+            const prerequisitesMet = getPrerequisitesMet(lesson.id, completedLessons);
             const isLocked = !prerequisitesMet;
             
             return (
               <Grid item xs={12} sm={6} md={4} key={lesson.id}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                <Box
+                  sx={{
+                    opacity: 1,
+                    transform: 'translateY(0)',
+                    transition: 'all 0.3s ease'
+                  }}
                 >
                   <Card 
                     sx={{ 
@@ -425,81 +403,56 @@ const LearningPathPage: React.FC = () => {
                       )}
                     </CardContent>
                   </Card>
-                </motion.div>
+                </Box>
               </Grid>
             );
           })}
         </Grid>
 
         {/* VSensei Guidance */}
-        <Card sx={{ mt: 4, background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <img 
-                src="/sensai.png" 
-                alt="VSensei" 
-                style={{ 
-                  width: 50, 
-                  height: 50, 
-                  borderRadius: '50%', 
-                  marginRight: 16,
-                  border: '2px solid #3b82f6'
-                }} 
-              />
-              <Typography variant="h6" color="primary">
-                VSensei's Tip
+        <Box sx={{ mt: 4, p: 3, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            🎯 Your Learning Journey
+          </Typography>
+          <Typography variant="body1" paragraph>
+            {completedCount === 0 
+              ? "Start with the Numbers lesson to begin your Japanese learning adventure!"
+              : completedCount === 1
+              ? "Great start! You've completed your first lesson. Ready for the next challenge?"
+              : `Excellent progress! You've completed ${completedCount} lessons. Keep going!`
+            }
+          </Typography>
+          
+          {completedCount > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Completed Lessons: {completedLessons.join(', ')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Next Available: {senseiLessons.find(lesson => 
+                  !isLessonCompleted(lesson.id) && getPrerequisitesMet(lesson.id, completedLessons)
+                )?.title || 'All lessons completed!'}
               </Typography>
             </Box>
-            <Typography variant="body1" color="text.secondary">
-              Start with the Numbers lesson to build a strong foundation. Each lesson builds upon the previous ones, 
-              so take your time and practice regularly. I'm here to guide you through every step of your Japanese learning journey!
-            </Typography>
-          </CardContent>
-        </Card>
+          )}
+        </Box>
       </Box>
 
       {/* Lesson Dialog */}
       <Dialog 
         open={showLessonDialog} 
-        onClose={() => setShowLessonDialog(false)}
-        maxWidth="md"
+        onClose={handleCloseLesson}
+        maxWidth="lg"
         fullWidth
       >
-        <DialogTitle>
-          {selectedLesson && getLessonById(selectedLesson)?.title}
-        </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ p: 0 }}>
           {selectedLesson && (
-            <Box>
-              <Typography variant="body1" paragraph>
-                {getLessonById(selectedLesson)?.description}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Estimated time: {getLessonById(selectedLesson)?.estimatedTime} minutes
-              </Typography>
-            </Box>
+            <LessonComponent 
+              lessonId={selectedLesson} 
+              onBack={handleCloseLesson}
+            />
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowLessonDialog(false)}>
-            Cancel
-          </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleStartLesson}
-            startIcon={<PlayArrow />}
-            disabled={selectedLesson && !getPrerequisitesMet(selectedLesson, completedLessons)}
-          >
-            Start Lesson
-          </Button>
-        </DialogActions>
-        {selectedLesson && !getPrerequisitesMet(selectedLesson, completedLessons) && (
-          <Box sx={{ p: 2, pt: 0 }}>
-            <Typography color="error" variant="body2">
-              You must complete the prerequisite lessons before starting this lesson.
-            </Typography>
-          </Box>
-        )}
       </Dialog>
 
       {/* Virtual Sensei */}

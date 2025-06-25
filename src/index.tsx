@@ -14,7 +14,6 @@ import { WordLevelProvider } from './context/WordLevelContext';
 import { LearningProvider } from './context/LearningContext';
 import { AchievementProvider } from './context/AchievementContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import { setupChunkErrorHandling } from './utils/chunkErrorHandler';
 
 // Setup global error handling for React errors
 const setupGlobalErrorHandling = () => {
@@ -93,47 +92,19 @@ const setupGlobalErrorHandling = () => {
 // Initialize global error handling
 setupGlobalErrorHandling();
 
-// Setup chunk error handling
-setupChunkErrorHandling();
-
 // Create root with error handling
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element not found');
 }
 
+// Use React 18 createRoot API
 const root = ReactDOM.createRoot(rootElement);
 
-// Wrap the app in error handling
+// Temporarily render just the App component for testing
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <ThemeWrapper>
-          <ErrorBoundary>
-            <AuthProvider>
-              <AppProvider>
-                <ProgressProvider>
-                  <WordProvider>
-                    <WordLevelProvider>
-                      <AchievementProvider>
-                        <LearningProvider>
-                          <AccessibilityProvider>
-                            <SettingsProvider>
-                              <App />
-                            </SettingsProvider>
-                          </AccessibilityProvider>
-                        </LearningProvider>
-                      </AchievementProvider>
-                    </WordLevelProvider>
-                  </WordProvider>
-                </ProgressProvider>
-              </AppProvider>
-            </AuthProvider>
-          </ErrorBoundary>
-        </ThemeWrapper>
-      </ThemeProvider>
-    </BrowserRouter>
+    <App />
   </React.StrictMode>
 );
 
@@ -142,6 +113,15 @@ if ('serviceWorker' in navigator) {
   const registerServiceWorker = async () => {
     try {
       console.log('[SW] Starting service worker registration process...');
+      
+      // Add message handler to prevent undefined message type spam
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (!event.data || typeof event.data.type === 'undefined') {
+          // Silently ignore messages without type to prevent console spam
+          return;
+        }
+        console.log('[SW] Message received:', event.data.type);
+      });
       
       // Get existing registration
       const existingRegistration = await navigator.serviceWorker.getRegistration();

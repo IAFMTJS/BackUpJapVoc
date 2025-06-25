@@ -56,6 +56,7 @@ import AudioService from '../services/AudioService';
 import JapaneseCityscape from '../components/visualizations/JapaneseCityscape';
 import { getCacheStats, clearCache } from '../utils/AudioCache';
 import safeLocalStorage from '../utils/safeLocalStorage';
+import { playAudio, debugVoices } from '../utils/audio';
 
 interface AudioSettings {
   useTTS: boolean;
@@ -581,6 +582,56 @@ const SettingsPage: React.FC = () => {
                     disabled={isClearingCache || cacheStats.entryCount === 0}
                   >
                     {isClearingCache ? 'Clearing...' : 'Clear Cache'}
+                  </Button>
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Test Voice"
+                  secondary="Test the current voice selection with Japanese text"
+                />
+                <ListItemSecondaryAction>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      const testText = 'こんにちは、日本語のテストです。';
+                      playAudio(testText);
+                    }}
+                    disabled={!audioSettings.useTTS}
+                  >
+                    Test Voice
+                  </Button>
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Voice Status"
+                  secondary={`Current: ${audioService.getTTSStatus().bestVoice}`}
+                />
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
+                  primary="Debug Voices"
+                  secondary="Log voice information to console for troubleshooting"
+                />
+                <ListItemSecondaryAction>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      debugVoices();
+                      setNotification({
+                        open: true,
+                        message: 'Voice debug info logged to console',
+                        severity: 'success'
+                      });
+                    }}
+                  >
+                    Debug
                   </Button>
                 </ListItemSecondaryAction>
               </ListItem>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incognito Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background: rgba(76, 175, 80, 0.3); }
+        .error { background: rgba(244, 67, 54, 0.3); }
+        .warning { background: rgba(255, 152, 0, 0.3); }
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .server-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .server-links a {
+            color: #ffd700;
+            text-decoration: none;
+            padding: 5px 10px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 3px;
+        }
+        .server-links a:hover {
+            background: rgba(255, 215, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>🌐 Incognito Mode Server Test</h1>
+    
+    <div class="test-section">
+        <h2>🔍 Browser Information</h2>
+        <div id="browser-info"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🚀 Server Status</h2>
+        <div class="server-links">
+            <a href="http://localhost:3000" target="_blank">Production Server (3000)</a>
+            <a href="http://127.0.0.1:3000" target="_blank">Production Server (127.0.0.1:3000)</a>
+            <a href="http://localhost:3002" target="_blank">Dev Server (3002)</a>
+            <a href="http://127.0.0.1:3002" target="_blank">Dev Server (127.0.0.1:3002)</a>
+        </div>
+        <button onclick="testServers()">Test All Servers</button>
+        <div id="server-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>💾 Storage Test</h2>
+        <button onclick="testLocalStorage()">Test localStorage</button>
+        <button onclick="testSessionStorage()">Test sessionStorage</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+        <div id="storage-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Service Worker Test</h2>
+        <button onclick="testServiceWorker()">Test Service Worker</button>
+        <div id="sw-results"></div>
+    </div>
+
+    <script>
+        // Browser info
+        function showBrowserInfo() {
+            const info = document.getElementById('browser-info');
+            info.innerHTML = `
+                <div class="status ${navigator.userAgent.includes('Chrome') ? 'success' : 'warning'}">
+                    <strong>Browser:</strong> ${navigator.userAgent.split(' ').pop()}
+                </div>
+                <div class="status ${window.location.protocol === 'https:' ? 'success' : 'warning'}">
+                    <strong>Protocol:</strong> ${window.location.protocol}
+                </div>
+                <div class="status ${window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'success' : 'warning'}">
+                    <strong>Host:</strong> ${window.location.hostname}:${window.location.port}
+                </div>
+                <div class="status ${navigator.cookieEnabled ? 'success' : 'error'}">
+                    <strong>Cookies:</strong> ${navigator.cookieEnabled ? 'Enabled' : 'Disabled'}
+                </div>
+            `;
+        }
+
+        // Test servers
+        async function testServers() {
+            const results = document.getElementById('server-results');
+            results.innerHTML = '<div class="status warning">Testing servers...</div>';
+            
+            const servers = [
+                { name: 'Production (localhost:3000)', url: 'http://localhost:3000' },
+                { name: 'Production (127.0.0.1:3000)', url: 'http://127.0.0.1:3000' },
+                { name: 'Dev (localhost:3002)', url: 'http://localhost:3002' },
+                { name: 'Dev (127.0.0.1:3002)', url: 'http://127.0.0.1:3002' }
+            ];
+
+            let resultsHtml = '';
+            
+            for (const server of servers) {
+                try {
+                    const response = await fetch(server.url, { 
+                        method: 'HEAD',
+                        mode: 'no-cors'
+                    });
+                    resultsHtml += `<div class="status success">✅ ${server.name}: Available</div>`;
+                } catch (error) {
+                    resultsHtml += `<div class="status error">❌ ${server.name}: ${error.message}</div>`;
+                }
+            }
+            
+            results.innerHTML = resultsHtml;
+        }
+
+        // Test localStorage
+        function testLocalStorage() {
+            const results = document.getElementById('storage-results');
+            try {
+                localStorage.setItem('test', 'incognito-test-' + Date.now());
+                const value = localStorage.getItem('test');
+                results.innerHTML = `<div class="status success">✅ localStorage: Working (${value})</div>`;
+            } catch (error) {
+                results.innerHTML = `<div class="status error">❌ localStorage: ${error.message}</div>`;
+            }
+        }
+
+        // Test sessionStorage
+        function testSessionStorage() {
+            const results = document.getElementById('storage-results');
+            try {
+                sessionStorage.setItem('test', 'session-test-' + Date.now());
+                const value = sessionStorage.getItem('test');
+                results.innerHTML = `<div class="status success">✅ sessionStorage: Working (${value})</div>`;
+            } catch (error) {
+                results.innerHTML = `<div class="status error">❌ sessionStorage: ${error.message}</div>`;
+            }
+        }
+
+        // Clear storage
+        function clearStorage() {
+            const results = document.getElementById('storage-results');
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                results.innerHTML = `<div class="status success">✅ Storage cleared</div>`;
+            } catch (error) {
+                results.innerHTML = `<div class="status error">❌ Error clearing storage: ${error.message}</div>`;
+            }
+        }
+
+        // Test service worker
+        function testServiceWorker() {
+            const results = document.getElementById('sw-results');
+            
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    if (registrations.length > 0) {
+                        results.innerHTML = `<div class="status success">✅ Service Worker: ${registrations.length} registered</div>`;
+                    } else {
+                        results.innerHTML = `<div class="status warning">⚠️ Service Worker: No registrations found</div>`;
+                    }
+                }).catch(error => {
+                    results.innerHTML = `<div class="status error">❌ Service Worker: ${error.message}</div>`;
+                });
+            } else {
+                results.innerHTML = `<div class="status error">❌ Service Worker: Not supported</div>`;
+            }
+        }
+
+        // Initialize
+        showBrowserInfo();
+    </script>
+</body>
+</html> 
