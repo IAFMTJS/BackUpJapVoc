@@ -15,6 +15,12 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
   onRetry,
   onGoHome 
 }) => {
+  // Safety check to ensure we're rendering a valid component
+  if (typeof ErrorFallback !== 'function') {
+    console.error('ErrorFallback is not a valid component');
+    return <div>Error loading component</div>;
+  }
+
   const handleRetry = () => {
     if (onRetry) {
       onRetry();

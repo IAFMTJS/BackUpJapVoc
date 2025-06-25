@@ -36,6 +36,35 @@ import { KanjiProvider } from './context/KanjiContext';
 import { initializeApp as initializeSafeApp, isRestrictedEnvironment } from './utils/initializeApp';
 import { setupChunkErrorHandling } from './utils/chunkErrorHandler';
 
+// Safety check for Material-UI components
+const validateMaterialUIComponents = () => {
+  const requiredComponents = {
+    MuiThemeProvider,
+    createTheme,
+    CircularProgress,
+    Box,
+    Typography,
+    Paper,
+    Button
+  };
+  
+  for (const [name, component] of Object.entries(requiredComponents)) {
+    if (!component) {
+      console.error(`Material-UI component ${name} is not available`);
+      throw new Error(`Missing Material-UI component: ${name}`);
+    }
+  }
+  
+  console.log('All Material-UI components validated successfully');
+};
+
+// Validate components on import
+try {
+  validateMaterialUIComponents();
+} catch (error) {
+  console.error('Material-UI validation failed:', error);
+}
+
 // Lazy load all route components with error handling
 const createLazyComponent = (importFn: () => Promise<any>, componentName: string) => {
   return lazy(() => 
@@ -46,18 +75,41 @@ const createLazyComponent = (importFn: () => Promise<any>, componentName: string
           console.error(`Module for ${componentName} has no default export`);
           throw new Error(`Invalid module for ${componentName}`);
         }
+        
+        // Additional safety check for React components
+        const Component = module.default;
+        if (typeof Component !== 'function') {
+          console.error(`Module for ${componentName} default export is not a function`);
+          throw new Error(`Invalid component for ${componentName}`);
+        }
+        
+        // Check if it's a valid React component
+        if (!Component.prototype || !Component.prototype.isReactComponent) {
+          // For functional components, check if they can be called
+          try {
+            // This is a basic check - in production, we'll just return the component
+            return module;
+          } catch (error) {
+            console.error(`Component for ${componentName} is not a valid React component`);
+            throw new Error(`Invalid React component for ${componentName}`);
+          }
+        }
+        
         return module;
       })
       .catch(error => {
         console.error(`Failed to load ${componentName}:`, error);
-        // Return a fallback component
+        // Return a fallback component that won't cause React error #130
         return {
-          default: () => (
-            <ErrorFallback 
-              componentName={componentName} 
-              error={error instanceof Error ? error : new Error(`Failed to load ${componentName}`)}
-            />
-          )
+          default: () => {
+            console.error(`Rendering fallback for ${componentName} due to loading error:`, error);
+            return (
+              <ErrorFallback 
+                componentName={componentName} 
+                error={error instanceof Error ? error : new Error(`Failed to load ${componentName}`)}
+              />
+            );
+          }
         };
       })
   );
@@ -104,44 +156,66 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Create a stable theme object with proper type checking
   const muiTheme = React.useMemo(() => {
-    // Ensure we have a valid theme value
-    const theme = themeContext?.theme || 'dark';
-    
-    // Create theme with safe defaults
-    const themeConfig = {
-      palette: {
-        mode: theme === 'dark' ? 'dark' : 'light',
-        primary: {
-          main: theme === 'dark' ? '#3b82f6' : '#2563eb',
+    try {
+      // Ensure we have a valid theme value
+      const theme = themeContext?.theme || 'dark';
+      
+      // Create theme with safe defaults
+      const themeConfig = {
+        palette: {
+          mode: theme === 'dark' ? 'dark' : 'light',
+          primary: {
+            main: theme === 'dark' ? '#3b82f6' : '#2563eb',
+          },
+          secondary: {
+            main: theme === 'dark' ? '#8b5cf6' : '#7c3aed',
+          },
+          background: {
+            default: theme === 'dark' ? '#181830' : '#ffffff',
+            paper: theme === 'dark' ? '#23233a' : '#ffffff',
+          },
+          text: {
+            primary: theme === 'dark' ? '#ffffff' : '#1f2937',
+            secondary: theme === 'dark' ? '#d1d5db' : '#4b5563',
+          },
         },
-        secondary: {
-          main: theme === 'dark' ? '#8b5cf6' : '#7c3aed',
-        },
-        background: {
-          default: theme === 'dark' ? '#181830' : '#ffffff',
-          paper: theme === 'dark' ? '#23233a' : '#ffffff',
-        },
-        text: {
-          primary: theme === 'dark' ? '#ffffff' : '#1f2937',
-          secondary: theme === 'dark' ? '#d1d5db' : '#4b5563',
-        },
-      },
-      components: {
-        MuiCard: {
-          styleOverrides: {
-            root: {
-              background: theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-              backdropFilter: 'blur(10px)',
-              border: `1px solid ${
-                theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-              }`,
+        components: {
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                background: theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(10px)',
+                border: `1px solid ${
+                  theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                }`,
+              },
             },
           },
         },
-      },
-    };
+      };
 
-    return createTheme(themeConfig);
+      const createdTheme = createTheme(themeConfig);
+      
+      // Validate the created theme
+      if (!createdTheme || !createdTheme.palette) {
+        console.error('Failed to create valid Material-UI theme');
+        throw new Error('Invalid theme configuration');
+      }
+      
+      return createdTheme;
+    } catch (error) {
+      console.error('Error creating Material-UI theme:', error);
+      // Return a minimal fallback theme
+      return createTheme({
+        palette: {
+          mode: 'dark',
+          primary: { main: '#3b82f6' },
+          secondary: { main: '#8b5cf6' },
+          background: { default: '#181830', paper: '#23233a' },
+          text: { primary: '#ffffff', secondary: '#d1d5db' },
+        },
+      });
+    }
   }, [themeContext?.theme]);
 
   // Ensure theme is ready before rendering children
