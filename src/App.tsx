@@ -5,6 +5,7 @@ import { useTheme } from './context/ThemeContext';
 import Navigation from './components/Navigation';
 import ThemeToggle from './components/ThemeToggle';
 import ErrorBoundary from './components/ErrorBoundary';
+import ErrorFallback from './components/ErrorFallback';
 import OfflineStatus from './components/OfflineStatus';
 import PushNotifications from './components/PushNotifications';
 import MainLayout from './components/MainLayout';
@@ -35,33 +36,33 @@ import { KanjiProvider } from './context/KanjiContext';
 import { initializeApp as initializeSafeApp, isRestrictedEnvironment } from './utils/initializeApp';
 import { setupChunkErrorHandling } from './utils/chunkErrorHandler';
 
-// Lazy load all route components
-const Home = lazy(() => import('./pages/Home'));
-const Settings = lazy(() => import('./pages/Settings'));
-const LearningLayout = lazy(() => import('./pages/learning/LearningLayout'));
-const KanjiDictionary = lazy(() => import('./pages/learning/KanjiDictionary'));
-const Romaji = lazy(() => import('./pages/learning/Romaji'));
-const QuizPage = lazy(() => import('./pages/learning/QuizPage'));
-const Kana = lazy(() => import('./pages/learning/Kana'));
-const Dictionary = lazy(() => import('./pages/Dictionary'));
-const KnowingDictionary = lazy(() => import('./pages/KnowingDictionary'));
-const SRSPage = lazy(() => import('./pages/SRSPage'));
-const GamesPage = lazy(() => import('./pages/GamesPage'));
-const Progress = lazy(() => import('./pages/Progress'));
-const KnowingCenter = lazy(() => import('./pages/KnowingCenter'));
-const CultureAndRules = lazy(() => import('./pages/CultureAndRules'));
-const MoodPage = lazy(() => import('./pages/MoodPage'));
-const ProgressPage = lazy(() => import('./pages/ProgressPage'));
-const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
-const SettingsPage = lazy(() => import('./pages/Settings'));
-const TriviaSection = lazy(() => import('./pages/TriviaSection'));
-const AnimeSection = lazy(() => import('./pages/AnimeSection'));
-const FAQScoring = lazy(() => import('./pages/FAQScoring'));
-const FAQLearning = lazy(() => import('./pages/FAQLearning'));
-const FAQFeatures = lazy(() => import('./pages/FAQFeatures'));
-const FAQProgress = lazy(() => import('./pages/FAQProgress'));
-const LearningPathPage = lazy(() => import('./pages/LearningPathPage'));
-const LessonNumbers = lazy(() => import('./components/LessonNumbers'));
+// Lazy load all route components with error handling
+const Home = lazy(() => import('./pages/Home').catch(() => ({ default: () => <ErrorFallback componentName="Home page" /> })));
+const Settings = lazy(() => import('./pages/Settings').catch(() => ({ default: () => <ErrorFallback componentName="Settings page" /> })));
+const LearningLayout = lazy(() => import('./pages/learning/LearningLayout').catch(() => ({ default: () => <ErrorFallback componentName="Learning Layout" /> })));
+const KanjiDictionary = lazy(() => import('./pages/learning/KanjiDictionary').catch(() => ({ default: () => <ErrorFallback componentName="Kanji Dictionary" /> })));
+const Romaji = lazy(() => import('./pages/learning/Romaji').catch(() => ({ default: () => <ErrorFallback componentName="Romaji page" /> })));
+const QuizPage = lazy(() => import('./pages/learning/QuizPage').catch(() => ({ default: () => <ErrorFallback componentName="Quiz page" /> })));
+const Kana = lazy(() => import('./pages/learning/Kana').catch(() => ({ default: () => <ErrorFallback componentName="Kana page" /> })));
+const Dictionary = lazy(() => import('./pages/Dictionary').catch(() => ({ default: () => <ErrorFallback componentName="Dictionary page" /> })));
+const KnowingDictionary = lazy(() => import('./pages/KnowingDictionary').catch(() => ({ default: () => <ErrorFallback componentName="Knowing Dictionary" /> })));
+const SRSPage = lazy(() => import('./pages/SRSPage').catch(() => ({ default: () => <ErrorFallback componentName="SRS page" /> })));
+const GamesPage = lazy(() => import('./pages/GamesPage').catch(() => ({ default: () => <ErrorFallback componentName="Games page" /> })));
+const Progress = lazy(() => import('./pages/Progress').catch(() => ({ default: () => <ErrorFallback componentName="Progress page" /> })));
+const KnowingCenter = lazy(() => import('./pages/KnowingCenter').catch(() => ({ default: () => <ErrorFallback componentName="Knowing Center" /> })));
+const CultureAndRules = lazy(() => import('./pages/CultureAndRules').catch(() => ({ default: () => <ErrorFallback componentName="Culture & Rules" /> })));
+const MoodPage = lazy(() => import('./pages/MoodPage').catch(() => ({ default: () => <ErrorFallback componentName="Mood page" /> })));
+const ProgressPage = lazy(() => import('./pages/ProgressPage').catch(() => ({ default: () => <ErrorFallback componentName="Progress page" /> })));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage').catch(() => ({ default: () => <ErrorFallback componentName="Favorites page" /> })));
+const SettingsPage = lazy(() => import('./pages/Settings').catch(() => ({ default: () => <ErrorFallback componentName="Settings page" /> })));
+const TriviaSection = lazy(() => import('./pages/TriviaSection').catch(() => ({ default: () => <ErrorFallback componentName="Trivia section" /> })));
+const AnimeSection = lazy(() => import('./pages/AnimeSection').catch(() => ({ default: () => <ErrorFallback componentName="Anime section" /> })));
+const FAQScoring = lazy(() => import('./pages/FAQScoring').catch(() => ({ default: () => <ErrorFallback componentName="FAQ Scoring" /> })));
+const FAQLearning = lazy(() => import('./pages/FAQLearning').catch(() => ({ default: () => <ErrorFallback componentName="FAQ Learning" /> })));
+const FAQFeatures = lazy(() => import('./pages/FAQFeatures').catch(() => ({ default: () => <ErrorFallback componentName="FAQ Features" /> })));
+const FAQProgress = lazy(() => import('./pages/FAQProgress').catch(() => ({ default: () => <ErrorFallback componentName="FAQ Progress" /> })));
+const LearningPathPage = lazy(() => import('./pages/LearningPathPage').catch(() => ({ default: () => <ErrorFallback componentName="Learning Path" /> })));
+const LessonNumbers = lazy(() => import('./components/LessonNumbers').catch(() => ({ default: () => <ErrorFallback componentName="Lesson Numbers" /> })));
 
 // Loading component with better visual feedback
 const LoadingFallback = () => (
@@ -424,13 +425,41 @@ const App: React.FC = () => {
                                   </WordLevelProvider>
                                 </ErrorBoundary>
                               }>
-                                <Route index element={<KnowingCenter />} />
-                                <Route path="dictionary" element={<KnowingDictionary />} />
-                                <Route path="mood" element={<MoodPage />} />
-                                <Route path="culture" element={<CultureAndRules />} />
-                                <Route path="progress" element={<ProgressPage />} />
-                                <Route path="favorites" element={<FavoritesPage />} />
-                                <Route path="settings" element={<SettingsPage />} />
+                                <Route index element={
+                                  <ErrorBoundary>
+                                    <KnowingCenter />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="dictionary" element={
+                                  <ErrorBoundary>
+                                    <KnowingDictionary />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="mood" element={
+                                  <ErrorBoundary>
+                                    <MoodPage />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="culture" element={
+                                  <ErrorBoundary>
+                                    <CultureAndRules />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="progress" element={
+                                  <ErrorBoundary>
+                                    <ProgressPage />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="favorites" element={
+                                  <ErrorBoundary>
+                                    <FavoritesPage />
+                                  </ErrorBoundary>
+                                } />
+                                <Route path="settings" element={
+                                  <ErrorBoundary>
+                                    <SettingsPage />
+                                  </ErrorBoundary>
+                                } />
                                 <Route path="*" element={<Navigate to="/knowing" replace />} />
                               </Route>
                               <Route path="/trivia" element={
