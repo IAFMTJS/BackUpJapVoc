@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App, { ThemeWrapper } from './App';
@@ -14,8 +14,73 @@ import { WordLevelProvider } from './context/WordLevelContext';
 import { LearningProvider } from './context/LearningContext';
 import { AchievementProvider } from './context/AchievementContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import { setupChunkErrorHandling } from './utils/chunkErrorHandler';
 
-ReactDOM.render(
+// Setup global error handling for React errors
+const setupGlobalErrorHandling = () => {
+  // Handle unhandled promise rejections
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+    
+    // Check if it's a chunk loading error
+    if (event.reason && typeof event.reason === 'string' && 
+        (event.reason.includes('Loading chunk') || event.reason.includes('ChunkLoadError'))) {
+      console.log('Detected chunk loading rejection, attempting recovery...');
+      event.preventDefault();
+      
+      // Try to recover by reloading the page
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  });
+
+  // Handle JavaScript errors
+  window.addEventListener('error', (event) => {
+    console.error('Global error:', event.error);
+    
+    // Check if it's a chunk loading error
+    if (event.error && event.error.message && 
+        (event.error.message.includes('Loading chunk') || event.error.message.includes('ChunkLoadError'))) {
+      console.log('Detected chunk loading error, attempting recovery...');
+      
+      // Try to recover by reloading the page
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  });
+
+  // Handle React errors that might not be caught by ErrorBoundary
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    // Call the original console.error
+    originalConsoleError.apply(console, args);
+    
+    // Check if it's a React error
+    const errorString = args.join(' ');
+    if (errorString.includes('React') || errorString.includes('chunk') || errorString.includes('Loading')) {
+      console.log('React error detected, checking for recovery options...');
+    }
+  };
+};
+
+// Initialize global error handling
+setupGlobalErrorHandling();
+
+// Setup chunk error handling
+setupChunkErrorHandling();
+
+// Create root with error handling
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Root element not found');
+}
+
+const root = ReactDOM.createRoot(rootElement);
+
+// Wrap the app in error handling
+root.render(
   <React.StrictMode>
     <BrowserRouter>
       <ThemeProvider>
@@ -44,8 +109,7 @@ ReactDOM.render(
         </ThemeWrapper>
       </ThemeProvider>
     </BrowserRouter>
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 );
 
 // Service Worker Registration
@@ -135,38 +199,6 @@ if ('serviceWorker' in navigator) {
     registerWithRetry();
   }, 1000);
 }
-
-// Modify the global error handler to be more specific
-window.addEventListener('error', (event) => {
-  console.error('Global error:', event.error);
-  
-  // Handle specific error types
-  if (event.error?.message?.includes('theme')) {
-    console.log('Theme-related error detected, attempting recovery...');
-    // Instead of immediate reload, try to recover theme state
-    const root = document.getElementById('root');
-    if (root) {
-      // Force a theme re-initialization
-      root.setAttribute('data-theme', 'dark');
-      // Then reload
-      setTimeout(() => window.location.reload(), 1000);
-    }
-  } else if (event.error?.message?.includes('call')) {
-    console.log('Function call error detected, attempting recovery...');
-    // For call-related errors, try clearing runtime cache
-    if ('caches' in window) {
-      caches.keys().then(cacheNames => {
-        const runtimeCache = cacheNames.find(name => name.includes('runtime'));
-        if (runtimeCache) {
-          caches.delete(runtimeCache).then(() => {
-            console.log('Cleared runtime cache, reloading...');
-            window.location.reload();
-          });
-        }
-      });
-    }
-  }
-});
 
 // Add a function to clear all caches and reload
 const clearCachesAndReload = async () => {

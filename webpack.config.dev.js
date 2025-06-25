@@ -11,8 +11,26 @@ module.exports = (env, argv) => {
   // Get base config with development settings
   const base = baseConfig(devEnv, devArgv);
   
-  // Only add development-specific overrides
-  return merge(base, {
+  // Override the optimization settings completely for development
+  const devConfig = {
+    mode: 'development',
+    entry: './src/index.tsx',
+    output: {
+      path: path.resolve(__dirname, 'build'),
+      filename: 'static/js/[name].js',
+      chunkFilename: 'static/js/[name].chunk.js',
+      publicPath: '/',
+      clean: false,
+      crossOriginLoading: 'anonymous',
+      assetModuleFilename: 'static/media/[name].[hash][ext][query]',
+      chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
+      chunkLoadTimeout: 30000, // Reduced timeout for mobile
+      globalObject: 'this',
+      chunkLoading: 'jsonp',
+      chunkFormat: 'array-push'
+    },
+    module: base.module,
+    resolve: base.resolve,
     devServer: {
       static: {
         directory: path.join(__dirname, 'public'),
@@ -54,23 +72,23 @@ module.exports = (env, argv) => {
         progress: false
       }
     },
-    devtool: 'eval',
+    devtool: 'eval-source-map', // Better for debugging on mobile
     optimization: {
       removeAvailableModules: false,
       removeEmptyChunks: false,
-      // Enable code splitting for development to prevent large bundles
+      // Force code splitting for development to prevent large bundles
       splitChunks: {
         chunks: 'all',
-        maxInitialRequests: 10,
+        maxInitialRequests: 8, // Reduced for mobile
         minSize: 20000,
-        maxSize: 244000, // Smaller chunks for mobile
+        maxSize: 200000, // Even smaller chunks for mobile
         cacheGroups: {
           mui: {
             test: /[\\/]node_modules[\\/]@mui[\\/]/,
             name: 'vendor.mui',
             chunks: 'all',
             priority: 30,
-            enforce: false,
+            enforce: true,
             reuseExistingChunk: true
           },
           react: {
@@ -78,6 +96,7 @@ module.exports = (env, argv) => {
             name: 'vendor.react',
             chunks: 'all',
             priority: 25,
+            enforce: true,
             reuseExistingChunk: true
           },
           firebase: {
@@ -85,6 +104,7 @@ module.exports = (env, argv) => {
             name: 'vendor.firebase',
             chunks: 'all',
             priority: 20,
+            enforce: true,
             reuseExistingChunk: true
           },
           vendor: {
@@ -92,31 +112,57 @@ module.exports = (env, argv) => {
             name: 'vendor',
             chunks: 'all',
             priority: 10,
+            enforce: true,
             reuseExistingChunk: true
           },
           common: {
             name: 'common',
             minChunks: 2,
             priority: 5,
-            reuseExistingChunk: true,
-            enforce: true
+            enforce: true,
+            reuseExistingChunk: true
           }
         }
       },
       runtimeChunk: 'single'
     },
-    output: {
-      ...base.output,
-      chunkLoadingGlobal: 'webpackChunkBackupJapVoc',
-      chunkLoadTimeout: 30000, // Reduced timeout for mobile
-      chunkLoading: 'jsonp',
-      chunkFormat: 'array-push'
-    },
+    plugins: [
+      new webpack.ProvidePlugin({
+        process: 'process/browser.js',
+        Buffer: ['buffer', 'Buffer']
+      }),
+      new webpack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify('development')
+      }),
+      new webpack.BannerPlugin({
+        banner: 'window.webpackChunkBackupJapVoc = window.webpackChunkBackupJapVoc || [];',
+        raw: true,
+        entryOnly: true
+      }),
+      // Add chunk loading error handler for development
+      {
+        apply: (compiler) => {
+          compiler.hooks.compilation.tap('ChunkLoadingErrorHandler', (compilation) => {
+            compilation.hooks.afterOptimizeChunkModules.tap('ChunkLoadingErrorHandler', (chunks, modules) => {
+              // Add chunk loading error handling
+              compilation.mainTemplate.hooks.requireEnsure.tap('ChunkLoadingErrorHandler', (source, chunk, hash) => {
+                return source.replace(
+                  /__webpack_require__\.e\s*\(\s*([^)]+)\s*\)/g,
+                  '__webpack_require__.e($1).catch(function(err) { console.error("Chunk loading failed:", err); return Promise.reject(err); })'
+                );
+              });
+            });
+          });
+        }
+      }
+    ],
     cache: {
       type: 'filesystem',
       buildDependencies: {
         config: [__filename]
       }
     }
-  });
+  };
+
+  return devConfig;
 }; 
