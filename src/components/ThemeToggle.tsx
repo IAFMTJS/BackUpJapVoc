@@ -1,33 +1,42 @@
 import React from 'react';
+import { IconButton, Tooltip, Box } from '@mui/material';
+import { DarkMode, LightMode, Brightness4 } from '@mui/icons-material';
 import { useTheme } from '../context/ThemeContext';
 
 const ThemeToggle: React.FC = () => {
-  const { theme, setTheme, getThemeClasses } = useTheme();
-  const themeClasses = getThemeClasses();
+  const { theme, setTheme } = useTheme();
 
   const themes = [
-    { id: 'dark', label: 'Dark', icon: '🌙' },
-    { id: 'light', label: 'Light', icon: '☀️' },
+    { id: 'dark', label: 'Dark', icon: <DarkMode /> },
+    { id: 'light', label: 'Light', icon: <LightMode /> },
+    { id: 'neon', label: 'Neon', icon: <Brightness4 /> },
   ] as const;
 
+  const handleThemeChange = (newTheme: 'dark' | 'light' | 'neon') => {
+    setTheme(newTheme);
+  };
+
   return (
-    <div className="flex items-center space-x-2">
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {themes.map(({ id, label, icon }) => (
-        <button
-          key={id}
-          onClick={() => setTheme(id)}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-            theme === id
-              ? themeClasses.button.primary
-              : themeClasses.button.secondary
-          }`}
-          aria-label={`Switch to ${label} theme`}
-        >
-          <span className="mr-1.5">{icon}</span>
-          {label}
-        </button>
+        <Tooltip key={id} title={`Switch to ${label} theme`}>
+          <IconButton
+            onClick={() => handleThemeChange(id)}
+            color={theme === id ? 'primary' : 'default'}
+            size="small"
+            sx={{
+              bgcolor: theme === id ? 'primary.main' : 'transparent',
+              color: theme === id ? 'primary.contrastText' : 'inherit',
+              '&:hover': {
+                bgcolor: theme === id ? 'primary.dark' : 'action.hover',
+              },
+            }}
+          >
+            {icon}
+          </IconButton>
+        </Tooltip>
       ))}
-    </div>
+    </Box>
   );
 };
 

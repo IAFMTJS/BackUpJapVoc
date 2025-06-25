@@ -380,4 +380,14 @@ input:focus, select:focus {
     background: var(--background);
     color: var(--text-primary);
   }
+}
+
+/* Add spinner animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 } 

@@ -27,7 +27,7 @@ import { DictionaryProvider } from './context/DictionaryContext';
 import { LearningProvider } from './context/LearningContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import { databasePromise, initializeDatabase, forceDatabaseReset } from './utils/databaseConfig';
-import { CircularProgress, Box } from '@mui/material';
+import { CircularProgress, Box, Typography, Paper, Button } from '@mui/material';
 import { KnowingNavigation } from './components/KnowingNavigation';
 import ProfilePage from './pages/ProfilePage';
 import Login from './components/Login';
@@ -158,12 +158,34 @@ export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children
   // Show loading state while theme is initializing
   if (!isThemeReady || !muiTheme) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#181830]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg text-white">Loading theme...</p>
-        </div>
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          bgcolor: '#181830'
+        }}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              border: '2px solid transparent',
+              borderTop: '2px solid #3b82f6',
+              borderBottom: '2px solid #3b82f6',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              mx: 'auto',
+              mb: 2
+            }}
+          />
+          <Typography variant="h6" sx={{ color: 'white' }}>
+            Loading theme...
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
@@ -313,46 +335,88 @@ const App: React.FC = () => {
 
   if (isInitializing) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-700">{initProgress}</p>
-          <div className="mt-4 w-64 bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
-              style={{ width: `${(initStep / 13) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          bgcolor: 'grey.100'
+        }}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress size={48} sx={{ mb: 2 }} />
+          <Typography variant="h6" sx={{ color: 'text.primary', mb: 2 }}>
+            {initProgress}
+          </Typography>
+          <Box sx={{ width: 256, bgcolor: 'grey.300', borderRadius: 1, height: 10, mb: 1 }}>
+            <Box
+              sx={{
+                bgcolor: 'primary.main',
+                height: 10,
+                borderRadius: 1,
+                transition: 'width 0.5s ease',
+                width: `${(initStep / 13) * 100}%`
+              }}
+            />
+          </Box>
+        </Box>
+      </Box>
     );
   }
 
   if (initError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-red-600 mb-4">Initialization Error</h2>
-          <p className="text-gray-700 mb-4">{initError}</p>
-          <div className="space-y-3">
-            <button
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          bgcolor: 'grey.100',
+          p: 2
+        }}
+      >
+        <Paper
+          sx={{
+            maxWidth: 400,
+            width: '100%',
+            p: 3,
+            borderRadius: 2,
+            boxShadow: 3
+          }}
+        >
+          <Typography variant="h5" color="error" sx={{ mb: 2, fontWeight: 'bold' }}>
+            Initialization Error
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 2, color: 'text.secondary' }}>
+            {initError}
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Button
+              variant="contained"
               onClick={initializeApp}
-              className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+              fullWidth
+              sx={{ bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}
             >
               Retry Initialization
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="contained"
               onClick={handleForceReset}
-              className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+              fullWidth
+              sx={{ bgcolor: 'error.main', '&:hover': { bgcolor: 'error.dark' } }}
             >
               Force Reset Database
-            </button>
-          </div>
-          <p className="mt-4 text-sm text-gray-500">
+            </Button>
+          </Box>
+          <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary', fontSize: '0.875rem' }}>
             If the error persists, try clearing your browser data or using a different browser.
-          </p>
-        </div>
-      </div>
+          </Typography>
+        </Paper>
+      </Box>
     );
   }
 
