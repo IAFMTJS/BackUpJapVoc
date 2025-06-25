@@ -127,8 +127,135 @@ export const handleChunkError = (error: Error): void => {
   }
 };
 
-// Chunk loading error handler for mobile devices
+// Enhanced chunk error handling with React error #130 support
 export const setupChunkErrorHandling = () => {
+  if (typeof window === 'undefined') return;
+
+  // Handle chunk loading errors
+  const handleChunkError = (event: Event) => {
+    console.error('Chunk loading error detected:', event);
+    
+    // Try to recover by reloading the page
+    setTimeout(() => {
+      console.log('Attempting to recover from chunk loading error...');
+      window.location.reload();
+    }, 1000);
+  };
+
+  // Handle React error #130 (invalid element type)
+  const handleReactError = (error: Error) => {
+    if (error.message.includes('React') || 
+        error.message.includes('invalid element type') ||
+        error.message.includes('Element type is invalid') ||
+        error.message.includes('130')) {
+      console.error('React error #130 detected (invalid element type):', error);
+      
+      // This usually means a lazy-loaded component failed to load
+      // Try to recover by clearing cache and reloading
+      setTimeout(() => {
+        console.log('Attempting to recover from React error #130...');
+        
+        // Clear any cached chunks
+        if (window.webpackChunkBackupJapVoc) {
+          window.webpackChunkBackupJapVoc = [];
+        }
+        
+        // Clear module cache if possible
+        if (window.__webpack_require__ && window.__webpack_require__.c) {
+          Object.keys(window.__webpack_require__.c).forEach(key => {
+            delete window.__webpack_require__.c[key];
+          });
+        }
+        
+        window.location.reload();
+      }, 1000);
+    }
+  };
+
+  // Override console.error to catch React errors
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    // Call the original console.error
+    originalConsoleError.apply(console, args);
+    
+    // Check if it's a React error
+    const errorString = args.join(' ');
+    if (errorString.includes('React') || 
+        errorString.includes('invalid element type') ||
+        errorString.includes('Element type is invalid') ||
+        errorString.includes('130')) {
+      console.log('React error detected in console.error:', errorString);
+      
+      // Try to extract the error object
+      const errorArg = args.find(arg => arg instanceof Error);
+      if (errorArg) {
+        handleReactError(errorArg);
+      }
+    }
+  };
+
+  // Handle unhandled promise rejections (often chunk loading errors)
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+    
+    if (event.reason && typeof event.reason === 'string' && 
+        (event.reason.includes('Loading chunk') || 
+         event.reason.includes('ChunkLoadError') ||
+         event.reason.includes('React') ||
+         event.reason.includes('invalid element type'))) {
+      console.log('Detected chunk loading or React rejection, attempting recovery...');
+      event.preventDefault();
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  });
+
+  // Handle JavaScript errors
+  window.addEventListener('error', (event) => {
+    console.error('Global error:', event.error);
+    
+    if (event.error && event.error.message && 
+        (event.error.message.includes('Loading chunk') || 
+         event.error.message.includes('ChunkLoadError') ||
+         event.error.message.includes('React') ||
+         event.error.message.includes('invalid element type') ||
+         event.error.message.includes('Element type is invalid'))) {
+      console.log('Detected chunk loading or React error, attempting recovery...');
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  });
+
+  // Handle chunk loading errors specifically
+  window.addEventListener('error', (event) => {
+    if (event.target && (event.target as any).tagName === 'SCRIPT') {
+      const script = event.target as HTMLScriptElement;
+      if (script.src && script.src.includes('chunk')) {
+        console.error('Script chunk loading error:', script.src);
+        handleChunkError(event);
+      }
+    }
+  });
+
+  // Add retry mechanism for failed chunk loads
+  const originalFetch = window.fetch;
+  window.fetch = async (...args) => {
+    try {
+      return await originalFetch(...args);
+    } catch (error) {
+      const url = typeof args[0] === 'string' ? args[0] : args[0].url;
+      if (url && url.includes('chunk')) {
+        console.error('Fetch error for chunk:', url, error);
+        handleChunkError(new Event('fetch-error'));
+      }
+      throw error;
+    }
+  };
+
   // Store retry attempts for each chunk
   const retryAttempts = new Map<string, number>();
   const MAX_RETRIES = 3;

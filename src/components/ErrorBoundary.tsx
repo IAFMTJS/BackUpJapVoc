@@ -53,6 +53,15 @@ class ErrorBoundary extends Component<Props, State> {
       console.log('Detected chunk loading error, attempting recovery...');
       this.handleChunkError();
     }
+
+    // Check if it's React error #130 (invalid element type)
+    if (error.message.includes('invalid element type') || 
+        error.message.includes('Element type is invalid') ||
+        error.message.includes('React') ||
+        errorInfo.componentStack.includes('lazy')) {
+      console.log('Detected React error #130 (invalid element type), attempting recovery...');
+      this.handleReactError();
+    }
   }
 
   private handleChunkError = () => {
@@ -65,6 +74,35 @@ class ErrorBoundary extends Component<Props, State> {
         if (typeof window !== 'undefined' && window.webpackChunkBackupJapVoc) {
           // Clear the chunk cache
           window.webpackChunkBackupJapVoc = [];
+        }
+        
+        // Force a page reload to recover
+        window.location.reload();
+      } catch (reloadError) {
+        console.error('Failed to reload page:', reloadError);
+        this.setState({ isRecovering: false });
+      }
+    }, 1000);
+  };
+
+  private handleReactError = () => {
+    // Try to recover from React errors (usually lazy loading issues)
+    this.setState({ isRecovering: true });
+    
+    setTimeout(() => {
+      try {
+        // Clear any cached chunks and modules
+        if (typeof window !== 'undefined') {
+          if (window.webpackChunkBackupJapVoc) {
+            window.webpackChunkBackupJapVoc = [];
+          }
+          
+          // Clear module cache if possible
+          if (window.__webpack_require__ && window.__webpack_require__.c) {
+            Object.keys(window.__webpack_require__.c).forEach(key => {
+              delete window.__webpack_require__.c[key];
+            });
+          }
         }
         
         // Force a page reload to recover

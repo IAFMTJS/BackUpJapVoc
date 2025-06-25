@@ -37,32 +37,58 @@ import { initializeApp as initializeSafeApp, isRestrictedEnvironment } from './u
 import { setupChunkErrorHandling } from './utils/chunkErrorHandler';
 
 // Lazy load all route components with error handling
-const Home = lazy(() => import('./pages/Home').catch(() => ({ default: () => <ErrorFallback componentName="Home page" /> })));
-const Settings = lazy(() => import('./pages/Settings').catch(() => ({ default: () => <ErrorFallback componentName="Settings page" /> })));
-const LearningLayout = lazy(() => import('./pages/learning/LearningLayout').catch(() => ({ default: () => <ErrorFallback componentName="Learning Layout" /> })));
-const KanjiDictionary = lazy(() => import('./pages/learning/KanjiDictionary').catch(() => ({ default: () => <ErrorFallback componentName="Kanji Dictionary" /> })));
-const Romaji = lazy(() => import('./pages/learning/Romaji').catch(() => ({ default: () => <ErrorFallback componentName="Romaji page" /> })));
-const QuizPage = lazy(() => import('./pages/learning/QuizPage').catch(() => ({ default: () => <ErrorFallback componentName="Quiz page" /> })));
-const Kana = lazy(() => import('./pages/learning/Kana').catch(() => ({ default: () => <ErrorFallback componentName="Kana page" /> })));
-const Dictionary = lazy(() => import('./pages/Dictionary').catch(() => ({ default: () => <ErrorFallback componentName="Dictionary page" /> })));
-const KnowingDictionary = lazy(() => import('./pages/KnowingDictionary').catch(() => ({ default: () => <ErrorFallback componentName="Knowing Dictionary" /> })));
-const SRSPage = lazy(() => import('./pages/SRSPage').catch(() => ({ default: () => <ErrorFallback componentName="SRS page" /> })));
-const GamesPage = lazy(() => import('./pages/GamesPage').catch(() => ({ default: () => <ErrorFallback componentName="Games page" /> })));
-const Progress = lazy(() => import('./pages/Progress').catch(() => ({ default: () => <ErrorFallback componentName="Progress page" /> })));
-const KnowingCenter = lazy(() => import('./pages/KnowingCenter').catch(() => ({ default: () => <ErrorFallback componentName="Knowing Center" /> })));
-const CultureAndRules = lazy(() => import('./pages/CultureAndRules').catch(() => ({ default: () => <ErrorFallback componentName="Culture & Rules" /> })));
-const MoodPage = lazy(() => import('./pages/MoodPage').catch(() => ({ default: () => <ErrorFallback componentName="Mood page" /> })));
-const ProgressPage = lazy(() => import('./pages/ProgressPage').catch(() => ({ default: () => <ErrorFallback componentName="Progress page" /> })));
-const FavoritesPage = lazy(() => import('./pages/FavoritesPage').catch(() => ({ default: () => <ErrorFallback componentName="Favorites page" /> })));
-const SettingsPage = lazy(() => import('./pages/Settings').catch(() => ({ default: () => <ErrorFallback componentName="Settings page" /> })));
-const TriviaSection = lazy(() => import('./pages/TriviaSection').catch(() => ({ default: () => <ErrorFallback componentName="Trivia section" /> })));
-const AnimeSection = lazy(() => import('./pages/AnimeSection').catch(() => ({ default: () => <ErrorFallback componentName="Anime section" /> })));
-const FAQScoring = lazy(() => import('./pages/FAQScoring').catch(() => ({ default: () => <ErrorFallback componentName="FAQ Scoring" /> })));
-const FAQLearning = lazy(() => import('./pages/FAQLearning').catch(() => ({ default: () => <ErrorFallback componentName="FAQ Learning" /> })));
-const FAQFeatures = lazy(() => import('./pages/FAQFeatures').catch(() => ({ default: () => <ErrorFallback componentName="FAQ Features" /> })));
-const FAQProgress = lazy(() => import('./pages/FAQProgress').catch(() => ({ default: () => <ErrorFallback componentName="FAQ Progress" /> })));
-const LearningPathPage = lazy(() => import('./pages/LearningPathPage').catch(() => ({ default: () => <ErrorFallback componentName="Learning Path" /> })));
-const LessonNumbers = lazy(() => import('./components/LessonNumbers').catch(() => ({ default: () => <ErrorFallback componentName="Lesson Numbers" /> })));
+const createLazyComponent = (importFn: () => Promise<any>, componentName: string) => {
+  return lazy(() => 
+    importFn()
+      .then(module => {
+        // Ensure the module has a default export
+        if (!module || !module.default) {
+          console.error(`Module for ${componentName} has no default export`);
+          throw new Error(`Invalid module for ${componentName}`);
+        }
+        return module;
+      })
+      .catch(error => {
+        console.error(`Failed to load ${componentName}:`, error);
+        // Return a fallback component
+        return {
+          default: () => (
+            <ErrorFallback 
+              componentName={componentName} 
+              error={error instanceof Error ? error : new Error(`Failed to load ${componentName}`)}
+            />
+          )
+        };
+      })
+  );
+};
+
+const Home = createLazyComponent(() => import('./pages/Home'), 'Home page');
+const Settings = createLazyComponent(() => import('./pages/Settings'), 'Settings page');
+const LearningLayout = createLazyComponent(() => import('./pages/learning/LearningLayout'), 'Learning Layout');
+const KanjiDictionary = createLazyComponent(() => import('./pages/learning/KanjiDictionary'), 'Kanji Dictionary');
+const Romaji = createLazyComponent(() => import('./pages/learning/Romaji'), 'Romaji page');
+const QuizPage = createLazyComponent(() => import('./pages/learning/QuizPage'), 'Quiz page');
+const Kana = createLazyComponent(() => import('./pages/learning/Kana'), 'Kana page');
+const Dictionary = createLazyComponent(() => import('./pages/Dictionary'), 'Dictionary page');
+const KnowingDictionary = createLazyComponent(() => import('./pages/KnowingDictionary'), 'Knowing Dictionary');
+const SRSPage = createLazyComponent(() => import('./pages/SRSPage'), 'SRS page');
+const GamesPage = createLazyComponent(() => import('./pages/GamesPage'), 'Games page');
+const Progress = createLazyComponent(() => import('./pages/Progress'), 'Progress page');
+const KnowingCenter = createLazyComponent(() => import('./pages/KnowingCenter'), 'Knowing Center');
+const CultureAndRules = createLazyComponent(() => import('./pages/CultureAndRules'), 'Culture & Rules');
+const MoodPage = createLazyComponent(() => import('./pages/MoodPage'), 'Mood page');
+const ProgressPage = createLazyComponent(() => import('./pages/ProgressPage'), 'Progress page');
+const FavoritesPage = createLazyComponent(() => import('./pages/FavoritesPage'), 'Favorites page');
+const SettingsPage = createLazyComponent(() => import('./pages/Settings'), 'Settings page');
+const TriviaSection = createLazyComponent(() => import('./pages/TriviaSection'), 'Trivia section');
+const AnimeSection = createLazyComponent(() => import('./pages/AnimeSection'), 'Anime section');
+const FAQScoring = createLazyComponent(() => import('./pages/FAQScoring'), 'FAQ Scoring');
+const FAQLearning = createLazyComponent(() => import('./pages/FAQLearning'), 'FAQ Learning');
+const FAQFeatures = createLazyComponent(() => import('./pages/FAQFeatures'), 'FAQ Features');
+const FAQProgress = createLazyComponent(() => import('./pages/FAQProgress'), 'FAQ Progress');
+const LearningPathPage = createLazyComponent(() => import('./pages/LearningPathPage'), 'Learning Path');
+const LessonNumbers = createLazyComponent(() => import('./components/LessonNumbers'), 'Lesson Numbers');
 
 // Loading component with better visual feedback
 const LoadingFallback = () => (

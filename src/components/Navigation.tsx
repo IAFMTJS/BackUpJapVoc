@@ -122,7 +122,7 @@ const Navigation: React.FC = () => {
     }
   ];
 
-  // Profile dropdown
+  // Profile dropdown with safety checks
   const profileMenu = [
     { label: 'Profile', path: '/profile', icon: <ProfileIcon fontSize="small" /> },
     { label: 'Settings', path: '/settings', icon: <FAQIcon fontSize="small" /> },
@@ -132,6 +132,16 @@ const Navigation: React.FC = () => {
 
   // Safety check for currentUser
   const userPhotoURL = currentUser?.photoURL || undefined;
+
+  // Safety check function for rendering icons
+  const renderIcon = (icon: React.ReactNode, fallback: React.ReactNode = <SchoolIcon fontSize="small" />) => {
+    try {
+      return icon || fallback;
+    } catch (error) {
+      console.error('Error rendering icon:', error);
+      return fallback;
+    }
+  };
 
   return (
     <AppBar position="sticky" elevation={2}>
@@ -157,7 +167,7 @@ const Navigation: React.FC = () => {
               <Button
                 component={Link}
                 to={item.path}
-                startIcon={item.icon}
+                startIcon={renderIcon(item.icon)}
                 sx={{
                   color: isActive(item.path) ? 'primary.main' : 'inherit',
                   textTransform: 'none',
@@ -210,7 +220,7 @@ const Navigation: React.FC = () => {
                       }}
                     >
                       <ListItemIcon sx={{ minWidth: 36 }}>
-                        {sub.icon || <SchoolIcon fontSize="small" />}
+                        {renderIcon(sub.icon)}
                       </ListItemIcon>
                       <ListItemText primary={sub.label || 'Unknown'} />
                     </MenuItem>
@@ -248,13 +258,13 @@ const Navigation: React.FC = () => {
                     if (item.action) await item.action();
                   }}
                 >
-                  <ListItemIcon>{item.icon || <PersonIcon fontSize="small" />}</ListItemIcon>
+                  <ListItemIcon>{renderIcon(item.icon)}</ListItemIcon>
                   <ListItemText>{item.label || 'Unknown'}</ListItemText>
                 </MenuItem>
               ))}
             </Menu>
           </Box>
-          <ThemeToggle />
+          {renderIcon(<ThemeToggle />, <div>Theme</div>)}
         </Box>
 
         {/* Mobile Navigation */}
@@ -264,7 +274,7 @@ const Navigation: React.FC = () => {
             onClick={(e) => handleMenuOpen('mobile', e)}
             sx={{ p: 0.5 }}
           >
-            <MenuIcon />
+            {renderIcon(<MenuIcon />, <div>☰</div>)}
           </IconButton>
           
           <Menu
@@ -297,7 +307,7 @@ const Navigation: React.FC = () => {
                   }}
                 >
                   <ListItemIcon>
-                    {item.icon}
+                    {renderIcon(item.icon)}
                   </ListItemIcon>
                   <ListItemText primary={item.text} />
                 </MenuItem>
@@ -319,7 +329,7 @@ const Navigation: React.FC = () => {
                     }}
                   >
                     <ListItemIcon sx={{ minWidth: 36 }}>
-                      {sub.icon || <SchoolIcon fontSize="small" />}
+                      {renderIcon(sub.icon)}
                     </ListItemIcon>
                     <ListItemText primary={sub.label || 'Unknown'} />
                   </MenuItem>
@@ -342,13 +352,13 @@ const Navigation: React.FC = () => {
                   if (item.action) await item.action();
                 }}
               >
-                <ListItemIcon>{item.icon || <PersonIcon fontSize="small" />}</ListItemIcon>
+                <ListItemIcon>{renderIcon(item.icon)}</ListItemIcon>
                 <ListItemText>{item.label || 'Unknown'}</ListItemText>
               </MenuItem>
             ))}
           </Menu>
           
-          <ThemeToggle />
+          {renderIcon(<ThemeToggle />, <div>Theme</div>)}
         </Box>
       </Toolbar>
     </AppBar>

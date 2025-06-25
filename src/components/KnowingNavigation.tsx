@@ -98,6 +98,16 @@ export const KnowingNavigation: React.FC<KnowingNavigationProps> = ({ children }
     }
   ];
 
+  // Safety check function for rendering icons
+  const renderIcon = (icon: React.ReactNode, fallback: React.ReactNode = <div>📄</div>) => {
+    try {
+      return icon || fallback;
+    } catch (error) {
+      console.error('Error rendering icon in KnowingNavigation:', error);
+      return fallback;
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="static" color="default" elevation={1}>
@@ -114,7 +124,7 @@ export const KnowingNavigation: React.FC<KnowingNavigationProps> = ({ children }
                 aria-label="menu"
                 onClick={handleMobileMenuOpen}
               >
-                <MenuIcon />
+                {renderIcon(<MenuIcon />, <div>☰</div>)}
               </IconButton>
               <Menu
                 anchorEl={mobileMenuAnchor}
@@ -131,7 +141,7 @@ export const KnowingNavigation: React.FC<KnowingNavigationProps> = ({ children }
                     selected={location.pathname === item.path}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                      {item.icon}
+                      {renderIcon(item.icon)}
                       <Typography sx={{ ml: 1 }}>{item.text}</Typography>
                       {item.progress > 0 && (
                         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', width: 60 }}>
@@ -155,7 +165,7 @@ export const KnowingNavigation: React.FC<KnowingNavigationProps> = ({ children }
               {navigationItems.map((item) => (
                 <Button
                   key={item.text}
-                  startIcon={item.icon}
+                  startIcon={renderIcon(item.icon)}
                   onClick={() => navigate(item.path)}
                   color={location.pathname === item.path ? 'primary' : 'inherit'}
                   sx={{ position: 'relative' }}

@@ -38,6 +38,16 @@ const ProfileToggle: React.FC = () => {
     }
   };
 
+  // Safety check function for rendering icons
+  const renderIcon = (icon: React.ReactNode, fallback: React.ReactNode = <div>📄</div>) => {
+    try {
+      return icon || fallback;
+    } catch (error) {
+      console.error('Error rendering icon in ProfileToggle:', error);
+      return fallback;
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -61,7 +71,7 @@ const ProfileToggle: React.FC = () => {
             },
           }}
         >
-          <HelpIcon />
+          {renderIcon(<HelpIcon />)}
         </IconButton>
       </Tooltip>
 
@@ -77,7 +87,7 @@ const ProfileToggle: React.FC = () => {
             },
           }}
         >
-          <PersonIcon />
+          {renderIcon(<PersonIcon />)}
         </IconButton>
       </Tooltip>
 
@@ -94,25 +104,25 @@ const ProfileToggle: React.FC = () => {
       >
         <MenuItem onClick={() => handleMenuItemClick('/profile')}>
           <ListItemIcon>
-            <PersonIcon fontSize="small" />
+            {renderIcon(<PersonIcon fontSize="small" />)}
           </ListItemIcon>
           <ListItemText>Profile</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => handleMenuItemClick('/settings')}>
           <ListItemIcon>
-            <SettingsIcon fontSize="small" />
+            {renderIcon(<SettingsIcon fontSize="small" />)}
           </ListItemIcon>
           <ListItemText>Settings</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => handleMenuItemClick('/faq/scoring')}>
           <ListItemIcon>
-            <HelpIcon fontSize="small" />
+            {renderIcon(<HelpIcon fontSize="small" />)}
           </ListItemIcon>
           <ListItemText>FAQ</ListItemText>
         </MenuItem>
         <MenuItem onClick={handleSignOut}>
           <ListItemIcon>
-            <LogoutIcon fontSize="small" />
+            {renderIcon(<LogoutIcon fontSize="small" />)}
           </ListItemIcon>
           <ListItemText>Sign Out</ListItemText>
         </MenuItem>

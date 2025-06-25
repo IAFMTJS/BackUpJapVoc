@@ -62,6 +62,31 @@ const setupGlobalErrorHandling = () => {
     if (errorString.includes('React') || errorString.includes('chunk') || errorString.includes('Loading')) {
       console.log('React error detected, checking for recovery options...');
     }
+
+    // Specifically check for React error #130 (invalid element type)
+    if (errorString.includes('invalid element type') || 
+        errorString.includes('Element type is invalid') ||
+        errorString.includes('130')) {
+      console.error('🚨 React Error #130 detected (invalid element type):', {
+        error: errorString,
+        stack: new Error().stack,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Try to identify the problematic component
+      const componentMatch = errorString.match(/Element type is invalid: expected a string \(for built-in components\) or a class\/function \(for composite components\) but got: (.*?)\./);
+      if (componentMatch) {
+        console.error('Problematic component:', componentMatch[1]);
+      }
+      
+      // Attempt recovery
+      setTimeout(() => {
+        console.log('Attempting to recover from React error #130...');
+        window.location.reload();
+      }, 2000);
+    }
   };
 };
 
