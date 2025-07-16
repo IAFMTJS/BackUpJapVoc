@@ -77,7 +77,7 @@ const AnimePhraseCard: React.FC<AnimePhraseCardProps> = ({
         </div>
         {/* Category Badge */}
         <div className="mt-2">
-          <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+          <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-purple-600 text-white dark:bg-purple-900 dark:text-purple-200">
             {category}
           </span>
         </div>

@@ -208,8 +208,8 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete, onCancel }) 
               transition={{ duration: 0.2 }}
               className={`mt-4 p-4 rounded-lg text-center font-semibold ${
                 quizState.isCorrect
-                  ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                  : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                  ? 'bg-green-600 dark:bg-green-900 text-white dark:text-green-200'
+                  : 'bg-red-600 dark:bg-red-900 text-white dark:text-red-200'
               }`}
             >
               {quizState.isCorrect ? '✓ Correct!' : '✗ Incorrect!'}

@@ -61,17 +61,17 @@ export const LevelCard: React.FC<LevelCardProps> = ({
   const getCategoryBgColor = (category: string) => {
     switch (category) {
       case 'kana':
-        return 'bg-blue-100 border-blue-300 text-blue-800';
+        return 'bg-blue-600 border-blue-600 text-white';
       case 'vocab':
-        return 'bg-green-100 border-green-300 text-green-800';
+        return 'bg-green-600 border-green-600 text-white';
       case 'kanji':
-        return 'bg-purple-100 border-purple-300 text-purple-800';
+        return 'bg-purple-600 border-purple-600 text-white';
       case 'grammar':
-        return 'bg-orange-100 border-orange-300 text-orange-800';
+        return 'bg-orange-600 border-orange-600 text-white';
       case 'mixed':
-        return 'bg-indigo-100 border-indigo-300 text-indigo-800';
+        return 'bg-indigo-600 border-indigo-600 text-white';
       default:
-        return 'bg-gray-100 border-gray-300 text-gray-800';
+        return 'bg-gray-600 border-gray-600 text-white';
     }
   };
 

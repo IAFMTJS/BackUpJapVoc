@@ -173,7 +173,7 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
                 {/* Category Badge */}
                 <div className="mt-3">
                   <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold
-                    bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                    bg-blue-600 text-white dark:bg-blue-900 dark:text-blue-200
                     capitalize">
                     {phrase.category}
                   </span>
