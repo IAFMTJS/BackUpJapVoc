@@ -204,7 +204,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                           ? isCorrect
                             ? 'bg-green-500 text-white'
                             : 'bg-red-500 text-white'
-                          : 'bg-gray-200 text-gray-600'
+                          : 'bg-gray-600 text-white'
                       }`}>
                         {String.fromCharCode(65 + index)} {/* A, B, C, D */}
                       </div>
@@ -434,7 +434,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                           ? isCorrect
                             ? 'bg-green-500 text-white'
                             : 'bg-red-500 text-white'
-                          : 'bg-gray-200 text-gray-600'
+                          : 'bg-gray-600 text-white'
                       }`}>
                         {String.fromCharCode(65 + index)} {/* A, B, C, D */}
                       </div>
