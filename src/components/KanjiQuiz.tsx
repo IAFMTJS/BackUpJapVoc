@@ -1156,15 +1156,16 @@ const KanjiQuiz: React.FC<KanjiQuizProps> = ({ kanji, difficulty }) => {
 
         {quizState.context && (
           <Paper sx={{ p: 2, width: '100%', maxWidth: 600, bgcolor: 'background.paper' }}>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography variant="body1" color="text.primary" sx={{ mb: 1, fontWeight: 500 }}>
               Context:
             </Typography>
             <Typography 
               variant="body1" 
               sx={{ 
                 fontFamily: 'Noto Sans JP',
-                opacity: showContext ? 1 : 0.3,
-                transition: 'opacity 0.3s ease'
+                opacity: showContext ? 1 : 0.5,
+                transition: 'opacity 0.3s ease',
+                color: 'text.primary'
               }}
             >
               {quizState.context}

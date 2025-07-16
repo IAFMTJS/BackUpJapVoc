@@ -1545,7 +1545,7 @@ const Progress: React.FC = () => {
                                   </span>
                                   <h4 className="font-semibold">{node.content.title || node.id}</h4>
                                 </div>
-                                <p className="text-sm text-gray-500">{node.content.description}</p>
+                                <p className="text-sm text-gray-700 font-medium">{node.content.description}</p>
                                 <div className="mt-2">
                                   <div className="flex justify-between text-sm mb-1">
                                     <span>Progress:</span>
@@ -1684,11 +1684,11 @@ const Progress: React.FC = () => {
                               </span>
                               <h3 className="font-semibold">{node.name}</h3>
                             </div>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-gray-700 font-medium">
                               Level {node.level}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 mb-3">{node.description}</p>
+                          <p className="text-sm text-gray-700 font-medium mb-3">{node.description}</p>
                           <div className="space-y-2">
                             <div>
                               <div className="flex justify-between text-sm mb-1">
@@ -1749,11 +1749,11 @@ const Progress: React.FC = () => {
                               </span>
                               <h3 className="font-semibold">{node.name}</h3>
                             </div>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-gray-700 font-medium">
                               Level {node.level}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 mb-3">{node.description}</p>
+                          <p className="text-sm text-gray-700 font-medium mb-3">{node.description}</p>
                           <div className="space-y-2">
                             <div>
                               <div className="flex justify-between text-sm mb-1">
@@ -1936,7 +1936,7 @@ const Progress: React.FC = () => {
                               {goal.type.replace('_', ' ').toUpperCase()}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 mb-3">{goal.description}</p>
+                          <p className="text-sm text-gray-700 font-medium mb-3">{goal.description}</p>
                           <div className="space-y-2">
                             <div>
                               <div className="flex justify-between text-sm mb-1">
@@ -1994,7 +1994,7 @@ const Progress: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-500 mb-3">{goal.description}</p>
+                          <p className="text-sm text-gray-700 font-medium mb-3">{goal.description}</p>
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span>Target: {goal.target}</span>
@@ -2203,7 +2203,7 @@ const Progress: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-500 mb-3">{reward.description}</p>
+                          <p className="text-sm text-gray-700 font-medium mb-3">{reward.description}</p>
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span>Rewards Earned:</span>
@@ -2256,7 +2256,7 @@ const Progress: React.FC = () => {
                               {reward.rarity.toUpperCase()}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 mb-3">{reward.description}</p>
+                          <p className="text-sm text-gray-700 font-medium mb-3">{reward.description}</p>
                           <div className="space-y-2">
                             <div>
                               <div className="flex justify-between text-sm mb-1">
@@ -2329,7 +2329,7 @@ const Progress: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-500 mb-3">{reward.description}</p>
+                          <p className="text-sm text-gray-700 font-medium mb-3">{reward.description}</p>
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span>Rewards Earned:</span>

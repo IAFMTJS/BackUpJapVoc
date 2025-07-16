@@ -300,7 +300,7 @@ const Section5 = () => {
             backgroundColor: isLocked ? 'inherit' : 'action.hover'
           }
         }}
-        className="bg-gray-50 p-4 rounded-lg"
+        className="bg-gray-100 p-4 rounded-lg border border-gray-300"
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box>
@@ -321,11 +321,11 @@ const Section5 = () => {
               </Button>
             </Box>
             {settings.showRomajiVocabulary && (
-              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+              <Typography variant="body2" color="text.primary" sx={{ fontStyle: 'italic', fontWeight: 500 }}>
                 {romajiMap[word.japanese.trim()] || 'Loading...'}
               </Typography>
             )}
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" color="text.primary" sx={{ fontWeight: 500 }}>
               {word.english}
             </Typography>
           </Box>

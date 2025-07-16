@@ -144,15 +144,15 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                       {phrase.japanese}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
                       {phrase.romaji}
                     </p>
                   </div>
                   <button
                     onClick={(e) => handlePlayAudio(phrase.japanese, e)}
-                    className="p-2 text-gray-600 hover:text-blue-600 dark:text-gray-300 
+                    className="p-2 text-gray-700 hover:text-blue-600 dark:text-gray-300 
                       dark:hover:text-blue-400 transform hover:scale-110 transition-all
-                      bg-gray-100 dark:bg-gray-700 rounded-full"
+                      bg-gray-200 dark:bg-gray-700 rounded-full"
                     title="Play Audio"
                   >
                     🔊
@@ -160,11 +160,11 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
                 </div>
                 
                 <div className="mt-2">
-                  <p className="text-sm text-gray-700 dark:text-gray-200 line-clamp-2">
+                  <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2">
                     {phrase.english}
                   </p>
                   {phrase.animeTitle && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
                       {phrase.animeTitle}
                     </p>
                   )}

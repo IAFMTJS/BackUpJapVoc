@@ -189,12 +189,12 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                   key={index}
                   onClick={() => handleMultipleChoice(option)}
                   disabled={selectedOption !== null}
-                  className={`p-6 text-left rounded-xl border-2 transition-all duration-200 transform hover:scale-105 ${
+                  className={`p-6 text-left rounded-xl border-2 transition-all duration-200 transform hover:scale-105 font-medium ${
                     selectedOption === option
                       ? isCorrect
-                        ? 'border-green-500 bg-green-50 shadow-lg'
-                        : 'border-red-500 bg-red-50 shadow-lg'
-                      : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md'
+                        ? 'border-green-600 bg-green-600 text-white shadow-lg'
+                        : 'border-red-600 bg-red-600 text-white shadow-lg'
+                      : 'border-gray-300 hover:border-indigo-500 hover:bg-indigo-100 hover:shadow-md text-gray-900'
                   } ${selectedOption !== null ? 'cursor-default' : 'cursor-pointer'}`}
                 >
                   <div className="flex items-center justify-between">
@@ -419,12 +419,12 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                   key={index}
                   onClick={() => handleAudioListen(option)}
                   disabled={selectedOption !== null}
-                  className={`p-6 text-left rounded-xl border-2 transition-all duration-200 transform hover:scale-105 ${
+                  className={`p-6 text-left rounded-xl border-2 transition-all duration-200 transform hover:scale-105 font-medium ${
                     selectedOption === option
                       ? isCorrect
-                        ? 'border-green-500 bg-green-50 shadow-lg'
-                        : 'border-red-500 bg-red-50 shadow-lg'
-                      : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50 hover:shadow-md'
+                        ? 'border-green-600 bg-green-600 text-white shadow-lg'
+                        : 'border-red-600 bg-red-600 text-white shadow-lg'
+                      : 'border-gray-300 hover:border-orange-500 hover:bg-orange-100 hover:shadow-md text-gray-900'
                   } ${selectedOption !== null ? 'cursor-default' : 'cursor-pointer'}`}
                 >
                   <div className="flex items-center justify-between">

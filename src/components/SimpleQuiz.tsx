@@ -168,7 +168,7 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete, onCancel }) 
         <h2 className="text-2xl font-bold mb-4 text-center">
           {currentWord.japanese}
           {currentWord.hiragana && (
-            <span className="text-lg text-gray-600 dark:text-gray-400 ml-2">
+            <span className="text-lg text-gray-700 dark:text-gray-300 ml-2">
               ({currentWord.hiragana})
             </span>
           )}
@@ -182,12 +182,12 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete, onCancel }) 
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.1 }}
-              className={`p-4 rounded-lg text-left transition-colors duration-200 ${
+              className={`p-4 rounded-lg text-left transition-colors duration-200 font-medium ${
                 quizState.selectedAnswer === option
                   ? quizState.isCorrect
-                    ? 'bg-green-100 dark:bg-green-900 border-2 border-green-500'
-                    : 'bg-red-100 dark:bg-red-900 border-2 border-red-500'
-                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-2 border-transparent'
+                    ? 'bg-green-600 text-white border-2 border-green-700'
+                    : 'bg-red-600 text-white border-2 border-red-700'
+                  : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 border-2 border-transparent text-gray-900 dark:text-white'
               }`}
               onClick={() => !quizState.showFeedback && handleAnswerSelect(option)}
               disabled={quizState.showFeedback}

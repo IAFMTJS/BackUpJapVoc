@@ -159,7 +159,7 @@ const WordAssociation: React.FC = () => {
           </div>
 
           {gameState.showHint && (
-            <div className="mb-4 p-2 bg-yellow-100 rounded">
+            <div className="mb-4 p-3 bg-yellow-200 border border-yellow-300 rounded text-yellow-900 font-medium">
               Hint: {gameState.currentWord.hint}
             </div>
           )}
@@ -170,14 +170,14 @@ const WordAssociation: React.FC = () => {
                 key={index}
                 onClick={() => handleAnswer(option)}
                 disabled={gameState.isCorrect !== null}
-                className={`p-4 text-lg rounded-lg transition-all duration-200 ${
+                className={`p-4 text-lg rounded-lg transition-all duration-200 font-medium ${
                   gameState.isCorrect === null
-                    ? 'bg-blue-100 hover:bg-blue-200'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : option === gameState.currentWord?.english
-                    ? 'bg-green-200'
+                    ? 'bg-green-600 text-white'
                     : option === gameState.currentWord?.english && gameState.isCorrect === false
-                    ? 'bg-red-200'
-                    : 'bg-gray-100'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-300 text-gray-700'
                 }`}
               >
                 {option}
@@ -187,7 +187,7 @@ const WordAssociation: React.FC = () => {
 
           <button
             onClick={() => setGameState(prev => ({ ...prev, showHint: !prev.showHint }))}
-            className="text-blue-600 hover:text-blue-800"
+            className="text-blue-700 hover:text-blue-900 font-medium"
           >
             {gameState.showHint ? 'Hide Hint' : 'Show Hint'}
           </button>
