@@ -183,7 +183,7 @@ export const ExerciseTest: React.FC = () => {
                   ? 'bg-blue-600 text-white'
                   : index < currentExerciseIndex
                   ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-100 text-gray-600'
+                  : 'bg-gray-600 text-white'
               }`}
             >
               {index + 1}

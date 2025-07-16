@@ -236,7 +236,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium mb-4">
                 <span>⌨️</span>
                 <span>Typ het antwoord</span>
               </div>
@@ -247,7 +247,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                 <div className="mb-4">
                   <button
                     onClick={() => setShowHint(!showHint)}
-                    className="inline-flex items-center space-x-2 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors"
+                    className="inline-flex items-center space-x-2 px-3 py-1 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
                   >
                     <Lightbulb className="w-4 h-4" />
                     <span>💡 Toon hint</span>
@@ -320,7 +320,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-medium mb-4">
                 <span>🧠</span>
                 <span>Geheugenspel</span>
               </div>
@@ -394,7 +394,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-full text-sm font-medium mb-4">
                 <span>🎧</span>
                 <span>Luisteroefening</span>
               </div>
@@ -466,7 +466,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-teal-100 text-teal-700 rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-teal-600 text-white rounded-full text-sm font-medium mb-4">
                 <span>📝</span>
                 <span>Grammatica</span>
               </div>
@@ -480,7 +480,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                 <div className="mb-4">
                   <button
                     onClick={() => setShowHint(!showHint)}
-                    className="inline-flex items-center space-x-2 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors"
+                    className="inline-flex items-center space-x-2 px-3 py-1 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
                   >
                     <Lightbulb className="w-4 h-4" />
                     <span>💡 Toon hint</span>

@@ -155,17 +155,17 @@ const LevelPage: React.FC = () => {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'kana':
-        return 'bg-blue-100 text-blue-600';
+        return 'bg-blue-600 text-white';
       case 'vocab':
-        return 'bg-green-100 text-green-600';
+        return 'bg-green-600 text-white';
       case 'kanji':
-        return 'bg-purple-100 text-purple-600';
+        return 'bg-purple-600 text-white';
       case 'grammar':
-        return 'bg-orange-100 text-orange-600';
+        return 'bg-orange-600 text-white';
       case 'mixed':
-        return 'bg-indigo-100 text-indigo-600';
+        return 'bg-indigo-600 text-white';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-gray-600 text-white';
     }
   };
 
