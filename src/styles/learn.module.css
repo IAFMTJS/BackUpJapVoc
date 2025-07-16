@@ -5,25 +5,94 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.levelCard {
-  transition: all 0.3s ease;
-  cursor: pointer;
+/* New Modern Dashboard Styles */
+.heroSection {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   position: relative;
   overflow: hidden;
 }
 
+.heroSection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  pointer-events: none;
+}
+
+.progressBar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffffff, #f8fafc);
+  border-radius: 6px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.progressFill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.statCard:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.levelCard {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
 .levelCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 .levelCard.locked {
   opacity: 0.6;
   cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
 .levelCard.completed {
   border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
 }
 
 .levelCard.completed::before {
@@ -36,105 +105,84 @@
   background: linear-gradient(90deg, #10b981, #34d399);
 }
 
-.exerciseContainer {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.exerciseQuestion {
-  font-size: 1.5rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #1f2937;
-}
-
-.optionButton {
-  width: 100%;
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background: white;
-  text-align: left;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.optionButton:hover:not(:disabled) {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-}
-
-.optionButton.correct {
-  border-color: #10b981;
-  background-color: #ecfdf5;
-}
-
-.optionButton.incorrect {
-  border-color: #ef4444;
-  background-color: #fef2f2;
-}
-
-.optionButton:disabled {
-  cursor: default;
-}
-
-.inputField {
-  width: 100%;
-  padding: 1rem;
+.levelNumber {
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
   font-size: 1.125rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.5rem;
-  transition: border-color 0.2s ease;
-  background-color: #ffffff;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.categoryIcon {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: white;
+  z-index: 5;
+}
+
+.statusIcon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 5;
+}
+
+.levelContent {
+  padding: 1.5rem;
+  padding-top: 4rem;
+}
+
+.categoryBadge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.levelTitle {
+  font-size: 1.25rem;
+  font-weight: bold;
   color: #1f2937;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s ease;
 }
 
-.inputField::placeholder {
+.levelDescription {
+  font-size: 0.875rem;
   color: #6b7280;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.inputField:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background-color: #ffffff;
-  color: #1f2937;
+.scoreProgress {
+  margin-bottom: 1rem;
 }
 
-.inputField:disabled {
-  background-color: #f9fafb;
-  color: #6b7280;
-  cursor: not-allowed;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .inputField {
-    border-width: 3px;
-    background-color: #ffffff;
-    color: #000000;
-  }
-  
-  .inputField::placeholder {
-    color: #4b5563;
-  }
-  
-  .optionButton {
-    border-width: 3px;
-    background-color: #ffffff;
-    color: #000000;
-  }
-  
-  .optionButton:hover:not(:disabled) {
-    border-color: #1d4ed8;
-    background-color: #dbeafe;
-  }
-}
-
-.progressBar {
+.scoreProgressBar {
   width: 100%;
   height: 8px;
   background-color: #e5e7eb;
@@ -142,311 +190,251 @@
   overflow: hidden;
 }
 
-.progressFill {
+.scoreProgressFill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-  transition: width 0.3s ease;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  border-radius: 4px;
+  transition: width 0.6s ease;
 }
 
-.scoreDisplay {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 2rem;
-  border-radius: 1rem;
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.scorePercentage {
-  font-size: 3rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-
-.scoreText {
-  font-size: 1.125rem;
-  opacity: 0.9;
-}
-
-.starRating {
+.levelInfo {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: 0.5rem;
-  margin: 1rem 0;
-}
-
-.star {
-  width: 2rem;
-  height: 2rem;
-  color: #fbbf24;
-  transition: all 0.2s ease;
-}
-
-.star.filled {
-  fill: currentColor;
-}
-
-.star.empty {
-  color: #d1d5db;
-}
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.statCard {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
-  text-align: center;
-}
-
-.statValue {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-}
-
-.statLabel {
-  color: #6b7280;
   font-size: 0.875rem;
-}
-
-.resultItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
-}
-
-.resultItem.correct {
-  background-color: #ecfdf5;
-  border-color: #10b981;
-}
-
-.resultItem.incorrect {
-  background-color: #fef2f2;
-  border-color: #ef4444;
-}
-
-.actionButtons {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.actionButton {
-  flex: 1;
-  padding: 1rem 2rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.actionButton.primary {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.actionButton.primary:hover {
-  background-color: #2563eb;
-}
-
-.actionButton.secondary {
-  background-color: #6b7280;
-  color: white;
-}
-
-.actionButton.secondary:hover {
-  background-color: #4b5563;
-}
-
-.actionButton.success {
-  background-color: #10b981;
-  color: white;
-}
-
-.actionButton.success:hover {
-  background-color: #059669;
-}
-
-.lockOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.lockModal {
-  background: white;
-  padding: 2rem;
-  border-radius: 1rem;
-  max-width: 500px;
-  width: 90%;
-  text-align: center;
-}
-
-.lockHeader {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #1f2937;
   margin-bottom: 1rem;
 }
 
-.lockContent {
-  color: #6b7280;
-  margin-bottom: 1.5rem;
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.requirementItem {
+.infoLabel {
+  color: #6b7280;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  background-color: #f9fafb;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  gap: 0.25rem;
 }
 
-.levelBadge {
-  display: inline-flex;
+.infoValue {
+  font-weight: 500;
+  color: #374151;
+}
+
+.difficultyStars {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.actionButton {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  display: flex;
   align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
 }
 
-.categoryBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-right: 0.5rem;
+.actionButton.completed {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  color: #065f46;
 }
 
-.categoryBadge.kana {
-  background-color: #dbeafe;
+.actionButton.completed:hover {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+}
+
+.actionButton.unlocked {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
   color: #1e40af;
 }
 
-.categoryBadge.vocab {
-  background-color: #dcfce7;
-  color: #166534;
+.actionButton.unlocked:hover {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
 }
 
-.categoryBadge.kanji {
-  background-color: #fef3c7;
-  color: #92400e;
+.actionButton.locked {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 
-.categoryBadge.grammar {
-  background-color: #f3e8ff;
-  color: #7c3aed;
+.hoverOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
-.categoryBadge.mixed {
-  background-color: #fce7f3;
-  color: #be185d;
+.levelCard:hover .hoverOverlay {
+  opacity: 1;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.achievementsSection {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  margin-top: 3rem;
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+.achievementCard {
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 16px;
+  transition: all 0.3s ease;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
+.achievementCard:hover {
+  transform: translateY(-4px);
 }
 
-.fadeIn {
-  animation: fadeIn 0.5s ease-in-out;
+.achievementCard.blue {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
 }
 
-.slideIn {
-  animation: slideIn 0.5s ease-out;
+.achievementCard.green {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
 }
 
-.pulse {
-  animation: pulse 2s infinite;
+.achievementCard.purple {
+  background: linear-gradient(135deg, #e9d5ff, #c4b5fd);
 }
 
+.achievementValue {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.achievementLabel {
+  color: #374151;
+  font-weight: 500;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legendDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legendDot.completed { background-color: #10b981; }
+.legendDot.available { background-color: #3b82f6; }
+.legendDot.locked { background-color: #9ca3af; }
+
+/* Responsive Design */
 @media (max-width: 768px) {
-  .exerciseContainer {
+  .heroSection {
+    padding: 2rem 1rem;
+  }
+  
+  .levelCard {
+    margin-bottom: 1rem;
+  }
+  
+  .levelNumber {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+    top: -12px;
+    left: -12px;
+  }
+  
+  .categoryIcon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    top: 12px;
+    left: 12px;
+  }
+  
+  .levelContent {
     padding: 1rem;
+    padding-top: 3rem;
   }
-
-  .exerciseQuestion {
-    font-size: 1.25rem;
-  }
-
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .actionButtons {
-    flex-direction: column;
-  }
-
-  .scorePercentage {
-    font-size: 2rem;
+  
+  .achievementsSection {
+    padding: 1.5rem;
+    margin-top: 2rem;
   }
 }
 
 @media (max-width: 480px) {
-  .levelCard {
-    margin-bottom: 1rem;
+  .heroSection h1 {
+    font-size: 2rem;
   }
+  
+  .statCard {
+    padding: 1rem;
+  }
+  
+  .legend {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
 
-  .optionButton {
-    padding: 0.75rem;
+/* Animation Classes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-  .inputField {
-    padding: 0.75rem;
-    font-size: 1rem;
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
   }
-} 
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.scaleIn {
+  animation: scaleIn 0.4s ease-out;
+}
+
+/* Stagger animation for level cards */
+.levelCard:nth-child(1) { animation-delay: 0.1s; }
+.levelCard:nth-child(2) { animation-delay: 0.2s; }
+.levelCard:nth-child(3) { animation-delay: 0.3s; }
+.levelCard:nth-child(4) { animation-delay: 0.4s; }
+.levelCard:nth-child(5) { animation-delay: 0.5s; }
+.levelCard:nth-child(6) { animation-delay: 0.6s; } 
