@@ -321,9 +321,9 @@ const LevelPage: React.FC = () => {
                   <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
                     <span className="text-xs font-bold text-white">{index + 1}</span>
                   </div>
-                  <span className="font-medium text-gray-900">{exercise.type}</span>
+                  <span className="font-medium text-gray-900">{exercise.title}</span>
                 </div>
-                <p className="text-sm text-gray-600">{exercise.instructions}</p>
+                <p className="text-sm text-gray-600">{exercise.instruction}</p>
               </div>
             ))}
           </div>
