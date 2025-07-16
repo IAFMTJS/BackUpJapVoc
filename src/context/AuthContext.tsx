@@ -24,6 +24,7 @@ import {
 import type { AuthError } from '../utils/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import type { AuthContextType, AuthErrorResponse } from '../types/auth';
+import { learnService } from '../services/learnService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -171,6 +172,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       clearError();
       await signInWithEmailAndPassword(auth, email, password);
+      
+      // Export guest progress if available
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const imported = await learnService.importGuestProgressToFirebase(user.uid);
+          if (imported) {
+            console.log('Guest progress successfully imported to user account');
+          }
+        }
+      } catch (progressError) {
+        console.error('Error importing guest progress:', progressError);
+        // Don't fail the login if progress import fails
+      }
     } catch (error: unknown) {
       handleError(error);
     }

@@ -353,6 +353,81 @@ const ProgressContext = createContext<ProgressContextType | undefined>(undefined
 
 const DEFAULT_USER_ID = 'default';
 
+// Helper function to migrate old progress data to new format
+const migrateProgressData = (oldProgress: any): ProgressState => {
+  // If it's already the new format, return as is
+  if (oldProgress.sections && 
+      oldProgress.sections.hiragana && 
+      oldProgress.sections.katakana && 
+      oldProgress.sections.kanji && 
+      oldProgress.sections.trivia && 
+      oldProgress.sections.anime) {
+    return oldProgress as ProgressState;
+  }
+
+  console.log('[ProgressContext] Migrating progress data to new format');
+  
+  // Start with default progress
+  const migratedProgress: ProgressState = {
+    ...defaultProgress,
+    // Preserve existing data
+    words: oldProgress.words || {},
+    preferences: oldProgress.preferences || defaultProgress.preferences,
+    statistics: oldProgress.statistics || defaultProgress.statistics
+  };
+
+  // Migrate existing sections if they exist
+  if (oldProgress.sections) {
+    if (oldProgress.sections.dictionary) {
+      migratedProgress.sections.dictionary = oldProgress.sections.dictionary;
+    }
+    if (oldProgress.sections.mood) {
+      migratedProgress.sections.mood = oldProgress.sections.mood;
+    }
+    if (oldProgress.sections.culture) {
+      migratedProgress.sections.culture = oldProgress.sections.culture;
+    }
+  }
+
+  // Update word sections to use new section types
+  const updatedWords: { [key: string]: WordProgress } = {};
+  Object.entries(migratedProgress.words).forEach(([wordId, word]) => {
+    updatedWords[wordId] = {
+      ...word,
+      // Ensure all words have a valid section
+      section: word.section && ['hiragana', 'katakana', 'kanji', 'dictionary', 'mood', 'culture', 'trivia', 'anime'].includes(word.section) 
+        ? word.section 
+        : 'dictionary'
+    };
+  });
+  migratedProgress.words = updatedWords;
+
+  // Recalculate section progress based on migrated words
+  const recalculateSectionProgress = (words: { [key: string]: WordProgress }) => {
+    const sections = { ...defaultProgress.sections };
+    
+    Object.values(words).forEach(word => {
+      const section = word.section;
+      if (sections[section]) {
+        sections[section].totalItems++;
+        if (word.masteryLevel >= 5) {
+          sections[section].masteredItems++;
+        } else if (word.masteryLevel > 0) {
+          sections[section].inProgressItems++;
+        } else {
+          sections[section].notStartedItems++;
+        }
+      }
+    });
+    
+    return sections;
+  };
+
+  migratedProgress.sections = recalculateSectionProgress(updatedWords);
+
+  return migratedProgress;
+};
+
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
   const [localProgress, setLocalProgress] = useLocalStorage<ProgressState>('progress', defaultProgress);
@@ -554,7 +629,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         unsubscribe();
       }
     };
-  }, [currentUser, migrateProgressData]);
+      }, [currentUser]);
 
   // Update progress in Firebase when it changes
   const updateProgress = useCallback(async (newProgress: ProgressState) => {
@@ -692,60 +767,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return updatedSections;
   }, []);
 
-  // Helper function to migrate old progress data to new format
-  const migrateProgressData = useCallback((oldProgress: any): ProgressState => {
-    // If it's already the new format, return as is
-    if (oldProgress.sections && 
-        oldProgress.sections.hiragana && 
-        oldProgress.sections.katakana && 
-        oldProgress.sections.kanji && 
-        oldProgress.sections.trivia && 
-        oldProgress.sections.anime) {
-      return oldProgress as ProgressState;
-    }
 
-    console.log('[ProgressContext] Migrating progress data to new format');
-    
-    // Start with default progress
-    const migratedProgress: ProgressState = {
-      ...defaultProgress,
-      // Preserve existing data
-      words: oldProgress.words || {},
-      preferences: oldProgress.preferences || defaultProgress.preferences,
-      statistics: oldProgress.statistics || defaultProgress.statistics
-    };
-
-    // Migrate existing sections if they exist
-    if (oldProgress.sections) {
-      if (oldProgress.sections.dictionary) {
-        migratedProgress.sections.dictionary = oldProgress.sections.dictionary;
-      }
-      if (oldProgress.sections.mood) {
-        migratedProgress.sections.mood = oldProgress.sections.mood;
-      }
-      if (oldProgress.sections.culture) {
-        migratedProgress.sections.culture = oldProgress.sections.culture;
-      }
-    }
-
-    // Update word sections to use new section types
-    const updatedWords: { [key: string]: WordProgress } = {};
-    Object.entries(migratedProgress.words).forEach(([wordId, word]) => {
-      updatedWords[wordId] = {
-        ...word,
-        // Ensure all words have a valid section
-        section: word.section && ['hiragana', 'katakana', 'kanji', 'dictionary', 'mood', 'culture', 'trivia', 'anime'].includes(word.section) 
-          ? word.section 
-          : 'dictionary'
-      };
-    });
-    migratedProgress.words = updatedWords;
-
-    // Recalculate section progress based on migrated words
-    migratedProgress.sections = recalculateSectionProgress(updatedWords);
-
-    return migratedProgress;
-  }, [recalculateSectionProgress]);
 
   // Update word progress with debouncing and better error handling
   const updateWordProgress = useCallback((wordId: string, progressUpdate: Partial<WordProgress>) => {

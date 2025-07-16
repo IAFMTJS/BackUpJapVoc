@@ -69,6 +69,13 @@ const Navigation: React.FC = () => {
       subpages: []
     },
     {
+      key: 'learn',
+      text: 'Learn',
+      icon: <SchoolIcon />,
+      path: '/learn',
+      subpages: []
+    },
+    {
       key: 'vsensei',
       text: 'VSensei',
       icon: <SchoolIcon />,

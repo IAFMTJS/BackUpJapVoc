@@ -143,6 +143,11 @@ const FAQProgress = createLazyComponent(() => import('./pages/FAQProgress'), 'FA
 const LearningPathPage = createLazyComponent(() => import('./pages/LearningPathPage'), 'Learning Path');
 const LessonNumbers = createLazyComponent(() => import('./components/LessonNumbers'), 'Lesson Numbers');
 const Login = createLazyComponent(() => import('./components/Login'), 'Login');
+
+// Learn module components
+const LearnIndex = createLazyComponent(() => import('./pages/learn/index'), 'Learn Index');
+const LearnLevel = createLazyComponent(() => import('./pages/learn/[levelId]'), 'Learn Level');
+const ExerciseTest = createLazyComponent(() => import('./components/learn/ExerciseTest'), 'Exercise Test');
 const Signup = createLazyComponent(() => import('./components/Signup'), 'Signup');
 const ResetPassword = createLazyComponent(() => import('./components/ResetPassword'), 'Reset Password');
 const EmailVerification = createLazyComponent(() => import('./components/EmailVerification'), 'Email Verification');
@@ -438,6 +443,11 @@ const App: React.FC = () => {
                                             {/* Learning Path (Virtual Sensei) */}
                                             <Route path="/learning-path" element={<LearningPathPage />} />
                                             <Route path="/learning-path/lesson/:lessonId" element={<LessonNumbers />} />
+                                            
+                                            {/* Learn Module */}
+                                                    <Route path="/learn" element={<LearnIndex />} />
+        <Route path="/learn/:levelId" element={<LearnLevel />} />
+        <Route path="/learn-test" element={<ExerciseTest />} />
                                             
                                             {/* Learning Section */}
                                             <Route path="/learning" element={<LearningLayout />}>
