@@ -318,8 +318,8 @@ const LevelPage: React.FC = () => {
             {level.exercises.map((exercise, index) => (
               <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center space-x-2 mb-2">
-                  <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-indigo-600">{index + 1}</span>
+                  <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-white">{index + 1}</span>
                   </div>
                   <span className="font-medium text-gray-900">{exercise.type}</span>
                 </div>
