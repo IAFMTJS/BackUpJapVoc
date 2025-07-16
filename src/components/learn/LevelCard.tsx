@@ -61,24 +61,24 @@ export const LevelCard: React.FC<LevelCardProps> = ({
   const getCategoryBgColor = (category: string) => {
     switch (category) {
       case 'kana':
-        return 'bg-blue-50 border-blue-200';
+        return 'bg-blue-100 border-blue-300 text-blue-800';
       case 'vocab':
-        return 'bg-green-50 border-green-200';
+        return 'bg-green-100 border-green-300 text-green-800';
       case 'kanji':
-        return 'bg-purple-50 border-purple-200';
+        return 'bg-purple-100 border-purple-300 text-purple-800';
       case 'grammar':
-        return 'bg-orange-50 border-orange-200';
+        return 'bg-orange-100 border-orange-300 text-orange-800';
       case 'mixed':
-        return 'bg-indigo-50 border-indigo-200';
+        return 'bg-indigo-100 border-indigo-300 text-indigo-800';
       default:
-        return 'bg-gray-50 border-gray-200';
+        return 'bg-gray-100 border-gray-300 text-gray-800';
     }
   };
 
   const getBadgeForScore = (score: number) => {
-    if (score >= 95) return { icon: '🥇', color: 'text-yellow-600', label: 'Perfect' };
-    if (score >= 85) return { icon: '🥈', color: 'text-gray-600', label: 'Excellent' };
-    if (score >= 75) return { icon: '🥉', color: 'text-amber-600', label: 'Good' };
+    if (score >= 95) return { icon: '🥇', color: 'text-yellow-700', label: 'Perfect' };
+    if (score >= 85) return { icon: '🥈', color: 'text-gray-700', label: 'Excellent' };
+    if (score >= 75) return { icon: '🥉', color: 'text-amber-700', label: 'Good' };
     return null;
   };
 
@@ -115,15 +115,15 @@ export const LevelCard: React.FC<LevelCardProps> = ({
       <div className="absolute top-4 right-4">
         {status === 'completed' ? (
           <div className="flex items-center space-x-1">
-            <CheckCircle className="w-6 h-6 text-green-500" />
+            <CheckCircle className="w-6 h-6 text-green-600" />
             {badge && (
               <span className="text-lg">{badge.icon}</span>
             )}
           </div>
         ) : !unlocked ? (
-          <Lock className="w-6 h-6 text-gray-400" />
+          <Lock className="w-6 h-6 text-gray-500" />
         ) : (
-          <Play className="w-6 h-6 text-indigo-500" />
+          <Play className="w-6 h-6 text-indigo-600" />
         )}
       </div>
 
@@ -135,26 +135,26 @@ export const LevelCard: React.FC<LevelCardProps> = ({
       {/* Content */}
       <div className="p-6 pt-16">
         <div className="mb-3">
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryBgColor(level.category)}`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getCategoryBgColor(level.category)}`}>
             {level.category}
           </span>
         </div>
         
-        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
+        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-700 transition-colors">
           {level.title}
         </h3>
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{level.description}</p>
+        <p className="text-sm text-gray-700 mb-4 line-clamp-2">{level.description}</p>
         
         {/* Progress Bar for completed levels */}
         {status === 'completed' && (
           <div className="mb-4">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-gray-500">Your Score</span>
-              <span className="text-xs font-medium text-green-600">{score}%</span>
+              <span className="text-xs text-gray-600 font-medium">Your Score</span>
+              <span className="text-xs font-bold text-green-700">{score}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-300 rounded-full h-2">
               <div 
-                className="bg-gradient-to-r from-green-400 to-green-500 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${score}%` }}
               ></div>
             </div>
@@ -164,28 +164,28 @@ export const LevelCard: React.FC<LevelCardProps> = ({
         {/* Level Info */}
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 flex items-center">
+            <span className="text-gray-600 flex items-center font-medium">
               <Clock className="w-3 h-3 mr-1" />
               Time:
             </span>
-            <span className="font-medium">{estimatedTime} min</span>
+            <span className="font-bold text-gray-900">{estimatedTime} min</span>
           </div>
           
           <div className="flex items-center justify-between">
-            <span className="text-gray-500">Exercises:</span>
-            <span className="font-medium">{level.exercises.length}</span>
+            <span className="text-gray-600 font-medium">Exercises:</span>
+            <span className="font-bold text-gray-900">{level.exercises.length}</span>
           </div>
           
           <div className="flex items-center justify-between">
-            <span className="text-gray-500">Min Score:</span>
-            <span className="font-medium">{level.minScore}%</span>
+            <span className="text-gray-600 font-medium">Min Score:</span>
+            <span className="font-bold text-gray-900">{level.minScore}%</span>
           </div>
           
           <div className="flex items-center justify-between">
-            <span className="text-gray-500">Difficulty:</span>
+            <span className="text-gray-600 font-medium">Difficulty:</span>
             <div className="flex space-x-1">
               {[...Array(level.difficulty)].map((_, i) => (
-                <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
+                <Star key={i} className="w-3 h-3 text-yellow-500 fill-current" />
               ))}
             </div>
           </div>
@@ -195,10 +195,10 @@ export const LevelCard: React.FC<LevelCardProps> = ({
         <div className="mt-4">
           <button className={`w-full py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
             status === 'completed'
-              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+              ? 'bg-green-600 text-white hover:bg-green-700 shadow-md'
               : unlocked
-              ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-              : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+              ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'
+              : 'bg-gray-300 text-gray-600 cursor-not-allowed'
           }`}>
             {status === 'completed' ? (
               <span className="flex items-center justify-center">
