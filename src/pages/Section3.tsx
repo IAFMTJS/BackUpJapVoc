@@ -88,9 +88,9 @@ const Section3 = () => {
           <Link to="/" className="text-blue-600 hover:text-blue-800 mr-4">
             ← Back to Home
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Writing Practice</h1>
+          <h1 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary">Writing Practice</h1>
         </div>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-text-muted dark:text-text-dark-muted">
           Progress: {completedExercises}/{totalExercises} exercises completed
         </div>
       </div>
@@ -106,7 +106,7 @@ const Section3 = () => {
         </label>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white dark:bg-dark-elevated rounded-nav shadow-card dark:shadow-dark-card p-6">
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4">Choose an Exercise</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -114,10 +114,10 @@ const Section3 = () => {
                 <button
                   key={exercise.id}
                   onClick={() => handleExerciseChange(exercise.id)}
-                  className={`p-4 rounded-lg border ${
+                  className={`p-4 rounded-nav border ${
                     selectedExercise === exercise.id
                       ? 'bg-blue-100 border-blue-500'
-                      : 'bg-white border-gray-300 hover:bg-gray-50'
+                      : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium hover:bg-light dark:bg-dark'
                   }`}
                 >
                   {exercise.name}
@@ -126,11 +126,11 @@ const Section3 = () => {
             </div>
           </div>
           <div className="space-y-6">
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-light dark:bg-dark p-4 rounded-nav">
               <h3 className="font-medium mb-2">Prompt:</h3>
-              <p className="text-gray-700 text-lg mb-1">{prompt}</p>
+              <p className="text-text-secondary dark:text-text-dark-secondary text-lg mb-1">{prompt}</p>
               {showRomaji && romajiPrompt && (
-                <p className="text-gray-500 italic text-base">{romajiPrompt}</p>
+                <p className="text-text-muted dark:text-text-dark-muted italic text-base">{romajiPrompt}</p>
               )}
             </div>
             <div>
@@ -138,20 +138,20 @@ const Section3 = () => {
               <textarea
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                className="w-full h-48 p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full h-48 p-4 border rounded-nav focus:ring-2 focus:ring-japanese-red focus:border-blue-500"
                 placeholder="Write your response here..."
               />
             </div>
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setUserInput('')}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-text-muted dark:text-text-dark-muted hover:text-gray-800"
               >
                 Clear
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-japanese-red text-text-primary dark:text-text-dark-primary rounded-nav hover:bg-japanese-redLight"
               >
                 Save
               </button>

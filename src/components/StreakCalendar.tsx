@@ -168,11 +168,11 @@ const StreakCalendar: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className={`mb-8 ${themeClasses.container} rounded-2xl shadow-soft p-8`}>
+      <div className={`mb-8 ${themeClasses.container} rounded-card shadow-soft p-8`}>
         <div className="flex justify-between items-center mb-8">
           <button
             onClick={() => changeMonth(-1)}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 rounded-nav transition-colors ${
               isDarkMode 
                 ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
                 : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
@@ -185,7 +185,7 @@ const StreakCalendar: React.FC = () => {
           </h2>
           <button
             onClick={() => changeMonth(1)}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 rounded-nav transition-colors ${
               isDarkMode 
                 ? 'text-ivory-300 hover:bg-charcoal-700 hover:text-ivory-100' 
                 : 'text-charcoal-600 hover:bg-sage-50 hover:text-sage-700'
@@ -207,7 +207,7 @@ const StreakCalendar: React.FC = () => {
           {calendarData.map((day, index) => (
             <div
               key={index}
-              className={`p-2 rounded-lg text-center transition-colors ${
+              className={`p-2 rounded-nav text-center transition-colors ${
                 getCellClass(day)
               } ${!isInCurrentMonth(day.date) ? 'opacity-50' : ''}`}
             >

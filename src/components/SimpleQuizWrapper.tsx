@@ -156,11 +156,11 @@ const SimpleQuizWrapper: React.FC = () => {
 
   if (error) {
     return (
-      <div className={`p-4 rounded-lg ${themeClasses.card} bg-red-50 dark:bg-red-900/20`}>
+      <div className={`p-4 rounded-nav ${themeClasses.card} bg-red-50 dark:bg-red-900/20`}>
         <p className={`text-red-600 dark:text-red-400 ${themeClasses.text.primary}`}>{error}</p>
         <button
           onClick={handleRestart}
-          className={`mt-4 px-4 py-2 rounded-lg ${themeClasses.button.primary}`}
+          className={`mt-4 px-4 py-2 rounded-nav ${themeClasses.button.primary}`}
         >
           Try Again
         </button>
@@ -183,7 +183,7 @@ const SimpleQuizWrapper: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`p-6 rounded-lg ${themeClasses.card}`}
+        className={`p-6 rounded-nav ${themeClasses.card}`}
       >
         <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text.primary}`}>
           Quiz Results
@@ -194,13 +194,13 @@ const SimpleQuizWrapper: React.FC = () => {
         <div className="flex gap-4">
           <button
             onClick={handleRestart}
-            className={`px-4 py-2 rounded-lg ${themeClasses.button.primary}`}
+            className={`px-4 py-2 rounded-nav ${themeClasses.button.primary}`}
           >
             Try Again
           </button>
           <button
             onClick={() => setQuizState('settings')}
-            className={`px-4 py-2 rounded-lg ${themeClasses.button.secondary}`}
+            className={`px-4 py-2 rounded-nav ${themeClasses.button.secondary}`}
           >
             Change Settings
           </button>
@@ -213,7 +213,7 @@ const SimpleQuizWrapper: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`p-6 rounded-lg ${themeClasses.card}`}
+      className={`p-6 rounded-nav ${themeClasses.card}`}
     >
       <h2 className={`text-2xl font-bold mb-6 ${themeClasses.text.primary}`}>
         Quiz Settings
@@ -226,7 +226,7 @@ const SimpleQuizWrapper: React.FC = () => {
           <select
             value={settings.category}
             onChange={(e) => setSettings(prev => ({ ...prev, category: e.target.value }))}
-            className={`w-full p-2 rounded-lg ${themeClasses.input}`}
+            className={`w-full p-2 rounded-nav ${themeClasses.input}`}
           >
             {categories.map(category => (
               <option key={category} value={category}>
@@ -242,7 +242,7 @@ const SimpleQuizWrapper: React.FC = () => {
           <select
             value={settings.difficulty}
             onChange={(e) => setSettings(prev => ({ ...prev, difficulty: e.target.value as 'beginner' | 'intermediate' | 'advanced' }))}
-            className={`w-full p-2 rounded-lg ${themeClasses.input}`}
+            className={`w-full p-2 rounded-nav ${themeClasses.input}`}
           >
             <option value="beginner">Beginner</option>
             <option value="intermediate">Intermediate</option>
@@ -256,7 +256,7 @@ const SimpleQuizWrapper: React.FC = () => {
           <select
             value={settings.questionCount}
             onChange={(e) => setSettings(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
-            className={`w-full p-2 rounded-lg ${themeClasses.input}`}
+            className={`w-full p-2 rounded-nav ${themeClasses.input}`}
           >
             <option value="5">5 Questions</option>
             <option value="10">10 Questions</option>
@@ -267,7 +267,7 @@ const SimpleQuizWrapper: React.FC = () => {
         <button
           onClick={handleStartQuiz}
           disabled={selectedWords.length < settings.questionCount}
-          className={`w-full py-3 rounded-lg ${themeClasses.button.primary} ${
+          className={`w-full py-3 rounded-nav ${themeClasses.button.primary} ${
             selectedWords.length < settings.questionCount ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >

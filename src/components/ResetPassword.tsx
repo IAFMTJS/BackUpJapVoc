@@ -91,13 +91,13 @@ export default function ResetPassword() {
   const remainingCooldownTime = cooldownEndTime ? Math.ceil((cooldownEndTime - Date.now()) / 60000) : 0;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-light dark:bg-dark py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-text-primary dark:text-text-dark-primary">
             Reset your password
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-text-muted dark:text-text-dark-muted">
             Enter your email address and we'll send you instructions to reset your password.
           </p>
           {resetAttempts > 0 && (
@@ -135,7 +135,7 @@ export default function ResetPassword() {
               autoComplete="email"
               required
               disabled={!!cooldownEndTime}
-              className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="appearance-none rounded relative block w-full px-3 py-2 border border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium placeholder-gray-500 text-text-primary dark:text-text-dark-primary focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -146,7 +146,7 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={loading || !!cooldownEndTime}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-text-primary dark:text-text-dark-primary bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Sending...' : 'Reset Password'}
             </button>

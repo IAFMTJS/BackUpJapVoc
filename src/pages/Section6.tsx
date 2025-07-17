@@ -124,13 +124,13 @@ const Section6 = () => {
   };
 
   const renderReadingMaterial = (material: ReadingMaterial) => (
-    <div className="bg-dark-lighter rounded-lg shadow-md p-6">
+    <div className="bg-dark-lighter rounded-nav shadow-card dark:shadow-dark-card p-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold">{material.title}</h3>
         {!completedMaterials.has(`${material.level}-${material.title}`) && (
           <button
             onClick={() => handleCompleteMaterial(material)}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+            className="px-4 py-2 bg-status-success text-text-primary dark:text-text-dark-primary rounded-nav hover:bg-green-600 transition-colors"
           >
             Mark as Completed
           </button>
@@ -150,7 +150,7 @@ const Section6 = () => {
           </button>
         </div>
         {settings.showRomajiReading && (
-          <p className="text-gray-500 italic mt-2">
+          <p className="text-text-muted dark:text-text-dark-muted italic mt-2">
             {romajiMap[material.content.trim()] || 'Loading...'}
           </p>
         )}
@@ -158,7 +158,7 @@ const Section6 = () => {
 
       <div className="mb-4">
         <h4 className="font-medium mb-2">Translation:</h4>
-        <p className="text-gray-700">{material.translation}</p>
+        <p className="text-text-secondary dark:text-text-dark-secondary">{material.translation}</p>
       </div>
 
       <div className="mb-4">
@@ -179,7 +179,7 @@ const Section6 = () => {
                 </button>
               </div>
               {settings.showRomajiReading && (
-                <span className="text-xs text-gray-500 mt-1">
+                <span className="text-xs text-text-muted dark:text-text-dark-muted mt-1">
                   {romajiMap[word.trim()] || 'Loading...'}
                 </span>
               )}
@@ -196,15 +196,15 @@ const Section6 = () => {
         <Link to="/" className="text-blue-600 hover:text-blue-800 mr-4">
           ← Back to Home
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900">Reading Practice</h1>
+        <h1 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary">Reading Practice</h1>
       </div>
       
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white dark:bg-dark-elevated rounded-nav shadow-card dark:shadow-dark-card p-6">
         <div className="mb-6">
           <div className="flex space-x-4 mb-4">
             <button
               onClick={() => setSelectedType('hiragana')}
-              className={`px-4 py-2 rounded-lg border ${
+              className={`px-4 py-2 rounded-nav border ${
                 selectedType === 'hiragana'
                   ? 'bg-dark-lighter border-dark-border'
                   : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'
@@ -214,7 +214,7 @@ const Section6 = () => {
             </button>
             <button
               onClick={() => setSelectedType('katakana')}
-              className={`px-4 py-2 rounded-lg border ${
+              className={`px-4 py-2 rounded-nav border ${
                 selectedType === 'katakana'
                   ? 'bg-dark-lighter border-dark-border'
                   : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'
@@ -227,7 +227,7 @@ const Section6 = () => {
           <div className="flex space-x-4">
             <button
               onClick={() => setSelectedLevel('beginner')}
-              className={`px-4 py-2 rounded-lg border ${
+              className={`px-4 py-2 rounded-nav border ${
                 selectedLevel === 'beginner'
                   ? 'bg-dark-lighter border-dark-border'
                   : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'
@@ -237,7 +237,7 @@ const Section6 = () => {
             </button>
             <button
               onClick={() => setSelectedLevel('intermediate')}
-              className={`px-4 py-2 rounded-lg border ${
+              className={`px-4 py-2 rounded-nav border ${
                 selectedLevel === 'intermediate'
                   ? 'bg-dark-lighter border-dark-border'
                   : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'

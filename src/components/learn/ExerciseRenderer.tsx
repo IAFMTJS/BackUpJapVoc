@@ -168,14 +168,14 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                 <span>🎯</span>
                 <span>Meerkeuze</span>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+              <h3 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-4">
                 {currentItem.question}
               </h3>
               {currentItem.audio && (
                 <button 
                   onClick={handlePlayAudio}
                   disabled={isPlaying}
-                  className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-nav hover:bg-blue-200 transition-colors disabled:opacity-50"
                 >
                   <Volume2 className="w-4 h-4" />
                   <span>{isPlaying ? '🔊 Afspelen...' : '🔊 Luister'}</span>
@@ -189,12 +189,12 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                   key={index}
                   onClick={() => handleMultipleChoice(option)}
                   disabled={selectedOption !== null}
-                  className={`p-6 text-left rounded-xl border-2 transition-all duration-200 transform hover:scale-105 font-medium ${
+                  className={`p-6 text-left rounded-card border-2 transition-all duration-200 transform hover:scale-105 font-medium ${
                     selectedOption === option
                       ? isCorrect
-                        ? 'border-green-600 bg-green-600 text-white shadow-lg'
-                        : 'border-red-600 bg-red-600 text-white shadow-lg'
-                      : 'border-gray-300 hover:border-indigo-500 hover:bg-indigo-100 hover:shadow-md text-gray-900'
+                        ? 'border-green-600 bg-green-600 text-text-primary dark:text-text-dark-primary shadow-lg'
+                        : 'border-red-600 bg-red-600 text-text-primary dark:text-text-dark-primary shadow-lg'
+                      : 'border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium hover:border-indigo-500 hover:bg-indigo-100 hover:shadow-card dark:shadow-dark-card text-text-primary dark:text-text-dark-primary'
                   } ${selectedOption !== null ? 'cursor-default' : 'cursor-pointer'}`}
                 >
                   <div className="flex items-center justify-between">
@@ -202,9 +202,9 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                         selectedOption === option
                           ? isCorrect
-                            ? 'bg-green-500 text-white'
-                            : 'bg-red-500 text-white'
-                          : 'bg-gray-600 text-white'
+                            ? 'bg-status-success text-text-primary dark:text-text-dark-primary'
+                            : 'bg-status-error text-text-primary dark:text-text-dark-primary'
+                          : 'bg-gray-600 text-text-primary dark:text-text-dark-primary'
                       }`}>
                         {String.fromCharCode(65 + index)} {/* A, B, C, D */}
                       </div>
@@ -236,24 +236,24 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-text-primary dark:text-text-dark-primary rounded-full text-sm font-medium mb-4">
                 <span>⌨️</span>
                 <span>Typ het antwoord</span>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+              <h3 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-4">
                 {currentItem.question}
               </h3>
               {currentItem.hint && (
                 <div className="mb-4">
                   <button
                     onClick={() => setShowHint(!showHint)}
-                    className="inline-flex items-center space-x-2 px-3 py-1 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                    className="inline-flex items-center space-x-2 px-3 py-1 bg-yellow-600 text-text-primary dark:text-text-dark-primary rounded-nav hover:bg-yellow-700 transition-colors"
                   >
                     <Lightbulb className="w-4 h-4" />
                     <span>💡 Toon hint</span>
                   </button>
                   {showHint && (
-                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-nav">
                       <p className="text-sm text-yellow-800 italic">
                         💡 {currentItem.hint}
                       </p>
@@ -271,7 +271,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                   onChange={(e) => setUserAnswer(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Typ je antwoord hier..."
-                  className="w-full px-6 py-4 text-xl border-2 border-gray-300 rounded-xl focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100 transition-all bg-white text-gray-900 placeholder-gray-500 !text-gray-900 !bg-white"
+                  className="w-full px-6 py-4 text-xl border-2 border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium rounded-card focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100 transition-all bg-white dark:bg-dark-elevated text-text-primary dark:text-text-dark-primary placeholder-gray-500 !text-text-primary dark:text-text-dark-primary !bg-white dark:bg-dark-elevated"
                   disabled={isCorrect !== null}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -282,7 +282,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
               </div>
               
               {isCorrect !== null && (
-                <div className={`mt-4 p-4 rounded-xl border-2 ${
+                <div className={`mt-4 p-4 rounded-card border-2 ${
                   isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center space-x-3">
@@ -307,7 +307,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                 <button
                   onClick={handleTypeAnswer}
                   disabled={!userAnswer.trim() || isCorrect !== null}
-                  className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold text-lg"
+                  className="w-full px-6 py-3 bg-indigo-600 text-text-primary dark:text-text-dark-primary rounded-card hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold text-lg"
                 >
                   {isCorrect !== null ? 'Antwoord ingediend' : '📝 Indien antwoord'}
                 </button>
@@ -320,14 +320,14 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 text-text-primary dark:text-text-dark-primary rounded-full text-sm font-medium mb-4">
                 <span>🧠</span>
                 <span>Geheugenspel</span>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+              <h3 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-4">
                 Onthoud de volgorde
               </h3>
-              <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6 mb-6">
+              <div className="bg-purple-50 border-2 border-purple-200 rounded-card p-6 mb-6">
                 <p className="text-2xl font-bold text-purple-800 mb-2">
                   {currentItem.question}
                 </p>
@@ -345,7 +345,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                   onChange={(e) => setUserAnswer(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Typ de volgorde hier..."
-                  className="w-full px-6 py-4 text-xl border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all bg-white text-gray-900 placeholder-gray-500 !text-gray-900 !bg-white"
+                  className="w-full px-6 py-4 text-xl border-2 border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium rounded-card focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all bg-white dark:bg-dark-elevated text-text-primary dark:text-text-dark-primary placeholder-gray-500 !text-text-primary dark:text-text-dark-primary !bg-white dark:bg-dark-elevated"
                   disabled={isCorrect !== null}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -356,7 +356,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
               </div>
               
               {isCorrect !== null && (
-                <div className={`mt-4 p-4 rounded-xl border-2 ${
+                <div className={`mt-4 p-4 rounded-card border-2 ${
                   isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center space-x-3">
@@ -381,7 +381,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                 <button
                   onClick={handleMemoryGame}
                   disabled={!userAnswer.trim() || isCorrect !== null}
-                  className="w-full px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold text-lg"
+                  className="w-full px-6 py-3 bg-purple-600 text-text-primary dark:text-text-dark-primary rounded-card hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold text-lg"
                 >
                   {isCorrect !== null ? 'Antwoord ingediend' : '🧠 Controleer antwoord'}
                 </button>
@@ -394,18 +394,18 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-orange-600 text-text-primary dark:text-text-dark-primary rounded-full text-sm font-medium mb-4">
                 <span>🎧</span>
                 <span>Luisteroefening</span>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+              <h3 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-4">
                 {currentItem.question}
               </h3>
               <div className="mb-6">
                 <button 
                   onClick={handlePlayAudio}
                   disabled={isPlaying}
-                  className="inline-flex items-center space-x-3 px-6 py-4 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors disabled:opacity-50 font-semibold text-lg"
+                  className="inline-flex items-center space-x-3 px-6 py-4 bg-orange-500 text-text-primary dark:text-text-dark-primary rounded-card hover:bg-orange-600 transition-colors disabled:opacity-50 font-semibold text-lg"
                 >
                   <Volume2 className="w-6 h-6" />
                   <span>{isPlaying ? '🔊 Afspelen...' : '🔊 Klik om te luisteren'}</span>
@@ -419,12 +419,12 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                   key={index}
                   onClick={() => handleAudioListen(option)}
                   disabled={selectedOption !== null}
-                  className={`p-6 text-left rounded-xl border-2 transition-all duration-200 transform hover:scale-105 font-medium ${
+                  className={`p-6 text-left rounded-card border-2 transition-all duration-200 transform hover:scale-105 font-medium ${
                     selectedOption === option
                       ? isCorrect
-                        ? 'border-green-600 bg-green-600 text-white shadow-lg'
-                        : 'border-red-600 bg-red-600 text-white shadow-lg'
-                      : 'border-gray-300 hover:border-orange-500 hover:bg-orange-100 hover:shadow-md text-gray-900'
+                        ? 'border-green-600 bg-green-600 text-text-primary dark:text-text-dark-primary shadow-lg'
+                        : 'border-red-600 bg-red-600 text-text-primary dark:text-text-dark-primary shadow-lg'
+                      : 'border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium hover:border-orange-500 hover:bg-orange-100 hover:shadow-card dark:shadow-dark-card text-text-primary dark:text-text-dark-primary'
                   } ${selectedOption !== null ? 'cursor-default' : 'cursor-pointer'}`}
                 >
                   <div className="flex items-center justify-between">
@@ -432,9 +432,9 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                         selectedOption === option
                           ? isCorrect
-                            ? 'bg-green-500 text-white'
-                            : 'bg-red-500 text-white'
-                          : 'bg-gray-600 text-white'
+                            ? 'bg-status-success text-text-primary dark:text-text-dark-primary'
+                            : 'bg-status-error text-text-primary dark:text-text-dark-primary'
+                          : 'bg-gray-600 text-text-primary dark:text-text-dark-primary'
                       }`}>
                         {String.fromCharCode(65 + index)} {/* A, B, C, D */}
                       </div>
@@ -466,27 +466,27 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-teal-600 text-white rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-teal-600 text-text-primary dark:text-text-dark-primary rounded-full text-sm font-medium mb-4">
                 <span>📝</span>
                 <span>Grammatica</span>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+              <h3 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-4">
                 Vul het ontbrekende woord in
               </h3>
-              <p className="text-gray-600 mb-4 text-lg">
+              <p className="text-text-muted dark:text-text-dark-muted mb-4 text-lg">
                 {currentItem.question}
               </p>
               {currentItem.hint && (
                 <div className="mb-4">
                   <button
                     onClick={() => setShowHint(!showHint)}
-                    className="inline-flex items-center space-x-2 px-3 py-1 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                    className="inline-flex items-center space-x-2 px-3 py-1 bg-yellow-600 text-text-primary dark:text-text-dark-primary rounded-nav hover:bg-yellow-700 transition-colors"
                   >
                     <Lightbulb className="w-4 h-4" />
                     <span>💡 Toon hint</span>
                   </button>
                   {showHint && (
-                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-nav">
                       <p className="text-sm text-yellow-800 italic">
                         💡 {currentItem.hint}
                       </p>
@@ -504,7 +504,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                   onChange={(e) => setUserAnswer(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Typ het ontbrekende woord..."
-                  className="w-full px-6 py-4 text-xl border-2 border-gray-300 rounded-xl focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-100 transition-all bg-white text-gray-900 placeholder-gray-500 !text-gray-900 !bg-white"
+                  className="w-full px-6 py-4 text-xl border-2 border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium rounded-card focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-100 transition-all bg-white dark:bg-dark-elevated text-text-primary dark:text-text-dark-primary placeholder-gray-500 !text-text-primary dark:text-text-dark-primary !bg-white dark:bg-dark-elevated"
                   disabled={isCorrect !== null}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -515,7 +515,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
               </div>
               
               {isCorrect !== null && (
-                <div className={`mt-4 p-4 rounded-xl border-2 ${
+                <div className={`mt-4 p-4 rounded-card border-2 ${
                   isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center space-x-3">
@@ -540,7 +540,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
                 <button
                   onClick={handleTypeAnswer}
                   disabled={!userAnswer.trim() || isCorrect !== null}
-                  className="w-full px-6 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold text-lg"
+                  className="w-full px-6 py-3 bg-teal-600 text-text-primary dark:text-text-dark-primary rounded-card hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold text-lg"
                 >
                   {isCorrect !== null ? 'Antwoord ingediend' : '📝 Controleer antwoord'}
                 </button>
@@ -551,8 +551,8 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
 
       default:
         return (
-          <div className="text-center text-gray-500">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+          <div className="text-center text-text-muted dark:text-text-dark-muted">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-card p-6">
               <p className="text-lg font-medium text-yellow-800">
                 ⚠️ Deze oefeningstype is nog niet beschikbaar
               </p>
@@ -569,13 +569,13 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
     <div className="p-8">
       {/* Exercise header */}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        <h2 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-2">
           {exercise.title}
         </h2>
-        <p className="text-gray-600 mb-4">
+        <p className="text-text-muted dark:text-text-dark-muted mb-4">
           {exercise.instruction}
         </p>
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-text-muted dark:text-text-dark-muted">
           <span>
             Question {currentItemIndex + 1} of {exercise.items.length}
           </span>
@@ -595,7 +595,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
         <div className="flex justify-center mt-8">
           <button
             onClick={handleNext}
-            className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105 font-semibold text-lg shadow-lg"
+            className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-text-primary dark:text-text-dark-primary rounded-card hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105 font-semibold text-lg shadow-lg"
           >
             {isLastItem ? (
               <div className="flex items-center space-x-2">

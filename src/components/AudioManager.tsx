@@ -174,9 +174,9 @@ const AudioManager: React.FC = () => {
   return (
     <Box sx={{ p: 2 }}>
       <div className="space-y-6">
-        <div className="p-4 bg-white rounded-lg shadow">
+        <div className="p-4 bg-white dark:bg-dark-elevated rounded-nav shadow">
           <h2 className="text-xl font-bold mb-4">Audio Cache Manager</h2>
-          <p className="text-gray-600 mb-4">
+          <p className="text-text-muted dark:text-text-dark-muted mb-4">
             Cache audio files for offline use. Once cached, audio will work without internet connection.
           </p>
           
@@ -191,7 +191,7 @@ const AudioManager: React.FC = () => {
                   <Typography variant="h6">Level {levelNum}</Typography>
                   <div className="flex justify-between items-center mb-2">
                     <div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-text-muted dark:text-text-dark-muted">
                         {progress?.cached || 0} of {levelWords.length * 3} files cached
                       </p>
                     </div>
@@ -201,7 +201,7 @@ const AudioManager: React.FC = () => {
                       className={`px-4 py-2 rounded ${
                         progress?.status === 'caching'
                           ? 'bg-gray-300 cursor-not-allowed'
-                          : 'bg-blue-500 hover:bg-blue-600 text-white'
+                          : 'bg-japanese-red hover:bg-japanese-red text-text-primary dark:text-text-dark-primary'
                       }`}
                     >
                       {progress?.status === 'caching' ? 'Caching...' : 'Cache Audio'}
@@ -212,7 +212,7 @@ const AudioManager: React.FC = () => {
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
                       <div
                         className={`h-2.5 rounded-full ${
-                          progress.status === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                          progress.status === 'error' ? 'bg-status-error' : 'bg-japanese-red'
                         }`}
                         style={{ width: `${progress.total ? (progress.cached / progress.total) * 100 : 0}%` }}
                       ></div>
@@ -235,7 +235,7 @@ const AudioManager: React.FC = () => {
               className={`w-full px-4 py-2 rounded ${
                 isCaching
                   ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-green-500 hover:bg-green-600 text-white'
+                  : 'bg-status-success hover:bg-green-600 text-text-primary dark:text-text-dark-primary'
               }`}
             >
               {isCaching ? 'Caching All Levels...' : 'Cache All Levels'}
@@ -245,7 +245,7 @@ const AudioManager: React.FC = () => {
 
         {/* Audio Player */}
         {currentAudio && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg">
+          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-dark-elevated border-t p-4 shadow-lg">
             <div className="max-w-4xl mx-auto flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-sm font-medium">{currentAudio.text}</p>
@@ -258,7 +258,7 @@ const AudioManager: React.FC = () => {
               />
               <button
                 onClick={() => setCurrentAudio(null)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-text-muted dark:text-text-dark-muted hover:text-text-secondary dark:text-text-dark-secondary"
               >
                 ✕
               </button>

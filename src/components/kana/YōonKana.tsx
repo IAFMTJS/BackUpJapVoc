@@ -98,10 +98,10 @@ const YōonKana: React.FC = () => {
   return (
     <Box>
       <Box className="mb-6">
-        <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+        <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}`}>
           Yōon (拗音) - Combined Sounds
         </Typography>
-        <Typography variant="body1" className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+        <Typography variant="body1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-muted dark:text-text-dark-muted'}>
           Yōon are combined sounds created by adding a small や (ya), ゆ (yu), or よ (yo) to certain kana.
           This creates new sounds like きゃ (kya), しゅ (shu), and ちょ (cho).
         </Typography>
@@ -185,8 +185,8 @@ const YōonKana: React.FC = () => {
         ))}
       </Grid>
 
-      <Box className="mt-8 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-        <Typography variant="body1" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+      <Box className="mt-8 p-4 bg-blue-50 dark:bg-blue-900 rounded-nav">
+        <Typography variant="body1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}>
           <strong>Tips for Yōon:</strong>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li>Notice how the small や, ゆ, and よ combine with the base character</li>

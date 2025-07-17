@@ -327,7 +327,7 @@ const AnimeSection: React.FC = () => {
                   
                   {/* Character Info */}
                   {selectedPhrase.characterName && (
-                    <div className="absolute bottom-4 left-4 text-white">
+                    <div className="absolute bottom-4 left-4 text-text-primary dark:text-text-dark-primary">
                       <h3 className="text-xl font-bold">{selectedPhrase.characterName}</h3>
                       {selectedPhrase.animeTitle && (
                         <p className="text-sm opacity-80">{selectedPhrase.animeTitle}</p>
@@ -410,7 +410,7 @@ const AnimeSection: React.FC = () => {
                 <div className="space-y-2">
                   <button
                     onClick={() => setSelectedCategory('all')}
-                    className={`w-full px-3 py-2 rounded-lg text-left transition-colors ${
+                    className={`w-full px-3 py-2 rounded-nav text-left transition-colors ${
                       selectedCategory === 'all'
                         ? themeClasses.button.primary
                         : themeClasses.button.secondary
@@ -422,7 +422,7 @@ const AnimeSection: React.FC = () => {
                     <button
                       key={category}
                       onClick={() => setSelectedCategory(category as AnimePhrase['category'])}
-                      className={`w-full px-3 py-2 rounded-lg text-left transition-colors capitalize ${
+                      className={`w-full px-3 py-2 rounded-nav text-left transition-colors capitalize ${
                         selectedCategory === category
                           ? themeClasses.button.primary
                           : themeClasses.button.secondary

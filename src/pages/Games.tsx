@@ -53,11 +53,11 @@ const MultipleChoiceQuiz: React.FC<{ availableWords: Word[] }> = ({ availableWor
         {options.map((opt, i) => (
           <button
             key={i}
-            className={`px-6 py-3 rounded-lg text-lg transition-colors ${
+            className={`px-6 py-3 rounded-nav text-lg transition-colors ${
               selected === i
                 ? opt.english === word.english
-                  ? 'bg-green-500 text-white'
-                  : 'bg-red-500 text-white'
+                  ? 'bg-status-success text-text-primary dark:text-text-dark-primary'
+                  : 'bg-status-error text-text-primary dark:text-text-dark-primary'
                 : themeClasses.button.secondary
             }`}
             onClick={() => setSelected(i)}
@@ -133,11 +133,11 @@ const AudioMatch: React.FC<{ availableWords: Word[] }> = ({ availableWords }) =>
         {options.map((opt, i) => (
           <button
             key={i}
-            className={`px-6 py-3 rounded-lg text-lg transition-colors ${
+            className={`px-6 py-3 rounded-nav text-lg transition-colors ${
               selected === i
                 ? opt.japanese === word.japanese
-                  ? 'bg-green-500 text-white'
-                  : 'bg-red-500 text-white'
+                  ? 'bg-status-success text-text-primary dark:text-text-dark-primary'
+                  : 'bg-status-error text-text-primary dark:text-text-dark-primary'
                 : themeClasses.button.secondary
             }`}
             onClick={() => setSelected(i)}
@@ -199,7 +199,7 @@ const Games: React.FC = () => {
               </h1>
             </div>
           </div>
-          <div className={`p-6 rounded-lg ${themeClasses.card}`}>
+          <div className={`p-6 rounded-nav ${themeClasses.card}`}>
             <LoadingSpinner />
           </div>
         </div>
@@ -235,9 +235,9 @@ const Games: React.FC = () => {
           <div className="flex space-x-4">
             <button
               onClick={() => setActiveGame('quiz')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-3 rounded-nav font-medium transition-colors ${
                 activeGame === 'quiz'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary'
                   : `${themeClasses.button.secondary}`
               }`}
             >
@@ -245,9 +245,9 @@ const Games: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveGame('audio')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-3 rounded-nav font-medium transition-colors ${
                 activeGame === 'audio'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary'
                   : `${themeClasses.button.secondary}`
               }`}
             >
@@ -257,7 +257,7 @@ const Games: React.FC = () => {
         </div>
 
         {/* Game content */}
-        <div className={`p-6 rounded-lg ${themeClasses.card}`}>
+        <div className={`p-6 rounded-nav ${themeClasses.card}`}>
           {activeGame === 'quiz' ? (
             <MultipleChoiceQuiz availableWords={availableWords} />
           ) : (

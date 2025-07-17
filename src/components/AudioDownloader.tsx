@@ -137,7 +137,7 @@ const AudioDownloader: React.FC = () => {
   return (
     <Box sx={{ p: 2 }}>
       <h2 className="text-xl font-bold mb-4">Download Audio Files</h2>
-      <p className="text-gray-600 mb-4">
+      <p className="text-text-muted dark:text-text-dark-muted mb-4">
         Download audio files for offline use. Files are organized by level and include both word pronunciations and example sentences.
       </p>
       
@@ -152,7 +152,7 @@ const AudioDownloader: React.FC = () => {
               <Typography variant="h6">Level {levelNum}</Typography>
               <div className="flex justify-between items-center mb-2">
                 <div>
-                  <p className="text-sm text-gray-600">{levelWords.length} words</p>
+                  <p className="text-sm text-text-muted dark:text-text-dark-muted">{levelWords.length} words</p>
                 </div>
                 <button
                   onClick={() => downloadAudioFiles(levelNum)}
@@ -160,7 +160,7 @@ const AudioDownloader: React.FC = () => {
                   className={`px-4 py-2 rounded ${
                     progress?.status === 'downloading'
                       ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      : 'bg-japanese-red hover:bg-japanese-red text-text-primary dark:text-text-dark-primary'
                   }`}
                 >
                   {progress?.status === 'downloading' ? 'Downloading...' : 'Download'}
@@ -171,7 +171,7 @@ const AudioDownloader: React.FC = () => {
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div
                     className={`h-2.5 rounded-full ${
-                      progress.status === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                      progress.status === 'error' ? 'bg-status-error' : 'bg-japanese-red'
                     }`}
                     style={{ width: `${progress.total ? (progress.progress / progress.total) * 100 : 0}%` }}
                   ></div>
@@ -194,7 +194,7 @@ const AudioDownloader: React.FC = () => {
           className={`w-full px-4 py-2 rounded ${
             isDownloading
               ? 'bg-gray-300 cursor-not-allowed'
-              : 'bg-green-500 hover:bg-green-600 text-white'
+              : 'bg-status-success hover:bg-green-600 text-text-primary dark:text-text-dark-primary'
           }`}
         >
           {isDownloading ? 'Downloading All Levels...' : 'Download All Levels'}

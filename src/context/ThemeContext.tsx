@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 import safeLocalStorage from '../utils/safeLocalStorage';
 
-type Theme = 'dark' | 'light' | 'neon';
+type Theme = 'dark' | 'light';
 
 interface ThemeContextType {
   theme: Theme;
@@ -46,42 +46,42 @@ interface ThemeContextType {
 
 // Move defaultThemeContext outside of any component or function
 const defaultThemeContextValue: ThemeContextType = {
-  theme: 'dark',
+  theme: 'light', // Default to light theme for Japanese learning platform
   setTheme: () => {},
   getThemeClasses: () => ({
-    container: 'bg-[#181830] min-h-screen',
+    container: 'bg-light min-h-screen',
     text: {
-      primary: 'text-white',
-      secondary: 'text-gray-300',
-      muted: 'text-gray-500',
+      primary: 'text-text-primary',
+      secondary: 'text-text-secondary',
+      muted: 'text-text-muted',
     },
-    card: 'bg-[#23233a] border border-[#2a2a40] rounded-2xl p-6 shadow-md',
+    card: 'bg-light-secondary border border-border-light rounded-card p-6 shadow-card',
     button: {
-      primary: 'bg-[#23233a] text-white border border-[#2a2a40] rounded-lg px-4 py-2 hover:bg-[#2a2a40] transition',
-      secondary: 'bg-[#23233a] text-gray-300 border border-[#2a2a40] rounded-lg px-4 py-2 hover:bg-[#2a2a40] transition',
+      primary: 'bg-japanese-red text-white border border-japanese-red rounded-button px-4 py-2 hover:bg-japanese-redLight hover:border-japanese-redLight shadow-button hover:shadow-button-hover transition-all duration-300',
+      secondary: 'bg-light-secondary text-text-primary border border-border-light rounded-nav px-4 py-2 hover:bg-light-tertiary hover:border-border-medium transition-all duration-300',
     },
-    input: 'bg-[#23233a] border border-[#2a2a40] text-white focus:ring-2 focus:ring-blue-500 rounded-lg',
+    input: 'bg-white border border-border-light text-text-primary focus:border-japanese-red focus:shadow-input-focus rounded-input transition-all duration-300',
     nav: {
-      background: 'bg-[#181830]',
+      background: 'bg-light/95 backdrop-blur-md border-b border-border-light',
       link: {
-        default: 'text-gray-300 hover:text-white',
-        active: 'text-white underline',
+        default: 'text-text-secondary hover:text-text-primary transition-colors duration-300',
+        active: 'text-text-primary font-semibold',
       },
     },
     progress: {
-      background: 'bg-[#23233a]',
-      bar: 'bg-blue-500',
+      background: 'bg-light-tertiary',
+      bar: 'bg-accent-orange',
     },
     toggle: {
-      active: 'bg-blue-600',
-      default: 'bg-gray-700',
+      active: 'bg-japanese-red',
+      default: 'bg-border-light',
     },
     focus: {
-      ring: 'focus:ring-blue-500 focus:ring-2',
+      ring: 'focus:ring-2 focus:ring-japanese-red/20 focus:outline-none',
     },
-    selection: 'selection:bg-blue-500/20 selection:text-white',
-    title: 'text-white',
-    subtitle: 'text-gray-300',
+    selection: 'selection:bg-japanese-red/20 selection:text-text-primary',
+    title: 'text-text-primary font-display font-bold',
+    subtitle: 'text-text-secondary font-medium',
   }),
   toggleTheme: () => {},
 };
@@ -94,20 +94,20 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // Load theme from localStorage or default to 'dark' with validation
+  // Load theme from localStorage or default to 'light' with validation
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
       try {
         const savedTheme = safeLocalStorage.getItem('theme');
-        return (savedTheme && ['dark', 'light', 'neon'].includes(savedTheme)) 
+        return (savedTheme && ['dark', 'light'].includes(savedTheme)) 
           ? (savedTheme as Theme) 
-          : 'dark';
+          : 'light'; // Default to light theme
       } catch (error) {
         console.error('Failed to load theme from localStorage:', error);
-        return 'dark';
+        return 'light'; // Default to light theme
       }
     }
-    return 'dark';
+    return 'light'; // Default to light theme
   });
 
   // Persist theme to localStorage and update body class
@@ -115,8 +115,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     if (typeof window !== 'undefined' && theme) {
       try {
         safeLocalStorage.setItem('theme', theme);
-        document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-neon');
+        document.documentElement.classList.remove('theme-dark', 'theme-light', 'dark');
         document.documentElement.classList.add(`theme-${theme}`);
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
       } catch (error) {
         console.error('Failed to save theme to localStorage:', error);
       }
@@ -125,94 +128,95 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   // Validate theme before setting it
   const setThemeWithValidation = React.useCallback((newTheme: Theme) => {
-    if (['dark', 'light', 'neon'].includes(newTheme)) {
+    if (['dark', 'light'].includes(newTheme)) {
       setTheme(newTheme);
     } else {
-      console.warn(`Invalid theme value: ${newTheme}. Defaulting to 'dark'`);
-      setTheme('dark');
+      console.warn(`Invalid theme value: ${newTheme}. Defaulting to 'light'`);
+      setTheme('light');
     }
   }, []);
 
-  // Toggle logic cycles through dark -> light -> neon -> dark
+  // Toggle logic cycles through light -> dark -> light
   const toggleTheme = React.useCallback(() => {
     setThemeWithValidation(
-      theme === 'dark' ? 'light' : theme === 'light' ? 'neon' : 'dark'
+      theme === 'light' ? 'dark' : 'light'
     );
   }, [theme, setThemeWithValidation]);
 
   const getThemeClasses = React.useCallback(() => {
-    if (theme === 'dark') {
+    if (theme === 'light') {
+      // Japanese Learning Platform Light Theme
       return {
-        container: 'bg-[#181830] min-h-screen',
+        container: 'bg-light min-h-screen',
         text: {
-          primary: 'text-white',
-          secondary: 'text-gray-200',
-          muted: 'text-gray-300',
+          primary: 'text-text-primary',
+          secondary: 'text-text-secondary',
+          muted: 'text-text-muted',
         },
-        card: 'bg-[#23233a] border border-[#2a2a40] rounded-2xl p-6 shadow-md',
+        card: 'bg-light-secondary border border-border-light rounded-card p-6 shadow-card hover:shadow-hover transition-all duration-300',
         button: {
-          primary: 'bg-[#23233a] text-white border border-[#2a2a40] rounded-lg px-4 py-2 hover:bg-[#2a2a40] transition',
-          secondary: 'bg-[#23233a] text-gray-200 border border-[#2a2a40] rounded-lg px-4 py-2 hover:bg-[#2a2a40] transition',
+          primary: 'bg-japanese-red text-white border border-japanese-red rounded-button px-4 py-2 hover:bg-japanese-redLight hover:border-japanese-redLight shadow-button hover:shadow-button-hover transition-all duration-300 transform hover:-translate-y-0.5',
+          secondary: 'bg-light-secondary text-text-primary border border-border-light rounded-nav px-4 py-2 hover:bg-light-tertiary hover:border-border-medium transition-all duration-300',
         },
-        input: 'bg-[#23233a] border border-[#2a2a40] text-white focus:ring-2 focus:ring-blue-500 rounded-lg',
+        input: 'bg-white border border-border-light text-text-primary focus:border-japanese-red focus:shadow-input-focus rounded-input transition-all duration-300',
         nav: {
-          background: 'bg-[#181830]',
+          background: 'bg-light/95 backdrop-blur-md border-b border-border-light shadow-nav',
           link: {
-            default: 'text-gray-200 hover:text-white',
-            active: 'text-white underline',
+            default: 'text-text-secondary hover:text-text-primary transition-colors duration-300',
+            active: 'text-text-primary font-semibold',
           },
         },
         progress: {
-          background: 'bg-[#23233a]',
-          bar: 'bg-blue-500',
+          background: 'bg-light-tertiary',
+          bar: 'bg-accent-orange',
         },
         toggle: {
-          active: 'bg-blue-600',
-          default: 'bg-gray-700',
+          active: 'bg-japanese-red',
+          default: 'bg-border-light',
         },
         focus: {
-          ring: 'focus:ring-blue-500 focus:ring-2',
+          ring: 'focus:ring-2 focus:ring-japanese-red/20 focus:outline-none',
         },
-        selection: 'selection:bg-blue-500/20 selection:text-white',
-        title: 'text-white',
-        subtitle: 'text-gray-200',
+        selection: 'selection:bg-japanese-red/20 selection:text-text-primary',
+        title: 'text-text-primary font-display font-bold',
+        subtitle: 'text-text-secondary font-medium',
       };
     }
-    // Light theme
+    // Dark theme - Japanese Learning Platform Dark Theme
     return {
-      container: 'bg-gray-50 min-h-screen',
+      container: 'bg-dark min-h-screen',
       text: {
-        primary: 'text-gray-900',
-        secondary: 'text-gray-700',
-        muted: 'text-gray-600',
+        primary: 'text-text-dark-primary',
+        secondary: 'text-text-dark-secondary',
+        muted: 'text-text-dark-muted',
       },
-      card: 'bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow',
+      card: 'bg-dark-secondary border border-border-dark-light rounded-card p-6 shadow-dark-card hover:shadow-dark-hover transition-all duration-300',
       button: {
-        primary: 'bg-white text-gray-900 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 hover:border-gray-300 transition-colors',
-        secondary: 'bg-gray-100 text-gray-800 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-200 hover:border-gray-300 transition-colors',
+        primary: 'bg-japanese-red text-white border border-japanese-red rounded-button px-4 py-2 hover:bg-japanese-redLight hover:border-japanese-redLight shadow-dark-button hover:shadow-dark-glow transition-all duration-300 transform hover:-translate-y-0.5 animate-glow-pulse',
+        secondary: 'bg-dark-secondary text-text-dark-primary border border-border-dark-light rounded-nav px-4 py-2 hover:bg-dark-tertiary hover:border-border-dark-medium transition-all duration-300',
       },
-      input: 'bg-white border border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-500 rounded-lg hover:border-gray-300 transition-colors',
+      input: 'bg-dark-elevated border border-border-dark-light text-text-dark-primary focus:border-japanese-red focus:shadow-dark-glow rounded-input transition-all duration-300',
       nav: {
-        background: 'bg-white border-b border-gray-200',
+        background: 'bg-dark/95 backdrop-blur-md border-b border-border-dark-light shadow-dark-card',
         link: {
-          default: 'text-gray-700 hover:text-gray-900 transition-colors',
-          active: 'text-gray-900 font-medium',
+          default: 'text-text-dark-secondary hover:text-text-dark-primary transition-colors duration-300',
+          active: 'text-text-dark-primary font-semibold text-japanese-red',
         },
       },
       progress: {
-        background: 'bg-gray-200',
-        bar: 'bg-blue-600',
+        background: 'bg-dark-tertiary',
+        bar: 'bg-accent-orange-dark',
       },
       toggle: {
-        active: 'bg-blue-600',
-        default: 'bg-gray-300',
+        active: 'bg-japanese-red',
+        default: 'bg-border-dark-light',
       },
       focus: {
-        ring: 'focus:ring-blue-500 focus:ring-2',
+        ring: 'focus:ring-2 focus:ring-japanese-red/30 focus:outline-none',
       },
-      selection: 'selection:bg-blue-500/20 selection:text-gray-900',
-      title: 'text-gray-900',
-      subtitle: 'text-gray-700',
+      selection: 'selection:bg-japanese-red/30 selection:text-text-dark-primary',
+      title: 'text-text-dark-primary font-display font-bold',
+      subtitle: 'text-text-dark-secondary font-medium',
     };
   }, [theme]);
 

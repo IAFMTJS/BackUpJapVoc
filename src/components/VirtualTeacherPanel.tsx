@@ -232,7 +232,7 @@ const VirtualTeacherPanel: React.FC<{
     <div
       id="virtual-teacher-panel"
       tabIndex={0}
-      className={`${themeClasses.card} rounded-lg p-4 mb-4 shadow flex flex-col gap-2 max-w-md mx-auto relative`}
+      className={`${themeClasses.card} rounded-nav p-4 mb-4 shadow flex flex-col gap-2 max-w-md mx-auto relative`}
       aria-label="Virtual Teacher Panel"
       style={{ minWidth: 280 }}
     >

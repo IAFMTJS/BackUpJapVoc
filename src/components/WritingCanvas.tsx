@@ -277,7 +277,7 @@ const WritingCanvas: React.FC<WritingCanvasProps> = ({
       <div className="relative">
         <canvas
           ref={canvasRef}
-          className="border rounded-lg touch-none"
+          className="border rounded-nav touch-none"
           style={{
             width: `${width}px`,
             height: `${height}px`,
@@ -305,16 +305,16 @@ const WritingCanvas: React.FC<WritingCanvasProps> = ({
       <div className="flex gap-4">
         <button
           onClick={clearCanvas}
-          className={`px-4 py-2 rounded-lg ${
-            isDarkMode ? 'bg-dark-hover text-white' : 'bg-gray-100 text-gray-800'
+          className={`px-4 py-2 rounded-nav ${
+            isDarkMode ? 'bg-dark-hover text-text-primary dark:text-text-dark-primary' : 'bg-gray-100 text-gray-800'
           }`}
         >
           Clear
         </button>
         <button
           onClick={undoStroke}
-          className={`px-4 py-2 rounded-lg ${
-            isDarkMode ? 'bg-dark-hover text-white' : 'bg-gray-100 text-gray-800'
+          className={`px-4 py-2 rounded-nav ${
+            isDarkMode ? 'bg-dark-hover text-text-primary dark:text-text-dark-primary' : 'bg-gray-100 text-gray-800'
           }`}
           disabled={strokes.length === 0}
         >
@@ -322,11 +322,11 @@ const WritingCanvas: React.FC<WritingCanvasProps> = ({
         </button>
         <button
           onClick={() => setShowStrokeOrder(!showStrokeOrder)}
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-4 py-2 rounded-nav ${
             showStrokeOrder
-              ? 'bg-primary text-white'
+              ? 'bg-primary text-text-primary dark:text-text-dark-primary'
               : isDarkMode
-              ? 'bg-dark-hover text-white'
+              ? 'bg-dark-hover text-text-primary dark:text-text-dark-primary'
               : 'bg-gray-100 text-gray-800'
           }`}
         >

@@ -11,7 +11,7 @@ export default function SessionWarning() {
   return (
     <div className="fixed bottom-0 inset-x-0 pb-safe">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="p-4 rounded-lg bg-yellow-50 shadow-lg sm:p-6">
+        <div className="p-4 rounded-nav bg-yellow-50 shadow-lg sm:p-6">
           <div className="flex items-start">
             <div className="flex-shrink-0">
               <svg className="h-6 w-6 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

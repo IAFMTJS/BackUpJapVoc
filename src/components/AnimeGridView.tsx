@@ -38,13 +38,13 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
     <div className="w-full">
       {/* View Mode Toggle */}
       <div className="flex justify-end mb-6">
-        <div className="flex gap-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+        <div className="flex gap-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-nav">
           <button
             onClick={() => onViewModeChange('grid')}
-            className={`p-2 rounded-lg transition-all duration-200 ${
+            className={`p-2 rounded-nav transition-all duration-200 ${
               viewMode === 'grid'
-                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-md'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600'
+                ? 'bg-white dark:bg-dark-elevated dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-card dark:shadow-dark-card'
+                : 'text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary hover:bg-white dark:bg-dark-elevated dark:hover:bg-gray-600'
             }`}
             title="Grid View"
           >
@@ -54,10 +54,10 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
           </button>
           <button
             onClick={() => onViewModeChange('list')}
-            className={`p-2 rounded-lg transition-all duration-200 ${
+            className={`p-2 rounded-nav transition-all duration-200 ${
               viewMode === 'list'
-                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-md'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600'
+                ? 'bg-white dark:bg-dark-elevated dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-card dark:shadow-dark-card'
+                : 'text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary hover:bg-white dark:bg-dark-elevated dark:hover:bg-gray-600'
             }`}
             title="List View"
           >
@@ -93,7 +93,7 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
               onMouseEnter={() => setHoveredPhrase(phrase.japanese)}
               onMouseLeave={() => setHoveredPhrase(null)}
               className={`
-                relative bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden
+                relative bg-white dark:bg-dark-elevated dark:bg-gray-800 rounded-card shadow-lg overflow-hidden
                 transition-all duration-300 cursor-pointer group
                 ${viewMode === 'grid' ? 'flex flex-col' : 'flex flex-row items-center gap-4'}
                 ${favorites.includes(phrase.japanese) ? 'ring-2 ring-pink-500' : ''}
@@ -113,9 +113,9 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
                 {/* Favorite Button */}
                 <button
                   onClick={(e) => toggleFavorite(phrase.japanese, e)}
-                  className="absolute top-2 right-2 p-2 rounded-full bg-white/90 dark:bg-gray-800/90 
-                    backdrop-blur-sm shadow-md transform hover:scale-110 transition-all
-                    hover:bg-white dark:hover:bg-gray-700"
+                  className="absolute top-2 right-2 p-2 rounded-full bg-white dark:bg-dark-elevated/90 dark:bg-gray-800/90 
+                    backdrop-blur-sm shadow-card dark:shadow-dark-card transform hover:scale-110 transition-all
+                    hover:bg-white dark:bg-dark-elevated dark:hover:bg-gray-700"
                 >
                   <svg
                     className={`w-5 h-5 transition-colors ${
@@ -141,16 +141,16 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
               <div className={`flex-1 p-4 ${viewMode === 'list' ? 'flex flex-col justify-center' : ''}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                    <h3 className="text-xl font-bold text-text-primary dark:text-text-dark-primary dark:text-text-primary dark:text-text-dark-primary mb-1">
                       {phrase.japanese}
                     </h3>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <p className="text-sm text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary">
                       {phrase.romaji}
                     </p>
                   </div>
                   <button
                     onClick={(e) => handlePlayAudio(phrase.japanese, e)}
-                    className="p-2 text-gray-700 hover:text-blue-600 dark:text-gray-300 
+                    className="p-2 text-text-secondary dark:text-text-dark-secondary hover:text-blue-600 dark:text-text-secondary dark:text-text-dark-secondary 
                       dark:hover:text-blue-400 transform hover:scale-110 transition-all
                       bg-gray-200 dark:bg-gray-700 rounded-full"
                     title="Play Audio"
@@ -160,11 +160,11 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
                 </div>
                 
                 <div className="mt-2">
-                  <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2">
+                  <p className="text-sm text-gray-800 dark:text-text-secondary dark:text-text-dark-secondary line-clamp-2">
                     {phrase.english}
                   </p>
                   {phrase.animeTitle && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
+                    <p className="text-xs text-text-muted dark:text-text-dark-muted dark:text-gray-400 mt-1 font-medium">
                       {phrase.animeTitle}
                     </p>
                   )}
@@ -173,7 +173,7 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
                 {/* Category Badge */}
                 <div className="mt-3">
                   <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold
-                    bg-blue-600 text-white dark:bg-blue-900 dark:text-blue-200
+                    bg-japanese-red text-text-primary dark:text-text-dark-primary dark:bg-blue-900 dark:text-blue-200
                     capitalize">
                     {phrase.category}
                   </span>
@@ -187,12 +187,12 @@ const AnimeGridView: React.FC<AnimeGridViewProps> = ({
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       className="absolute inset-0 bg-gradient-to-t from-black/90 to-black/70 
-                        backdrop-blur-sm text-white p-4 flex flex-col justify-center items-center
+                        backdrop-blur-sm text-text-primary dark:text-text-dark-primary p-4 flex flex-col justify-center items-center
                         text-center"
                     >
                       <p className="text-sm mb-3">{phrase.context}</p>
                       <div className="flex gap-2">
-                        <span className="text-xs bg-blue-500/90 px-3 py-1 rounded-full">
+                        <span className="text-xs bg-japanese-red/90 px-3 py-1 rounded-full">
                           {phrase.category}
                         </span>
                         {phrase.characterName && (

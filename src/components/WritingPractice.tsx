@@ -1228,8 +1228,8 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
   // Add renderModeSelector function
   const renderModeSelector = () => {
     return (
-      <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
-        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-neon-blue' : 'text-gray-800'}`}>
+      <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white dark:bg-dark-elevated'} rounded-nav shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-border-light dark:border-border-dark dark:border-border-dark-dark-light'}`}>
+        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-blue-500' : 'text-gray-800'}`}>
           Practice Mode
         </h3>
         <div className="flex flex-wrap gap-4">
@@ -1237,14 +1237,14 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
             <button
               key={writingMode}
               onClick={() => setMode(writingMode as WritingMode)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              className={`px-4 py-2 rounded-nav font-medium transition-all duration-300 ${
                 mode === writingMode
                   ? isDarkMode 
-                    ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(0,149,255,0.4)]' 
-                    : 'bg-blue-500 text-white'
+                    ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary shadow-lg' 
+                    : 'bg-japanese-red text-text-primary dark:text-text-dark-primary'
                   : isDarkMode 
-                    ? 'bg-dark-lighter text-text-primary hover:bg-dark-border' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-dark-lighter text-text-primary dark:text-text-dark-primary hover:bg-dark-border' 
+                    : 'bg-gray-100 text-text-secondary dark:text-text-dark-secondary hover:bg-gray-200'
               }`}
             >
               {writingMode.charAt(0).toUpperCase() + writingMode.slice(1)}
@@ -1258,8 +1258,8 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
   // Add renderDifficultySelector function
   const renderDifficultySelector = () => {
     return (
-      <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
-        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-neon-blue' : 'text-gray-800'}`}>
+      <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white dark:bg-dark-elevated'} rounded-nav shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-border-light dark:border-border-dark dark:border-border-dark-dark-light'}`}>
+        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-blue-500' : 'text-gray-800'}`}>
           Difficulty
         </h3>
         <div className="flex flex-wrap gap-4">
@@ -1267,14 +1267,14 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
             <button
               key={diff}
               onClick={() => setDifficulty(diff as Difficulty)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              className={`px-4 py-2 rounded-nav font-medium transition-all duration-300 ${
                 difficulty === diff
                   ? isDarkMode 
-                    ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(0,149,255,0.4)]' 
-                    : 'bg-blue-500 text-white'
+                    ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary shadow-lg' 
+                    : 'bg-japanese-red text-text-primary dark:text-text-dark-primary'
                   : isDarkMode 
-                    ? 'bg-dark-lighter text-text-primary hover:bg-dark-border' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-dark-lighter text-text-primary dark:text-text-dark-primary hover:bg-dark-border' 
+                    : 'bg-gray-100 text-text-secondary dark:text-text-dark-secondary hover:bg-gray-200'
               }`}
             >
               {diff.charAt(0).toUpperCase() + diff.slice(1)}
@@ -1390,18 +1390,18 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
   }, [mode]);
 
   return (
-    <div className={`container mx-auto px-4 py-8 ${isDarkMode ? 'bg-dark' : 'bg-gray-50'}`}>
+    <div className={`container mx-auto px-4 py-8 ${isDarkMode ? 'bg-dark' : 'bg-light dark:bg-dark'}`}>
       <div className="max-w-4xl mx-auto">
         {renderModeSelector()}
         {renderDifficultySelector()}
         {state.characterList.length > 0 ? (
-          <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
+          <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white dark:bg-dark-elevated'} rounded-nav shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-border-light dark:border-border-dark dark:border-border-dark-dark-light'}`}>
             <div className="flex flex-col items-center mb-6">
-              <h2 className={`text-4xl font-bold mb-4 ${isDarkMode ? 'text-neon-blue' : 'text-gray-800'}`}>
+              <h2 className={`text-4xl font-bold mb-4 ${isDarkMode ? 'text-blue-500' : 'text-gray-800'}`}>
                 {state.currentCharacter}
               </h2>
               {getCharacterDetails(state.currentCharacter) && (
-                <div className={`text-center ${isDarkMode ? 'text-text-primary' : 'text-gray-600'}`}>
+                <div className={`text-center ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-muted dark:text-text-dark-muted'}`}>
                   {showRomaji && (
                     <p className="text-xl mb-2">
                       {getCharacterDetails(state.currentCharacter)?.readings.join('・')}
@@ -1424,10 +1424,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                   checked={showTracking}
                   onChange={(e) => setShowTracking(e.target.checked)}
                   className={`form-checkbox h-5 w-5 ${
-                    isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
+                    isDarkMode ? 'text-blue-500 border-dark-border' : 'text-blue-500 border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                   }`}
                 />
-                <span className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                <span className={isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-secondary dark:text-text-dark-secondary'}>
                   Show Tracking
                 </span>
               </label>
@@ -1437,10 +1437,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                   checked={showRomaji}
                   onChange={(e) => setShowRomaji(e.target.checked)}
                   className={`form-checkbox h-5 w-5 ${
-                    isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
+                    isDarkMode ? 'text-blue-500 border-dark-border' : 'text-blue-500 border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                   }`}
                 />
-                <span className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                <span className={isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-secondary dark:text-text-dark-secondary'}>
                   Show Romaji
                 </span>
               </label>
@@ -1450,10 +1450,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                   checked={showMeaning}
                   onChange={(e) => setShowMeaning(e.target.checked)}
                   className={`form-checkbox h-5 w-5 ${
-                    isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
+                    isDarkMode ? 'text-blue-500 border-dark-border' : 'text-blue-500 border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                   }`}
                 />
-                <span className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                <span className={isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-secondary dark:text-text-dark-secondary'}>
                   Show Meaning
                 </span>
               </label>
@@ -1464,10 +1464,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
               <div className="relative">
                 <canvas
                   ref={canvasRef}
-                  className={`w-full h-64 border-2 rounded-lg ${
+                  className={`w-full h-64 border-2 rounded-nav ${
                     isDarkMode 
-                      ? 'border-neon-blue/30 bg-black/50' 
-                      : 'border-gray-300 bg-white'
+                      ? 'border-blue-500/30 bg-black/50' 
+                      : 'border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium bg-white dark:bg-dark-elevated'
                   } touch-none`}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
@@ -1494,7 +1494,7 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
               {/* Canvas Controls */}
               <div className="flex flex-wrap gap-4 mt-4 justify-center">
                 <div className="flex items-center space-x-2">
-                  <label className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                  <label className={isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-secondary dark:text-text-dark-secondary'}>
                     Grid:
                   </label>
                   <input
@@ -1502,12 +1502,12 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                     checked={showGrid}
                     onChange={(e) => setShowGrid(e.target.checked)}
                     className={`form-checkbox h-5 w-5 ${
-                      isDarkMode ? 'text-neon-blue border-dark-border' : 'text-blue-500 border-gray-300'
+                      isDarkMode ? 'text-blue-500 border-dark-border' : 'text-blue-500 border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                     }`}
                   />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <label className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                  <label className={isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-secondary dark:text-text-dark-secondary'}>
                     Stroke Width:
                   </label>
                   <input
@@ -1520,7 +1520,7 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                   />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <label className={isDarkMode ? 'text-text-primary' : 'text-gray-700'}>
+                  <label className={isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-secondary dark:text-text-dark-secondary'}>
                     Grid Size:
                   </label>
                   <input
@@ -1539,20 +1539,20 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
               <div className="flex justify-between mt-4">
                 <button
                   onClick={clearCanvas}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                  className={`px-4 py-2 rounded-nav font-medium transition-all duration-300 ${
                     isDarkMode 
-                      ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20' 
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-japanese-red/10 text-blue-500 hover:bg-japanese-red/20' 
+                      : 'bg-gray-100 text-text-secondary dark:text-text-dark-secondary hover:bg-gray-200'
                   }`}
                 >
                   Clear
                 </button>
                 <button
                   onClick={undoStroke}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                  className={`px-4 py-2 rounded-nav font-medium transition-all duration-300 ${
                     isDarkMode 
-                      ? 'bg-neon-pink/10 text-neon-pink hover:bg-neon-pink/20' 
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-status-error/10 text-red-500 hover:bg-status-error/20' 
+                      : 'bg-gray-100 text-text-secondary dark:text-text-dark-secondary hover:bg-gray-200'
                   }`}
                 >
                   Undo Stroke
@@ -1570,10 +1570,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                   }));
                   clearCanvas();
                 }}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-4 py-2 rounded-nav font-medium transition-all duration-300 ${
                   isDarkMode 
-                    ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-japanese-red/10 text-blue-500 hover:bg-japanese-red/20' 
+                    : 'bg-gray-100 text-text-secondary dark:text-text-dark-secondary hover:bg-gray-200'
                 }`}
                 disabled={state.currentIndex === 0}
               >
@@ -1581,10 +1581,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
               </button>
               <button
                 onClick={handleSubmit}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-6 py-3 rounded-nav font-medium transition-all duration-300 ${
                   isDarkMode 
-                    ? 'bg-neon-pink hover:bg-neon-pink/90 text-white shadow-[0_0_10px_rgba(255,0,128,0.4)]' 
-                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                    ? 'bg-status-error hover:bg-status-error/90 text-text-primary dark:text-text-dark-primary shadow-lg' 
+                    : 'bg-japanese-red hover:bg-japanese-red text-text-primary dark:text-text-dark-primary'
                 }`}
               >
                 Submit
@@ -1597,10 +1597,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                   }));
                   clearCanvas();
                 }}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-4 py-2 rounded-nav font-medium transition-all duration-300 ${
                   isDarkMode 
-                    ? 'bg-neon-blue/10 text-neon-blue hover:bg-neon-blue/20' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-japanese-red/10 text-blue-500 hover:bg-japanese-red/20' 
+                    : 'bg-gray-100 text-text-secondary dark:text-text-dark-secondary hover:bg-gray-200'
                 }`}
                 disabled={state.currentIndex === state.characterList.length - 1}
               >
@@ -1610,28 +1610,28 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
 
             {/* Feedback Display */}
             {state.isCorrect !== null && (
-              <div className={`mt-6 p-4 rounded-lg ${
+              <div className={`mt-6 p-4 rounded-nav ${
                 state.isCorrect 
                   ? isDarkMode 
-                    ? 'bg-neon-blue/20 border-neon-blue/30' 
+                    ? 'bg-japanese-red/20 border-blue-500/30' 
                     : 'bg-green-100 border-green-200'
                   : isDarkMode 
-                    ? 'bg-neon-pink/20 border-neon-pink/30' 
+                    ? 'bg-status-error/20 border-red-500/30' 
                     : 'bg-red-100 border-red-200'
               } border`}>
                 <div className={`text-lg font-medium mb-2 ${
                   state.isCorrect 
                     ? isDarkMode 
-                      ? 'text-neon-blue' 
+                      ? 'text-blue-500' 
                       : 'text-green-800'
                     : isDarkMode 
-                      ? 'text-neon-pink' 
+                      ? 'text-red-500' 
                       : 'text-red-800'
                 }`}>
                   {state.isCorrect ? 'Correct!' : 'Try Again!'}
                 </div>
                 {state.feedback && (
-                  <div className={`${isDarkMode ? 'text-text-primary' : 'text-gray-800'}`}>
+                  <div className={`${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-gray-800'}`}>
                     <p className="mb-2">{state.feedback.message}</p>
                     {state.feedback.suggestions && state.feedback.suggestions.length > 0 && (
                       <ul className="list-disc list-inside mt-2">
@@ -1646,9 +1646,9 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
             )}
           </div>
         ) : (
-          <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white'} rounded-lg shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
+          <div className={`${isDarkMode ? 'bg-dark-lighter' : 'bg-white dark:bg-dark-elevated'} rounded-nav shadow-lg p-6 mb-6 border ${isDarkMode ? 'border-dark-border' : 'border-border-light dark:border-border-dark dark:border-border-dark-dark-light'}`}>
             <div className="text-center">
-              <p className={`text-lg ${isDarkMode ? 'text-text-primary' : 'text-gray-700'}`}>
+              <p className={`text-lg ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-secondary dark:text-text-dark-secondary'}`}>
                 No characters available for the selected mode and filters.
               </p>
               <button
@@ -1660,10 +1660,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                     searchTerm: ''
                   }));
                 }}
-                className={`mt-4 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`mt-4 px-4 py-2 rounded-nav font-medium transition-all duration-300 ${
                   isDarkMode 
-                    ? 'bg-neon-blue text-white hover:bg-neon-blue/90' 
-                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                    ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary hover:bg-japanese-red/90' 
+                    : 'bg-japanese-red text-text-primary dark:text-text-dark-primary hover:bg-japanese-red'
                 }`}
               >
                 Reset Filters

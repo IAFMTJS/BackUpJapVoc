@@ -300,7 +300,7 @@ const Section5 = () => {
             backgroundColor: isLocked ? 'inherit' : 'action.hover'
           }
         }}
-        className="bg-gray-100 p-4 rounded-lg border border-gray-300"
+        className="bg-gray-100 p-4 rounded-nav border border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium"
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box>
@@ -447,7 +447,7 @@ const Section5 = () => {
               placeholder="Search vocabulary..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border rounded-nav focus:ring-2 focus:ring-japanese-red focus:border-blue-500"
             />
           </Box>
 

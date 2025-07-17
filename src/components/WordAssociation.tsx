@@ -101,7 +101,7 @@ const WordAssociation: React.FC = () => {
         </p>
         <button
           onClick={handleRestart}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-japanese-red text-text-primary dark:text-text-dark-primary rounded hover:bg-japanese-redLight transition-colors"
         >
           Play Again
         </button>
@@ -170,14 +170,14 @@ const WordAssociation: React.FC = () => {
                 key={index}
                 onClick={() => handleAnswer(option)}
                 disabled={gameState.isCorrect !== null}
-                className={`p-4 text-lg rounded-lg transition-all duration-200 font-medium ${
+                className={`p-4 text-lg rounded-nav transition-all duration-200 font-medium ${
                   gameState.isCorrect === null
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary hover:bg-japanese-redLight'
                     : option === gameState.currentWord?.english
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-green-600 text-text-primary dark:text-text-dark-primary'
                     : option === gameState.currentWord?.english && gameState.isCorrect === false
-                    ? 'bg-red-600 text-white'
-                    : 'bg-gray-300 text-gray-700'
+                    ? 'bg-red-600 text-text-primary dark:text-text-dark-primary'
+                    : 'bg-gray-300 text-text-secondary dark:text-text-dark-secondary'
                 }`}
               >
                 {option}

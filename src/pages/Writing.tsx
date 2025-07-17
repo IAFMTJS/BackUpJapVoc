@@ -19,7 +19,7 @@ const Writing: React.FC = () => {
             </h1>
           </div>
         </div>
-        <div className={`p-6 rounded-lg ${themeClasses.card}`}>
+        <div className={`p-6 rounded-nav ${themeClasses.card}`}>
           <p className={themeClasses.text.secondary}>
             Japanese writing practice section coming soon...
           </p>

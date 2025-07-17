@@ -37,17 +37,17 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ currentLevel, onSe
   };
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
+    <div className="p-4 bg-white dark:bg-dark-elevated rounded-nav shadow">
       <h2 className="text-xl font-bold mb-4">Audio Settings</h2>
       
       <div className="space-y-4">
         {/* Quality Settings */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Audio Quality</label>
+          <label className="block text-sm font-medium text-text-secondary dark:text-text-dark-secondary">Audio Quality</label>
           <div className="mt-1 flex space-x-4">
             <button
               className={`px-4 py-2 rounded ${
-                quality === 'high' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                quality === 'high' ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary' : 'bg-gray-200'
               }`}
               onClick={() => handleQualityChange('high')}
             >
@@ -55,7 +55,7 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ currentLevel, onSe
             </button>
             <button
               className={`px-4 py-2 rounded ${
-                quality === 'low' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                quality === 'low' ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary' : 'bg-gray-200'
               }`}
               onClick={() => handleQualityChange('low')}
             >
@@ -66,7 +66,7 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ currentLevel, onSe
 
         {/* Cache Size */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-text-secondary dark:text-text-dark-secondary">
             Maximum Cache Size (MB)
           </label>
           <input
@@ -84,7 +84,7 @@ export const AudioSettings: React.FC<AudioSettingsProps> = ({ currentLevel, onSe
           <button
             onClick={() => handleDownloadLevel(currentLevel)}
             disabled={isDownloading}
-            className="w-full px-4 py-2 bg-green-500 text-white rounded disabled:bg-gray-300"
+            className="w-full px-4 py-2 bg-status-success text-text-primary dark:text-text-dark-primary rounded disabled:bg-gray-300"
           >
             {isDownloading ? 'Downloading...' : 'Download Current Level Audio'}
           </button>

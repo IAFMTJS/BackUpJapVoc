@@ -59,7 +59,7 @@ const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
     <div className="text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-      <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+      <p className="mt-4 text-text-secondary dark:text-text-dark-secondary dark:text-gray-400">Loading...</p>
     </div>
   </div>
 );
@@ -328,9 +328,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.error('AuthProvider: Rendering error screen due to initialization error:', initError);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div className="text-center p-6 bg-white dark:bg-dark-elevated dark:bg-gray-800 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Initialization Error</h2>
-          <p className="text-gray-600 dark:text-gray-400">{initError}</p>
+          <p className="text-text-secondary dark:text-text-dark-secondary dark:text-gray-400">{initError}</p>
           <button 
             onClick={() => {
               console.log('AuthProvider: Retry button clicked');

@@ -128,7 +128,7 @@ const BasicKana: React.FC = () => {
   return (
     <Box>
       <Box className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <Typography variant="h6" className={isDarkMode ? 'text-white' : 'text-gray-900'}>
+        <Typography variant="h6" className={isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}>
           Basic Kana Characters
         </Typography>
         
@@ -164,13 +164,13 @@ const BasicKana: React.FC = () => {
       <Grid container spacing={2}>
         {basicKana.map((kana) => (
           <Grid item xs={6} sm={4} md={3} lg={2} key={kana.romaji}>
-            <Card className={`h-full ${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}>
+            <Card className={`h-full ${isDarkMode ? 'bg-gray-700' : 'bg-white dark:bg-dark-elevated'}`}>
               <CardContent className="p-2">
                 <Box className="flex flex-col items-center">
                   {displayMode !== 'katakana' && (
                     <Typography 
                       variant="h4" 
-                      className={`mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                      className={`mb-1 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}`}
                     >
                       {kana.hiragana}
                     </Typography>
@@ -179,7 +179,7 @@ const BasicKana: React.FC = () => {
                   {displayMode !== 'hiragana' && (
                     <Typography 
                       variant="h4" 
-                      className={`mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                      className={`mb-1 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}`}
                     >
                       {kana.katakana}
                     </Typography>
@@ -188,7 +188,7 @@ const BasicKana: React.FC = () => {
                   {showRomaji && (
                     <Typography 
                       variant="body2" 
-                      className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}
+                      className={isDarkMode ? 'text-gray-400' : 'text-text-muted dark:text-text-dark-muted'}
                     >
                       {kana.romaji}
                     </Typography>
@@ -210,8 +210,8 @@ const BasicKana: React.FC = () => {
         ))}
       </Grid>
 
-      <Box className="mt-8 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-        <Typography variant="body1" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+      <Box className="mt-8 p-4 bg-blue-50 dark:bg-blue-900 rounded-nav">
+        <Typography variant="body1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}>
           <strong>Tips:</strong>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li>Practice writing each character while saying its pronunciation</li>

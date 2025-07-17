@@ -230,17 +230,17 @@ const KanaWriting: React.FC = () => {
   return (
     <Box>
       <Box className="mb-6">
-        <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+        <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}`}>
           Kana Writing Practice
         </Typography>
 
         <Grid container spacing={2}>
           <Grid item xs={12} md={8}>
-            <Paper className={`p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <Paper className={`p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
               <Box className="relative">
                 <canvas
                   ref={canvasRef}
-                  className={`border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
+                  className={`border ${isDarkMode ? 'border-gray-700' : 'border-border-light dark:border-border-dark dark:border-border-dark-dark-light'}`}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
                   onMouseUp={endDrawing}
@@ -271,14 +271,14 @@ const KanaWriting: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Paper className={`p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <Typography variant="subtitle1" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+            <Paper className={`p-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
+              <Typography variant="subtitle1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}>
                 Controls
               </Typography>
               
               <Box className="mt-4 space-y-4">
                 <Box>
-                  <Typography variant="body2" className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                  <Typography variant="body2" className={isDarkMode ? 'text-gray-400' : 'text-text-muted dark:text-text-dark-muted'}>
                     Playback Speed
                   </Typography>
                   <Slider
@@ -296,7 +296,7 @@ const KanaWriting: React.FC = () => {
                 </Box>
 
                 <Box>
-                  <Typography variant="body2" className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                  <Typography variant="body2" className={isDarkMode ? 'text-gray-400' : 'text-text-muted dark:text-text-dark-muted'}>
                     Grid Size
                   </Typography>
                   <Slider
@@ -325,8 +325,8 @@ const KanaWriting: React.FC = () => {
           </Grid>
         </Grid>
 
-        <Box className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-          <Typography variant="body1" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+        <Box className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-nav">
+          <Typography variant="body1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}>
             <strong>Writing Tips:</strong>
             <ul className="list-disc pl-6 mt-2 space-y-1">
               <li>Follow the stroke order shown in the animation</li>

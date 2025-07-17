@@ -580,7 +580,7 @@ const Progress: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600 dark:text-gray-300">Loading progress data...</p>
+          <p className="text-lg text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary">Loading progress data...</p>
         </div>
       </div>
     );
@@ -590,12 +590,12 @@ const Progress: React.FC = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div className="text-center p-6 bg-white dark:bg-dark-elevated dark:bg-gray-800 rounded-nav shadow-lg">
           <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Error</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
+          <p className="text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 bg-japanese-red text-text-primary dark:text-text-dark-primary rounded hover:bg-japanese-red transition-colors"
           >
             Retry
           </button>
@@ -1104,7 +1104,7 @@ const Progress: React.FC = () => {
   };
 
   return (
-    <div className={`${themeClasses.container} ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`${themeClasses.container} ${isDarkMode ? 'bg-gray-900' : 'bg-light dark:bg-dark'}`}>
       {isLoading ? (
         <div className="flex items-center justify-center h-screen">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
@@ -1116,7 +1116,7 @@ const Progress: React.FC = () => {
       ) : (
         <>
           {/* Tabs */}
-          <div className="flex border-b border-gray-200">
+          <div className="flex border-b border-border-light dark:border-border-dark dark:border-border-dark-dark-light">
             {['overview', 'achievements', 'statistics', 'calendar', 'learning-path', 'skill-tree', 'goals', 'challenges', 'rewards'].map((tab) => (
               <button
                 key={tab}
@@ -1124,7 +1124,7 @@ const Progress: React.FC = () => {
                 className={`px-4 py-2 text-sm font-medium ${
                   activeTab === tab
                     ? 'border-b-2 border-blue-500 text-blue-600'
-                    : isDarkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-700 hover:text-gray-900'
+                    : isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary hover:text-gray-100' : 'text-text-secondary dark:text-text-dark-secondary hover:text-text-primary dark:text-text-dark-primary'
                 }`}
               >
                 {tab.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
@@ -1137,11 +1137,11 @@ const Progress: React.FC = () => {
             {activeTab === 'overview' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Overview Card */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                  <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Overview</h2>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-light dark:bg-dark'}`}>
+                  <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}`}>Overview</h2>
                   <div className="space-y-4">
                     <div>
-                      <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Current Streak</h3>
+                      <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-gray-800'}`}>Current Streak</h3>
                       <p className="text-2xl font-bold text-blue-500">{progressState.calendar.streak.current} days</p>
                     </div>
                     <div>
@@ -1160,8 +1160,8 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Recent Achievements */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                  <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Recent Achievements</h2>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-light dark:bg-dark'}`}>
+                  <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}`}>Recent Achievements</h2>
                   <div className="space-y-2">
                     {progressState.achievements.slice(0, 3).map((achievement) => (
                       <div
@@ -1175,8 +1175,8 @@ const Progress: React.FC = () => {
                             {achievement.icon}
                           </span>
                           <div>
-                            <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{achievement.title}</h3>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{achievement.description}</p>
+                            <h3 className={`font-semibold ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}`}>{achievement.title}</h3>
+                            <p className={`text-sm ${isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-muted dark:text-text-dark-muted'}`}>{achievement.description}</p>
                           </div>
                         </div>
                       </div>
@@ -1185,7 +1185,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Active Goals */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Active Goals</h2>
                   <div className="space-y-2">
                     {progressState.goals
@@ -1195,13 +1195,13 @@ const Progress: React.FC = () => {
                         <div
                           key={goal.id}
                           className={`p-2 rounded ${
-                            isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                            isDarkMode ? 'bg-gray-700' : 'bg-light dark:bg-dark'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
                               <h3 className="font-semibold">{goal.title}</h3>
-                              <p className="text-sm text-gray-500">{goal.description}</p>
+                              <p className="text-sm text-text-muted dark:text-text-dark-muted">{goal.description}</p>
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-medium">
@@ -1209,7 +1209,7 @@ const Progress: React.FC = () => {
                               </p>
                               <div className="w-24 h-2 bg-gray-200 rounded-full mt-1">
                                 <div
-                                  className="h-full bg-blue-500 rounded-full"
+                                  className="h-full bg-japanese-red rounded-full"
                                   style={{
                                     width: `${(goal.currentValue / goal.targetValue) * 100}%`
                                   }}
@@ -1223,7 +1223,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Current Challenges */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Current Challenges</h2>
                   <div className="space-y-2">
                     {progressState.challenges
@@ -1233,13 +1233,13 @@ const Progress: React.FC = () => {
                         <div
                           key={challenge.id}
                           className={`p-2 rounded ${
-                            isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                            isDarkMode ? 'bg-gray-700' : 'bg-light dark:bg-dark'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
                               <h3 className="font-semibold">{challenge.title}</h3>
-                              <p className="text-sm text-gray-500">{challenge.description}</p>
+                              <p className="text-sm text-text-muted dark:text-text-dark-muted">{challenge.description}</p>
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-medium">
@@ -1247,7 +1247,7 @@ const Progress: React.FC = () => {
                               </p>
                               <div className="w-24 h-2 bg-gray-200 rounded-full mt-1">
                                 <div
-                                  className="h-full bg-green-500 rounded-full"
+                                  className="h-full bg-status-success rounded-full"
                                   style={{
                                     width: `${(challenge.currentProgress / challenge.targetProgress) * 100}%`
                                   }}
@@ -1261,7 +1261,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Learning Path Progress */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Learning Path</h2>
                   <div className="space-y-4">
                     <div>
@@ -1286,7 +1286,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Skill Tree Progress */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Skill Tree</h2>
                   <div className="space-y-4">
                     <div>
@@ -1317,8 +1317,8 @@ const Progress: React.FC = () => {
                 {progressState.achievements.map((achievement) => (
                   <div
                     key={achievement.id}
-                    className={`p-4 rounded-lg shadow ${
-                      isDarkMode ? 'bg-gray-800' : 'bg-white'
+                    className={`p-4 rounded-nav shadow ${
+                      isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'
                     } transition-transform hover:scale-105`}
                   >
                     <div className="flex items-center mb-4">
@@ -1327,7 +1327,7 @@ const Progress: React.FC = () => {
                       </span>
                       <div>
                         <h3 className="text-xl font-bold">{achievement.title}</h3>
-                        <p className="text-sm text-gray-500">{achievement.description}</p>
+                        <p className="text-sm text-text-muted dark:text-text-dark-muted">{achievement.description}</p>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -1343,7 +1343,7 @@ const Progress: React.FC = () => {
                       </div>
                       <div className="w-full h-2 bg-gray-200 rounded-full">
                         <div
-                          className="h-full bg-blue-500 rounded-full"
+                          className="h-full bg-japanese-red rounded-full"
                           style={{
                             width: `${(achievement.currentValue / achievement.targetValue) * 100}%`
                           }}
@@ -1365,7 +1365,7 @@ const Progress: React.FC = () => {
             {activeTab === 'statistics' && (
               <div className="space-y-6">
                 {/* Study Time Distribution */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Study Time Distribution</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {Object.entries(progressState.statistics.timeDistribution).map(([time, value]) => (
@@ -1378,7 +1378,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Category Distribution */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Category Distribution</h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {Object.entries(progressState.statistics.categoryDistribution).map(([category, count]) => (
@@ -1391,7 +1391,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Difficulty Distribution */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Difficulty Distribution</h2>
                   <div className="grid grid-cols-3 gap-4">
                     {Object.entries(progressState.statistics.difficultyDistribution).map(([difficulty, count]) => (
@@ -1404,7 +1404,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Progress Over Time */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Progress Over Time</h2>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1454,7 +1454,7 @@ const Progress: React.FC = () => {
             {activeTab === 'learning-path' && (
               <div className="space-y-6">
                 {/* Learning Path Visualization */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Learning Path</h2>
                   <div className="h-96">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1511,7 +1511,7 @@ const Progress: React.FC = () => {
 
                 {/* Current Node Details */}
                 {progressState.learningPath.currentPosition && (
-                  <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                  <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                     <h2 className="text-xl font-bold mb-4">Current Node</h2>
                     <div className="space-y-4">
                       <div>
@@ -1531,7 +1531,7 @@ const Progress: React.FC = () => {
                               <div
                                 key={node.id}
                                 className={`p-3 rounded ${
-                                  isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                                  isDarkMode ? 'bg-gray-700' : 'bg-light dark:bg-dark'
                                 }`}
                               >
                                 <div className="flex items-center mb-2">
@@ -1545,7 +1545,7 @@ const Progress: React.FC = () => {
                                   </span>
                                   <h4 className="font-semibold">{node.content.title || node.id}</h4>
                                 </div>
-                                <p className="text-sm text-gray-700 font-medium">{node.content.description}</p>
+                                <p className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium">{node.content.description}</p>
                                 <div className="mt-2">
                                   <div className="flex justify-between text-sm mb-1">
                                     <span>Progress:</span>
@@ -1553,7 +1553,7 @@ const Progress: React.FC = () => {
                                   </div>
                                   <div className="w-full h-2 bg-gray-200 rounded-full">
                                     <div
-                                      className="h-full bg-blue-500 rounded-full"
+                                      className="h-full bg-japanese-red rounded-full"
                                       style={{ width: `${node.progress * 100}%` }}
                                     />
                                   </div>
@@ -1565,7 +1565,7 @@ const Progress: React.FC = () => {
                                   </div>
                                   <div className="w-full h-2 bg-gray-200 rounded-full">
                                     <div
-                                      className="h-full bg-green-500 rounded-full"
+                                      className="h-full bg-status-success rounded-full"
                                       style={{ width: `${node.mastery * 100}%` }}
                                     />
                                   </div>
@@ -1584,7 +1584,7 @@ const Progress: React.FC = () => {
             {activeTab === 'skill-tree' && (
               <div className="space-y-6">
                 {/* Skill Tree Visualization */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Skill Tree</h2>
                   <div className="h-96">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1651,7 +1651,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Available Skills */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Available Skills</h2>
                     <div className="flex items-center space-x-2">
@@ -1667,8 +1667,8 @@ const Progress: React.FC = () => {
                       .map((node) => (
                         <div
                           key={node.id}
-                          className={`p-4 rounded-lg border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                          className={`p-4 rounded-nav border ${
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-light dark:border-border-dark dark:border-border-dark-dark-light'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -1684,11 +1684,11 @@ const Progress: React.FC = () => {
                               </span>
                               <h3 className="font-semibold">{node.name}</h3>
                             </div>
-                            <span className="text-sm text-gray-700 font-medium">
+                            <span className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium">
                               Level {node.level}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700 font-medium mb-3">{node.description}</p>
+                          <p className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium mb-3">{node.description}</p>
                           <div className="space-y-2">
                             <div>
                               <div className="flex justify-between text-sm mb-1">
@@ -1699,7 +1699,7 @@ const Progress: React.FC = () => {
                             <div>
                               <div className="flex justify-between text-sm mb-1">
                                 <span>Prerequisites:</span>
-                                <span className="text-gray-500">
+                                <span className="text-text-muted dark:text-text-dark-muted">
                                   {node.prerequisites.length > 0
                                     ? node.prerequisites.join(', ')
                                     : 'None'}
@@ -1711,8 +1711,8 @@ const Progress: React.FC = () => {
                               disabled={progressState.skillTree.availablePoints < node.cost}
                               className={`w-full py-2 px-4 rounded ${
                                 progressState.skillTree.availablePoints >= node.cost
-                                  ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
-                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  ? 'bg-indigo-500 hover:bg-indigo-600 text-text-primary dark:text-text-dark-primary'
+                                  : 'bg-gray-300 text-text-muted dark:text-text-dark-muted cursor-not-allowed'
                               }`}
                             >
                               Unlock Skill
@@ -1724,7 +1724,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Unlocked Skills */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Unlocked Skills</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {progressState.skillTree.nodes
@@ -1732,8 +1732,8 @@ const Progress: React.FC = () => {
                       .map((node) => (
                         <div
                           key={node.id}
-                          className={`p-4 rounded-lg border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                          className={`p-4 rounded-nav border ${
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-light dark:border-border-dark dark:border-border-dark-dark-light'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -1749,11 +1749,11 @@ const Progress: React.FC = () => {
                               </span>
                               <h3 className="font-semibold">{node.name}</h3>
                             </div>
-                            <span className="text-sm text-gray-700 font-medium">
+                            <span className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium">
                               Level {node.level}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700 font-medium mb-3">{node.description}</p>
+                          <p className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium mb-3">{node.description}</p>
                           <div className="space-y-2">
                             <div>
                               <div className="flex justify-between text-sm mb-1">
@@ -1762,7 +1762,7 @@ const Progress: React.FC = () => {
                               </div>
                               <div className="w-full h-2 bg-gray-200 rounded-full">
                                 <div
-                                  className="h-full bg-green-500 rounded-full"
+                                  className="h-full bg-status-success rounded-full"
                                   style={{ width: `${node.mastery * 100}%` }}
                                 />
                               </div>
@@ -1784,7 +1784,7 @@ const Progress: React.FC = () => {
             {activeTab === 'goals' && (
               <div className="space-y-6">
                 {/* Create New Goal */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Create New Goal</h2>
                   <form onSubmit={(e) => {
                     e.preventDefault();
@@ -1817,7 +1817,7 @@ const Progress: React.FC = () => {
                           name="title"
                           required
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         />
                       </div>
@@ -1827,7 +1827,7 @@ const Progress: React.FC = () => {
                           name="type"
                           required
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         >
                           <option value="words_learned">Words Learned</option>
@@ -1845,7 +1845,7 @@ const Progress: React.FC = () => {
                           required
                           min="1"
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         />
                       </div>
@@ -1856,7 +1856,7 @@ const Progress: React.FC = () => {
                           name="deadline"
                           required
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         />
                       </div>
@@ -1867,7 +1867,7 @@ const Progress: React.FC = () => {
                           required
                           rows={3}
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         />
                       </div>
@@ -1880,7 +1880,7 @@ const Progress: React.FC = () => {
                             placeholder="Points"
                             min="0"
                             className={`w-full p-2 rounded border ${
-                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                             }`}
                           />
                           <input
@@ -1888,7 +1888,7 @@ const Progress: React.FC = () => {
                             name="badges"
                             placeholder="Badges (comma-separated)"
                             className={`w-full p-2 rounded border ${
-                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                             }`}
                           />
                           <input
@@ -1896,7 +1896,7 @@ const Progress: React.FC = () => {
                             name="unlocks"
                             placeholder="Unlocks (comma-separated)"
                             className={`w-full p-2 rounded border ${
-                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                             }`}
                           />
                         </div>
@@ -1904,7 +1904,7 @@ const Progress: React.FC = () => {
                     </div>
                     <button
                       type="submit"
-                      className="w-full py-2 px-4 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+                      className="w-full py-2 px-4 bg-indigo-500 text-text-primary dark:text-text-dark-primary rounded hover:bg-indigo-600"
                     >
                       Create Goal
                     </button>
@@ -1912,7 +1912,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Active Goals */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Active Goals</h2>
                   <div className="space-y-4">
                     {progressState.goals
@@ -1920,8 +1920,8 @@ const Progress: React.FC = () => {
                       .map((goal) => (
                         <div
                           key={goal.id}
-                          className={`p-4 rounded-lg border ${
-                            isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                          className={`p-4 rounded-nav border ${
+                            isDarkMode ? 'bg-gray-700' : 'bg-light dark:bg-dark'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -1936,7 +1936,7 @@ const Progress: React.FC = () => {
                               {goal.type.replace('_', ' ').toUpperCase()}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700 font-medium mb-3">{goal.description}</p>
+                          <p className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium mb-3">{goal.description}</p>
                           <div className="space-y-2">
                             <div>
                               <div className="flex justify-between text-sm mb-1">
@@ -1965,7 +1965,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Completed Goals */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Completed Goals</h2>
                   <div className="space-y-4">
                     {progressState.goals
@@ -1973,8 +1973,8 @@ const Progress: React.FC = () => {
                       .map((goal) => (
                         <div
                           key={goal.id}
-                          className={`p-4 rounded-lg border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                          className={`p-4 rounded-nav border ${
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-light dark:border-border-dark dark:border-border-dark-dark-light'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -1994,7 +1994,7 @@ const Progress: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-700 font-medium mb-3">{goal.description}</p>
+                          <p className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium mb-3">{goal.description}</p>
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span>Target: {goal.target}</span>
@@ -2027,7 +2027,7 @@ const Progress: React.FC = () => {
             {activeTab === 'challenges' && (
               <div className="space-y-6">
                 {/* Create New Challenge */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Create New Challenge</h2>
                   <form onSubmit={(e) => {
                     e.preventDefault();
@@ -2061,7 +2061,7 @@ const Progress: React.FC = () => {
                           name="title"
                           required
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         />
                       </div>
@@ -2071,7 +2071,7 @@ const Progress: React.FC = () => {
                           name="type"
                           required
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         >
                           <option value="quiz">Quiz</option>
@@ -2087,7 +2087,7 @@ const Progress: React.FC = () => {
                           name="difficulty"
                           required
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         >
                           <option value="easy">Easy</option>
@@ -2104,7 +2104,7 @@ const Progress: React.FC = () => {
                           min="0"
                           placeholder="Optional"
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         />
                       </div>
@@ -2116,7 +2116,7 @@ const Progress: React.FC = () => {
                           required
                           placeholder="word1, word2, word3"
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         />
                       </div>
@@ -2127,7 +2127,7 @@ const Progress: React.FC = () => {
                           required
                           rows={3}
                           className={`w-full p-2 rounded border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                           }`}
                         />
                       </div>
@@ -2141,7 +2141,7 @@ const Progress: React.FC = () => {
                             min="0"
                             required
                             className={`w-full p-2 rounded border ${
-                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                             }`}
                           />
                           <input
@@ -2149,7 +2149,7 @@ const Progress: React.FC = () => {
                             name="badges"
                             placeholder="Badges (comma-separated)"
                             className={`w-full p-2 rounded border ${
-                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                             }`}
                           />
                           <input
@@ -2157,7 +2157,7 @@ const Progress: React.FC = () => {
                             name="unlocks"
                             placeholder="Unlocks (comma-separated)"
                             className={`w-full p-2 rounded border ${
-                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
                             }`}
                           />
                         </div>
@@ -2165,7 +2165,7 @@ const Progress: React.FC = () => {
                     </div>
                     <button
                       type="submit"
-                      className="w-full py-2 px-4 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+                      className="w-full py-2 px-4 bg-indigo-500 text-text-primary dark:text-text-dark-primary rounded hover:bg-indigo-600"
                     >
                       Create Challenge
                     </button>
@@ -2174,7 +2174,7 @@ const Progress: React.FC = () => {
 
                 {/* Active Challenges */}
                 {/* Claimed Rewards */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Claimed Rewards</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {progressState.rewards
@@ -2182,8 +2182,8 @@ const Progress: React.FC = () => {
                       .map((reward) => (
                         <div
                           key={reward.id}
-                          className={`p-4 rounded-lg border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                          className={`p-4 rounded-nav border ${
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-light dark:border-border-dark dark:border-border-dark-dark-light'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -2203,7 +2203,7 @@ const Progress: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-700 font-medium mb-3">{reward.description}</p>
+                          <p className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium mb-3">{reward.description}</p>
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span>Rewards Earned:</span>
@@ -2232,7 +2232,7 @@ const Progress: React.FC = () => {
             {activeTab === 'rewards' && (
               <div className="space-y-6">
                 {/* Available Rewards */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Available Rewards</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {progressState.rewards
@@ -2240,23 +2240,23 @@ const Progress: React.FC = () => {
                       .map((reward) => (
                         <div
                           key={reward.id}
-                          className={`p-4 rounded-lg border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                          className={`p-4 rounded-nav border ${
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-light dark:border-border-dark dark:border-border-dark-dark-light'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="text-lg font-semibold">{reward.title}</h3>
                             <span className={`text-sm px-2 py-1 rounded ${
-                              reward.rarity === 'common' ? 'bg-gray-600 text-white' :
-                              reward.rarity === 'uncommon' ? 'bg-green-600 text-white' :
-                              reward.rarity === 'rare' ? 'bg-blue-600 text-white' :
-                              reward.rarity === 'epic' ? 'bg-purple-600 text-white' :
-                              'bg-yellow-600 text-white'
+                              reward.rarity === 'common' ? 'bg-gray-600 text-text-primary dark:text-text-dark-primary' :
+                              reward.rarity === 'uncommon' ? 'bg-green-600 text-text-primary dark:text-text-dark-primary' :
+                              reward.rarity === 'rare' ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary' :
+                              reward.rarity === 'epic' ? 'bg-purple-600 text-text-primary dark:text-text-dark-primary' :
+                              'bg-yellow-600 text-text-primary dark:text-text-dark-primary'
                             }`}>
                               {reward.rarity.toUpperCase()}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700 font-medium mb-3">{reward.description}</p>
+                          <p className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium mb-3">{reward.description}</p>
                           <div className="space-y-2">
                             <div>
                               <div className="flex justify-between text-sm mb-1">
@@ -2287,8 +2287,8 @@ const Progress: React.FC = () => {
                               disabled={!reward.requirementsMet}
                               className={`w-full py-2 px-4 rounded ${
                                 reward.requirementsMet
-                                  ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
-                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  ? 'bg-indigo-500 hover:bg-indigo-600 text-text-primary dark:text-text-dark-primary'
+                                  : 'bg-gray-300 text-text-muted dark:text-text-dark-muted cursor-not-allowed'
                               }`}
                             >
                               {reward.requirementsMet ? 'Claim Reward' : 'Requirements Not Met'}
@@ -2300,7 +2300,7 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Claimed Rewards */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Claimed Rewards</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {progressState.rewards
@@ -2308,8 +2308,8 @@ const Progress: React.FC = () => {
                       .map((reward) => (
                         <div
                           key={reward.id}
-                          className={`p-4 rounded-lg border ${
-                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                          className={`p-4 rounded-nav border ${
+                            isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white dark:bg-dark-elevated border-border-light dark:border-border-dark dark:border-border-dark-dark-light'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -2329,7 +2329,7 @@ const Progress: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-700 font-medium mb-3">{reward.description}</p>
+                          <p className="text-sm text-text-secondary dark:text-text-dark-secondary font-medium mb-3">{reward.description}</p>
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span>Rewards Earned:</span>
@@ -2354,14 +2354,14 @@ const Progress: React.FC = () => {
                 </div>
 
                 {/* Reward Progress */}
-                <div className={`p-4 rounded-lg shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`p-4 rounded-nav shadow ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
                   <h2 className="text-xl font-bold mb-4">Reward Progress</h2>
                   <div className="space-y-4">
                     {Object.entries(progressState.rewardProgress).map(([category, progress]) => (
                       <div key={category}>
                         <div className="flex justify-between items-center mb-2">
                           <h3 className="font-semibold capitalize">{category.replace('_', ' ')}</h3>
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-text-muted dark:text-text-dark-muted">
                             {progress.current} / {progress.target}
                           </span>
                         </div>
@@ -2372,7 +2372,7 @@ const Progress: React.FC = () => {
                           />
                         </div>
                         {progress.nextReward && (
-                          <div className="mt-2 text-sm text-gray-500">
+                          <div className="mt-2 text-sm text-text-muted dark:text-text-dark-muted">
                             Next reward at {progress.nextReward.target}: {progress.nextReward.title}
                           </div>
                         )}

@@ -645,7 +645,7 @@ const WordLevelManager: React.FC<WordLevelManagerProps> = ({
               value={wordMastery.masteryPercentage} 
               className={wordMastery.meetsRequirements ? "bg-green-100" : "bg-yellow-100"}
             />
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-muted dark:text-text-dark-muted">
               Required: {currentLevelData.requiredWordMastery.minWords} words and {currentLevelData.requiredWordMastery.masteryThreshold}% mastery
             </p>
           </div>

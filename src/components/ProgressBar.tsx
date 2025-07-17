@@ -33,7 +33,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
         <div className="flex justify-between items-center mb-2">
           <span className={`text-sm font-medium ${themeClasses.text}`}>{label}</span>
           {showPercentage && (
-            <span className={`text-sm font-medium ${isDarkMode ? 'text-neon-pink' : themeClasses.text}`}>
+            <span className={`text-sm font-medium ${themeClasses.text}`}>
               {percentage}%
             </span>
           )}
@@ -43,8 +43,8 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
         <div
           className={`h-full rounded-full transition-all duration-500 ${
             isDarkMode 
-              ? 'bg-gradient-to-r from-neon-blue to-neon-pink shadow-[0_0_10px_rgba(0,149,255,0.5)]' 
-              : 'bg-blue-600'
+              ? 'bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg' 
+              : 'bg-japanese-red'
           }`}
           style={{ width: `${percentage}%` }}
         />

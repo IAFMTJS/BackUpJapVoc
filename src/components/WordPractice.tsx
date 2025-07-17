@@ -311,14 +311,14 @@ const WordPractice: React.FC = () => {
     <div className={`min-h-screen ${themeClasses.container}`}>
       <div className="container mx-auto px-4 py-8">
         <div className={`max-w-2xl mx-auto ${themeClasses.card}`}>
-          <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? 'neon-glow' : ''}`}>
+          <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? '' : ''}`}>
             Word Practice
           </h2>
 
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
-                <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? 'neon-glow' : ''}`}>
+              <div className={`p-6 rounded-card ${themeClasses.card} border ${themeClasses.border}`}>
+                <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? '' : ''}`}>
                   Practice Mode
                 </h3>
                 <div className="space-y-3">
@@ -355,8 +355,8 @@ const WordPractice: React.FC = () => {
                 </div>
               </div>
 
-              <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
-                <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? 'neon-glow' : ''}`}>
+              <div className={`p-6 rounded-card ${themeClasses.card} border ${themeClasses.border}`}>
+                <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? '' : ''}`}>
                   Difficulty
                 </h3>
                 <div className="space-y-3">
@@ -394,16 +394,16 @@ const WordPractice: React.FC = () => {
               </div>
             </div>
 
-            <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${theme === 'dark' ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
+            <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-card ${theme === 'dark' ? 'shadow-card dark:shadow-dark-card' : ''}`}>
               <div className="mb-6">
-                <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? 'neon-glow' : ''}`}>
+                <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text.primary} ${theme === 'dark' ? '' : ''}`}>
                   {currentWord?.japanese || ''}
                 </h2>
                 {quizMode === 'listening' && (
                   <button
                     onClick={() => handlePlayAudio(currentWord?.japanese || '')}
-                    className={`p-3 rounded-lg ${themeClasses.button.secondary} transition-all duration-300 ${
-                      theme === 'dark' ? 'hover:shadow-[0_0_10px_rgba(0,149,255,0.4)]' : ''
+                    className={`p-3 rounded-nav ${themeClasses.button.secondary} transition-all duration-300 ${
+                      theme === 'dark' ? 'hover:shadow-hover dark:shadow-dark-hover' : ''
                     }`}
                   >
                     🔊 Play Audio
@@ -422,7 +422,7 @@ const WordPractice: React.FC = () => {
                     quizMode === 'english-to-japanese' ? 'Enter Japanese translation...' :
                     'Enter what you hear...'
                   }
-                  className={`w-full p-4 rounded-lg ${themeClasses.input}`}
+                  className={`w-full p-4 rounded-nav ${themeClasses.input}`}
                   disabled={showResult}
                 />
               </div>
@@ -444,22 +444,22 @@ const WordPractice: React.FC = () => {
               </div>
 
               {showResult && (
-                <div className={`mt-6 p-4 rounded-lg ${
+                <div className={`mt-6 p-4 rounded-nav ${
                   isCorrect 
                     ? theme === 'dark' 
-                      ? 'bg-neon-blue/20 border-neon-blue/30' 
+                      ? 'bg-japanese-red/20 border-blue-500/30' 
                       : 'bg-green-100 border-green-200'
                     : theme === 'dark' 
-                      ? 'bg-neon-pink/20 border-neon-pink/30' 
+                      ? 'bg-status-error/20 border-red-500/30' 
                       : 'bg-red-100 border-red-200'
                 } border`}>
                   <div className={`text-lg font-medium mb-2 ${
                     isCorrect 
                       ? theme === 'dark' 
-                        ? 'text-neon-blue' 
+                        ? 'text-blue-500' 
                         : 'text-green-800'
                       : theme === 'dark' 
-                        ? 'text-neon-pink' 
+                        ? 'text-red-500' 
                         : 'text-red-800'
                   }`}>
                     {isCorrect ? 'Correct!' : 'Incorrect!'}
@@ -473,7 +473,7 @@ const WordPractice: React.FC = () => {
               )}
 
               {showHint && currentWord && (
-                <div className={`mt-6 p-4 rounded-lg ${themeClasses.card}`}>
+                <div className={`mt-6 p-4 rounded-nav ${themeClasses.card}`}>
                   <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text.primary}`}>
                     Hint
                   </h3>

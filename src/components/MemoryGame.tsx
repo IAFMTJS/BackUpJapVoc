@@ -105,7 +105,7 @@ const MemoryGame: React.FC = () => {
         {cards.map((card, idx) => (
           <button
             key={card.id}
-            className={`h-20 w-full rounded-lg border text-lg font-bold flex items-center justify-center transition-all duration-200 ${card.isMatched ? 'bg-green-200' : card.isFlipped ? 'bg-blue-100' : 'bg-gray-200'}`}
+            className={`h-20 w-full rounded-nav border text-lg font-bold flex items-center justify-center transition-all duration-200 ${card.isMatched ? 'bg-green-200' : card.isFlipped ? 'bg-blue-100' : 'bg-gray-200'}`}
             onClick={() => {
               handleFlip(idx);
               handlePlayAudio(card.value as string);
@@ -121,7 +121,7 @@ const MemoryGame: React.FC = () => {
       {gameOver && (
         <div className="mb-4 text-green-700 font-semibold">Game Over! You found all pairs in {attempts} attempts.</div>
       )}
-      <button onClick={handleRestart} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Restart</button>
+      <button onClick={handleRestart} className="mt-2 px-4 py-2 bg-japanese-red text-text-primary dark:text-text-dark-primary rounded hover:bg-japanese-redLight">Restart</button>
     </div>
   );
 };

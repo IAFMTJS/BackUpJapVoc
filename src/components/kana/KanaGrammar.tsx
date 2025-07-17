@@ -140,12 +140,12 @@ const KanaGrammar: React.FC = () => {
   return (
     <Box>
       <Box className="mb-6">
-        <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+        <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}`}>
           Kana Grammar and Usage
         </Typography>
 
-        <Paper className={`p-6 mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <Typography variant="body1" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+        <Paper className={`p-6 mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}>
+          <Typography variant="body1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}>
             Understanding how to use hiragana and katakana correctly is essential for learning Japanese. 
             This section covers the main rules and patterns for using kana in Japanese writing.
           </Typography>
@@ -156,11 +156,11 @@ const KanaGrammar: React.FC = () => {
             key={index}
             expanded={expanded === `panel${index}`}
             onChange={handleChange(`panel${index}`)}
-            className={`mb-2 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
+            className={`mb-2 ${isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'}`}
           >
             <AccordionSummary
-              expandIcon={<ExpandMore className={isDarkMode ? 'text-gray-300' : 'text-gray-700'} />}
-              className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}
+              expandIcon={<ExpandMore className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'} />}
+              className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-primary dark:text-text-dark-primary'}
             >
               <Typography variant="subtitle1" fontWeight="medium">
                 {rule.title}
@@ -168,12 +168,12 @@ const KanaGrammar: React.FC = () => {
             </AccordionSummary>
             <AccordionDetails>
               <Box className="space-y-4">
-                <Typography variant="body1" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                <Typography variant="body1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}>
                   {rule.description}
                 </Typography>
 
                 <Box>
-                  <Typography variant="subtitle2" className={`mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <Typography variant="subtitle2" className={`mb-2 ${isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}`}>
                     Examples:
                   </Typography>
                   <List dense>
@@ -181,7 +181,7 @@ const KanaGrammar: React.FC = () => {
                       <ListItem key={i}>
                         <ListItemText
                           primary={example}
-                          className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}
+                          className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}
                         />
                       </ListItem>
                     ))}
@@ -190,7 +190,7 @@ const KanaGrammar: React.FC = () => {
 
                 {rule.notes && (
                   <Box>
-                    <Typography variant="subtitle2" className={`mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <Typography variant="subtitle2" className={`mb-2 ${isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}`}>
                       Notes:
                     </Typography>
                     <List dense>
@@ -198,7 +198,7 @@ const KanaGrammar: React.FC = () => {
                         <ListItem key={i}>
                           <ListItemText
                             primary={note}
-                            className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}
+                            className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}
                           />
                         </ListItem>
                       ))}
@@ -210,8 +210,8 @@ const KanaGrammar: React.FC = () => {
           </Accordion>
         ))}
 
-        <Box className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-          <Typography variant="body1" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+        <Box className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-nav">
+          <Typography variant="body1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}>
             <strong>Practice Tips:</strong>
             <ul className="list-disc pl-6 mt-2 space-y-1">
               <li>Pay attention to when hiragana and katakana are used in real Japanese text</li>

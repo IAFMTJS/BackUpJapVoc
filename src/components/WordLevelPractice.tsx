@@ -146,9 +146,9 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
     if (!currentWord) return null;
 
     return (
-      <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
+      <div className={`${themeClasses.card} border ${themeClasses.border} p-6 rounded-card ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
         <div className="mb-6">
-          <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+          <h2 className={`text-3xl font-bold mb-4 ${themeClasses.text}`}>
             {currentWord.japanese}
           </h2>
           {currentWord.hiragana && (
@@ -168,7 +168,7 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
               practiceMode === 'english-to-japanese' ? 'Enter Japanese translation...' :
               'Enter what you hear...'
             }
-            className={`w-full p-4 rounded-lg ${themeClasses.input}`}
+            className={`w-full p-4 rounded-nav ${themeClasses.input}`}
             disabled={practiceState.isCorrect !== null}
           />
         </div>
@@ -176,41 +176,41 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
         <div className="flex gap-4 justify-center">
           <button
             onClick={checkAnswer}
-            className={`px-6 py-3 rounded-lg font-medium ${themeClasses.button.primary}`}
+            className={`px-6 py-3 rounded-nav font-medium ${themeClasses.button.primary}`}
           >
             Check Answer
           </button>
           <button
             onClick={handleNext}
-            className={`px-6 py-3 rounded-lg font-medium ${themeClasses.button.secondary}`}
+            className={`px-6 py-3 rounded-nav font-medium ${themeClasses.button.secondary}`}
           >
             Next
           </button>
           <button
             onClick={() => setPracticeState(prev => ({ ...prev, showHint: !prev.showHint }))}
-            className={`px-6 py-3 rounded-lg font-medium ${themeClasses.button.secondary}`}
+            className={`px-6 py-3 rounded-nav font-medium ${themeClasses.button.secondary}`}
           >
             {practiceState.showHint ? 'Hide Hint' : 'Show Hint'}
           </button>
         </div>
 
         {practiceState.isCorrect !== null && (
-          <div className={`mt-6 p-4 rounded-lg ${
+          <div className={`mt-6 p-4 rounded-nav ${
             practiceState.isCorrect 
               ? isDarkMode 
-                ? 'bg-neon-blue/20 border-neon-blue/30' 
+                ? 'bg-blue-100 border-blue-300' 
                 : 'bg-green-100 border-green-200'
               : isDarkMode 
-                ? 'bg-neon-pink/20 border-neon-pink/30' 
+                ? 'bg-red-100 border-red-300' 
                 : 'bg-red-100 border-red-200'
           } border`}>
             <div className={`text-lg font-medium mb-2 ${
               practiceState.isCorrect 
                 ? isDarkMode 
-                  ? 'text-neon-blue' 
+                  ? 'text-blue-600' 
                   : 'text-green-800'
                 : isDarkMode 
-                  ? 'text-neon-pink' 
+                  ? 'text-red-600' 
                   : 'text-red-800'
             }`}>
               {practiceState.isCorrect ? 'Correct!' : 'Incorrect!'}
@@ -224,8 +224,8 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
         )}
 
         {practiceState.showHint && currentWord && (
-          <div className={`mt-6 p-4 rounded-lg ${themeClasses.card} border ${themeClasses.border}`}>
-            <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+          <div className={`mt-6 p-4 rounded-nav ${themeClasses.card} border ${themeClasses.border}`}>
+            <h3 className={`text-lg font-semibold mb-2 ${themeClasses.text}`}>
               Hint
             </h3>
             <p className={themeClasses.text}>
@@ -239,7 +239,7 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
 
   const renderResults = () => (
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${showResults ? '' : 'hidden'}`}>
-      <div className={`max-w-md w-full mx-4 p-6 rounded-lg shadow-xl ${themeClasses.card}`}>
+      <div className={`max-w-md w-full mx-4 p-6 rounded-nav shadow-xl ${themeClasses.card}`}>
         <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text}`}>Practice Results</h2>
         
         <div className="space-y-4">
@@ -297,7 +297,7 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
         <div className="flex justify-end gap-2 mt-6">
           <button
             onClick={() => setShowResults(false)}
-            className={`px-4 py-2 rounded-lg ${themeClasses.button.secondary}`}
+            className={`px-4 py-2 rounded-nav ${themeClasses.button.secondary}`}
           >
             Close
           </button>
@@ -306,7 +306,7 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
               setShowResults(false);
               initializePractice();
             }}
-            className={`px-4 py-2 rounded-lg ${themeClasses.button.primary}`}
+            className={`px-4 py-2 rounded-nav ${themeClasses.button.primary}`}
           >
             Practice Again
           </button>
@@ -317,14 +317,14 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
 
   return (
     <div className={`max-w-4xl mx-auto p-4 ${themeClasses.container}`}>
-      <div className={`mb-6 ${themeClasses.card} border ${themeClasses.border} p-6 rounded-xl ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
-        <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+      <div className={`mb-6 ${themeClasses.card} border ${themeClasses.border} p-6 rounded-card ${isDarkMode ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''}`}>
+        <h2 className={`text-2xl font-bold mb-4 ${themeClasses.text}`}>
           JLPT {level} Word Practice
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
-            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+          <div className={`p-6 rounded-card ${themeClasses.card} border ${themeClasses.border}`}>
+            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text}`}>
               Practice Mode
             </h3>
             <div className="space-y-3">
@@ -335,7 +335,7 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
                     value={mode}
                     checked={practiceMode === mode}
                     onChange={(e) => setPracticeMode(e.target.value as PracticeMode)}
-                    className={`form-radio h-5 w-5 ${isDarkMode ? 'text-neon-blue' : 'text-blue-500'}`}
+                    className={`form-radio h-5 w-5 text-blue-500`}
                   />
                   <span className={themeClasses.text}>
                     {mode === 'japanese-to-english' && 'Japanese → English'}
@@ -347,8 +347,8 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
             </div>
           </div>
 
-          <div className={`p-6 rounded-xl ${themeClasses.card} border ${themeClasses.border}`}>
-            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text} ${isDarkMode ? 'neon-glow' : ''}`}>
+          <div className={`p-6 rounded-card ${themeClasses.card} border ${themeClasses.border}`}>
+            <h3 className={`text-lg font-semibold mb-4 ${themeClasses.text}`}>
               Progress
             </h3>
             <div className="grid grid-cols-2 gap-4">
@@ -364,7 +364,7 @@ const WordLevelPractice: React.FC<WordLevelPracticeProps> = ({ level }) => {
                 <div className={`text-sm ${themeClasses.text} opacity-75`}>Streak</div>
                 <div className={`text-xl font-bold ${themeClasses.text}`}>
                   {practiceState.streak > 0 && (
-                    <span className={isDarkMode ? 'text-neon-pink' : 'text-red-500'}>
+                    <span className="text-red-500">
                       🔥 {practiceState.streak}
                     </span>
                   )}

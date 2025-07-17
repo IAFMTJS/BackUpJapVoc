@@ -467,12 +467,12 @@ const RomajiSection: React.FC = () => {
         <>
           <div className="w-full max-w-md mx-auto mb-4">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-gray-700">Progress</span>
-              <span className="text-sm text-gray-600">{masteredCount} / {items.length} mastered</span>
+              <span className="text-sm font-medium text-text-secondary dark:text-text-dark-secondary">Progress</span>
+              <span className="text-sm text-text-muted dark:text-text-dark-muted">{masteredCount} / {items.length} mastered</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
               <div
-                className="h-2.5 rounded-full bg-green-500"
+                className="h-2.5 rounded-full bg-status-success"
                 style={{ width: `${(items.length ? (masteredCount / items.length) * 100 : 0)}%` }}
               ></div>
             </div>
@@ -483,14 +483,14 @@ const RomajiSection: React.FC = () => {
         {TABS.map(t => (
           <button
             key={t}
-            className={`px-4 py-2 rounded-lg border ${tab === t ? 'bg-blue-500 text-white' : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'}`}
+            className={`px-4 py-2 rounded-nav border ${tab === t ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary' : 'bg-dark-lighter border-dark-border hover:bg-dark-lightest'}`}
             onClick={() => setTab(t)}
           >
             {t}
           </button>
         ))}
       </div>
-      <div className="bg-dark-lighter rounded-lg shadow-md p-6 min-h-[300px]">
+      <div className="bg-dark-lighter rounded-nav shadow-card dark:shadow-dark-card p-6 min-h-[300px]">
         {tab === 'Words' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {displayWords.length > 0 ? (
@@ -502,12 +502,12 @@ const RomajiSection: React.FC = () => {
                     <button onClick={() => playAudio(word.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
                   </div>
                   {showRomaji && <span className="text-lg text-blue-700">{word.romaji}</span>}
-                  {showEnglish && <span className="text-gray-600">{word.english}</span>}
+                  {showEnglish && <span className="text-text-muted dark:text-text-dark-muted">{word.english}</span>}
                 </div>
               ))
             ) : (
               <div className="col-span-2 text-center py-8">
-                <p className="text-gray-500">No words available for the current level.</p>
+                <p className="text-text-muted dark:text-text-dark-muted">No words available for the current level.</p>
                 <p className="text-sm text-gray-400 mt-2">Try changing the level or check back later.</p>
               </div>
             )}
@@ -523,7 +523,7 @@ const RomajiSection: React.FC = () => {
                   <button onClick={() => playAudio(sentence.japanese)} title="Play Audio" className="p-1 rounded-full hover:bg-gray-200">🔊</button>
                 </div>
                 {showRomaji && <span className="text-blue-700">{sentence.romaji}</span>}
-                {showEnglish && <span className="text-gray-600">{sentence.english}</span>}
+                {showEnglish && <span className="text-text-muted dark:text-text-dark-muted">{sentence.english}</span>}
                 {globalProgress[`romaji-${sentence.japanese}`]?.correct > 0 && <span title="Mastered" className="text-green-500 text-xl">✔️</span>}
               </div>
             ))}
@@ -541,7 +541,7 @@ const RomajiSection: React.FC = () => {
                   {showKanji && <span className="block font-medium">{story.japanese}</span>}
                   {showHiragana && <span className="block font-medium">{hiraganaCache[story.japanese] || story.japanese}</span>}
                   {showRomaji && <span className="block text-blue-700">{story.romaji}</span>}
-                  {showEnglish && <span className="block text-gray-600">{story.english}</span>}
+                  {showEnglish && <span className="block text-text-muted dark:text-text-dark-muted">{story.english}</span>}
                 </div>
               </div>
             ))}
@@ -554,7 +554,7 @@ const RomajiSection: React.FC = () => {
               {PRACTICE_TYPES.map(pt => (
                 <button
                   key={pt.key}
-                  className={`px-3 py-1 rounded ${practiceType === pt.key ? 'bg-blue-500 text-white' : 'bg-dark-lighter text-text-primary'}`}
+                  className={`px-3 py-1 rounded ${practiceType === pt.key ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary' : 'bg-dark-lighter text-text-primary dark:text-text-dark-primary'}`}
                   onClick={() => {
                     setPracticeType(pt.key);
                     setPracticeIndex(0);
@@ -605,7 +605,7 @@ const RomajiSection: React.FC = () => {
                 <div className="flex gap-4">
                   {result === null ? (
                     <button
-                      className="px-4 py-2 rounded bg-blue-500 text-white"
+                      className="px-4 py-2 rounded bg-japanese-red text-text-primary dark:text-text-dark-primary"
                       onClick={() => {
                         const correct = input.trim().toLowerCase() === currentWord.romaji.toLowerCase();
                         setResult(correct);
@@ -616,7 +616,7 @@ const RomajiSection: React.FC = () => {
                     </button>
                   ) : (
                     <button
-                      className="px-4 py-2 rounded bg-green-500 text-white"
+                      className="px-4 py-2 rounded bg-status-success text-text-primary dark:text-text-dark-primary"
                       onClick={() => {
                         setPracticeIndex(i => i + 1);
                         setInput('');
@@ -651,7 +651,7 @@ const RomajiSection: React.FC = () => {
                 <div className="flex gap-4">
                   {result === null ? (
                     <button
-                      className="px-4 py-2 rounded bg-blue-500 text-white"
+                      className="px-4 py-2 rounded bg-japanese-red text-text-primary dark:text-text-dark-primary"
                       onClick={() => {
                         const correct = input.trim().toLowerCase() === currentSentence.romaji.toLowerCase();
                         setResult(correct);
@@ -662,7 +662,7 @@ const RomajiSection: React.FC = () => {
                     </button>
                   ) : (
                     <button
-                      className="px-4 py-2 rounded bg-green-500 text-white"
+                      className="px-4 py-2 rounded bg-status-success text-text-primary dark:text-text-dark-primary"
                       onClick={() => {
                         setPracticeIndex(i => i + 1);
                         setInput('');
@@ -686,7 +686,7 @@ const RomajiSection: React.FC = () => {
                   {matchOptions.map((option, i) => (
                     <button
                       key={i}
-                      className={`px-4 py-2 rounded ${matchSelected === i ? 'bg-blue-500 text-white' : 'bg-dark-lighter text-text-primary'}`}
+                      className={`px-4 py-2 rounded ${matchSelected === i ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary' : 'bg-dark-lighter text-text-primary dark:text-text-dark-primary'}`}
                       onClick={() => setMatchSelected(i)}
                     >
                       {option.romaji}
@@ -697,7 +697,7 @@ const RomajiSection: React.FC = () => {
                   <div className="mt-4 text-center">
                     {matchResult === null ? (
                       <button
-                        className="px-4 py-2 rounded bg-blue-500 text-white"
+                        className="px-4 py-2 rounded bg-japanese-red text-text-primary dark:text-text-dark-primary"
                         onClick={() => {
                           const correct = matchSelected === matchOptions.findIndex(o => o.romaji === currentWord.romaji);
                           setMatchResult(correct);
@@ -712,12 +712,12 @@ const RomajiSection: React.FC = () => {
                           {matchResult ? 'Correct!' : 'Wrong!'}
                         </div>
                         {!matchResult && (
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-text-muted dark:text-text-dark-muted">
                             Correct answer: {currentWord.romaji}
                           </div>
                         )}
                         <button
-                          className="px-4 py-2 rounded bg-green-500 text-white"
+                          className="px-4 py-2 rounded bg-status-success text-text-primary dark:text-text-dark-primary"
                           onClick={() => {
                             setPracticeIndex(i => i + 1);
                             setMatchSelected(null);
@@ -754,7 +754,7 @@ const RomajiSection: React.FC = () => {
                 <div className="flex gap-4">
                   {result === null ? (
                     <button
-                      className="px-4 py-2 rounded bg-blue-500 text-white"
+                      className="px-4 py-2 rounded bg-japanese-red text-text-primary dark:text-text-dark-primary"
                       onClick={() => {
                         const correct = input.trim().toLowerCase() === currentWord.english.toLowerCase();
                         setResult(correct);
@@ -765,7 +765,7 @@ const RomajiSection: React.FC = () => {
                     </button>
                   ) : (
                     <button
-                      className="px-4 py-2 rounded bg-green-500 text-white"
+                      className="px-4 py-2 rounded bg-status-success text-text-primary dark:text-text-dark-primary"
                       onClick={() => {
                         setPracticeIndex(i => i + 1);
                         setInput('');
@@ -786,7 +786,7 @@ const RomajiSection: React.FC = () => {
                   <div className="text-xl mb-4">Score: {timedScore}</div>
                   {!timedActive ? (
                     <button
-                      className="px-6 py-3 rounded bg-green-500 text-white text-lg"
+                      className="px-6 py-3 rounded bg-status-success text-text-primary dark:text-text-dark-primary text-lg"
                       onClick={() => {
                         setTimedActive(true);
                         setTimedTime(60);
@@ -831,7 +831,7 @@ const RomajiSection: React.FC = () => {
                   <button 
                     onClick={() => playAudio(listeningWord.japanese)} 
                     title="Play Audio" 
-                    className="p-4 rounded-full bg-blue-500 text-white text-2xl mb-4"
+                    className="p-4 rounded-full bg-japanese-red text-text-primary dark:text-text-dark-primary text-2xl mb-4"
                   >
                     🔊
                   </button>
@@ -851,7 +851,7 @@ const RomajiSection: React.FC = () => {
                   <div className="flex gap-4 mt-4 justify-center">
                     {result === null ? (
                       <button
-                        className="px-4 py-2 rounded bg-blue-500 text-white"
+                        className="px-4 py-2 rounded bg-japanese-red text-text-primary dark:text-text-dark-primary"
                         onClick={() => {
                           const correct = input.trim().toLowerCase() === listeningWord.romaji.toLowerCase();
                           setResult(correct);
@@ -862,7 +862,7 @@ const RomajiSection: React.FC = () => {
                       </button>
                     ) : (
                       <button
-                        className="px-4 py-2 rounded bg-green-500 text-white"
+                        className="px-4 py-2 rounded bg-status-success text-text-primary dark:text-text-dark-primary"
                         onClick={() => {
                           setListeningIndex(i => i + 1);
                           setInput('');
@@ -883,11 +883,11 @@ const RomajiSection: React.FC = () => {
             <h2 className="text-xl font-bold mb-6 text-center">Romaji Games</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Memory Game */}
-              <div className="p-4 border rounded-lg">
+              <div className="p-4 border rounded-nav">
                 <h3 className="text-lg font-semibold mb-4">Memory Match</h3>
-                <p className="text-sm text-gray-600 mb-4">Match Japanese characters with their romaji</p>
+                <p className="text-sm text-text-muted dark:text-text-dark-muted mb-4">Match Japanese characters with their romaji</p>
                 <button
-                  className="px-4 py-2 rounded bg-blue-500 text-white"
+                  className="px-4 py-2 rounded bg-japanese-red text-text-primary dark:text-text-dark-primary"
                   onClick={() => {
                     // This would open a memory game component
                     alert('Memory game coming soon!');
@@ -898,11 +898,11 @@ const RomajiSection: React.FC = () => {
               </div>
               
               {/* Word Scramble */}
-              <div className="p-4 border rounded-lg">
+              <div className="p-4 border rounded-nav">
                 <h3 className="text-lg font-semibold mb-4">Word Scramble</h3>
-                <p className="text-sm text-gray-600 mb-4">Unscramble romaji to form words</p>
+                <p className="text-sm text-text-muted dark:text-text-dark-muted mb-4">Unscramble romaji to form words</p>
                 <button
-                  className="px-4 py-2 rounded bg-green-500 text-white"
+                  className="px-4 py-2 rounded bg-status-success text-text-primary dark:text-text-dark-primary"
                   onClick={() => {
                     // This would open a word scramble component
                     alert('Word scramble coming soon!');
@@ -913,11 +913,11 @@ const RomajiSection: React.FC = () => {
               </div>
               
               {/* Speed Typing */}
-              <div className="p-4 border rounded-lg">
+              <div className="p-4 border rounded-nav">
                 <h3 className="text-lg font-semibold mb-4">Speed Typing</h3>
-                <p className="text-sm text-gray-600 mb-4">Type romaji as fast as you can</p>
+                <p className="text-sm text-text-muted dark:text-text-dark-muted mb-4">Type romaji as fast as you can</p>
                 <button
-                  className="px-4 py-2 rounded bg-purple-500 text-white"
+                  className="px-4 py-2 rounded bg-purple-500 text-text-primary dark:text-text-dark-primary"
                   onClick={() => {
                     setTab('Practice');
                     setPracticeType('timed');
@@ -928,11 +928,11 @@ const RomajiSection: React.FC = () => {
               </div>
               
               {/* Listening Challenge */}
-              <div className="p-4 border rounded-lg">
+              <div className="p-4 border rounded-nav">
                 <h3 className="text-lg font-semibold mb-4">Listening Challenge</h3>
-                <p className="text-sm text-gray-600 mb-4">Listen and type the correct romaji</p>
+                <p className="text-sm text-text-muted dark:text-text-dark-muted mb-4">Listen and type the correct romaji</p>
                 <button
-                  className="px-4 py-2 rounded bg-orange-500 text-white"
+                  className="px-4 py-2 rounded bg-orange-500 text-text-primary dark:text-text-dark-primary"
                   onClick={() => {
                     setTab('Practice');
                     setPracticeType('listening');

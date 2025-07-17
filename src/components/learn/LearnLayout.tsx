@@ -57,7 +57,7 @@ export const LearnLayout: React.FC<LearnLayoutProps> = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white dark:bg-dark-elevated shadow-card dark:shadow-dark-card border-b border-border-light dark:border-border-dark dark:border-border-dark-dark-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left side */}
@@ -65,19 +65,19 @@ export const LearnLayout: React.FC<LearnLayoutProps> = ({
               {showBackButton && (
                 <button
                   onClick={handleBack}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-nav hover:bg-gray-100 transition-colors"
                   aria-label="Go back"
                 >
-                  <ArrowLeft className="w-5 h-5 text-gray-600" />
+                  <ArrowLeft className="w-5 h-5 text-text-muted dark:text-text-dark-muted" />
                 </button>
               )}
               
               <div className="flex items-center space-x-3">
                 <BookOpen className="w-8 h-8 text-indigo-600" />
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+                  <h1 className="text-xl font-semibold text-text-primary dark:text-text-dark-primary">{title}</h1>
                   {showProgress && (
-                    <p className="text-sm text-gray-500">Learning Progress</p>
+                    <p className="text-sm text-text-muted dark:text-text-dark-muted">Learning Progress</p>
                   )}
                 </div>
               </div>
@@ -88,7 +88,7 @@ export const LearnLayout: React.FC<LearnLayoutProps> = ({
               {/* User info or login prompt */}
               {currentUser ? (
                 <>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <div className="flex items-center space-x-2 text-sm text-text-muted dark:text-text-dark-muted">
                     <User className="w-4 h-4" />
                     <span>{currentUser.email}</span>
                   </div>
@@ -97,15 +97,15 @@ export const LearnLayout: React.FC<LearnLayoutProps> = ({
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={handleHome}
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="p-2 rounded-nav hover:bg-gray-100 transition-colors"
                       aria-label="Go to home"
                     >
-                      <Home className="w-5 h-5 text-gray-600" />
+                      <Home className="w-5 h-5 text-text-muted dark:text-text-dark-muted" />
                     </button>
                     
                     <button
                       onClick={handleLogout}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-text-secondary dark:text-text-dark-secondary bg-gray-100 rounded-nav hover:bg-gray-200 transition-colors"
                     >
                       Logout
                     </button>
@@ -113,7 +113,7 @@ export const LearnLayout: React.FC<LearnLayoutProps> = ({
                 </>
               ) : (
                 <>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <div className="flex items-center space-x-2 text-sm text-text-muted dark:text-text-dark-muted">
                     <User className="w-4 h-4" />
                     <span>Guest User</span>
                   </div>
@@ -122,15 +122,15 @@ export const LearnLayout: React.FC<LearnLayoutProps> = ({
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={handleHome}
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="p-2 rounded-nav hover:bg-gray-100 transition-colors"
                       aria-label="Go to home"
                     >
-                      <Home className="w-5 h-5 text-gray-600" />
+                      <Home className="w-5 h-5 text-text-muted dark:text-text-dark-muted" />
                     </button>
                     
                     <button
                       onClick={handleLogin}
-                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-1"
+                      className="px-4 py-2 text-sm font-medium text-text-primary dark:text-text-dark-primary bg-indigo-600 rounded-nav hover:bg-indigo-700 transition-colors flex items-center space-x-1"
                     >
                       <LogIn className="w-4 h-4" />
                       <span>Login</span>
@@ -189,15 +189,15 @@ export const LearnLayout: React.FC<LearnLayoutProps> = ({
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white dark:bg-dark-elevated rounded-card shadow-lg overflow-hidden">
           {children}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-auto">
+      <footer className="bg-white dark:bg-dark-elevated border-t border-border-light dark:border-border-dark dark:border-border-dark-dark-light mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center justify-between text-sm text-text-muted dark:text-text-dark-muted">
             <div className="flex items-center space-x-2">
               <Trophy className="w-4 h-4" />
               <span>Japanese Learning Module</span>

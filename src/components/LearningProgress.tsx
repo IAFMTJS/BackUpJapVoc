@@ -117,7 +117,7 @@ const LearningProgress: React.FC = () => {
 
   const renderLineChart = (mode: string, data: LearningStats[]) => (
     <div className="h-64 mb-8">
-      <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+      <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-gray-800'}`}>
         {mode.charAt(0).toUpperCase() + mode.slice(1)} Progress
       </h3>
       <ResponsiveContainer width="100%" height="100%">
@@ -201,7 +201,7 @@ const LearningProgress: React.FC = () => {
 
     return (
       <div className="h-64">
-        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+        <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-gray-800'}`}>
           Mastery Distribution
         </h3>
         <ResponsiveContainer width="100%" height="100%">
@@ -237,17 +237,17 @@ const LearningProgress: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto p-4">
       <div className="mb-6 flex justify-between items-center">
-        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-gray-800'}`}>
           Learning Progress
         </h2>
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value as 'week' | 'month' | 'year')}
-          className={`px-4 py-2 rounded-lg border ${
+          className={`px-4 py-2 rounded-nav border ${
             isDarkMode 
-              ? 'bg-gray-700 text-white border-gray-600' 
-              : 'bg-white text-gray-800 border-gray-300'
-          } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              ? 'bg-gray-700 text-text-primary dark:text-text-dark-primary border-gray-600' 
+              : 'bg-white dark:bg-dark-elevated text-gray-800 border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium'
+          } focus:outline-none focus:ring-2 focus:ring-japanese-red`}
         >
           <option value="week">Last Week</option>
           <option value="month">Last Month</option>
@@ -268,23 +268,23 @@ const LearningProgress: React.FC = () => {
           return (
             <div
               key={mode}
-              className={`p-4 rounded-lg ${
-                isDarkMode ? 'bg-gray-800' : 'bg-white'
-              } shadow-md`}
+              className={`p-4 rounded-nav ${
+                isDarkMode ? 'bg-gray-800' : 'bg-white dark:bg-dark-elevated'
+              } shadow-card dark:shadow-dark-card`}
             >
               <h3 className={`text-lg font-semibold mb-2 ${
-                isDarkMode ? 'text-white' : 'text-gray-800'
+                isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-gray-800'
               }`}>
                 {mode.charAt(0).toUpperCase() + mode.slice(1)} Summary
               </h3>
               <div className="space-y-2">
-                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                <p className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-muted dark:text-text-dark-muted'}>
                   Mastered Items: {latest?.mastered || 0}
                 </p>
-                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                <p className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-muted dark:text-text-dark-muted'}>
                   Attempted Today: {latest?.attempted || 0}
                 </p>
-                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                <p className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-muted dark:text-text-dark-muted'}>
                   Accuracy: {latest?.accuracy.toFixed(1) || 0}%
                 </p>
               </div>

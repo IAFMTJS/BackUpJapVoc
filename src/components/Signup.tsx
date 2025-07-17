@@ -81,9 +81,9 @@ export default function Signup() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 flex flex-col items-center">
+        <div className="bg-white dark:bg-dark-elevated dark:bg-gray-800 shadow-xl rounded-card p-8 flex flex-col items-center">
           <h2 className="text-3xl font-extrabold text-indigo-700 dark:text-indigo-300 mb-2 text-center">Create your account</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-center mb-6">Sign up to start your Japanese learning journey!</p>
+          <p className="text-text-muted dark:text-text-dark-muted dark:text-gray-400 text-center mb-6">Sign up to start your Japanese learning journey!</p>
           <form className="w-full space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="rounded-md bg-red-50 dark:bg-red-900 p-4 mb-2">
@@ -92,28 +92,28 @@ export default function Signup() {
             )}
             <div className="space-y-4">
               <div>
-                <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Email address</label>
+                <label htmlFor="email-address" className="block text-sm font-medium text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary">Email address</label>
                 <input
                   id="email-address"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
-                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="appearance-none rounded-nav relative block w-full px-3 py-2 border border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium dark:border-gray-700 placeholder-gray-400 text-text-primary dark:text-text-dark-primary dark:text-gray-100 bg-white dark:bg-dark-elevated dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary">Password</label>
                 <input
                   id="password"
                   name="password"
                   type="password"
                   autoComplete="new-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="appearance-none rounded-nav relative block w-full px-3 py-2 border border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium dark:border-gray-700 placeholder-gray-400 text-text-primary dark:text-text-dark-primary dark:text-gray-100 bg-white dark:bg-dark-elevated dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="Password"
                   value={password}
                   onChange={handlePasswordChange}
@@ -127,14 +127,14 @@ export default function Signup() {
                 )}
               </div>
               <div>
-                <label htmlFor="password-confirm" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Confirm Password</label>
+                <label htmlFor="password-confirm" className="block text-sm font-medium text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary">Confirm Password</label>
                 <input
                   id="password-confirm"
                   name="password-confirm"
                   type="password"
                   autoComplete="new-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="appearance-none rounded-nav relative block w-full px-3 py-2 border border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium dark:border-gray-700 placeholder-gray-400 text-text-primary dark:text-text-dark-primary dark:text-gray-100 bg-white dark:bg-dark-elevated dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="Confirm password"
                   value={passwordConfirm}
                   onChange={(e) => setPasswordConfirm(e.target.value)}
@@ -145,11 +145,11 @@ export default function Signup() {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-semibold rounded-nav text-text-primary dark:text-text-dark-primary bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 {loading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-5 w-5 mr-2 text-text-primary dark:text-text-dark-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                     </svg>

@@ -138,18 +138,18 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete, onCancel }) 
         <div className="flex-1">
           <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
             <div 
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+              className="bg-japanese-red h-2.5 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-text-muted dark:text-text-dark-muted">
             Question {quizState.currentQuestionIndex + 1} of {shuffledWords.length}
           </div>
         </div>
         {onCancel && (
           <button
             onClick={onCancel}
-            className="ml-4 px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+            className="ml-4 px-4 py-2 text-text-muted dark:text-text-dark-muted hover:text-text-secondary dark:text-text-dark-secondary dark:text-gray-400 dark:hover:text-text-secondary dark:text-text-dark-secondary transition-colors"
           >
             Cancel
           </button>
@@ -163,12 +163,12 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete, onCancel }) 
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6"
+        className="bg-white dark:bg-dark-elevated dark:bg-gray-800 rounded-nav shadow-lg p-6 mb-6"
       >
         <h2 className="text-2xl font-bold mb-4 text-center">
           {currentWord.japanese}
           {currentWord.hiragana && (
-            <span className="text-lg text-gray-700 dark:text-gray-300 ml-2">
+            <span className="text-lg text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary ml-2">
               ({currentWord.hiragana})
             </span>
           )}
@@ -182,12 +182,12 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete, onCancel }) 
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.1 }}
-              className={`p-4 rounded-lg text-left transition-colors duration-200 font-medium ${
+              className={`p-4 rounded-nav text-left transition-colors duration-200 font-medium ${
                 quizState.selectedAnswer === option
                   ? quizState.isCorrect
-                    ? 'bg-green-600 text-white border-2 border-green-700'
-                    : 'bg-red-600 text-white border-2 border-red-700'
-                  : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 border-2 border-transparent text-gray-900 dark:text-white'
+                    ? 'bg-green-600 text-text-primary dark:text-text-dark-primary border-2 border-green-700'
+                    : 'bg-red-600 text-text-primary dark:text-text-dark-primary border-2 border-red-700'
+                  : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 border-2 border-transparent text-text-primary dark:text-text-dark-primary dark:text-text-primary dark:text-text-dark-primary'
               }`}
               onClick={() => !quizState.showFeedback && handleAnswerSelect(option)}
               disabled={quizState.showFeedback}
@@ -206,10 +206,10 @@ const SimpleQuiz: React.FC<SimpleQuizProps> = ({ words, onComplete, onCancel }) 
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className={`mt-4 p-4 rounded-lg text-center font-semibold ${
+              className={`mt-4 p-4 rounded-nav text-center font-semibold ${
                 quizState.isCorrect
-                  ? 'bg-green-600 dark:bg-green-900 text-white dark:text-green-200'
-                  : 'bg-red-600 dark:bg-red-900 text-white dark:text-red-200'
+                  ? 'bg-green-600 dark:bg-green-900 text-text-primary dark:text-text-dark-primary dark:text-green-200'
+                  : 'bg-red-600 dark:bg-red-900 text-text-primary dark:text-text-dark-primary dark:text-red-200'
               }`}
             >
               {quizState.isCorrect ? '✓ Correct!' : '✗ Incorrect!'}

@@ -203,11 +203,11 @@ const SentencePractice: React.FC = () => {
     if (isDarkMode) {
       return {
         container: 'bg-dark-lighter',
-        text: 'text-text-primary',
-        input: 'bg-dark-lighter border-dark-border text-text-primary',
+        text: 'text-text-primary dark:text-text-dark-primary',
+        input: 'bg-dark-lighter border-dark-border text-text-primary dark:text-text-dark-primary',
         button: {
-          primary: 'bg-accent-red hover:bg-accent-red/90 text-white',
-          secondary: 'bg-dark hover:bg-dark-lightest text-text-primary',
+          primary: 'bg-accent-red hover:bg-accent-red/90 text-text-primary dark:text-text-dark-primary',
+          secondary: 'bg-dark hover:bg-dark-lightest text-text-primary dark:text-text-dark-primary',
           hint: 'bg-accent-gold hover:bg-accent-gold/90 text-dark',
         },
         hint: 'bg-accent-gold/10 border-accent-gold/20 text-accent-gold',
@@ -223,11 +223,11 @@ const SentencePractice: React.FC = () => {
         return {
           container: 'bg-blue-card',
           text: 'text-blue-text',
-          input: 'bg-white border-blue-border text-blue-text',
+          input: 'bg-white dark:bg-dark-elevated border-blue-border text-blue-text',
           button: {
-            primary: 'bg-primary hover:bg-primary-dark text-white',
-            secondary: 'bg-secondary hover:bg-secondary-dark text-white',
-            hint: 'bg-yellow-500 hover:bg-yellow-600 text-white',
+            primary: 'bg-primary hover:bg-primary-dark text-text-primary dark:text-text-dark-primary',
+            secondary: 'bg-secondary hover:bg-secondary-dark text-text-primary dark:text-text-dark-primary',
+            hint: 'bg-status-warning hover:bg-yellow-600 text-text-primary dark:text-text-dark-primary',
           },
           hint: 'bg-yellow-50 border-yellow-200 text-yellow-800',
           result: {
@@ -239,11 +239,11 @@ const SentencePractice: React.FC = () => {
         return {
           container: 'bg-green-card',
           text: 'text-green-text',
-          input: 'bg-white border-green-border text-green-text',
+          input: 'bg-white dark:bg-dark-elevated border-green-border text-green-text',
           button: {
-            primary: 'bg-primary hover:bg-primary-dark text-white',
-            secondary: 'bg-secondary hover:bg-secondary-dark text-white',
-            hint: 'bg-yellow-500 hover:bg-yellow-600 text-white',
+            primary: 'bg-primary hover:bg-primary-dark text-text-primary dark:text-text-dark-primary',
+            secondary: 'bg-secondary hover:bg-secondary-dark text-text-primary dark:text-text-dark-primary',
+            hint: 'bg-status-warning hover:bg-yellow-600 text-text-primary dark:text-text-dark-primary',
           },
           hint: 'bg-yellow-50 border-yellow-200 text-yellow-800',
           result: {
@@ -254,11 +254,11 @@ const SentencePractice: React.FC = () => {
       default:
         return {
           container: 'bg-dark-lighter',
-          text: 'text-text-primary',
-          input: 'bg-dark-lighter border-dark-border text-text-primary',
+          text: 'text-text-primary dark:text-text-dark-primary',
+          input: 'bg-dark-lighter border-dark-border text-text-primary dark:text-text-dark-primary',
           button: {
-            primary: 'bg-accent-red hover:bg-accent-red/90 text-white',
-            secondary: 'bg-dark hover:bg-dark-lightest text-text-primary',
+            primary: 'bg-accent-red hover:bg-accent-red/90 text-text-primary dark:text-text-dark-primary',
+            secondary: 'bg-dark hover:bg-dark-lightest text-text-primary dark:text-text-dark-primary',
             hint: 'bg-accent-gold hover:bg-accent-gold/90 text-dark',
           },
           hint: 'bg-accent-gold/10 border-accent-gold/20 text-accent-gold',
@@ -275,12 +275,12 @@ const SentencePractice: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto p-4" style={{ backgroundColor: 'var(--background)' }}>
       {/* Practice Controls */}
-      <div className="mb-6 p-4 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-lighter)' }}>
+      <div className="mb-6 p-4 rounded-nav shadow-card dark:shadow-dark-card" style={{ backgroundColor: 'var(--background-lighter)' }}>
         <div className="flex flex-wrap gap-4 mb-6">
           <select
             value={selectedDifficulty}
             onChange={(e) => setSelectedDifficulty(e.target.value as GrammarDifficulty)}
-            className={`flex-1 p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
+            className={`flex-1 p-3 border rounded-nav ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
           >
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
@@ -290,7 +290,7 @@ const SentencePractice: React.FC = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value as GrammarCategory)}
-            className={`flex-1 p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
+            className={`flex-1 p-3 border rounded-nav ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
           >
             <option value="basic">Basic Patterns</option>
             <option value="particles">Particles</option>
@@ -301,9 +301,9 @@ const SentencePractice: React.FC = () => {
 
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`p-3 rounded-lg transition-colors ${
-              soundEnabled ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'
-            } text-white`}
+            className={`p-3 rounded-nav transition-colors ${
+              soundEnabled ? 'bg-status-success hover:bg-green-600' : 'bg-status-error hover:bg-red-600'
+            } text-text-primary dark:text-text-dark-primary`}
           >
             {soundEnabled ? '🔊' : '🔇'}
           </button>
@@ -327,7 +327,7 @@ const SentencePractice: React.FC = () => {
           <div
             ref={progressRef}
             className={`h-full transition-all duration-1000 ${
-              timeLeft <= 15 ? 'bg-red-500' : 'bg-primary'
+              timeLeft <= 15 ? 'bg-status-error' : 'bg-primary'
             }`}
             style={{ width: '100%' }}
           />
@@ -345,9 +345,9 @@ const SentencePractice: React.FC = () => {
       {/* Practice Area */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Sentence Card */}
-        <div className="p-6 rounded-lg shadow-md" style={{ backgroundColor: 'var(--background-lighter)' }}>
+        <div className="p-6 rounded-nav shadow-card dark:shadow-dark-card" style={{ backgroundColor: 'var(--background-lighter)' }}>
           {currentExample && mode === 'fill-blank' && (
-            <div className={`${themeClasses.container} rounded-lg shadow-md p-6`}>
+            <div className={`${themeClasses.container} rounded-nav shadow-card dark:shadow-dark-card p-6`}>
               <div className={`text-3xl font-bold text-center mb-4 ${themeClasses.text}`}>
                 {getBlankedSentence(currentExample.japanese, 0)}
               </div>
@@ -365,19 +365,19 @@ const SentencePractice: React.FC = () => {
                   value={userAnswer}
                   onChange={(e) => setUserAnswer(e.target.value)}
                   placeholder="Type the missing word"
-                  className={`w-full p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
+                  className={`w-full p-3 border rounded-nav ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
                   disabled={showResult}
                 />
                 {!showResult ? (
                   <button
                     type="submit"
-                    className={`w-full ${themeClasses.button.primary} py-3 rounded-lg transition-colors`}
+                    className={`w-full ${themeClasses.button.primary} py-3 rounded-nav transition-colors`}
                   >
                     Check Answer
                   </button>
                 ) : (
                   <div className="space-y-4">
-                    <div className={`text-center p-4 rounded-lg ${
+                    <div className={`text-center p-4 rounded-nav ${
                       isCorrect ? themeClasses.result.correct : themeClasses.result.incorrect
                     }`}>
                       {isCorrect ? 'Correct! 🎉' : `Incorrect. The answer is: ${currentExample.japanese.split(' ')[0]}`}
@@ -385,7 +385,7 @@ const SentencePractice: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleNext}
-                      className={`w-full ${themeClasses.button.secondary} py-3 rounded-lg transition-colors`}
+                      className={`w-full ${themeClasses.button.secondary} py-3 rounded-nav transition-colors`}
                     >
                       Next Example
                     </button>
@@ -396,26 +396,26 @@ const SentencePractice: React.FC = () => {
           )}
 
           {currentExample && mode === 'translate' && (
-            <div className={`${themeClasses.container} rounded-lg shadow-md p-6 transform transition-all duration-300 hover:shadow-lg`}>
+            <div className={`${themeClasses.container} rounded-nav shadow-card dark:shadow-dark-card p-6 transform transition-all duration-300 hover:shadow-hover dark:shadow-dark-hover`}>
               <div className={`text-3xl font-bold text-center mb-4 ${themeClasses.text}`}>
                 {currentExample.japanese}
               </div>
               
-              <div className={`text-lg text-center mb-6 ${themeClasses.input} p-4 rounded-lg`}>
+              <div className={`text-lg text-center mb-6 ${themeClasses.input} p-4 rounded-nav`}>
                 Pattern: {currentExample.pattern}
               </div>
 
               {!showHint && !showResult && (
                 <button
                   onClick={() => setShowHint(true)}
-                  className={`w-full mb-6 ${themeClasses.button.hint} py-3 rounded-lg transition-colors`}
+                  className={`w-full mb-6 ${themeClasses.button.hint} py-3 rounded-nav transition-colors`}
                 >
                   Show Hint
                 </button>
               )}
 
               {showHint && !showResult && (
-                <div className={`mb-6 p-4 rounded-lg ${themeClasses.hint}`}>
+                <div className={`mb-6 p-4 rounded-nav ${themeClasses.hint}`}>
                   <p>{currentExample.hint}</p>
                 </div>
               )}
@@ -435,20 +435,20 @@ const SentencePractice: React.FC = () => {
                   value={userAnswer}
                   onChange={(e) => setUserAnswer(e.target.value)}
                   placeholder="Type the English translation"
-                  className={`w-full p-3 border rounded-lg ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
+                  className={`w-full p-3 border rounded-nav ${themeClasses.input} focus:ring-2 focus:ring-primary focus:border-primary`}
                   disabled={showResult}
                 />
 
                 {!showResult ? (
                   <button
                     type="submit"
-                    className={`w-full ${themeClasses.button.primary} py-3 rounded-lg transition-colors`}
+                    className={`w-full ${themeClasses.button.primary} py-3 rounded-nav transition-colors`}
                   >
                     Check Answer
                   </button>
                 ) : (
                   <div className="space-y-4">
-                    <div className={`text-center p-4 rounded-lg ${
+                    <div className={`text-center p-4 rounded-nav ${
                       isCorrect ? themeClasses.result.correct : themeClasses.result.incorrect
                     }`}>
                       {isCorrect ? 'Correct! 🎉' : `Incorrect. The answer is: ${currentExample.english}`}
@@ -456,7 +456,7 @@ const SentencePractice: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleNext}
-                      className={`w-full ${themeClasses.button.secondary} py-3 rounded-lg transition-colors`}
+                      className={`w-full ${themeClasses.button.secondary} py-3 rounded-nav transition-colors`}
                     >
                       Next Example
                     </button>
@@ -468,18 +468,18 @@ const SentencePractice: React.FC = () => {
         </div>
 
         {/* Input Card */}
-        <div className="p-6 rounded-lg shadow-md" style={{ backgroundColor: 'var(--background-lighter)' }}>
+        <div className="p-6 rounded-nav shadow-card dark:shadow-dark-card" style={{ backgroundColor: 'var(--background-lighter)' }}>
           {/* Input card content */}
         </div>
       </div>
 
       {/* Progress Section */}
-      <div className="mt-8 p-4 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-lighter)' }}>
+      <div className="mt-8 p-4 rounded-nav shadow-card dark:shadow-dark-card" style={{ backgroundColor: 'var(--background-lighter)' }}>
         {/* Progress section content */}
       </div>
 
       {/* Statistics Section */}
-      <div className="mt-8 p-4 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-lighter)' }}>
+      <div className="mt-8 p-4 rounded-nav shadow-card dark:shadow-dark-card" style={{ backgroundColor: 'var(--background-lighter)' }}>
         {/* Statistics section content */}
       </div>
     </div>

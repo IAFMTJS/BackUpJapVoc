@@ -39,7 +39,7 @@ const GamesPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center">
         <div
-          className={`w-64 h-40 flex items-center justify-center border rounded-lg shadow-lg text-2xl cursor-pointer bg-dark-lighter ${flipped ? 'bg-dark-lightest' : ''}`}
+          className={`w-64 h-40 flex items-center justify-center border rounded-nav shadow-lg text-2xl cursor-pointer bg-dark-lighter ${flipped ? 'bg-dark-lightest' : ''}`}
           onClick={() => setFlipped(f => !f)}
         >
           {flipped ? word.english : word.japanese}
@@ -287,7 +287,7 @@ const GamesPage: React.FC = () => {
             <button
               key={title}
               onClick={() => setActiveGame(i)}
-              className={`px-4 py-2 rounded-lg ${
+              className={`px-4 py-2 rounded-nav ${
                 activeGame === i
                   ? themeClasses.button.primary
                   : themeClasses.button.secondary

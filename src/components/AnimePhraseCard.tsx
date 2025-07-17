@@ -38,10 +38,10 @@ const AnimePhraseCard: React.FC<AnimePhraseCardProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col md:flex-row items-stretch">
+    <div className="bg-white dark:bg-dark-elevated dark:bg-gray-800 rounded-nav shadow-lg overflow-hidden flex flex-col md:flex-row items-stretch">
       {/* Left: Text Content */}
       <div className="flex-1 p-6 flex flex-col justify-center">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <h2 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary dark:text-text-primary dark:text-text-dark-primary mb-2">
           {japanese}
         </h2>
         <button
@@ -52,37 +52,37 @@ const AnimePhraseCard: React.FC<AnimePhraseCardProps> = ({
           🔊
         </button>
         {showRomaji && (
-          <p className="text-xl text-gray-700 dark:text-gray-300 mb-2">
+          <p className="text-xl text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary mb-2">
             {romaji}
           </p>
         )}
         {showEnglish && (
           <div className="mb-4">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-text-primary dark:text-text-dark-primary mb-2">
               {english}
             </h3>
           </div>
         )}
         <div className="space-y-4 mb-2">
-          <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
-            <p className="text-gray-700 dark:text-gray-200">
+          <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-nav">
+            <p className="text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary">
               <span className="font-semibold">Context:</span> {context}
             </p>
           </div>
-          <div className="bg-green-50 dark:bg-green-900 p-4 rounded-lg">
-            <p className="text-gray-700 dark:text-gray-200">
+          <div className="bg-green-50 dark:bg-green-900 p-4 rounded-nav">
+            <p className="text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary">
               <span className="font-semibold">Example:</span> {example}
             </p>
           </div>
         </div>
         {/* Category Badge */}
         <div className="mt-2">
-          <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-purple-600 text-white dark:bg-purple-900 dark:text-purple-200">
+          <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-purple-600 text-text-primary dark:text-text-dark-primary dark:bg-purple-900 dark:text-purple-200">
             {category}
           </span>
         </div>
         {characterName && animeTitle && (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          <div className="mt-2 text-sm text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary">
             {characterName} - {animeTitle}
           </div>
         )}

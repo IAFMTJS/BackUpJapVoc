@@ -114,10 +114,10 @@ const DakuonKana: React.FC = () => {
   return (
     <Box>
       <Box className="mb-6">
-        <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+        <Typography variant="h6" className={`mb-4 ${isDarkMode ? 'text-text-primary dark:text-text-dark-primary' : 'text-text-primary dark:text-text-dark-primary'}`}>
           Dakuon (濁音) and Handakuon (半濁音)
         </Typography>
-        <Typography variant="body1" className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+        <Typography variant="body1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-muted dark:text-text-dark-muted'}>
           Dakuon are voiced sounds marked with ゛ (dakuten), while handakuon are semi-voiced sounds 
           marked with ゜ (handakuten). These marks change the pronunciation of the base kana.
         </Typography>
@@ -219,8 +219,8 @@ const DakuonKana: React.FC = () => {
         ))}
       </Grid>
 
-      <Box className="mt-8 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-        <Typography variant="body1" className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+      <Box className="mt-8 p-4 bg-blue-50 dark:bg-blue-900 rounded-nav">
+        <Typography variant="body1" className={isDarkMode ? 'text-text-secondary dark:text-text-dark-secondary' : 'text-text-secondary dark:text-text-dark-secondary'}>
           <strong>Tips for Dakuon and Handakuon:</strong>
           <ul className="list-disc pl-6 mt-2 space-y-1">
             <li>Dakuon (゛) changes k→g, s→z, t→d, h→b</li>

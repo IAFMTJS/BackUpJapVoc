@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const HowToUsePage: React.FC = () => {
   const navigate = useNavigate();
   return (
-    <div className="max-w-2xl mx-auto py-10 px-4 bg-dark-lighter rounded-lg shadow-md mt-8">
+    <div className="max-w-2xl mx-auto py-10 px-4 bg-dark-lighter rounded-nav shadow-card dark:shadow-dark-card mt-8">
       <h1 className="text-3xl font-bold mb-6 text-blue-700 text-center">How to Use This Site</h1>
       <p className="mb-4 text-lg">
         Welcome! This site is designed to help you learn Japanese in a fun, interactive, and effective way. Here's how you can make the most of all the features:
@@ -29,7 +29,7 @@ const HowToUsePage: React.FC = () => {
       </ul>
       <div className="flex justify-center mt-8">
         <button
-          className="px-6 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 text-lg font-semibold"
+          className="px-6 py-2 bg-japanese-red text-text-primary dark:text-text-dark-primary rounded-nav shadow hover:bg-japanese-red text-lg font-semibold"
           onClick={() => navigate('/')}
         >
           Back to Home

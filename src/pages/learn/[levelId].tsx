@@ -155,17 +155,17 @@ const LevelPage: React.FC = () => {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'kana':
-        return 'bg-blue-600 text-white';
+        return 'bg-japanese-red text-text-primary dark:text-text-dark-primary';
       case 'vocab':
-        return 'bg-green-600 text-white';
+        return 'bg-green-600 text-text-primary dark:text-text-dark-primary';
       case 'kanji':
-        return 'bg-purple-600 text-white';
+        return 'bg-purple-600 text-text-primary dark:text-text-dark-primary';
       case 'grammar':
-        return 'bg-orange-600 text-white';
+        return 'bg-orange-600 text-text-primary dark:text-text-dark-primary';
       case 'mixed':
-        return 'bg-indigo-600 text-white';
+        return 'bg-indigo-600 text-text-primary dark:text-text-dark-primary';
       default:
-        return 'bg-gray-600 text-white';
+        return 'bg-gray-600 text-text-primary dark:text-text-dark-primary';
     }
   };
 
@@ -175,7 +175,7 @@ const LevelPage: React.FC = () => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">🔄 Level wordt geladen...</p>
+            <p className="text-text-muted dark:text-text-dark-muted font-medium">🔄 Level wordt geladen...</p>
           </div>
         </div>
       </LearnLayout>
@@ -188,11 +188,11 @@ const LevelPage: React.FC = () => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">😔 Level Niet Gevonden</h2>
-            <p className="text-gray-600 mb-4">{error || 'Het opgevraagde level kon niet worden gevonden.'}</p>
+            <h2 className="text-2xl font-bold text-text-primary dark:text-text-dark-primary mb-2">😔 Level Niet Gevonden</h2>
+            <p className="text-text-muted dark:text-text-dark-muted mb-4">{error || 'Het opgevraagde level kon niet worden gevonden.'}</p>
             <button
               onClick={() => navigate('/learn')}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-semibold"
+              className="px-6 py-3 bg-indigo-600 text-text-primary dark:text-text-dark-primary rounded-card hover:bg-indigo-700 transition-colors font-semibold"
             >
               🔙 Terug naar Levels
             </button>
@@ -226,13 +226,13 @@ const LevelPage: React.FC = () => {
               <div className="flex items-center space-x-3">
                 {getCategoryIcon(level.category)}
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">{level.title}</h2>
-                  <p className="text-sm text-gray-600">Exercise {currentExerciseIndex + 1} of {level.exercises.length}</p>
+                  <h2 className="text-xl font-bold text-text-primary dark:text-text-dark-primary">{level.title}</h2>
+                  <p className="text-sm text-text-muted dark:text-text-dark-muted">Exercise {currentExerciseIndex + 1} of {level.exercises.length}</p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-indigo-600">{Math.round(((currentExerciseIndex) / level.exercises.length) * 100)}%</div>
-                <div className="text-sm text-gray-500">Complete</div>
+                <div className="text-sm text-text-muted dark:text-text-dark-muted">Complete</div>
               </div>
             </div>
             
@@ -268,62 +268,62 @@ const LevelPage: React.FC = () => {
             </span>
           </div>
           
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{level.title}</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">{level.description}</p>
+          <h1 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary mb-4">{level.title}</h1>
+          <p className="text-lg text-text-muted dark:text-text-dark-muted max-w-2xl mx-auto">{level.description}</p>
         </div>
 
         {/* Level Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-dark-elevated rounded-card p-6 shadow-card dark:shadow-dark-card border border-border-light dark:border-border-dark dark:border-border-dark-dark-light">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
+              <div className="p-2 bg-blue-100 rounded-nav">
                 <Target className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">{level.exercises.length}</div>
-                <div className="text-sm text-gray-500">Exercises</div>
+                <div className="text-2xl font-bold text-text-primary dark:text-text-dark-primary">{level.exercises.length}</div>
+                <div className="text-sm text-text-muted dark:text-text-dark-muted">Exercises</div>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-dark-elevated rounded-card p-6 shadow-card dark:shadow-dark-card border border-border-light dark:border-border-dark dark:border-border-dark-dark-light">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
+              <div className="p-2 bg-orange-100 rounded-nav">
                 <Clock className="w-6 h-6 text-orange-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">{level.estimatedTime}</div>
-                <div className="text-sm text-gray-500">Estimated Time</div>
+                <div className="text-2xl font-bold text-text-primary dark:text-text-dark-primary">{level.estimatedTime}</div>
+                <div className="text-sm text-text-muted dark:text-text-dark-muted">Estimated Time</div>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-dark-elevated rounded-card p-6 shadow-card dark:shadow-dark-card border border-border-light dark:border-border-dark dark:border-border-dark-dark-light">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-green-100 rounded-lg">
+              <div className="p-2 bg-green-100 rounded-nav">
                 <Star className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">{level.minScore}%</div>
-                <div className="text-sm text-gray-500">Min Score to Pass</div>
+                <div className="text-2xl font-bold text-text-primary dark:text-text-dark-primary">{level.minScore}%</div>
+                <div className="text-sm text-text-muted dark:text-text-dark-muted">Min Score to Pass</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Exercise Preview */}
-        <div className="bg-gray-50 rounded-xl p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">What you'll learn:</h3>
+        <div className="bg-light dark:bg-dark rounded-card p-6 mb-8">
+          <h3 className="text-lg font-semibold text-text-primary dark:text-text-dark-primary mb-4">What you'll learn:</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {level.exercises.map((exercise, index) => (
-              <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+              <div key={index} className="bg-white dark:bg-dark-elevated rounded-nav p-4 border border-border-light dark:border-border-dark dark:border-border-dark-dark-light">
                 <div className="flex items-center space-x-2 mb-2">
                   <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-white">{index + 1}</span>
+                    <span className="text-xs font-bold text-text-primary dark:text-text-dark-primary">{index + 1}</span>
                   </div>
-                  <span className="font-medium text-gray-900">{exercise.title}</span>
+                  <span className="font-medium text-text-primary dark:text-text-dark-primary">{exercise.title}</span>
                 </div>
-                <p className="text-sm text-gray-600">{exercise.instruction}</p>
+                <p className="text-sm text-text-muted dark:text-text-dark-muted">{exercise.instruction}</p>
               </div>
             ))}
           </div>
@@ -333,7 +333,7 @@ const LevelPage: React.FC = () => {
         <div className="text-center">
           <button
             onClick={handleStartLevel}
-            className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-semibold text-lg flex items-center space-x-2 mx-auto"
+            className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-text-primary dark:text-text-dark-primary rounded-card hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-semibold text-lg flex items-center space-x-2 mx-auto"
           >
             <Play className="w-6 h-6" />
             <span>Start Level</span>

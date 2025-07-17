@@ -1,343 +1,348 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Nunito:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global dark mode background */
-html, body, #root {
-  background-color: #181830;
-  color: #ffffff;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-}
-
-/* Ensure Material-UI theme background is applied */
-body[data-mui-color-scheme="dark"] {
-  background-color: #181830;
-}
-
-@layer utilities {
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+/* Base styles for Japanese Learning Platform */
+@layer base {
+  * {
+    @apply border-border;
   }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari and Opera */
-  }
-}
 
-@keyframes neon-pulse {
-  0%, 100% {
-    opacity: 1;
-    text-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff44, 0 0 48px #00f7ff22;
+  body {
+    @apply font-sans text-text-primary bg-light min-h-screen;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
-  50% {
-    opacity: 0.8;
-    text-shadow: 0 0 24px #00f7ff, 0 0 48px #00f7ff66, 0 0 72px #00f7ff44;
-  }
-}
 
-@keyframes neon-flicker {
-  0%, 100% {
-    opacity: 1;
-    filter: brightness(1) drop-shadow(0 0 8px currentColor);
+  /* Dark theme base styles */
+  .dark body {
+    @apply bg-dark text-text-dark-primary;
   }
-  50% {
-    opacity: 0.9;
-    filter: brightness(1.2) drop-shadow(0 0 12px currentColor);
+
+  /* Theme-specific body backgrounds */
+  .theme-light body {
+    @apply bg-light text-text-primary;
   }
-  25%, 75% {
-    opacity: 0.95;
-    filter: brightness(1.1) drop-shadow(0 0 10px currentColor);
+
+  .theme-dark body {
+    @apply bg-dark text-text-dark-primary;
   }
-}
 
-@keyframes neon-border-glow {
-  0%, 100% {
-    border-color: #00f7ff;
-    box-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff44, inset 0 0 16px #00f7ff;
+  /* Selection styles */
+  ::selection {
+    @apply bg-japanese-red/20 text-text-primary;
   }
-  50% {
-    border-color: #ff00c8;
-    box-shadow: 0 0 24px #ff00c8, 0 0 48px #ff00c866, inset 0 0 24px #ff00c8;
+
+  .dark ::selection {
+    @apply bg-japanese-red/30 text-text-dark-primary;
   }
-}
 
-@keyframes neon-text-rainbow {
-  0% { color: #00f7ff; text-shadow: 0 0 16px #00f7ff; }
-  33% { color: #ff00c8; text-shadow: 0 0 16px #ff00c8; }
-  66% { color: #9c00ff; text-shadow: 0 0 16px #9c00ff; }
-  100% { color: #00f7ff; text-shadow: 0 0 16px #00f7ff; }
-}
-
-@keyframes grid-move {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 0.5;
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
   }
-  50% {
-    transform: translateY(25px) scale(1.02);
-    opacity: 0.7;
+
+  ::-webkit-scrollbar-track {
+    @apply bg-light-tertiary;
   }
-  100% {
-    transform: translateY(50px) scale(1);
-    opacity: 0.5;
+
+  .dark ::-webkit-scrollbar-track {
+    @apply bg-dark-tertiary;
   }
-}
 
-@keyframes neon-glow {
-  0%, 100% {
-    box-shadow: 0 0 16px currentColor, 0 0 32px currentColor44, 0 0 48px currentColor22;
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border-medium rounded-full;
   }
-  50% {
-    box-shadow: 0 0 24px currentColor, 0 0 48px currentColor66, 0 0 72px currentColor44;
+
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-border-dark-medium;
   }
-}
 
-@keyframes neon-scanline {
-  0% {
-    transform: translateY(-100%);
-    opacity: 0.1;
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-dark;
   }
-  50% {
-    opacity: 0.2;
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-dark-dark;
   }
-  100% {
-    transform: translateY(100%);
-    opacity: 0.1;
+
+  /* Focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-japanese-red/20;
   }
-}
 
-/* Enhanced utility classes */
-.animate-neon-pulse {
-  animation: neon-pulse 2s infinite;
-}
-
-.animate-neon-flicker {
-  animation: neon-flicker 3s infinite;
-}
-
-.animate-neon-border-glow {
-  animation: neon-border-glow 4s infinite;
-}
-
-.animate-neon-text-rainbow {
-  animation: neon-text-rainbow 6s infinite;
-}
-
-.animate-neon-glow {
-  animation: neon-glow 2s infinite;
-}
-
-.animate-neon-scanline {
-  position: relative;
-  overflow: hidden;
-}
-
-.animate-neon-scanline::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #00f7ff, transparent);
-  animation: neon-scanline 3s linear infinite;
-}
-
-/* Theme-specific styles */
-.theme-neon {
-  --neon-bg: #060c23;
-  --neon-text: #ffffff;
-  --neon-pink: #ff00c8;
-  --neon-blue: #00f7ff;
-  --neon-shadow-pink: 0 0 10px #ff00c8, 0 0 20px #ff00c8, 0 0 30px #ff00c8;
-  --neon-shadow-blue: 0 0 10px #00f7ff, 0 0 20px #00f7ff, 0 0 30px #00f7ff;
-  
-  position: relative;
-  overflow: hidden;
-}
-
-.theme-neon::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(rgba(102, 51, 153, 0.1), rgba(51, 0, 102, 0.2)),
-    url('../assets/noise.svg'),
-    url('../assets/cityscape.svg'),
-    url('../assets/torii.svg');
-  background-size: 
-    cover,
-    200px 200px,
-    cover,
-    200px 200px;
-  background-position: 
-    center,
-    center,
-    center,
-    top right;
-  background-repeat: 
-    no-repeat,
-    repeat,
-    no-repeat,
-    no-repeat;
-  opacity: 0.8;
-  z-index: 0;
-  pointer-events: none;
-  animation: fog-movement 20s ease-in-out infinite;
-}
-
-@keyframes fog-movement {
-  0% {
-    background-position: 
-      center,
-      center,
-      center,
-      top right;
+  .dark *:focus-visible {
+    @apply ring-japanese-red/30;
   }
-  50% {
-    background-position: 
-      center,
-      center,
-      center 10px,
-      top right 10px;
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold text-text-primary;
   }
-  100% {
-    background-position: 
-      center,
-      center,
-      center,
-      top right;
+
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    @apply text-text-dark-primary;
+  }
+
+  /* Japanese text styling */
+  .jp-text {
+    @apply font-jp;
+  }
+
+  /* Link styles */
+  a {
+    @apply text-japanese-red hover:text-japanese-redLight transition-colors duration-300;
+  }
+
+  .dark a {
+    @apply text-japanese-red hover:text-japanese-redLight;
+  }
+
+  /* Button base styles */
+  button {
+    @apply transition-all duration-300;
+  }
+
+  /* Input base styles */
+  input, textarea, select {
+    @apply transition-all duration-300;
+  }
+
+  /* Card base styles */
+  .card {
+    @apply bg-light-secondary border border-border-light rounded-card p-6 shadow-card hover:shadow-hover transition-all duration-300;
+  }
+
+  .dark .card {
+    @apply bg-dark-secondary border border-border-dark-light shadow-dark-card hover:shadow-dark-hover;
+  }
+
+  /* Navigation base styles */
+  .nav {
+    @apply bg-light/95 backdrop-blur-md border-b border-border-light shadow-nav;
+  }
+
+  .dark .nav {
+    @apply bg-dark/95 border-border-dark-light shadow-dark-card;
+  }
+
+  /* Progress bar base styles */
+  .progress-bg {
+    @apply bg-light-tertiary;
+  }
+
+  .dark .progress-bg {
+    @apply bg-dark-tertiary;
+  }
+
+  .progress-bar {
+    @apply bg-accent-orange;
+  }
+
+  .dark .progress-bar {
+    @apply bg-accent-orange-dark;
   }
 }
 
-.theme-neon::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,247,255,0.03) 2px,
-    rgba(0,247,255,0.03) 4px
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Neon card styles */
-.neon-card {
-  background: rgba(13,13,26,0.8);
-  border: 1px solid rgba(0,247,255,0.3);
-  box-shadow: 0 0 16px rgba(0,247,255,0.2);
-  backdrop-filter: blur(8px);
-  transition: all 0.3s ease;
-}
-
-.neon-card:hover {
-  border-color: rgba(0,247,255,0.6);
-  box-shadow: 0 0 24px rgba(0,247,255,0.3);
-  transform: translateY(-2px);
-}
-
-/* Neon button styles */
-.neon-button {
-  background: rgba(13,13,26,0.8);
-  border: 1px solid rgba(0,247,255,0.3);
-  color: #00f7ff;
-  text-shadow: 0 0 8px #00f7ff;
-  box-shadow: 0 0 16px rgba(0,247,255,0.2);
-  transition: all 0.3s ease;
-}
-
-.neon-button:hover {
-  background: rgba(0,247,255,0.1);
-  border-color: rgba(0,247,255,0.6);
-  box-shadow: 0 0 24px rgba(0,247,255,0.3);
-  transform: translateY(-2px);
-}
-
-.neon-button:active {
-  transform: translateY(0);
-  box-shadow: 0 0 8px rgba(0,247,255,0.2);
-}
-
-/* Neon input styles */
-.neon-input {
-  background: rgba(13,13,26,0.8);
-  border: 1px solid rgba(0,247,255,0.3);
-  color: #00f7ff;
-  box-shadow: 0 0 16px rgba(0,247,255,0.1);
-  transition: all 0.3s ease;
-}
-
-.neon-input:focus {
-  border-color: rgba(0,247,255,0.6);
-  box-shadow: 0 0 24px rgba(0,247,255,0.2);
-  outline: none;
-}
-
-/* Neon text styles */
-.neon-text {
-  color: #00f7ff;
-  text-shadow: 0 0 8px #00f7ff;
-}
-
-.neon-text-gradient {
-  background: linear-gradient(90deg, #00f7ff, #ff00c8, #9c00ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: neon-text-rainbow 6s infinite;
-}
-
+/* Component styles */
 @layer components {
-  .neon-blue {
-    @apply text-[#00f7ff];
-    text-shadow: 0 0 8px #00f7ff, 0 0 24px #00f7ff, 0 0 48px #00f7ff;
+  /* Japanese Learning Platform specific components */
+  
+  /* Welcome section */
+  .welcome-section {
+    @apply bg-gradient-to-br from-light to-light-secondary rounded-card p-8 shadow-card;
   }
 
-  .neon-pink {
-    @apply text-[#ff3afc];
-    text-shadow: 0 0 8px #ff3afc, 0 0 24px #ff3afc, 0 0 48px #ff3afc;
+  .dark .welcome-section {
+    @apply bg-gradient-to-br from-dark to-dark-secondary shadow-dark-card;
   }
 
-  .neon-card {
-    @apply bg-[#0d0d1a]/80 border border-[#00f7ff]/30 rounded-xl p-6;
-    box-shadow: 0 0 16px rgba(0, 247, 255, 0.2);
-    backdrop-filter: blur(8px);
-    transition: all 0.3s ease;
+  /* Mascot container */
+  .mascot-container {
+    @apply relative flex items-center justify-center;
   }
 
-  .neon-card:hover {
-    @apply border-[#00f7ff]/60;
-    box-shadow: 0 0 24px rgba(0, 247, 255, 0.3);
-    transform: translateY(-2px);
+  /* Torii gate background */
+  .torii-bg {
+    @apply absolute inset-0 opacity-10;
+    background-image: url('/assets/torii.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
   }
 
-  .neon-btn {
-    @apply bg-transparent border-2 border-[#ff3afc] text-[#ff3afc] px-4 py-2 rounded-lg;
-    text-shadow: 0 0 8px #ff3afc, 0 0 24px #ff3afc;
-    box-shadow: 0 0 16px #ff3afc, 0 0 32px #ff3afc inset;
-    transition: all 0.2s ease;
+  /* Cultural elements */
+  .cultural-element {
+    @apply absolute opacity-20;
   }
 
-  .neon-btn.blue {
-    @apply border-[#00f7ff] text-[#00f7ff];
-    text-shadow: 0 0 8px #00f7ff, 0 0 24px #00f7ff;
-    box-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff inset;
+  /* Achievement badges */
+  .achievement-badge {
+    @apply bg-gradient-to-r from-accent-yellow to-accent-orange text-white rounded-full px-3 py-1 text-sm font-semibold shadow-button;
   }
 
-  .neon-btn:hover {
-    @apply border-white text-white;
-    box-shadow: 0 0 32px #fff, 0 0 64px #ff3afc;
+  .dark .achievement-badge {
+    @apply from-accent-yellow-dark to-accent-orange-dark shadow-dark-button;
+  }
+
+  /* Level indicator */
+  .level-indicator {
+    @apply bg-light-secondary border border-border-light rounded-card p-4 text-center;
+  }
+
+  .dark .level-indicator {
+    @apply bg-dark-secondary border border-border-dark-light;
+  }
+
+  /* Daily goal card */
+  .daily-goal-card {
+    @apply bg-light-secondary border border-border-light rounded-card p-4;
+  }
+
+  .dark .daily-goal-card {
+    @apply bg-dark-secondary border border-border-dark-light;
+  }
+
+  /* Call to action button */
+  .cta-button {
+    @apply bg-japanese-red text-white border border-japanese-red rounded-button px-6 py-3 font-semibold shadow-button hover:shadow-button-hover transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2;
+  }
+
+  .dark .cta-button {
+    @apply shadow-dark-button hover:shadow-dark-glow animate-glow-pulse;
+  }
+
+  /* Navigation links */
+  .nav-link {
+    @apply text-text-secondary hover:text-text-primary transition-colors duration-300 px-4 py-2 rounded-nav;
+  }
+
+  .dark .nav-link {
+    @apply text-text-dark-secondary hover:text-text-dark-primary;
+  }
+
+  .nav-link.active {
+    @apply text-text-primary font-semibold;
+  }
+
+  .dark .nav-link.active {
+    @apply text-text-dark-primary text-japanese-red;
+  }
+
+  /* Logout button */
+  .logout-button {
+    @apply bg-light-secondary text-text-primary border border-border-light rounded-nav px-4 py-2 hover:bg-light-tertiary transition-all duration-300;
+  }
+
+  .dark .logout-button {
+    @apply bg-dark-secondary text-text-dark-primary border border-border-dark-light hover:bg-dark-tertiary;
+  }
+
+  /* Progress cards */
+  .progress-card {
+    @apply bg-light-secondary border border-border-light rounded-card p-4;
+  }
+
+  .dark .progress-card {
+    @apply bg-dark-secondary border border-border-dark-light;
+  }
+
+  /* Progress bar */
+  .progress-bar-container {
+    @apply bg-light-tertiary rounded-full h-2 overflow-hidden;
+  }
+
+  .dark .progress-bar-container {
+    @apply bg-dark-tertiary;
+  }
+
+  .progress-bar-fill {
+    @apply bg-accent-orange h-full transition-all duration-500 ease-out;
+  }
+
+  .dark .progress-bar-fill {
+    @apply bg-accent-orange-dark;
+  }
+
+  /* Status indicators */
+  .status-achieved {
+    @apply text-status-success font-medium;
+  }
+
+  .status-pending {
+    @apply text-text-muted;
+  }
+
+  .dark .status-pending {
+    @apply text-text-dark-muted;
+  }
+
+  /* Mascot animations */
+  .mascot-maneki {
+    @apply animate-bounce-soft;
+  }
+
+  .mascot-penguin {
+    @apply animate-fade-in;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .welcome-section {
+      @apply p-6;
+    }
+    
+    .cta-button {
+      @apply px-4 py-2 text-sm;
+    }
+    
+    .mascot-container {
+      @apply mt-8;
+    }
+  }
+}
+
+/* Utility styles */
+@layer utilities {
+  /* Text gradients */
+  .text-gradient {
+    @apply bg-gradient-to-r from-japanese-red to-japanese-redLight bg-clip-text text-transparent;
+  }
+
+  /* Background patterns */
+  .bg-pattern {
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(212, 90, 56, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(212, 90, 56, 0.1) 0%, transparent 50%);
+  }
+
+  .dark .bg-pattern {
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(212, 90, 56, 0.2) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(212, 90, 56, 0.2) 0%, transparent 50%);
+  }
+
+  /* Glow effects */
+  .glow-red {
+    box-shadow: 0 0 20px rgba(212, 90, 56, 0.3);
+  }
+
+  .dark .glow-red {
+    box-shadow: 0 0 30px rgba(212, 90, 56, 0.5);
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Hover effects */
+  .hover-lift {
+    @apply hover:-translate-y-1 hover:shadow-lg transition-all duration-300;
+  }
+
+  .dark .hover-lift {
+    @apply hover:shadow-dark-hover;
   }
 } 

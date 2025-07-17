@@ -112,22 +112,22 @@ const LearnIndex: React.FC = () => {
     <>
       <LearnLayout title="Learning Path" showBackButton={false}>
         {/* Hero Section with Progress */}
-        <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white">
+        <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-text-primary dark:text-text-dark-primary">
           <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Your Learning Journey</h1>
-              <p className="text-xl text-white opacity-95">Master Japanese step by step</p>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 text-text-primary dark:text-text-dark-primary">Your Learning Journey</h1>
+              <p className="text-xl text-text-primary dark:text-text-dark-primary opacity-95">Master Japanese step by step</p>
             </div>
 
             {/* Progress Bar */}
             <div className="max-w-2xl mx-auto mb-8">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-bold text-white">Progress</span>
-                <span className="text-sm font-bold text-white">{userStats.totalLevelsCompleted}/{levels.length} Levels</span>
+                <span className="text-sm font-bold text-text-primary dark:text-text-dark-primary">Progress</span>
+                <span className="text-sm font-bold text-text-primary dark:text-text-dark-primary">{userStats.totalLevelsCompleted}/{levels.length} Levels</span>
               </div>
-              <div className="w-full bg-white bg-opacity-30 rounded-full h-3">
+              <div className="w-full bg-white dark:bg-dark-elevated bg-opacity-30 rounded-full h-3">
                 <div 
-                  className="bg-white h-3 rounded-full transition-all duration-500 ease-out shadow-lg"
+                  className="bg-white dark:bg-dark-elevated h-3 rounded-full transition-all duration-500 ease-out shadow-lg"
                   style={{ width: `${totalProgress}%` }}
                 ></div>
               </div>
@@ -135,45 +135,45 @@ const LearnIndex: React.FC = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              <div className="text-center bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm border border-white border-opacity-30">
-                <div className="text-3xl font-bold mb-1 text-white">{userStats.totalLevelsCompleted}</div>
-                <div className="text-sm text-white font-medium">Completed</div>
+              <div className="text-center bg-white dark:bg-dark-elevated bg-opacity-20 rounded-card p-4 backdrop-blur-sm border border-white border-opacity-30">
+                <div className="text-3xl font-bold mb-1 text-text-primary dark:text-text-dark-primary">{userStats.totalLevelsCompleted}</div>
+                <div className="text-sm text-text-primary dark:text-text-dark-primary font-medium">Completed</div>
               </div>
-              <div className="text-center bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm border border-white border-opacity-30">
-                <div className="text-3xl font-bold mb-1 text-white">{userStats.averageScore}%</div>
-                <div className="text-sm text-white font-medium">Avg Score</div>
+              <div className="text-center bg-white dark:bg-dark-elevated bg-opacity-20 rounded-card p-4 backdrop-blur-sm border border-white border-opacity-30">
+                <div className="text-3xl font-bold mb-1 text-text-primary dark:text-text-dark-primary">{userStats.averageScore}%</div>
+                <div className="text-sm text-text-primary dark:text-text-dark-primary font-medium">Avg Score</div>
               </div>
-              <div className="text-center bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm border border-white border-opacity-30">
-                <div className="text-3xl font-bold mb-1 text-white">{levels.length - userStats.totalLevelsCompleted}</div>
-                <div className="text-sm text-white font-medium">Remaining</div>
+              <div className="text-center bg-white dark:bg-dark-elevated bg-opacity-20 rounded-card p-4 backdrop-blur-sm border border-white border-opacity-30">
+                <div className="text-3xl font-bold mb-1 text-text-primary dark:text-text-dark-primary">{levels.length - userStats.totalLevelsCompleted}</div>
+                <div className="text-sm text-text-primary dark:text-text-dark-primary font-medium">Remaining</div>
               </div>
-              <div className="text-center bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm border border-white border-opacity-30">
-                <div className="text-3xl font-bold mb-1 flex items-center justify-center text-white">
+              <div className="text-center bg-white dark:bg-dark-elevated bg-opacity-20 rounded-card p-4 backdrop-blur-sm border border-white border-opacity-30">
+                <div className="text-3xl font-bold mb-1 flex items-center justify-center text-text-primary dark:text-text-dark-primary">
                   <Flame className="w-6 h-6 mr-1 text-orange-300" />
                   {Math.floor(Math.random() * 7) + 3}
                 </div>
-                <div className="text-sm text-white font-medium">Day Streak</div>
+                <div className="text-sm text-text-primary dark:text-text-dark-primary font-medium">Day Streak</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Levels Grid */}
-        <div className="bg-gray-50 min-h-screen">
+        <div className="bg-light dark:bg-dark min-h-screen">
           <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">Available Levels</h2>
-              <div className="flex items-center space-x-2 text-sm text-gray-700">
+              <h2 className="text-3xl font-bold text-text-primary dark:text-text-dark-primary">Available Levels</h2>
+              <div className="flex items-center space-x-2 text-sm text-text-secondary dark:text-text-dark-secondary">
                 <div className="flex items-center space-x-1">
                   <div className="w-3 h-3 bg-green-600 rounded-full"></div>
                   <span className="font-medium">Completed</span>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                  <div className="w-3 h-3 bg-japanese-red rounded-full"></div>
                   <span className="font-medium">Available</span>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-light0 rounded-full"></div>
                   <span className="font-medium">Locked</span>
                 </div>
               </div>
@@ -202,25 +202,25 @@ const LearnIndex: React.FC = () => {
           {/* Achievements Section */}
           {currentUser && (
             <div className="max-w-7xl mx-auto px-6 pb-12">
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+              <div className="bg-white dark:bg-dark-elevated rounded-card shadow-lg p-8">
+                <h3 className="text-2xl font-bold text-text-primary dark:text-text-dark-primary mb-6 flex items-center">
                   <Award className="w-6 h-6 mr-2 text-yellow-600" />
                   Your Achievements
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl border border-blue-300">
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-card border border-blue-300">
                     <div className="text-3xl font-bold text-blue-800 mb-2">
                       {userStats.totalLevelsCompleted}
                     </div>
                     <div className="text-blue-900 font-bold">Levels Mastered</div>
                   </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-green-100 to-green-200 rounded-xl border border-green-300">
+                  <div className="text-center p-4 bg-gradient-to-br from-green-100 to-green-200 rounded-card border border-green-300">
                     <div className="text-3xl font-bold text-green-800 mb-2">
                       {userStats.averageScore}%
                     </div>
                     <div className="text-green-900 font-bold">Average Performance</div>
                   </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl border border-purple-300">
+                  <div className="text-center p-4 bg-gradient-to-br from-purple-100 to-purple-200 rounded-card border border-purple-300">
                     <div className="text-3xl font-bold text-purple-800 mb-2">
                       {levels.length - userStats.totalLevelsCompleted}
                     </div>

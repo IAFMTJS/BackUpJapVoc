@@ -31,14 +31,14 @@ const QuizModeSelector: React.FC<QuizModeSelectorProps> = ({
   };
 
   return (
-    <div className={`flex flex-wrap gap-3 p-4 rounded-xl ${themeClasses.card} border ${themeClasses.border} ${
+    <div className={`flex flex-wrap gap-3 p-4 rounded-card ${themeClasses.card} border ${themeClasses.border} ${
       theme === 'dark' ? 'shadow-[0_0_20px_rgba(0,149,255,0.2)]' : ''
     }`}>
       {availableModes.map((mode) => (
         <button
           key={mode}
           onClick={() => onModeSelect(mode)}
-          className={`px-4 py-2 rounded-lg transition-all duration-300 font-medium ${
+          className={`px-4 py-2 rounded-nav transition-all duration-300 font-medium ${
             selectedMode === mode
               ? themeClasses.button.primary
               : themeClasses.button.secondary

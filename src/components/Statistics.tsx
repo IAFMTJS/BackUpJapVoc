@@ -29,7 +29,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, trend }) => {
       </div>
       {trend && (
         <div className={`flex items-center text-sm ${
-          trend.isPositive ? 'text-accent-red' : 'text-text-muted'
+          trend.isPositive ? 'text-accent-red' : 'text-text-muted dark:text-text-dark-muted'
         }`}>
           <span className="mr-1">
             {trend.isPositive ? '↑' : '↓'}
@@ -119,7 +119,7 @@ const Statistics: React.FC = () => {
           {progress.recentActivity?.map((activity, index) => (
             <div
               key={index}
-              className={`p-4 rounded-lg ${themeClasses.card} border ${themeClasses.border}`}
+              className={`p-4 rounded-nav ${themeClasses.card} border ${themeClasses.border}`}
             >
               <div className="flex items-center justify-between">
                 <div>

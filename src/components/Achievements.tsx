@@ -90,7 +90,7 @@ const AchievementCard = styled.div<{ unlocked: boolean; tier: AchievementTier }>
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 247, 255, 0.2), 0 0 32px rgba(0, 247, 255, 0.1);
-    border-color: #00f7ff;
+    border-color: #3b82f6;
   }
 `;
 
@@ -210,17 +210,17 @@ const Achievements: React.FC = () => {
         exit={{ opacity: 0, y: -20 }}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className={`p-4 rounded-lg shadow-md cursor-pointer transition-all duration-200 ${
+        className={`p-4 rounded-nav shadow-card dark:shadow-dark-card cursor-pointer transition-all duration-200 ${
           isNeonMode
             ? isCompleted 
-              ? 'bg-[#00f7ff]/10 border-2 border-[#00f7ff]' 
+              ? 'bg-[#3b82f6]/10 border-2 border-[#3b82f6]' 
               : isInProgress 
                 ? 'bg-[#ff3afc]/10 border-2 border-[#ff3afc]'
-                : 'bg-[#181830]/80 border-2 border-[#00f7ff]/30'
+                : 'bg-light dark:bg-dark/80 border-2 border-[#3b82f6]/30'
             : isCompleted 
               ? 'bg-accent-green/10' 
               : isInProgress 
-                ? 'bg-accent-yellow/10'
+                ? 'bg-accent-yellow dark:bg-accent-yellow-dark/10'
                 : 'bg-dark-lighter'
         }`}
         onClick={() => handleAchievementClick(achievement)}
@@ -233,7 +233,7 @@ const Achievements: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <Typography 
                 variant="h6" 
-                className={isNeonMode ? 'text-[#00f7ff] text-shadow-neon' : 'text-text-primary'}
+                className={isNeonMode ? 'text-[#3b82f6] text-shadow-neon' : 'text-text-primary dark:text-text-dark-primary'}
               >
                 {achievement.title}
               </Typography>
@@ -244,25 +244,25 @@ const Achievements: React.FC = () => {
                   backgroundColor: isNeonMode 
                     ? getDifficultyColor(achievement.difficulty) + '40'
                     : getDifficultyColor(achievement.difficulty),
-                  color: isNeonMode ? '#00f7ff' : 'white',
+                  color: isNeonMode ? '#3b82f6' : 'white',
                   fontWeight: 'bold',
-                  border: isNeonMode ? '1px solid #00f7ff' : 'none',
+                  border: isNeonMode ? '1px solid #3b82f6' : 'none',
                   boxShadow: isNeonMode ? '0 0 8px rgba(0, 247, 255, 0.3)' : 'none'
                 }}
               />
             </div>
             <Typography 
               variant="body2" 
-              className={isNeonMode ? 'text-[#ff3afc]' : 'text-text-secondary mb-3'}
+              className={isNeonMode ? 'text-[#ff3afc]' : 'text-text-secondary dark:text-text-dark-secondary mb-3'}
             >
               {achievement.description}
             </Typography>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className={isNeonMode ? 'text-[#00f7ff]/80' : 'text-text-secondary'}>
+                <span className={isNeonMode ? 'text-[#3b82f6]/80' : 'text-text-secondary dark:text-text-dark-secondary'}>
                   Progress:
                 </span>
-                <span className={isNeonMode ? 'text-[#00f7ff]' : 'text-text-primary'}>
+                <span className={isNeonMode ? 'text-[#3b82f6]' : 'text-text-primary dark:text-text-dark-primary'}>
                   {achievement.progress} / {achievement.maxProgress}
                 </span>
               </div>
@@ -276,10 +276,10 @@ const Achievements: React.FC = () => {
                   '& .MuiLinearProgress-bar': {
                     backgroundColor: isNeonMode
                       ? isCompleted 
-                        ? '#00f7ff'
+                        ? '#3b82f6'
                         : isInProgress 
                           ? '#ff3afc'
-                          : '#9c00ff'
+                          : '#8b5cf6'
                       : isCompleted 
                         ? 'var(--accent-green)'
                         : isInProgress 
@@ -293,7 +293,7 @@ const Achievements: React.FC = () => {
               {isCompleted && achievement.unlockedAt && (
                 <Typography 
                   variant="caption" 
-                  className={isNeonMode ? 'text-[#00f7ff]/80' : 'text-text-secondary'}
+                  className={isNeonMode ? 'text-[#3b82f6]/80' : 'text-text-secondary dark:text-text-dark-secondary'}
                 >
                   Unlocked on {format(new Date(achievement.unlockedAt), 'MMM d, yyyy')}
                 </Typography>
@@ -332,14 +332,14 @@ const Achievements: React.FC = () => {
       </div>
 
       <div>
-        <Typography variant="subtitle2" className="text-text-primary mb-2">
+        <Typography variant="subtitle2" className="text-text-primary dark:text-text-dark-primary mb-2">
           Progress:
         </Typography>
         <div className="flex justify-between text-sm mb-1">
-          <span className="text-text-secondary">
+          <span className="text-text-secondary dark:text-text-dark-secondary">
             Current: {achievement.progress}
           </span>
-          <span className="text-text-primary">
+          <span className="text-text-primary dark:text-text-dark-primary">
             Required: {achievement.requirement}
           </span>
         </div>
@@ -359,7 +359,7 @@ const Achievements: React.FC = () => {
       </div>
 
       {achievement.unlockedAt && (
-        <Typography variant="body2" className="text-text-secondary">
+        <Typography variant="body2" className="text-text-secondary dark:text-text-dark-secondary">
           Unlocked on {format(new Date(achievement.unlockedAt), 'MMMM d, yyyy')}
         </Typography>
       )}
@@ -386,10 +386,10 @@ const Achievements: React.FC = () => {
   if (!achievements || achievements.length === 0) {
     return (
       <div className="text-center p-4">
-        <Typography variant="h6" className="text-text-primary">
+        <Typography variant="h6" className="text-text-primary dark:text-text-dark-primary">
           No achievements available
         </Typography>
-        <Typography variant="body2" className="text-text-secondary">
+        <Typography variant="body2" className="text-text-secondary dark:text-text-dark-secondary">
           Start learning to unlock achievements!
         </Typography>
       </div>
@@ -399,10 +399,10 @@ const Achievements: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <Typography variant="h4" className="text-text-primary mb-2">
+        <Typography variant="h4" className="text-text-primary dark:text-text-dark-primary mb-2">
           Achievements
         </Typography>
-        <Typography variant="body1" className="text-text-secondary">
+        <Typography variant="body1" className="text-text-secondary dark:text-text-dark-secondary">
           Total Points: {totalPoints}
         </Typography>
       </div>
@@ -501,10 +501,10 @@ const Achievements: React.FC = () => {
             <DialogTitle className="flex items-center gap-2">
               <span className="text-4xl">{selectedAchievement.icon}</span>
               <div>
-                <Typography variant="h6" className="text-text-primary">
+                <Typography variant="h6" className="text-text-primary dark:text-text-dark-primary">
                   {selectedAchievement.title}
                 </Typography>
-                <Typography variant="subtitle2" className="text-text-secondary">
+                <Typography variant="subtitle2" className="text-text-secondary dark:text-text-dark-secondary">
                   {selectedAchievement.description}
                 </Typography>
               </div>

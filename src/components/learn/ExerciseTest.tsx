@@ -128,14 +128,14 @@ export const ExerciseTest: React.FC = () => {
 
     return (
       <div className="p-8 max-w-4xl mx-auto">
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+        <div className="bg-green-50 border border-green-200 rounded-card p-6 text-center">
           <h2 className="text-2xl font-bold text-green-800 mb-4">🎉 Test Complete!</h2>
           <div className="text-lg text-green-700 mb-4">
             <p>Score: {score}% ({correctAnswers}/{totalQuestions} correct)</p>
           </div>
           <button
             onClick={resetTest}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="px-6 py-3 bg-green-600 text-text-primary dark:text-text-dark-primary rounded-nav hover:bg-green-700 transition-colors"
           >
             Run Test Again
           </button>
@@ -147,7 +147,7 @@ export const ExerciseTest: React.FC = () => {
             {allResults.map((result, index) => (
               <div
                 key={index}
-                className={`p-3 rounded-lg border ${
+                className={`p-3 rounded-nav border ${
                   result.correct ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
                 }`}
               >
@@ -155,7 +155,7 @@ export const ExerciseTest: React.FC = () => {
                   <span className="font-medium">
                     Question {index + 1}: {result.correct ? '✅ Correct' : '❌ Incorrect'}
                   </span>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-text-muted dark:text-text-dark-muted">
                     Your answer: "{result.userAnswer}" | Correct: "{result.correctAnswer}"
                   </span>
                 </div>
@@ -169,7 +169,7 @@ export const ExerciseTest: React.FC = () => {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
+      <div className="bg-blue-50 border border-blue-200 rounded-card p-6 mb-8">
         <h1 className="text-2xl font-bold text-blue-800 mb-2">Exercise Type Test</h1>
         <p className="text-blue-700">
           Testing exercise {currentExerciseIndex + 1} of {testExercises.length}: {testExercises[currentExerciseIndex].title}
@@ -180,10 +180,10 @@ export const ExerciseTest: React.FC = () => {
               key={index}
               className={`px-3 py-1 rounded-full text-sm font-medium ${
                 index === currentExerciseIndex
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary'
                   : index < currentExerciseIndex
                   ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-600 text-white'
+                  : 'bg-gray-600 text-text-primary dark:text-text-dark-primary'
               }`}
             >
               {index + 1}

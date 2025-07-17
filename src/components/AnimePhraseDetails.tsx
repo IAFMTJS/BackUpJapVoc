@@ -47,7 +47,7 @@ const AnimePhraseDetails: React.FC<AnimePhraseDetailsProps> = ({ phrase, onClose
       <span
         key={i}
         className={`text-xl ${
-          i < rating ? 'text-yellow-400' : 'text-gray-300'
+          i < rating ? 'text-yellow-400' : 'text-text-secondary dark:text-text-dark-secondary'
         }`}
       >
         ★
@@ -57,7 +57,7 @@ const AnimePhraseDetails: React.FC<AnimePhraseDetailsProps> = ({ phrase, onClose
 
   const renderDifficultyAspect = (label: string, rating: number) => (
     <div className="flex items-center justify-between mb-2">
-      <span className="text-sm text-gray-600 dark:text-gray-300">{label}</span>
+      <span className="text-sm text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary">{label}</span>
       <div className="flex gap-1">
         {renderDifficultyStars(rating)}
       </div>
@@ -66,19 +66,19 @@ const AnimePhraseDetails: React.FC<AnimePhraseDetailsProps> = ({ phrase, onClose
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-dark-elevated dark:bg-gray-800 rounded-nav shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-border-light dark:border-border-dark dark:border-border-dark-dark-light dark:border-gray-700">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              <h2 className="text-2xl font-bold text-text-primary dark:text-text-dark-primary dark:text-text-primary dark:text-text-dark-primary mb-2">
                 {phrase.japanese}
               </h2>
-              <p className="text-gray-600 dark:text-gray-300">{phrase.romaji}</p>
+              <p className="text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary">{phrase.romaji}</p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="text-text-muted dark:text-text-dark-muted hover:text-text-secondary dark:text-text-dark-secondary dark:text-gray-400 dark:hover:text-text-secondary dark:text-text-dark-secondary"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -88,30 +88,30 @@ const AnimePhraseDetails: React.FC<AnimePhraseDetailsProps> = ({ phrase, onClose
           <div className="mt-4 flex gap-2">
             <button
               onClick={() => setActiveTab('preview')}
-              className={`px-4 py-2 rounded-lg ${
+              className={`px-4 py-2 rounded-nav ${
                 activeTab === 'preview'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary'
+                  : 'bg-gray-100 text-text-secondary dark:text-text-dark-secondary hover:bg-gray-200'
               }`}
             >
               Word List
             </button>
             <button
               onClick={() => setActiveTab('difficulty')}
-              className={`px-4 py-2 rounded-lg ${
+              className={`px-4 py-2 rounded-nav ${
                 activeTab === 'difficulty'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary'
+                  : 'bg-gray-100 text-text-secondary dark:text-text-dark-secondary hover:bg-gray-200'
               }`}
             >
               Difficulty
             </button>
             <button
               onClick={() => setActiveTab('prerequisites')}
-              className={`px-4 py-2 rounded-lg ${
+              className={`px-4 py-2 rounded-nav ${
                 activeTab === 'prerequisites'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-japanese-red text-text-primary dark:text-text-dark-primary'
+                  : 'bg-gray-100 text-text-secondary dark:text-text-dark-secondary hover:bg-gray-200'
               }`}
             >
               Prerequisites
@@ -129,11 +129,11 @@ const AnimePhraseDetails: React.FC<AnimePhraseDetailsProps> = ({ phrase, onClose
                   {(showFullList ? wordList : wordList.slice(0, 5)).map((word, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
+                      className="flex items-center justify-between p-2 bg-light dark:bg-dark dark:bg-gray-700 rounded"
                     >
                       <div>
                         <span className="font-medium">{word.word}</span>
-                        <span className="text-sm text-gray-500 ml-2">{word.meaning}</span>
+                        <span className="text-sm text-text-muted dark:text-text-dark-muted ml-2">{word.meaning}</span>
                       </div>
                       <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
                         {word.difficulty}
@@ -159,7 +159,7 @@ const AnimePhraseDetails: React.FC<AnimePhraseDetailsProps> = ({ phrase, onClose
                 <h3 className="text-lg font-semibold mb-2">Overall Difficulty</h3>
                 <div className="flex items-center gap-2">
                   {renderDifficultyStars(difficultyRating.level)}
-                  <span className="text-sm text-gray-600 dark:text-gray-300 ml-2">
+                  <span className="text-sm text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary ml-2">
                     Level {difficultyRating.level}/5
                   </span>
                 </div>
@@ -181,7 +181,7 @@ const AnimePhraseDetails: React.FC<AnimePhraseDetailsProps> = ({ phrase, onClose
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Required Knowledge</h3>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+                  <ul className="list-disc list-inside space-y-2 text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary">
                     <li>Basic sentence structure (SOV pattern)</li>
                     <li>Common particles (は、が、を、に)</li>
                     <li>Present tense conjugation</li>
@@ -192,21 +192,21 @@ const AnimePhraseDetails: React.FC<AnimePhraseDetailsProps> = ({ phrase, onClose
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Recommended Learning Path</h3>
                   <div className="space-y-2">
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900 rounded-nav">
                       <h4 className="font-medium">Step 1: Basic Grammar</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <p className="text-sm text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary">
                         Complete the basic grammar section to understand sentence structure
                       </p>
                     </div>
-                    <div className="p-3 bg-green-50 dark:bg-green-900 rounded-lg">
+                    <div className="p-3 bg-green-50 dark:bg-green-900 rounded-nav">
                       <h4 className="font-medium">Step 2: Essential Vocabulary</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <p className="text-sm text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary">
                         Learn the core vocabulary needed for this phrase
                       </p>
                     </div>
-                    <div className="p-3 bg-purple-50 dark:bg-purple-900 rounded-lg">
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900 rounded-nav">
                       <h4 className="font-medium">Step 3: Cultural Context</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <p className="text-sm text-text-muted dark:text-text-dark-muted dark:text-text-secondary dark:text-text-dark-secondary">
                         Understand the cultural context and usage of this phrase
                       </p>
                     </div>

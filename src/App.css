@@ -79,51 +79,25 @@ body, html, #root {
   margin-top: 2rem;
 }
 
-.neon-pink {
-  color: #ff3afc;
-  text-shadow:
-    0 0 8px #ff3afc,
-    0 0 24px #ff3afc,
-    0 0 48px #ff3afc;
-  font-weight: bold;
-}
-
-.neon-blue {
-  color: #00f7ff;
-  text-shadow:
-    0 0 8px #00f7ff,
-    0 0 24px #00f7ff,
-    0 0 48px #00f7ff;
-  font-weight: bold;
-}
-
-.neon-btn {
+.btn {
   background: transparent;
-  border: 2.5px solid #ff3afc;
-  color: #ff3afc;
-  padding: 1.5rem 2.5rem;
-  border-radius: 18px;
-  font-size: 2rem;
+  border: 2px solid currentColor;
+  color: inherit;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
   font-family: inherit;
-  text-shadow: 0 0 8px #ff3afc, 0 0 24px #ff3afc;
-  box-shadow: 0 0 16px #ff3afc, 0 0 32px #ff3afc inset;
-  transition: box-shadow 0.2s, border-color 0.2s, color 0.2s;
+  transition: all 0.2s ease;
   cursor: pointer;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
-.neon-btn.blue {
-  border-color: #00f7ff;
-  color: #00f7ff;
-  text-shadow: 0 0 8px #00f7ff, 0 0 24px #00f7ff;
-  box-shadow: 0 0 16px #00f7ff, 0 0 32px #00f7ff inset;
-}
-.neon-btn:hover {
-  box-shadow: 0 0 32px #fff, 0 0 64px #ff3afc;
-  border-color: #fff;
-  color: #fff;
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
 }
 
 @media (max-width: 900px) {

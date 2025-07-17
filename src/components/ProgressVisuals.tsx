@@ -327,13 +327,13 @@ const ProgressVisuals: React.FC = () => {
           '& .MuiTab-root': {
             color: isNeonMode ? 'rgba(0, 247, 255, 0.7)' : undefined,
             '&.Mui-selected': {
-              color: isNeonMode ? '#00f7ff' : undefined,
-              textShadow: isNeonMode ? '0 0 8px #00f7ff' : undefined
+              color: isNeonMode ? '#3b82f6' : undefined,
+              textShadow: isNeonMode ? '0 0 8px #3b82f6' : undefined
             }
           },
           '& .MuiTabs-indicator': {
-            backgroundColor: isNeonMode ? '#00f7ff' : undefined,
-            boxShadow: isNeonMode ? '0 0 8px #00f7ff' : undefined
+            backgroundColor: isNeonMode ? '#3b82f6' : undefined,
+            boxShadow: isNeonMode ? '0 0 8px #3b82f6' : undefined
           }
         }}
       >
@@ -491,8 +491,8 @@ const ProgressVisuals: React.FC = () => {
                       variant="h6" 
                       gutterBottom
                       sx={{
-                        color: isNeonMode ? '#00f7ff' : undefined,
-                        textShadow: isNeonMode ? '0 0 8px #00f7ff' : undefined
+                        color: isNeonMode ? '#3b82f6' : undefined,
+                        textShadow: isNeonMode ? '0 0 8px #3b82f6' : undefined
                       }}
                     >
                       Daily Progress (Last 30 Days)
@@ -506,15 +506,15 @@ const ProgressVisuals: React.FC = () => {
                           />
                           <XAxis 
                             dataKey="date" 
-                            stroke={isNeonMode ? '#00f7ff' : undefined}
+                            stroke={isNeonMode ? '#3b82f6' : undefined}
                           />
                           <YAxis 
-                            stroke={isNeonMode ? '#00f7ff' : undefined}
+                            stroke={isNeonMode ? '#3b82f6' : undefined}
                           />
                           <RechartsTooltip 
                             contentStyle={isNeonMode ? {
                               backgroundColor: 'rgba(10, 10, 35, 0.9)',
-                              border: '1px solid #00f7ff',
+                              border: '1px solid #3b82f6',
                               boxShadow: '0 0 16px rgba(0, 247, 255, 0.2)'
                             } : undefined}
                           />
@@ -522,7 +522,7 @@ const ProgressVisuals: React.FC = () => {
                           <Line 
                             type="monotone" 
                             dataKey="vocabulary" 
-                            stroke={isNeonMode ? '#00f7ff' : '#8884d8'}
+                            stroke={isNeonMode ? '#3b82f6' : '#8884d8'}
                             strokeWidth={isNeonMode ? 2 : 1}
                           />
                           <Line 
@@ -534,7 +534,7 @@ const ProgressVisuals: React.FC = () => {
                           <Line 
                             type="monotone" 
                             dataKey="grammar" 
-                            stroke={isNeonMode ? '#9c00ff' : '#ffc658'}
+                            stroke={isNeonMode ? '#8b5cf6' : '#ffc658'}
                             strokeWidth={isNeonMode ? 2 : 1}
                           />
                         </LineChart>

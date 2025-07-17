@@ -123,7 +123,7 @@ const SettingsPanel: React.FC = () => {
       text: 'text-charcoal-800',
       card: 'bg-ivory-50 hover:bg-sage-50',
       border: 'border-sage-200',
-      input: 'bg-white border-sage-200 text-charcoal-800',
+      input: 'bg-white dark:bg-dark-elevated border-sage-200 text-charcoal-800',
       button: 'bg-sage-600 hover:bg-sage-500 text-ivory-100',
       buttonSecondary: 'bg-charcoal-200 hover:bg-charcoal-300 text-charcoal-800',
     };
@@ -139,12 +139,12 @@ const SettingsPanel: React.FC = () => {
           const newValue = !globalSettings[settingKey as keyof typeof globalSettings];
           updateGlobalSettings({ [settingKey]: newValue });
         }}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-          globalSettings[settingKey as keyof typeof globalSettings] ? 'bg-blue-600' : 'bg-gray-200'
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-japanese-red focus:ring-offset-2 ${
+          globalSettings[settingKey as keyof typeof globalSettings] ? 'bg-japanese-red' : 'bg-gray-200'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-dark-elevated transition-transform ${
             globalSettings[settingKey as keyof typeof globalSettings] ? 'translate-x-6' : 'translate-x-1'
           }`}
         />
@@ -154,14 +154,14 @@ const SettingsPanel: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className={`${themeClasses.container} rounded-2xl shadow-soft p-8`}>
+      <div className={`${themeClasses.container} rounded-card shadow-soft p-8`}>
         <h1 className={`text-3xl font-serif font-medium mb-8 ${themeClasses.text}`}>
           Settings
         </h1>
 
         <div className="space-y-8">
           {/* Profile Settings */}
-          <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
+          <div className={`p-6 rounded-card ${themeClasses.card} shadow-card dark:shadow-dark-card`}>
             <h2 className={`text-xl font-serif font-medium mb-4 ${themeClasses.text}`}>
               Profile Settings
             </h2>
@@ -174,7 +174,7 @@ const SettingsPanel: React.FC = () => {
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                  className={`w-full px-4 py-2 rounded-nav border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
                   disabled={isSaving}
                 />
               </div>
@@ -186,7 +186,7 @@ const SettingsPanel: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                  className={`w-full px-4 py-2 rounded-nav border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
                   disabled={isSaving}
                 />
               </div>
@@ -194,7 +194,7 @@ const SettingsPanel: React.FC = () => {
           </div>
 
           {/* Practice Settings */}
-          <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
+          <div className={`p-6 rounded-card ${themeClasses.card} shadow-card dark:shadow-dark-card`}>
             <h2 className={`text-xl font-serif font-medium mb-4 ${themeClasses.text}`}>
               Practice Settings
             </h2>
@@ -208,7 +208,7 @@ const SettingsPanel: React.FC = () => {
                   value={dailyGoal}
                   onChange={(e) => setDailyGoal(Number(e.target.value))}
                   min="1"
-                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                  className={`w-full px-4 py-2 rounded-nav border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
                 />
               </div>
               <div>
@@ -218,7 +218,7 @@ const SettingsPanel: React.FC = () => {
                 <select
                   value={practiceMode}
                   onChange={(e) => setPracticeMode(e.target.value as 'word' | 'sentence')}
-                  className={`w-full px-4 py-2 rounded-lg border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
+                  className={`w-full px-4 py-2 rounded-nav border ${themeClasses.input} focus:ring-2 focus:ring-sage-500 focus:border-transparent`}
                 >
                   <option value="word">Word Practice</option>
                   <option value="sentence">Sentence Practice</option>
@@ -228,7 +228,7 @@ const SettingsPanel: React.FC = () => {
           </div>
 
           {/* Notification Settings */}
-          <div className={`p-6 rounded-xl ${themeClasses.card} shadow-card`}>
+          <div className={`p-6 rounded-card ${themeClasses.card} shadow-card dark:shadow-dark-card`}>
             <h2 className={`text-xl font-serif font-medium mb-4 ${themeClasses.text}`}>
               Notification Settings
             </h2>
@@ -239,7 +239,7 @@ const SettingsPanel: React.FC = () => {
                 </label>
                 <button
                   onClick={() => setDailyReminders(!dailyReminders)}
-                  className={`px-4 py-2 rounded-lg ${dailyReminders ? themeClasses.button : themeClasses.buttonSecondary}`}
+                  className={`px-4 py-2 rounded-nav ${dailyReminders ? themeClasses.button : themeClasses.buttonSecondary}`}
                 >
                   {dailyReminders ? 'Enabled' : 'Disabled'}
                 </button>
@@ -250,7 +250,7 @@ const SettingsPanel: React.FC = () => {
                 </label>
                 <button
                   onClick={() => setProgressUpdates(!progressUpdates)}
-                  className={`px-4 py-2 rounded-lg ${progressUpdates ? themeClasses.button : themeClasses.buttonSecondary}`}
+                  className={`px-4 py-2 rounded-nav ${progressUpdates ? themeClasses.button : themeClasses.buttonSecondary}`}
                 >
                   {progressUpdates ? 'Enabled' : 'Disabled'}
                 </button>
@@ -263,7 +263,7 @@ const SettingsPanel: React.FC = () => {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-2 rounded-nav font-medium transition-colors ${
                 isSaving 
                   ? 'bg-gray-400 cursor-not-allowed' 
                   : themeClasses.button

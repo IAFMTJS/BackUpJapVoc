@@ -80,8 +80,8 @@ const SpeechButton: React.FC<SpeechButtonProps> = ({
       disabled={isListening}
       className={`p-2 rounded-full ${
         isListening 
-          ? 'bg-red-500 text-white animate-pulse' 
-          : 'bg-blue-500 text-white hover:bg-blue-600'
+          ? 'bg-status-error text-text-primary dark:text-text-dark-primary animate-pulse' 
+          : 'bg-japanese-red text-text-primary dark:text-text-dark-primary hover:bg-japanese-red'
       }`}
       title={isListening ? 'Listening...' : 'Click to speak'}
     >
