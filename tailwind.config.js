@@ -14,8 +14,14 @@ module.exports = {
           secondary: '#F5F0E8',  // Slightly darker beige for cards
           tertiary: '#F0E8D8',   // Even darker for hover states
         },
-        // Voeg top-level border kleur toe voor Tailwind utility class
-        border: '#E0E0E0', // Standaard border kleur (alias voor border.light)
+        // Border colors as top-level for Tailwind utility support
+        'border-light': '#E0E0E0',      // Light gray borders
+        'border-medium': '#D0D0D0',     // Medium gray borders
+        'border-dark': '#B0B0B0',       // Dark gray borders
+        'border-accent': '#D45A38',     // Japanese red borders
+        'border-dark-light': '#3A3B42',      // Dark gray borders
+        'border-dark-medium': '#4A4B52',     // Medium dark gray borders
+        'border-dark-dark': '#5A5B62',       // Lighter dark gray borders
         // Dark theme colors - Japanese Learning Platform
         dark: {
           DEFAULT: '#1B1C22',    // Deep, warm night blue/black
@@ -34,11 +40,20 @@ module.exports = {
           'dark-secondary': '#EAEAEA',  // Slightly darker for secondary text
           'dark-muted': '#B0B0B0',      // Muted gray for less important text
         },
-        // Japanese Cultural Colors
+        // Japanese Cultural Colors - Extended Palette
         japanese: {
           red: '#D45A38',        // Japanese red for primary actions
           redLight: '#E67A5A',   // Lighter red for hover states
           redDark: '#B84A28',    // Darker red for active states
+          // Extended Japanese color palette
+          pink: '#FF69B4',       // Sakura pink
+          green: '#4CAF50',      // Matcha green
+          blue: '#2196F3',       // Indigo blue
+          orange: '#FF9800',     // Autumn orange
+          purple: '#9C27B0',     // Wisteria purple
+          yellow: '#FFD700',     // Golden yellow
+          earth: '#8B7355',      // Earth brown
+          'earth-dark': '#6B5A45', // Darker earth brown
           // Torii gate colors
           toriiRed: '#C44536',   // Traditional torii red
           toriiBrown: '#8B4513', // Wooden brown
@@ -71,17 +86,6 @@ module.exports = {
           warning: '#FF9800',    // Orange for warnings
           error: '#F44336',      // Red for errors
           info: '#2196F3',       // Blue for info
-        },
-        // Border Colors
-        border: {
-          light: '#E0E0E0',      // Light gray borders
-          medium: '#D0D0D0',     // Medium gray borders
-          dark: '#B0B0B0',       // Dark gray borders
-          accent: '#D45A38',     // Japanese red borders
-          // Dark theme borders
-          'dark-light': '#3A3B42',      // Dark gray borders
-          'dark-medium': '#4A4B52',     // Medium dark gray borders
-          'dark-dark': '#5A5B62',       // Lighter dark gray borders
         },
         // Theme colors (dark/light only)
         'midnight': '#0d0d1a',

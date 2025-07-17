@@ -1,53 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  TextField,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  Stack,
-  IconButton,
-  Tooltip,
-  Paper,
-  Tabs,
-  Tab,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  CircularProgress,
-  Alert,
-  useTheme,
-  useMediaQuery,
-  Collapse,
-  Button,
-  LinearProgress
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  FilterList as FilterListIcon,
-  VolumeUp as VolumeUpIcon,
-  Favorite as FavoriteIcon,
-  FavoriteBorder as FavoriteBorderIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  School as SchoolIcon,
-  Category as CategoryIcon,
-  Star as StarIcon,
-  CheckCircle as CheckCircleIcon,
-  CheckCircleOutline as CheckCircleOutlineIcon
-} from '@mui/icons-material';
-import { openDB } from 'idb';
-import { DictionaryItem } from '../types/dictionary';
-import { useTheme as useAppTheme } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { playAudio } from '../utils/audio';
 import { getDatabase, getAllFromStore, forceDatabaseReset } from '../utils/databaseConfig';
 import { JapVocDB } from '../types/database';
 import safeLocalStorage from '../utils/safeLocalStorage';
 import { importDictionaryData } from '../utils/importDictionaryData';
+import { DictionaryItem } from '../types/dictionary';
+import HybridMascots from '../components/ui/HybridMascots';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,15 +15,15 @@ interface TabPanelProps {
 }
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
-  <Box
+  <div
     role="tabpanel"
     hidden={value !== index}
     id={`dictionary-tabpanel-${index}`}
     aria-labelledby={`dictionary-tab-${index}`}
-    sx={{ py: 3 }}
+    className="py-6"
   >
     {value === index && children}
-  </Box>
+  </div>
 );
 
 const WordCard: React.FC<{ 
@@ -72,9 +31,9 @@ const WordCard: React.FC<{
   onMarkAsRead: (wordId: string) => void;
   isRead: boolean;
 }> = ({ word, onMarkAsRead, isRead }) => {
+  const { theme } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const theme = useTheme();
 
   const handlePlayAudio = async () => {
     try {
@@ -94,408 +53,504 @@ const WordCard: React.FC<{
   };
 
   return (
-    <Card 
-      elevation={2}
-      sx={{ 
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'transform 0.2s ease-in-out',
-        '&:hover': {
-          transform: 'translateY(-4px)'
-        },
-        position: 'relative',
-        ...(isRead && {
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '8px',
-            height: '100%',
-            backgroundColor: theme.palette.success.main,
-            borderTopRightRadius: '4px',
-            borderBottomRightRadius: '4px'
-          }
-        })
-      }}
-    >
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box>
-            <Typography variant="h5" component="div" gutterBottom>
+    <div className={`p-6 rounded-2xl transition-all duration-300 hover:shadow-lg hover:-translate-y-2 ${
+      theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'
+    } ${isRead ? 'ring-2 ring-japanese-green/50' : ''}`}>
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className={`text-2xl font-bold ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
               {word.japanese}
-              {word.kanji && word.kanji !== word.japanese && (
-                <Typography 
-                  component="span" 
-                  variant="subtitle1" 
-                  color="text.secondary"
-                  sx={{ ml: 1 }}
-                >
-                  ({word.kanji})
-                </Typography>
-              )}
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-              {word.romaji}
-            </Typography>
-          </Box>
-          <Box>
-            <Tooltip title="Play pronunciation">
-              <IconButton onClick={handlePlayAudio} size="small">
-                <VolumeUpIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
-              <IconButton onClick={toggleFavorite} size="small">
-                {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={isRead ? "Mark as unread" : "Mark as read"}>
-              <IconButton 
-                onClick={handleMarkAsRead} 
-                size="small"
-                color={isRead ? "success" : "default"}
-              >
-                {isRead ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
+            </h3>
+            {word.kanji && word.kanji !== word.japanese && (
+              <span className={`text-lg ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                ({word.kanji})
+              </span>
+            )}
+          </div>
+          <div className={`text-lg mb-2 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+            {word.romaji}
+          </div>
+          <div className={`text-base mb-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+            {word.english}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handlePlayAudio}
+            className={`p-2 rounded-full transition-colors duration-200 ${
+              theme === 'dark' ? 'bg-gray-700 hover:bg-japanese-red hover:text-white' : 'bg-gray-100 hover:bg-japanese-red hover:text-white'
+            }`}
+            title="Play pronunciation"
+          >
+            🔊
+          </button>
+          <button
+            onClick={toggleFavorite}
+            className={`p-2 rounded-full transition-colors duration-200 ${
+              theme === 'dark' ? 'bg-gray-700 hover:bg-japanese-red hover:text-white' : 'bg-gray-100 hover:bg-japanese-red hover:text-white'
+            } ${isFavorite ? 'text-japanese-red' : ''}`}
+            title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          >
+            {isFavorite ? '❤️' : '🤍'}
+          </button>
+          <button
+            onClick={handleMarkAsRead}
+            className={`p-2 rounded-full transition-colors duration-200 ${
+              theme === 'dark' ? 'bg-gray-700 hover:bg-japanese-green hover:text-white' : 'bg-gray-100 hover:bg-japanese-green hover:text-white'
+            } ${isRead ? 'text-japanese-green' : ''}`}
+            title={isRead ? "Mark as unread" : "Mark as read"}
+          >
+            {isRead ? '✅' : '⭕'}
+          </button>
+        </div>
+      </div>
 
-        <Typography variant="body1" gutterBottom>
-          {word.english}
-        </Typography>
+      <div className="flex gap-2 mb-4">
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          theme === 'dark' ? 'bg-japanese-blue/20 text-japanese-blue' : 'bg-japanese-blue/10 text-japanese-blue'
+        }`}>
+          📂 {word.category || 'other'}
+        </span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          theme === 'dark' ? 'bg-japanese-purple/20 text-japanese-purple' : 'bg-japanese-purple/10 text-japanese-purple'
+        }`}>
+          ⭐ {getDifficultyFromLevel(word.level)}
+        </span>
+      </div>
 
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-          <Chip 
-            icon={<CategoryIcon />} 
-            label={word.category || 'other'} 
-            size="small" 
-            color="primary" 
-            variant="outlined" 
-          />
-          <Chip 
-            icon={<StarIcon />} 
-            label={getDifficultyFromLevel(word.level)} 
-            size="small" 
-            color="info" 
-            variant="outlined" 
-          />
-        </Stack>
-
-        {word.examples && word.examples.length > 0 && (
-          <Box>
-            <Button
-              endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              onClick={() => setIsExpanded(!isExpanded)}
-              size="small"
-              sx={{ mb: 1 }}
-            >
-              {isExpanded ? 'Hide Examples' : 'Show Examples'}
-            </Button>
-            <Collapse in={isExpanded}>
-              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
-                {word.examples.map((example, index) => (
-                  <Box key={index} sx={{ mb: index < word.examples.length - 1 ? 2 : 0 }}>
-                    <Typography variant="body2" gutterBottom>
-                      {example.japanese}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {example.romaji}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {example.english}
-                    </Typography>
-                  </Box>
-                ))}
-              </Paper>
-            </Collapse>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
+      {word.examples && word.examples.length > 0 && (
+        <div>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`px-3 py-1 rounded-nav text-sm font-medium transition-colors duration-200 mb-2 ${
+              theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            {isExpanded ? 'Hide Examples' : 'Show Examples'}
+            <span className="ml-2">{isExpanded ? '▼' : '▶'}</span>
+          </button>
+          {isExpanded && (
+            <div className={`p-4 rounded-nav ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
+              {word.examples.map((example, index) => (
+                <div key={index} className={`mb-2 ${index < word.examples.length - 1 ? 'border-b border-gray-300 dark:border-gray-600 pb-2' : ''}`}>
+                  <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                    {example}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
-// Add database check function
 const isDictionaryInitialized = async (): Promise<boolean> => {
   try {
-    const db = await openDB('DictionaryDB', 3);
-    const tx = db.transaction('words', 'readonly');
-    const store = tx.objectStore('words');
-    const count = await store.count();
-    return count > 0;
+    const db = await getDatabase();
+    const words = await getAllFromStore(db, 'dictionary');
+    return words.length > 0;
   } catch (error) {
     console.error('Error checking dictionary initialization:', error);
     return false;
   }
 };
 
-// Helper function to map level to difficulty
 const getDifficultyFromLevel = (level: number): string => {
-  if (level <= 3) return 'beginner';
-  if (level <= 6) return 'intermediate';
-  return 'advanced';
+  if (level <= 1) return 'Beginner';
+  if (level <= 3) return 'Intermediate';
+  if (level <= 5) return 'Advanced';
+  return 'Expert';
 };
 
 const Dictionary: React.FC = () => {
+  const { theme, getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
+  const [words, setWords] = useState<DictionaryItem[]>([]);
+  const [filteredWords, setFilteredWords] = useState<DictionaryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTab, setSelectedTab] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
-  const [words, setWords] = useState<DictionaryItem[]>([]);
+  const [selectedTab, setSelectedTab] = useState(0);
   const [readWords, setReadWords] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { getThemeClasses } = useAppTheme();
-  const themeClasses = getThemeClasses();
+  const [showReadOnly, setShowReadOnly] = useState(false);
 
+  // Load words from database
   useEffect(() => {
     const loadWords = async () => {
       try {
-        setIsLoading(true);
+        setLoading(true);
         setError(null);
 
-        // Force database reset if needed
-        await forceDatabaseReset();
-        
-        // Initialize database and import data if needed
+        // Check if dictionary is initialized
         const isInitialized = await isDictionaryInitialized();
+        
         if (!isInitialized) {
           console.log('Dictionary not initialized, importing data...');
-          const result = await importDictionaryData();
-          if (!result.success) {
-            throw new Error(result.error || 'Failed to import dictionary data');
-          }
-          console.log(`Successfully imported ${result.count} words`);
+          await importDictionaryData();
         }
 
-        // Get database instance and load words
+        // Load words from database
         const db = await getDatabase();
-        const wordList = await getAllFromStore<DictionaryItem>(db, 'words');
+        const loadedWords = await getAllFromStore(db, 'dictionary') as DictionaryItem[];
         
-        if (!wordList || wordList.length === 0) {
-          throw new Error('No words found in database');
-        }
-        
-        setWords(wordList);
-        console.log(`Successfully loaded ${wordList.length} words`);
-        
+        // Sort words by level and then by japanese
+        const sortedWords = loadedWords.sort((a, b) => {
+          if (a.level !== b.level) {
+            return a.level - b.level;
+          }
+          return a.japanese.localeCompare(b.japanese);
+        });
+
+        setWords(sortedWords);
+        setFilteredWords(sortedWords);
+
         // Load read words from localStorage
         const savedReadWords = safeLocalStorage.getItem('readWords');
         if (savedReadWords) {
-          setReadWords(new Set(JSON.parse(savedReadWords)));
+          try {
+            const readWordsArray = JSON.parse(savedReadWords);
+            setReadWords(new Set(readWordsArray));
+          } catch (error) {
+            console.error('Error parsing read words:', error);
+          }
         }
-      } catch (err) {
-        console.error('Error loading words:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load dictionary words');
+
+      } catch (error) {
+        console.error('Error loading dictionary:', error);
+        setError('Failed to load dictionary. Please try refreshing the page.');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     loadWords();
   }, []);
 
-  // Save read words to localStorage
+  // Filter words based on search and filters
   useEffect(() => {
-    try {
-      safeLocalStorage.setItem('readWords', JSON.stringify(Array.from(readWords)));
-    } catch (error) {
-      console.error('Error saving read words:', error);
+    let filtered = words;
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(word =>
+        word.japanese.toLowerCase().includes(searchLower) ||
+        word.romaji.toLowerCase().includes(searchLower) ||
+        word.english.toLowerCase().includes(searchLower) ||
+        (word.kanji && word.kanji.toLowerCase().includes(searchLower))
+      );
     }
-  }, [readWords]);
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(word => word.category === selectedCategory);
+    }
+
+    // Filter by difficulty
+    if (selectedDifficulty !== 'all') {
+      filtered = filtered.filter(word => {
+        const difficulty = getDifficultyFromLevel(word.level);
+        return difficulty.toLowerCase() === selectedDifficulty.toLowerCase();
+      });
+    }
+
+    // Filter by read status
+    if (showReadOnly) {
+      filtered = filtered.filter(word => readWords.has(word.id));
+    }
+
+    setFilteredWords(filtered);
+  }, [words, searchTerm, selectedCategory, selectedDifficulty, showReadOnly, readWords]);
 
   const handleMarkAsRead = (wordId: string) => {
-    setReadWords(prev => {
-      const newReadWords = new Set(prev);
-      if (newReadWords.has(wordId)) {
-        newReadWords.delete(wordId);
-      } else {
-        newReadWords.add(wordId);
-      }
-      return newReadWords;
-    });
+    const newReadWords = new Set(readWords);
+    if (newReadWords.has(wordId)) {
+      newReadWords.delete(wordId);
+    } else {
+      newReadWords.add(wordId);
+    }
+    setReadWords(newReadWords);
+    
+    // Save to localStorage
+    safeLocalStorage.setItem('readWords', JSON.stringify(Array.from(newReadWords)));
   };
 
-  const filteredWords = useMemo(() => {
-    return words.filter(word => {
-      const matchesSearch = 
-        word.japanese.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        word.english.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        word.romaji.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = selectedCategory === 'all' || word.category === selectedCategory;
-      const matchesDifficulty = selectedDifficulty === 'all' || getDifficultyFromLevel(word.level) === selectedDifficulty;
-
-      return matchesSearch && matchesCategory && matchesDifficulty;
-    });
-  }, [words, searchTerm, selectedCategory, selectedDifficulty]);
-
-  const categories = useMemo(() => {
-    const uniqueCategories = new Set(words.map(word => word.category || 'other'));
-    return Array.from(uniqueCategories).sort();
-  }, [words]);
-
-  const progress = useMemo(() => {
-    if (words.length === 0) return 0;
-    return (readWords.size / words.length) * 100;
-  }, [words.length, readWords.size]);
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (newValue: number) => {
     setSelectedTab(newValue);
   };
 
-  if (isLoading) {
+  const categories = useMemo(() => {
+    const cats = new Set(words.map(word => word.category).filter(Boolean));
+    return Array.from(cats).sort();
+  }, [words]);
+
+  const difficulties = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
+
+  if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <CircularProgress />
-      </Box>
+      <div className={`min-h-screen flex flex-col items-center justify-center ${theme === 'dark' ? 'bg-dark text-text-dark-primary' : 'bg-light text-text-primary'}`}>
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-japanese-red"></div>
+        <h2 className={`text-xl mt-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+          Loading dictionary...
+        </h2>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        {error}
-      </Alert>
+      <div className={`min-h-screen ${theme === 'dark' ? 'bg-dark text-text-dark-primary' : 'bg-light text-text-primary'}`}>
+        <div className="container mx-auto px-4 py-8">
+          <div className={`p-4 rounded-2xl ${theme === 'dark' ? 'bg-japanese-red/10 border border-japanese-red/20' : 'bg-japanese-red/5 border border-japanese-red/20'}`}>
+            <div className={`font-semibold text-japanese-red mb-2`}>
+              ❌ Error
+            </div>
+            <p className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+              {error}
+            </p>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Hero Section */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 3, md: 6 },
-          mb: 6,
-          borderRadius: 4,
-          background: 'linear-gradient(45deg, #1a237e 30%, #283593 90%)',
-          color: 'white'
-        }}
-      >
-        <Typography
-          variant="h3"
-          component="h1"
-          gutterBottom
-          sx={{
-            fontWeight: 'bold',
-            textAlign: 'center',
-            mb: 2
-          }}
-        >
-          Japanese Dictionary
-        </Typography>
-        <Typography
-          variant="h6"
-          sx={{
-            textAlign: 'center',
-            opacity: 0.9,
-            maxWidth: '800px',
-            mx: 'auto',
-            mb: 2
-          }}
-        >
-          Search and explore Japanese words with detailed meanings, examples, and audio pronunciation.
-        </Typography>
-        <Box sx={{ maxWidth: '600px', mx: 'auto', mt: 3 }}>
-          <Typography variant="body2" sx={{ mb: 1, textAlign: 'center' }}>
-            Progress: {Math.round(progress)}% ({readWords.size} of {words.length} words)
-          </Typography>
-          <LinearProgress 
-            variant="determinate" 
-            value={progress} 
-            sx={{ 
-              height: 8, 
-              borderRadius: 4,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              '& .MuiLinearProgress-bar': {
-                backgroundColor: 'white'
-              }
-            }} 
-          />
-        </Box>
-      </Paper>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-dark text-text-dark-primary' : 'bg-light text-text-primary'}`}>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header with Mascot */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between">
+            <div className="flex-1">
+              <h1 className={`text-4xl font-bold mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Japanese Dictionary
+              </h1>
+              <p className={`text-lg ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Explore and learn Japanese vocabulary
+              </p>
+            </div>
+            <div className="mt-4 lg:mt-0 lg:ml-8">
+              <HybridMascots
+                type="emotions"
+                size="large"
+                progress={(readWords.size / words.length) * 100}
+                performance={(readWords.size / words.length) >= 0.8 ? 'excellent' : (readWords.size / words.length) >= 0.6 ? 'good' : (readWords.size / words.length) >= 0.4 ? 'average' : (readWords.size / words.length) >= 0.2 ? 'poor' : 'terrible'}
+                context="study"
+                mood={readWords.size > 0 ? 'positive' : 'neutral'}
+              />
+            </div>
+          </div>
+        </div>
 
-      {/* Search and Filters */}
-      <Box sx={{ mb: 4 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Search words, readings, or meanings..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Stack direction="row" spacing={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={selectedCategory}
-                  label="Category"
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  <MenuItem value="all">All Categories</MenuItem>
-                  {categories.map((category) => (
-                    <MenuItem key={category} value={category}>
-                      {category}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl fullWidth size="small">
-                <InputLabel>Difficulty</InputLabel>
-                <Select
-                  value={selectedDifficulty}
-                  label="Difficulty"
-                  onChange={(e) => setSelectedDifficulty(e.target.value)}
-                >
-                  <MenuItem value="all">All Levels</MenuItem>
-                  <MenuItem value="beginner">Beginner</MenuItem>
-                  <MenuItem value="intermediate">Intermediate</MenuItem>
-                  <MenuItem value="advanced">Advanced</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
-          </Grid>
-        </Grid>
-      </Box>
+        {/* Stats */}
+        <div className={`p-6 rounded-2xl mb-8 ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className={`text-3xl font-bold text-japanese-red ${theme === 'dark' ? 'text-japanese-red' : 'text-japanese-red'}`}>
+                {words.length}
+              </div>
+              <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Total Words
+              </div>
+            </div>
+            <div className="text-center">
+              <div className={`text-3xl font-bold text-japanese-green ${theme === 'dark' ? 'text-japanese-green' : 'text-japanese-green'}`}>
+                {readWords.size}
+              </div>
+              <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Read Words
+              </div>
+            </div>
+            <div className="text-center">
+              <div className={`text-3xl font-bold text-japanese-blue ${theme === 'dark' ? 'text-japanese-blue' : 'text-japanese-blue'}`}>
+                {categories.length}
+              </div>
+              <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Categories
+              </div>
+            </div>
+            <div className="text-center">
+              <div className={`text-3xl font-bold text-japanese-purple ${theme === 'dark' ? 'text-japanese-purple' : 'text-japanese-purple'}`}>
+                {filteredWords.length}
+              </div>
+              <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Filtered
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {/* Results */}
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          {filteredWords.length} words found
-        </Typography>
-        <Grid container spacing={3}>
-          {filteredWords.map((word) => (
-            <Grid item xs={12} sm={6} md={4} key={word.id}>
-              <WordCard 
-                word={word} 
+        {/* Filters */}
+        <div className={`p-6 rounded-2xl mb-8 ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {/* Search */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Search Words
+              </label>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search Japanese, Romaji, or English..."
+                className={`w-full px-4 py-2 rounded-nav border transition-colors duration-200 ${
+                  theme === 'dark' 
+                    ? 'bg-dark border-border-dark-light text-text-dark-primary placeholder-text-dark-secondary focus:border-japanese-red' 
+                    : 'bg-light border-border-light text-text-primary placeholder-text-secondary focus:border-japanese-red'
+                }`}
+              />
+            </div>
+
+            {/* Category Filter */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className={`w-full px-4 py-2 rounded-nav border transition-colors duration-200 ${
+                  theme === 'dark' 
+                    ? 'bg-dark border-border-dark-light text-text-dark-primary focus:border-japanese-red' 
+                    : 'bg-light border-border-light text-text-primary focus:border-japanese-red'
+                }`}
+              >
+                <option value="all">All Categories</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Difficulty Filter */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Difficulty
+              </label>
+              <select
+                value={selectedDifficulty}
+                onChange={(e) => setSelectedDifficulty(e.target.value)}
+                className={`w-full px-4 py-2 rounded-nav border transition-colors duration-200 ${
+                  theme === 'dark' 
+                    ? 'bg-dark border-border-dark-light text-text-dark-primary focus:border-japanese-red' 
+                    : 'bg-light border-border-light text-text-primary focus:border-japanese-red'
+                }`}
+              >
+                <option value="all">All Difficulties</option>
+                {difficulties.map(difficulty => (
+                  <option key={difficulty} value={difficulty}>{difficulty}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Read Filter */}
+            <div className="flex items-end">
+              <button
+                onClick={() => setShowReadOnly(!showReadOnly)}
+                className={`px-4 py-2 rounded-nav font-semibold transition-colors duration-300 ${
+                  showReadOnly
+                    ? 'bg-japanese-green text-white'
+                    : theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+              >
+                {showReadOnly ? 'Show All' : 'Show Read Only'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-nav p-1">
+            {[
+              { label: 'All Words', icon: '📚' },
+              { label: 'Beginner', icon: '🌱' },
+              { label: 'Intermediate', icon: '🌿' },
+              { label: 'Advanced', icon: '🌳' }
+            ].map((tab, index) => (
+              <button
+                key={tab.label}
+                onClick={() => handleTabChange(index)}
+                className={`flex-1 px-4 py-2 rounded-nav text-sm font-medium transition-colors duration-200 ${
+                  selectedTab === index
+                    ? 'bg-japanese-red text-white'
+                    : `${theme === 'dark' ? 'text-text-dark-secondary hover:text-text-dark-primary' : 'text-text-secondary hover:text-text-primary'}`
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <TabPanel value={selectedTab} index={0}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredWords.map((word) => (
+              <WordCard
+                key={word.id}
+                word={word}
                 onMarkAsRead={handleMarkAsRead}
                 isRead={readWords.has(word.id)}
               />
-            </Grid>
-          ))}
-        </Grid>
+            ))}
+          </div>
+        </TabPanel>
+
+        <TabPanel value={selectedTab} index={1}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredWords.filter(word => getDifficultyFromLevel(word.level) === 'Beginner').map((word) => (
+              <WordCard
+                key={word.id}
+                word={word}
+                onMarkAsRead={handleMarkAsRead}
+                isRead={readWords.has(word.id)}
+              />
+            ))}
+          </div>
+        </TabPanel>
+
+        <TabPanel value={selectedTab} index={2}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredWords.filter(word => getDifficultyFromLevel(word.level) === 'Intermediate').map((word) => (
+              <WordCard
+                key={word.id}
+                word={word}
+                onMarkAsRead={handleMarkAsRead}
+                isRead={readWords.has(word.id)}
+              />
+            ))}
+          </div>
+        </TabPanel>
+
+        <TabPanel value={selectedTab} index={3}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredWords.filter(word => getDifficultyFromLevel(word.level) === 'Advanced').map((word) => (
+              <WordCard
+                key={word.id}
+                word={word}
+                onMarkAsRead={handleMarkAsRead}
+                isRead={readWords.has(word.id)}
+              />
+            ))}
+          </div>
+        </TabPanel>
+
+        {/* Empty State */}
         {filteredWords.length === 0 && (
-          <Paper sx={{ p: 4, textAlign: 'center' }}>
-            <Typography variant="body1" color="text.secondary">
-              No words found matching your search criteria.
-            </Typography>
-          </Paper>
+          <div className={`text-center py-12 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+            <div className="text-6xl mb-4">📖</div>
+            <h3 className="text-xl font-semibold mb-2">No words found</h3>
+            <p>Try adjusting your search or filter criteria</p>
+          </div>
         )}
-      </Box>
-    </Container>
+      </div>
+    </div>
   );
 };
 

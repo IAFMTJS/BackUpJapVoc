@@ -101,10 +101,32 @@ if (!rootElement) {
 // Use React 18 createRoot API
 const root = ReactDOM.createRoot(rootElement);
 
-// Temporarily render just the App component for testing
+// Render the app with all necessary providers
 root.render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppProvider>
+            <ProgressProvider>
+              <SettingsProvider>
+                <AccessibilityProvider>
+                  <WordProvider>
+                    <WordLevelProvider>
+                      <LearningProvider>
+                        <AchievementProvider>
+                          <App />
+                        </AchievementProvider>
+                      </LearningProvider>
+                    </WordLevelProvider>
+                  </WordProvider>
+                </AccessibilityProvider>
+              </SettingsProvider>
+            </ProgressProvider>
+          </AppProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
 

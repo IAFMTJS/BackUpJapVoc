@@ -24,13 +24,13 @@
       "type": "image/png"
     },
     {
-      "src": "icons/icon-192x192.png",
+      "src": "icons/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512x512.png",
+      "src": "icons/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -46,22 +46,6 @@
     "language",
     "productivity"
   ],
-  "screenshots": [
-    {
-      "src": "screenshot1.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "platform": "wide",
-      "label": "Dictionary View"
-    },
-    {
-      "src": "screenshot2.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "platform": "wide",
-      "label": "Learning Interface"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Dictionary",
@@ -70,7 +54,7 @@
       "url": "/knowing/dictionary",
       "icons": [
         {
-          "src": "icons/icon-192x192.png",
+          "src": "icons/android-chrome-192x192.png",
           "sizes": "192x192"
         }
       ]
@@ -82,7 +66,7 @@
       "url": "/srs",
       "icons": [
         {
-          "src": "icons/icon-192x192.png",
+          "src": "icons/android-chrome-192x192.png",
           "sizes": "192x192"
         }
       ]

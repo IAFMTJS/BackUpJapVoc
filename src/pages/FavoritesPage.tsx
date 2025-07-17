@@ -1,30 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-  Container,
-  Typography,
-  Grid,
-  TextField,
-  Box,
-  Card,
-  CardContent,
-  IconButton,
-  Chip,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  SelectChangeEvent,
-  Tabs,
-  Tab,
-  Paper,
-} from '@mui/material';
-import {
-  Star as StarIcon,
-  StarBorder as StarBorderIcon,
-  VolumeUp as VolumeUpIcon,
-  Sort as SortIcon,
-  FilterList as FilterListIcon,
-} from '@mui/icons-material';
+import { useTheme } from '../context/ThemeContext';
 import { useProgress } from '../context/ProgressContext';
 import { SimpleDictionaryItem } from '../types/dictionary';
 
@@ -45,12 +20,14 @@ const TabPanel = (props: TabPanelProps) => {
       aria-labelledby={`favorites-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <div className="py-6">{children}</div>}
     </div>
   );
 };
 
 const FavoritesPage: React.FC = () => {
+  const { theme, getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
   const { progress, toggleFavorite } = useProgress();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('recent');
@@ -95,15 +72,15 @@ const FavoritesPage: React.FC = () => {
     });
   }, [filteredWords, sortBy]);
 
-  const handleSortChange = (event: SelectChangeEvent) => {
+  const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSortBy(event.target.value);
   };
 
-  const handleFilterChange = (event: SelectChangeEvent) => {
+  const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterLevel(event.target.value);
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (newValue: number) => {
     setTabValue(newValue);
   };
 
@@ -113,184 +90,259 @@ const FavoritesPage: React.FC = () => {
   };
 
   const WordCard: React.FC<{ word: SimpleDictionaryItem }> = ({ word }) => (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Typography variant="h6" component="div">
-            {word.japanese}
-          </Typography>
-          <IconButton
-            onClick={() => toggleFavorite(word.id)}
-            color="primary"
-            size="small"
-          >
-            <StarIcon />
-          </IconButton>
-        </Box>
-        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-          {word.romaji}
-        </Typography>
-        <Typography variant="body1" paragraph>
-          {word.english}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
-          {word.level && (
-            <Chip
-              label={`Level: ${word.level}`}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          )}
-          {word.category && (
-            <Chip
-              label={word.category}
-              size="small"
-              color="secondary"
-              variant="outlined"
-            />
-          )}
-          {word.jlptLevel && (
-            <Chip
-              label={`JLPT ${word.jlptLevel}`}
-              size="small"
-              color="info"
-              variant="outlined"
-            />
-          )}
-        </Box>
-        {word.examples && word.examples.length > 0 && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Example:
-            </Typography>
-            <Typography variant="body2">
-              {word.examples[0].japanese} - {word.examples[0].english}
-            </Typography>
-          </Box>
+    <div className={`p-6 rounded-2xl transition-all duration-300 hover:shadow-lg hover:-translate-y-2 ${
+      theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'
+    }`}>
+      <div className="flex justify-between items-start mb-4">
+        <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+          {word.japanese}
+        </h3>
+        <button
+          onClick={() => toggleFavorite(word.id)}
+          className={`p-2 rounded-full transition-colors duration-200 ${
+            theme === 'dark' ? 'bg-gray-700 hover:bg-japanese-red hover:text-white' : 'bg-gray-100 hover:bg-japanese-red hover:text-white'
+          } text-japanese-red`}
+        >
+          ⭐
+        </button>
+      </div>
+      <div className={`text-lg mb-2 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+        {word.romaji}
+      </div>
+      <div className={`text-base mb-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+        {word.english}
+      </div>
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {word.level && (
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            theme === 'dark' ? 'bg-japanese-red/20 text-japanese-red' : 'bg-japanese-red/10 text-japanese-red'
+          }`}>
+            Level: {word.level}
+          </span>
         )}
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-          <IconButton
-            onClick={() => playAudio(word)}
-            size="small"
-            color="primary"
-          >
-            <VolumeUpIcon />
-          </IconButton>
-        </Box>
-      </CardContent>
-    </Card>
+        {word.category && (
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            theme === 'dark' ? 'bg-japanese-blue/20 text-japanese-blue' : 'bg-japanese-blue/10 text-japanese-blue'
+          }`}>
+            {word.category}
+          </span>
+        )}
+        {word.jlptLevel && (
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            theme === 'dark' ? 'bg-japanese-green/20 text-japanese-green' : 'bg-japanese-green/10 text-japanese-green'
+          }`}>
+            JLPT {word.jlptLevel}
+          </span>
+        )}
+      </div>
+      {word.examples && word.examples.length > 0 && (
+        <div className={`p-4 rounded-nav mb-4 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
+          <div className={`text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+            Example:
+          </div>
+          <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+            {word.examples[0].japanese} - {word.examples[0].english}
+          </div>
+        </div>
+      )}
+      <div className="flex justify-end">
+        <button
+          onClick={() => playAudio(word)}
+          className={`p-2 rounded-full transition-colors duration-200 ${
+            theme === 'dark' ? 'bg-gray-700 hover:bg-japanese-red hover:text-white' : 'bg-gray-100 hover:bg-japanese-red hover:text-white'
+          }`}
+        >
+          🔊
+        </button>
+      </div>
+    </div>
   );
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Favorites
-      </Typography>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-dark text-text-dark-primary' : 'bg-light text-text-primary'}`}>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className={`text-4xl font-bold mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+            Favorites
+          </h1>
+          <p className={`text-lg ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+            Your favorite Japanese words and phrases
+          </p>
+        </div>
 
-      <Paper sx={{ mb: 3 }}>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          aria-label="favorites tabs"
-          centered
-        >
-          <Tab label="All Favorites" />
-          <Tab label="Recently Added" />
-          <Tab label="By Level" />
-        </Tabs>
-      </Paper>
+        {/* Stats */}
+        <div className={`p-6 rounded-2xl mb-8 ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className={`text-3xl font-bold text-japanese-red ${theme === 'dark' ? 'text-japanese-red' : 'text-japanese-red'}`}>
+                {favoritedWords.length}
+              </div>
+              <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Total Favorites
+              </div>
+            </div>
+            <div className="text-center">
+              <div className={`text-3xl font-bold text-japanese-green ${theme === 'dark' ? 'text-japanese-green' : 'text-japanese-green'}`}>
+                {filteredWords.length}
+              </div>
+              <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Filtered Results
+              </div>
+            </div>
+            <div className="text-center">
+              <div className={`text-3xl font-bold text-japanese-blue ${theme === 'dark' ? 'text-japanese-blue' : 'text-japanese-blue'}`}>
+                {new Set(favoritedWords.map(w => w.category)).size}
+              </div>
+              <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Categories
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <TextField
-          label="Search"
-          variant="outlined"
-          size="small"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ flexGrow: 1, minWidth: 200 }}
-        />
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Sort By</InputLabel>
-          <Select
-            value={sortBy}
-            label="Sort By"
-            onChange={handleSortChange}
-            startAdornment={<SortIcon sx={{ mr: 1 }} />}
-          >
-            <MenuItem value="recent">Recently Added</MenuItem>
-            <MenuItem value="japanese">Japanese</MenuItem>
-            <MenuItem value="english">English</MenuItem>
-            <MenuItem value="level">Level</MenuItem>
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Filter Level</InputLabel>
-          <Select
-            value={filterLevel}
-            label="Filter Level"
-            onChange={handleFilterChange}
-            startAdornment={<FilterListIcon sx={{ mr: 1 }} />}
-          >
-            <MenuItem value="all">All Levels</MenuItem>
-            <MenuItem value="beginner">Beginner</MenuItem>
-            <MenuItem value="intermediate">Intermediate</MenuItem>
-            <MenuItem value="advanced">Advanced</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+        {/* Controls */}
+        <div className={`p-6 rounded-2xl mb-8 ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Search Favorites
+              </label>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search Japanese, English, or Romaji..."
+                className={`w-full px-4 py-2 rounded-nav border transition-colors duration-200 ${
+                  theme === 'dark' 
+                    ? 'bg-dark border-border-dark-light text-text-dark-primary placeholder-text-dark-secondary focus:border-japanese-red' 
+                    : 'bg-light border-border-light text-text-primary placeholder-text-secondary focus:border-japanese-red'
+                }`}
+              />
+            </div>
 
-      <TabPanel value={tabValue} index={0}>
-        <Grid container spacing={3}>
-          {sortedWords.map((word) => (
-            <Grid item xs={12} sm={6} md={4} key={word.id}>
-              <WordCard word={word} />
-            </Grid>
-          ))}
-          {sortedWords.length === 0 && (
-            <Grid item xs={12}>
-              <Typography variant="body1" color="text.secondary" align="center">
-                No favorited words found. Start adding some to your favorites!
-              </Typography>
-            </Grid>
-          )}
-        </Grid>
-      </TabPanel>
+            {/* Sort */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Sort By
+              </label>
+              <select
+                value={sortBy}
+                onChange={handleSortChange}
+                className={`w-full px-4 py-2 rounded-nav border transition-colors duration-200 ${
+                  theme === 'dark' 
+                    ? 'bg-dark border-border-dark-light text-text-dark-primary focus:border-japanese-red' 
+                    : 'bg-light border-border-light text-text-primary focus:border-japanese-red'
+                }`}
+              >
+                <option value="recent">Recently Studied</option>
+                <option value="japanese">Japanese (A-Z)</option>
+                <option value="english">English (A-Z)</option>
+                <option value="level">Level</option>
+              </select>
+            </div>
 
-      <TabPanel value={tabValue} index={1}>
-        <Grid container spacing={3}>
-          {sortedWords
-            .sort((a, b) => (b.lastStudied || 0) - (a.lastStudied || 0))
-            .slice(0, 12)
-            .map((word) => (
-              <Grid item xs={12} sm={6} md={4} key={word.id}>
-                <WordCard word={word} />
-              </Grid>
+            {/* Filter */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Filter by Level
+              </label>
+              <select
+                value={filterLevel}
+                onChange={handleFilterChange}
+                className={`w-full px-4 py-2 rounded-nav border transition-colors duration-200 ${
+                  theme === 'dark' 
+                    ? 'bg-dark border-border-dark-light text-text-dark-primary focus:border-japanese-red' 
+                    : 'bg-light border-border-light text-text-primary focus:border-japanese-red'
+                }`}
+              >
+                <option value="all">All Levels</option>
+                <option value="1">Level 1</option>
+                <option value="2">Level 2</option>
+                <option value="3">Level 3</option>
+                <option value="4">Level 4</option>
+                <option value="5">Level 5</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-nav p-1">
+            {[
+              { label: 'All Favorites', icon: '⭐' },
+              { label: 'Recently Added', icon: '🕒' },
+              { label: 'By Level', icon: '📊' }
+            ].map((tab, index) => (
+              <button
+                key={tab.label}
+                onClick={() => handleTabChange(index)}
+                className={`flex-1 px-4 py-2 rounded-nav text-sm font-medium transition-colors duration-200 ${
+                  tabValue === index
+                    ? 'bg-japanese-red text-white'
+                    : `${theme === 'dark' ? 'text-text-dark-secondary hover:text-text-dark-primary' : 'text-text-secondary hover:text-text-primary'}`
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
             ))}
-        </Grid>
-      </TabPanel>
+          </div>
+        </div>
 
-      <TabPanel value={tabValue} index={2}>
-        <Grid container spacing={3}>
-          {['beginner', 'intermediate', 'advanced'].map((level) => (
-            <React.Fragment key={level}>
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                  {level.charAt(0).toUpperCase() + level.slice(1)} Level
-                </Typography>
-              </Grid>
-              {sortedWords
-                .filter((word) => word.level === level)
-                .map((word) => (
-                  <Grid item xs={12} sm={6} md={4} key={word.id}>
-                    <WordCard word={word} />
-                  </Grid>
-                ))}
-            </React.Fragment>
-          ))}
-        </Grid>
-      </TabPanel>
-    </Container>
+        {/* Tab Content */}
+        <TabPanel value={tabValue} index={0}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedWords.map((word) => (
+              <WordCard key={word.id} word={word} />
+            ))}
+          </div>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={1}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedWords
+              .filter(word => word.lastStudied && word.lastStudied > Date.now() - 7 * 24 * 60 * 60 * 1000)
+              .map((word) => (
+                <WordCard key={word.id} word={word} />
+              ))}
+          </div>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={2}>
+          <div className="space-y-6">
+            {[1, 2, 3, 4, 5].map(level => {
+              const levelWords = sortedWords.filter(word => word.level === level.toString());
+              if (levelWords.length === 0) return null;
+              
+              return (
+                <div key={level} className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+                  <h3 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                    Level {level} ({levelWords.length} words)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {levelWords.map((word) => (
+                      <WordCard key={word.id} word={word} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </TabPanel>
+
+        {/* Empty State */}
+        {sortedWords.length === 0 && (
+          <div className={`text-center py-12 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+            <div className="text-6xl mb-4">⭐</div>
+            <h3 className="text-xl font-semibold mb-2">No favorites found</h3>
+            <p>Start adding words to your favorites to see them here!</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

@@ -57,10 +57,11 @@ async function loadAdditionalMoodWords(): Promise<MoodWord[]> {
         english: word.english,
         emotionalContext: {
           category: mappedCategory,
-          emoji: getEmojiForCategory(mappedCategory),
+          originalCategory: word.category,
           intensity: getIntensityValue(word.intensity),
           usageNotes: Array.isArray(word.usage_notes) ? word.usage_notes.join('. ') : word.usage_notes,
-          relatedEmotions: word.related_emotions || []
+          relatedEmotions: word.related_emotions || [],
+          emoji: getEmojiForCategory(mappedCategory)
         },
         mastered: false,
         lastReviewed: new Date(),
@@ -156,7 +157,9 @@ export async function getAllMoodWords(): Promise<MoodWord[]> {
     // If no words in database, initialize them
     if (words.length === 0) {
       await initializeMoodWords();
-      return MOOD_WORDS;
+      // After initialization, get the words again
+      const initializedWords = await getAllFromStore<MoodWord>(db, STORE_NAME);
+      return initializedWords.length > 0 ? initializedWords : MOOD_WORDS;
     }
     
     return words;

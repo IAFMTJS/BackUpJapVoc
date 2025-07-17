@@ -1,36 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Typography,
-  Paper,
-  Box,
-  Tabs,
-  Tab,
-  Button,
-  useTheme,
-  IconButton,
-  Tooltip,
-  Divider,
-  Card,
-  CardContent,
-  Grid,
-  useMediaQuery,
-  CardActionArea
-} from '@mui/material';
-import {
-  Visibility as VisibilityIcon,
-  Translate as TranslateIcon,
-  MenuBook as MenuBookIcon,
-  ArrowBack as ArrowBackIcon,
-  School as SchoolIcon,
-  Movie as MovieIcon,
-  SportsEsports as GamesIcon,
-  TempleBuddhist as ShintoIcon,
-  History as HistoryIcon,
-  Restaurant as FoodIcon,
-  PlayArrow as PlayArrowIcon,
-  VolumeUp as VolumeUpIcon
-} from '@mui/icons-material';
+import { useTheme } from '../context/ThemeContext';
 import { Link, useLocation } from 'react-router-dom';
 import { triviaTopics } from '../data/triviaContent';
 import { playAudio } from '../utils/audio';
@@ -39,10 +8,10 @@ type DisplayMode = 'japanese' | 'romaji' | 'english';
 
 const TriviaSection: React.FC = () => {
   const location = useLocation();
+  const { theme, getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
   const [activeTab, setActiveTab] = useState(0);
   const [displayModes, setDisplayModes] = useState<DisplayMode[]>(['japanese', 'romaji', 'english']);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Handle tab state from navigation
   useEffect(() => {
@@ -52,7 +21,7 @@ const TriviaSection: React.FC = () => {
     }
   }, [location.state]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -71,34 +40,25 @@ const TriviaSection: React.FC = () => {
   const renderLanguageText = (text: { [key in DisplayMode]: string }) => {
     return displayModes.map((mode, index) => (
       <React.Fragment key={mode}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography 
-            component="span" 
-            variant="body1"
-            sx={{ 
-              display: 'block',
-              mb: index < displayModes.length - 1 ? 1 : 0,
-              color: mode === 'japanese' ? 'text.primary' : 
-                     mode === 'romaji' ? 'text.secondary' : 
-                     'text.secondary',
-              fontStyle: mode === 'romaji' ? 'italic' : 'normal'
-            }}
-          >
+        <div className="flex items-center gap-2">
+          <span className={`block mb-2 ${
+            mode === 'japanese' 
+              ? theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'
+              : theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'
+          } ${mode === 'romaji' ? 'italic' : ''}`}>
             {text[mode]}
-          </Typography>
+          </span>
           {mode === 'japanese' && (
-            <IconButton
-              size="small"
+            <button
               onClick={() => playAudio(text[mode])}
-              sx={{ 
-                color: 'primary.main',
-                '&:hover': { color: 'primary.dark' }
-              }}
+              className={`p-1 rounded-full transition-colors duration-200 ${
+                theme === 'dark' ? 'text-japanese-red hover:text-japanese-red-dark' : 'text-japanese-red hover:text-japanese-red-dark'
+              }`}
             >
-              <VolumeUpIcon fontSize="small" />
-            </IconButton>
+              🔊
+            </button>
           )}
-        </Box>
+        </div>
       </React.Fragment>
     ));
   };
@@ -106,407 +66,176 @@ const TriviaSection: React.FC = () => {
   const renderContent = () => {
     const topic = triviaTopics[activeTab];
     return (
-      <Box sx={{ mt: 3 }}>
+      <div className="mt-6">
         {topic.content.map((item, index) => (
-          <Card 
+          <div 
             key={index} 
-            sx={{ 
-              mb: 3,
-              borderRadius: 2,
-              transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: 4
-              }
-            }}
+            className={`p-6 rounded-2xl mb-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-2 ${
+              theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'
+            }`}
           >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                <Box 
-                  sx={{ 
-                    p: 1,
-                    borderRadius: 1,
-                    bgcolor: 'primary.light',
-                    color: 'primary.contrastText',
-                    mr: 2,
-                    mt: 0.5
-                  }}
-                >
-                  {item.icon}
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  {renderLanguageText(item.title)}
-                </Box>
-              </Box>
-              
-              <Box sx={{ mb: 2 }}>
-                {renderLanguageText(item.description)}
-              </Box>
+            <div className="flex items-start mb-4">
+              <div className={`w-12 h-12 rounded-nav flex items-center justify-center mr-4 text-white text-xl ${
+                theme === 'dark' ? 'bg-japanese-red' : 'bg-japanese-red'
+              }`}>
+                {item.icon}
+              </div>
+              <div className="flex-1">
+                {renderLanguageText(item.title)}
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              {renderLanguageText(item.description)}
+            </div>
 
-              <Paper 
-                elevation={0}
-                sx={{ 
-                  p: 2,
-                  mb: 2,
-                  bgcolor: 'background.default',
-                  borderRadius: 1
-                }}
-              >
-                {renderLanguageText(item.details)}
-              </Paper>
+            <div className={`p-4 rounded-nav mb-4 ${
+              theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'
+            }`}>
+              {renderLanguageText(item.details)}
+            </div>
 
-              {item.examples && (
-                <Box sx={{ mt: 3 }}>
-                  <Typography 
-                    variant="subtitle1" 
-                    sx={{ 
-                      fontWeight: 'bold',
-                      mb: 1,
-                      color: 'primary.main'
-                    }}
-                  >
-                    Examples:
-                  </Typography>
-                  <Grid container spacing={2}>
-                    {item.examples.map((example, idx) => (
-                      <Grid item xs={12} key={idx}>
-                        <Paper 
-                          elevation={0}
-                          sx={{ 
-                            p: 2,
-                            bgcolor: 'action.hover',
-                            borderRadius: 1
-                          }}
-                        >
-                          {renderLanguageText(example)}
-                        </Paper>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+            {item.examples && (
+              <div className="mt-6">
+                <h4 className={`font-bold mb-3 ${
+                  theme === 'dark' ? 'text-japanese-red' : 'text-japanese-red'
+                }`}>
+                  Examples:
+                </h4>
+                <div className="space-y-3">
+                  {item.examples.map((example, idx) => (
+                    <div key={idx} className={`p-4 rounded-nav ${
+                      theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
+                    }`}>
+                      {renderLanguageText(example)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         ))}
-      </Box>
+      </div>
     );
   };
 
   const renderInteractiveSections = () => (
-    <Box sx={{ mb: 4 }}>
-      <Typography 
-        variant="h5" 
-        sx={{ 
-          fontWeight: 'bold',
-          mb: 2,
-          color: 'primary.main'
-        }}
-      >
-        Interactive Learning
-      </Typography>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Card 
-            sx={{ 
-              height: '100%',
-              transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4
-              }
-            }}
-          >
-            <CardActionArea 
-              component={Link} 
-              to="/anime"
-              sx={{ height: '100%' }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Box 
-                    sx={{ 
-                      p: 1,
-                      borderRadius: 1,
-                      bgcolor: 'secondary.light',
-                      color: 'secondary.contrastText',
-                      mr: 2
-                    }}
-                  >
-                    <MovieIcon />
-                  </Box>
-                  <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                    Anime & Manga Learning
-                  </Typography>
-                </Box>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                  Learn Japanese through popular anime and manga. Practice phrases, understand context, 
-                  and improve your listening skills with authentic content.
-                </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    endIcon={<PlayArrowIcon />}
-                  >
-                    Start Learning
-                  </Button>
-                </Box>
-              </CardContent>
-            </CardActionArea>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card 
-            sx={{ 
-              height: '100%',
-              transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4
-              }
-            }}
-          >
-            <CardActionArea 
-              component={Link} 
-              to="/games"
-              sx={{ height: '100%' }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Box 
-                    sx={{ 
-                      p: 1,
-                      borderRadius: 1,
-                      bgcolor: 'success.light',
-                      color: 'success.contrastText',
-                      mr: 2
-                    }}
-                  >
-                    <GamesIcon />
-                  </Box>
-                  <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                    Learning Games
-                  </Typography>
-                </Box>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                  Practice Japanese through interactive games. Test your knowledge with quizzes, 
-                  audio matching, and more fun learning activities.
-                </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    color="success"
-                    endIcon={<PlayArrowIcon />}
-                  >
-                    Play Now
-                  </Button>
-                </Box>
-              </CardContent>
-            </CardActionArea>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+    <div className="mb-8">
+      <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+        Interactive Learning Sections
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[
+          { title: 'Anime & Manga', icon: '🎬', path: '/anime', color: 'japanese-purple' },
+          { title: 'Video Games', icon: '🎮', path: '/games', color: 'japanese-green' },
+          { title: 'Shinto & Religion', icon: '⛩️', path: '/culture', color: 'japanese-earth' },
+          { title: 'History', icon: '📜', path: '/culture', color: 'japanese-orange' },
+          { title: 'Food & Cuisine', icon: '🍜', path: '/culture', color: 'japanese-red' },
+          { title: 'Learning Games', icon: '🎯', path: '/games', color: 'japanese-blue' }
+        ].map((section, index) => (
+          <Link key={section.title} to={section.path}>
+            <div className={`p-6 rounded-2xl transition-all duration-300 hover:shadow-lg hover:-translate-y-2 ${
+              theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'
+            }`}>
+              <div className="flex items-center mb-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 text-white text-xl ${
+                  section.color === 'japanese-red' ? 'bg-japanese-red' :
+                  section.color === 'japanese-blue' ? 'bg-japanese-blue' :
+                  section.color === 'japanese-green' ? 'bg-japanese-green' :
+                  section.color === 'japanese-orange' ? 'bg-japanese-orange' :
+                  section.color === 'japanese-purple' ? 'bg-japanese-purple' :
+                  'bg-japanese-earth'
+                }`}>
+                  {section.icon}
+                </div>
+                <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                  {section.title}
+                </h3>
+              </div>
+              <p className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Explore {section.title.toLowerCase()} and learn related vocabulary
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Navigation and Header */}
-      <Box sx={{ mb: 4 }}>
-        <Button
-          component={Link}
-          to="/knowing"
-          startIcon={<ArrowBackIcon />}
-          sx={{ mb: 2 }}
-        >
-          Back to Knowing Center
-        </Button>
-        <Paper 
-          elevation={0}
-          sx={{ 
-            p: { xs: 2, md: 4 },
-            borderRadius: 4,
-            background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
-            color: 'white',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              bottom: 0,
-              left: 0,
-              background: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 60%)',
-              pointerEvents: 'none'
-            }}
-          />
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <SchoolIcon sx={{ fontSize: 32, mr: 2 }} />
-            <Typography 
-              variant="h4" 
-              component="h1"
-              sx={{ 
-                fontWeight: 'bold',
-                textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
-              }}
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-dark text-text-dark-primary' : 'bg-light text-text-primary'}`}>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className={`text-4xl font-bold mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Japanese Trivia
+              </h1>
+              <p className={`text-lg ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Discover fascinating facts about Japanese culture, anime, games, and more
+              </p>
+            </div>
+            <Link
+              to="/"
+              className={`px-6 py-3 border-2 border-japanese-red text-japanese-red rounded-nav font-semibold hover:bg-japanese-red hover:text-white transition-colors duration-300 flex items-center gap-2`}
             >
-              Japanese Trivia & Learning
-            </Typography>
-          </Box>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              opacity: 0.9,
-              maxWidth: '800px'
-            }}
-          >
-            Explore fascinating aspects of Japanese culture through anime, games, 
-            Shintoism, history, and cuisine. Learn through interactive content and 
-            discover interesting facts about Japan.
-          </Typography>
-        </Paper>
-      </Box>
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
 
-      {/* Interactive Learning Sections */}
-      {renderInteractiveSections()}
+        {/* Display Mode Controls */}
+        <div className={`p-6 rounded-2xl mb-8 ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+          <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+            Display Languages
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {(['japanese', 'romaji', 'english'] as DisplayMode[]).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => toggleDisplayMode(mode)}
+                className={`px-4 py-2 rounded-nav text-sm font-medium transition-colors duration-200 ${
+                  displayModes.includes(mode)
+                    ? 'bg-japanese-red text-white'
+                    : theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+              >
+                {mode === 'japanese' ? '🇯🇵 Japanese' :
+                 mode === 'romaji' ? '📝 Romaji' :
+                 '🇺🇸 English'}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* Language Display Controls */}
-      <Paper 
-        elevation={0}
-        sx={{ 
-          p: 2,
-          mb: 3,
-          borderRadius: 2,
-          bgcolor: 'background.paper',
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'stretch' : 'center',
-          gap: 2,
-          flexWrap: 'wrap'
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-            Display Languages:
-          </Typography>
-          <Tooltip title="Japanese (日本語)">
-            <IconButton
-              onClick={() => toggleDisplayMode('japanese')}
-              color={displayModes.includes('japanese') ? 'primary' : 'default'}
-              sx={{ 
-                bgcolor: displayModes.includes('japanese') ? 'primary.light' : 'transparent',
-                '&:hover': {
-                  bgcolor: displayModes.includes('japanese') ? 'primary.light' : 'action.hover'
-                }
-              }}
-            >
-              <MenuBookIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Romaji (ローマ字)">
-            <IconButton
-              onClick={() => toggleDisplayMode('romaji')}
-              color={displayModes.includes('romaji') ? 'primary' : 'default'}
-              sx={{ 
-                bgcolor: displayModes.includes('romaji') ? 'primary.light' : 'transparent',
-                '&:hover': {
-                  bgcolor: displayModes.includes('romaji') ? 'primary.light' : 'action.hover'
-                }
-              }}
-            >
-              <TranslateIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="English">
-            <IconButton
-              onClick={() => toggleDisplayMode('english')}
-              color={displayModes.includes('english') ? 'primary' : 'default'}
-              sx={{ 
-                bgcolor: displayModes.includes('english') ? 'primary.light' : 'transparent',
-                '&:hover': {
-                  bgcolor: displayModes.includes('english') ? 'primary.light' : 'action.hover'
-                }
-              }}
-            >
-              <VisibilityIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        <Divider orientation={isMobile ? 'horizontal' : 'vertical'} flexItem />
-        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-          Toggle languages to display. At least one language must be active. Japanese text is shown in normal style, 
-          romaji in italics, and English in regular text.
-        </Typography>
-      </Paper>
+        {/* Topic Tabs */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-nav p-1 overflow-x-auto">
+            {triviaTopics.map((topic, index) => (
+              <button
+                key={topic.title}
+                onClick={() => handleTabChange(index)}
+                className={`flex-shrink-0 px-4 py-2 rounded-nav text-sm font-medium transition-colors duration-200 ${
+                  activeTab === index
+                    ? 'bg-japanese-red text-white'
+                    : `${theme === 'dark' ? 'text-text-dark-secondary hover:text-text-dark-primary' : 'text-text-secondary hover:text-text-primary'}`
+                }`}
+              >
+                <span className="mr-2">{topic.icon}</span>
+                {topic.title}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* Topic Tabs */}
-      <Paper 
-        elevation={0}
-        sx={{ 
-          mb: 3,
-          borderRadius: 2,
-          bgcolor: 'background.paper',
-          overflow: 'hidden'
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant={isMobile ? 'scrollable' : 'standard'}
-          scrollButtons={isMobile ? 'auto' : false}
-          allowScrollButtonsMobile
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            '& .MuiTabs-indicator': {
-              height: 3,
-              backgroundColor: 'primary.main'
-            },
-            '& .MuiTab-root': {
-              minHeight: 64,
-              fontSize: '1rem',
-              fontWeight: 'medium',
-              textTransform: 'none',
-              color: 'text.secondary',
-              '&.Mui-selected': {
-                color: 'primary.main',
-                fontWeight: 'bold',
-                backgroundColor: 'action.selected'
-              },
-              '&:hover': {
-                backgroundColor: 'action.hover'
-              },
-              transition: 'all 0.2s ease-in-out'
-            }
-          }}
-        >
-          {triviaTopics.map((topic, index) => (
-            <Tab
-              key={index}
-              icon={topic.icon}
-              label={topic.title}
-              iconPosition="start"
-              onClick={(e) => {
-                e.preventDefault(); // Prevent default navigation
-                handleTabChange(e, index);
-              }}
-              sx={{
-                '& .MuiTab-iconWrapper': {
-                  mr: 1,
-                  color: activeTab === index ? 'primary.main' : 'inherit'
-                }
-              }}
-            />
-          ))}
-        </Tabs>
-      </Paper>
+        {/* Content */}
+        {renderContent()}
 
-      {/* Content */}
-      {renderContent()}
-    </Container>
+        {/* Interactive Sections */}
+        {renderInteractiveSections()}
+      </div>
+    </div>
   );
 };
 

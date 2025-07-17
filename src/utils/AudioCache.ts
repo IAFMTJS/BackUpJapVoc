@@ -7,9 +7,35 @@ const DB_NAME = 'JapaneseAudioDB';
 const STORE_NAME = 'audioFiles';
 const DB_VERSION = 1;
 
+// Initialize the audio database with proper schema
+async function initializeAudioDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = safeIndexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onerror = () => {
+      console.warn('Failed to open audio cache database:', request.error);
+      reject(new Error('Audio cache unavailable'));
+    };
+    
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      
+      // Create the object store if it doesn't exist
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        console.log('Created audio cache store:', STORE_NAME);
+      }
+    };
+  });
+}
+
 function openDB(): Promise<IDBDatabase> {
-  return safeIndexedDB.open(DB_NAME, DB_VERSION).catch((error) => {
-    console.warn('Failed to open audio cache database:', error);
+  return initializeAudioDB().catch((error) => {
+    console.warn('Failed to initialize audio cache database:', error);
     throw new Error('Audio cache unavailable - please check your browser settings');
   });
 }
@@ -132,15 +158,26 @@ export class AudioCache {
 
   private async initializeCache() {
     try {
-      this.db = await getDatabase();
-      // Load cached audio files from IndexedDB
-      const tx = this.db.transaction('audioCache', 'readonly');
-      const store = tx.objectStore('audioCache');
-      const cachedFiles = await store.getAll();
+      // Try to use the main database first
+      const mainDb = await getDatabase();
       
-      // Convert cached files to Blobs and store in memory
-      for (const file of cachedFiles) {
-        this.cache.set(file.key, new Blob([file.data], { type: 'audio/mpeg' }));
+      // Check if the audioFiles store exists in the main database
+      if (mainDb.objectStoreNames.contains('audioFiles')) {
+        // Load cached audio files from the main database
+        const tx = mainDb.transaction('audioFiles', 'readonly');
+        const store = tx.objectStore('audioFiles');
+        const cachedFiles = await store.getAll();
+        
+        // Convert cached files to Blobs and store in memory
+        for (const file of cachedFiles) {
+          if (file.blob) {
+            this.cache.set(file.id, file.blob);
+          }
+        }
+      } else {
+        console.warn('AudioFiles store not found in main database, using separate audio cache');
+        // Fallback to separate audio database
+        this.db = await openDB();
       }
     } catch (error) {
       console.warn('Error initializing audio cache:', error);

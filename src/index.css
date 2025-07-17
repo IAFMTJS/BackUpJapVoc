@@ -7,7 +7,7 @@
 /* Base styles for Japanese Learning Platform */
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200;
   }
 
   body {

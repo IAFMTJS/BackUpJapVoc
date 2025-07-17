@@ -1,52 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Container,
-  Typography,
-  Box,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Switch,
-  Divider,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
-  TextField,
-  Alert,
-  Snackbar,
-  Grid,
-  IconButton,
-  Tooltip,
-  CircularProgress,
-  useTheme,
-  useMediaQuery
-} from '@mui/material';
-import {
-  DarkMode as DarkModeIcon,
-  Translate as TranslateIcon,
-  Notifications as NotificationsIcon,
-  Delete as DeleteIcon,
-  Save as SaveIcon,
-  CloudDownload as ExportIcon,
-  CloudUpload as ImportIcon,
-  VolumeUp as VolumeUpIcon,
-  Accessibility as AccessibilityIcon,
-  School as SchoolIcon,
-  SportsEsports as GamesIcon,
-  Settings as SettingsIcon
-} from '@mui/icons-material';
-import { useTheme as useAppTheme } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { useSettings } from '../context/SettingsContext';
 import { useProgress } from '../context/ProgressContext';
@@ -68,9 +22,8 @@ interface AudioSettings {
 }
 
 const SettingsPage: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { getThemeClasses, theme: appTheme } = useAppTheme();
+  const { theme, getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
   const { settings: appSettings, updateSettings: updateAppSettings } = useApp();
   const { 
     settings: globalSettings, 
@@ -96,9 +49,11 @@ const SettingsPage: React.FC = () => {
   // State for dialogs and notifications
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showDatabaseResetDialog, setShowDatabaseResetDialog] = useState(false);
   const [importData, setImportData] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isResettingDatabase, setIsResettingDatabase] = useState(false);
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
@@ -202,25 +157,27 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleSaveSettings = async () => {
-    setIsSaving(true);
     try {
-      // Save audio settings to localStorage
+      setIsSaving(true);
+      
+      // Save audio settings
       safeLocalStorage.setItem('audioSettings', JSON.stringify(audioSettings));
       
-      // Global settings are already saved by the context
-      // Accessibility settings are already saved by the context
+      // Save global settings
+      await updateGlobalSettings(globalSettings);
       
       setHasUnsavedChanges(false);
       setNotification({
         open: true,
         message: 'Settings saved successfully!',
-        severity: 'success',
+        severity: 'success'
       });
     } catch (error) {
+      console.error('Error saving settings:', error);
       setNotification({
         open: true,
-        message: 'Failed to save settings',
-        severity: 'error',
+        message: 'Failed to save settings. Please try again.',
+        severity: 'error'
       });
     } finally {
       setIsSaving(false);
@@ -233,76 +190,154 @@ const SettingsPage: React.FC = () => {
       setShowResetDialog(false);
       setNotification({
         open: true,
-        message: 'Progress has been reset successfully',
-        severity: 'success',
+        message: 'Progress reset successfully!',
+        severity: 'success'
       });
     } catch (error) {
+      console.error('Error resetting progress:', error);
       setNotification({
         open: true,
-        message: 'Failed to reset progress',
-        severity: 'error',
+        message: 'Failed to reset progress. Please try again.',
+        severity: 'error'
       });
     }
   };
 
   const handleExportProgress = async () => {
     try {
-      await exportProgress();
+      const data = await exportProgress();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `japvoc-progress-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       setNotification({
         open: true,
-        message: 'Progress exported successfully',
-        severity: 'success',
+        message: 'Progress exported successfully!',
+        severity: 'success'
       });
     } catch (error) {
+      console.error('Error exporting progress:', error);
       setNotification({
         open: true,
-        message: 'Failed to export progress',
-        severity: 'error',
+        message: 'Failed to export progress. Please try again.',
+        severity: 'error'
       });
     }
   };
 
   const handleImportProgress = async () => {
     try {
-      await importProgress(importData);
+      const data = JSON.parse(importData);
+      await importProgress(data);
       setShowImportDialog(false);
       setImportData('');
       setNotification({
         open: true,
-        message: 'Progress imported successfully',
-        severity: 'success',
+        message: 'Progress imported successfully!',
+        severity: 'success'
       });
     } catch (error) {
+      console.error('Error importing progress:', error);
       setNotification({
         open: true,
-        message: 'Failed to import progress',
-        severity: 'error',
+        message: 'Failed to import progress. Please check the file format.',
+        severity: 'error'
       });
     }
   };
 
   const handleClearCache = async () => {
-    setIsClearingCache(true);
     try {
-      await clearCache();
+      setIsClearingCache(true);
+      await audioService.clearCache();
+      
+      // Update cache stats
       const stats = await getCacheStats();
       setCacheStats({
         size: stats.totalSize,
         entryCount: stats.fileCount
       });
+      
       setNotification({
         open: true,
-        message: 'Audio cache cleared successfully',
-        severity: 'success',
+        message: 'Cache cleared successfully!',
+        severity: 'success'
       });
     } catch (error) {
+      console.error('Error clearing cache:', error);
       setNotification({
         open: true,
-        message: 'Failed to clear audio cache',
-        severity: 'error',
+        message: 'Failed to clear cache. Please try again.',
+        severity: 'error'
       });
     } finally {
       setIsClearingCache(false);
+    }
+  };
+
+  const handleDatabaseReset = async () => {
+    try {
+      setIsResettingDatabase(true);
+      
+      // Clear all IndexedDB databases
+      const databases = [
+        'DictionaryDB',
+        'JapVocDB',
+        'japvoc-romaji-cache',
+        'JapaneseAudioDB',
+        'AudioCacheDB',
+        'JapVocAudioDB'
+      ];
+
+      for (const dbName of databases) {
+        try {
+          await window.indexedDB.deleteDatabase(dbName);
+          console.log(`Deleted database: ${dbName}`);
+        } catch (error) {
+          console.warn(`Error deleting ${dbName}:`, error);
+        }
+      }
+
+      // Clear localStorage items
+      const keysToRemove = [
+        'dbVersion',
+        'lastSync',
+        'audioCacheVersion',
+        'databaseInitialized'
+      ];
+      
+      keysToRemove.forEach(key => {
+        if (localStorage.getItem(key)) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      setShowDatabaseResetDialog(false);
+      setNotification({
+        open: true,
+        message: 'Database reset successfully! Please refresh the page.',
+        severity: 'success'
+      });
+
+      // Reload the page after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error) {
+      console.error('Error resetting database:', error);
+      setNotification({
+        open: true,
+        message: 'Failed to reset database. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setIsResettingDatabase(false);
     }
   };
 
@@ -310,737 +345,455 @@ const SettingsPage: React.FC = () => {
     setNotification(prev => ({ ...prev, open: false }));
   };
 
-  // Show error state if there's a critical error
-  if (settingsError || progressError) {
+  const LoadingSpinner = ({ text }: { text: string }) => (
+    <div className={`flex flex-col items-center justify-center py-8 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-japanese-red mb-4"></div>
+      <p>{text}</p>
+    </div>
+  );
+
+  if (isSettingsLoading || isProgressLoading || isAccessibilityLoading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <Link to="/" style={{ textDecoration: 'none', marginRight: 2 }}>
-            <Button startIcon={<SettingsIcon />}>Back to Home</Button>
-          </Link>
-          <Typography variant="h4" component="h1">
-            Settings
-          </Typography>
-        </Box>
-        <Paper sx={{ p: 3, bgcolor: 'error.light' }}>
-          <Typography variant="h6" color="error" gutterBottom>
-            Error Loading Settings
-          </Typography>
-          <Typography color="error" paragraph>
-            {settingsError || progressError}
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => window.location.reload()}
-            sx={{ mt: 2 }}
-          >
-            Retry
-          </Button>
-        </Paper>
-      </Container>
+      <div className={`min-h-screen ${theme === 'dark' ? 'bg-dark text-text-dark-primary' : 'bg-light text-text-primary'}`}>
+        <div className="container mx-auto px-4 py-8">
+          <LoadingSpinner text="Loading settings..." />
+        </div>
+      </div>
     );
   }
 
-  // Loading component
-  const LoadingSpinner = ({ text }: { text: string }) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
-      <CircularProgress size={20} sx={{ mr: 2 }} />
-      <Typography variant="body2" color="text.secondary">
-        {text}
-      </Typography>
-    </Box>
-  );
-
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Background */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          opacity: 0.1,
-          pointerEvents: 'none',
-          zIndex: 0
-        }}
-      >
-        <JapaneseCityscape
-          width={800}
-          height={400}
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            filter: appTheme === 'dark' 
-              ? 'brightness(0.5) saturate(0.8)' 
-              : 'brightness(1.1) saturate(1.2)'
-          }}
-        />
-      </Box>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-dark text-text-dark-primary' : 'bg-light text-text-primary'}`}>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className={`text-4xl font-bold mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Settings
+              </h1>
+              <p className={`text-lg ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Customize your learning experience
+              </p>
+            </div>
+            <div className="flex gap-4">
+              {hasUnsavedChanges && (
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={isSaving}
+                  className={`px-6 py-3 bg-japanese-green text-white rounded-nav font-semibold hover:bg-japanese-green-dark transition-colors duration-300 flex items-center gap-2 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      💾 Save Changes
+                    </>
+                  )}
+                </button>
+              )}
+              <Link
+                to="/"
+                className={`px-6 py-3 border-2 border-japanese-red text-japanese-red rounded-nav font-semibold hover:bg-japanese-red hover:text-white transition-colors duration-300`}
+              >
+                ← Back to Home
+              </Link>
+            </div>
+          </div>
+        </div>
 
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, position: 'relative', zIndex: 1 }}>
-        <Link to="/" style={{ textDecoration: 'none', marginRight: 2 }}>
-          <Button startIcon={<SettingsIcon />}>Back to Home</Button>
-        </Link>
-        <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
-          Settings
-          {hasUnsavedChanges && (
-            <Typography 
-              component="span" 
-              variant="caption" 
-              sx={{ 
-                ml: 1, 
-                color: 'warning.main',
-                fontWeight: 'bold'
-              }}
+        {/* Error Alerts */}
+        {settingsError && (
+          <div className={`p-4 rounded-2xl mb-6 ${theme === 'dark' ? 'bg-japanese-red/10 border border-japanese-red/20' : 'bg-japanese-red/5 border border-japanese-red/20'}`}>
+            <div className={`font-semibold text-japanese-red mb-2`}>
+              ❌ Settings Error
+            </div>
+            <p className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+              {settingsError}
+            </p>
+          </div>
+        )}
+
+        {progressError && (
+          <div className={`p-4 rounded-2xl mb-6 ${theme === 'dark' ? 'bg-japanese-red/10 border border-japanese-red/20' : 'bg-japanese-red/5 border border-japanese-red/20'}`}>
+            <div className={`font-semibold text-japanese-red mb-2`}>
+              ❌ Progress Error
+            </div>
+            <p className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+              {progressError}
+            </p>
+          </div>
+        )}
+
+        {/* Settings Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* General Settings */}
+          <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+            <h2 className={`text-2xl font-bold mb-6 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+              🌙 General Settings
+            </h2>
+            
+            <div className="space-y-6">
+              {/* Theme Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className={`font-semibold ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                    Dark Mode
+                  </div>
+                  <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                    Switch between light and dark themes
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePreferenceChange('darkMode', !globalSettings.darkMode)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                    globalSettings.darkMode ? 'bg-japanese-red' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                      globalSettings.darkMode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Language */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                  Language
+                </label>
+                <select
+                  value={globalSettings.language || 'en'}
+                  onChange={(e) => handlePreferenceChange('language', e.target.value)}
+                  className={`w-full px-4 py-2 rounded-nav border transition-colors duration-200 ${
+                    theme === 'dark' 
+                      ? 'bg-dark border-border-dark-light text-text-dark-primary focus:border-japanese-red' 
+                      : 'bg-light border-border-light text-text-primary focus:border-japanese-red'
+                  }`}
+                >
+                  <option value="en">English</option>
+                  <option value="ja">日本語</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Français</option>
+                </select>
+              </div>
+
+              {/* Notifications */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className={`font-semibold ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                    Notifications
+                  </div>
+                  <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                    Receive learning reminders
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePreferenceChange('notifications', !globalSettings.notifications)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                    globalSettings.notifications ? 'bg-japanese-green' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                      globalSettings.notifications ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Audio Settings */}
+          <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+            <h2 className={`text-2xl font-bold mb-6 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+              🔊 Audio Settings
+            </h2>
+            
+            <div className="space-y-6">
+              {/* TTS Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className={`font-semibold ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                    Text-to-Speech
+                  </div>
+                  <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                    Enable voice pronunciation
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleAudioSettingsChange('useTTS', !audioSettings.useTTS)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                    audioSettings.useTTS ? 'bg-japanese-blue' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                      audioSettings.useTTS ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Voice Selection */}
+              {audioSettings.useTTS && (
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                    Preferred Voice
+                  </label>
+                  <select
+                    value={audioSettings.preferredVoice}
+                    onChange={(e) => handleAudioSettingsChange('preferredVoice', e.target.value)}
+                    className={`w-full px-4 py-2 rounded-nav border transition-colors duration-200 ${
+                      theme === 'dark' 
+                        ? 'bg-dark border-border-dark-light text-text-dark-primary focus:border-japanese-red' 
+                        : 'bg-light border-border-light text-text-primary focus:border-japanese-red'
+                    }`}
+                  >
+                    {availableVoices.map((voice) => (
+                      <option key={voice.name} value={voice.name}>
+                        {voice.name} ({voice.lang})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Volume */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                  Volume: {Math.round(audioSettings.volume * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={audioSettings.volume}
+                  onChange={(e) => handleAudioSettingsChange('volume', parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                />
+              </div>
+
+              {/* Rate */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                  Speech Rate: {audioSettings.rate}x
+                </label>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  value={audioSettings.rate}
+                  onChange={(e) => handleAudioSettingsChange('rate', parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Management */}
+          <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+            <h2 className={`text-2xl font-bold mb-6 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+              📊 Progress Management
+            </h2>
+            
+            <div className="space-y-4">
+              <button
+                onClick={handleExportProgress}
+                className={`w-full px-4 py-3 bg-japanese-green text-white rounded-nav font-semibold hover:bg-japanese-green-dark transition-colors duration-300 flex items-center justify-center gap-2`}
+              >
+                📤 Export Progress
+              </button>
+              
+              <button
+                onClick={() => setShowImportDialog(true)}
+                className={`w-full px-4 py-3 bg-japanese-blue text-white rounded-nav font-semibold hover:bg-japanese-blue-dark transition-colors duration-300 flex items-center justify-center gap-2`}
+              >
+                📥 Import Progress
+              </button>
+              
+              <button
+                onClick={() => setShowResetDialog(true)}
+                className={`w-full px-4 py-3 bg-japanese-red text-white rounded-nav font-semibold hover:bg-japanese-red-dark transition-colors duration-300 flex items-center justify-center gap-2`}
+              >
+                🗑️ Reset Progress
+              </button>
+            </div>
+          </div>
+
+          {/* Cache Management */}
+          <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+            <h2 className={`text-2xl font-bold mb-6 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+              🗂️ Cache Management
+            </h2>
+            
+            <div className="space-y-4">
+              <div className={`p-4 rounded-nav ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                <div className={`font-semibold mb-2 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                  Cache Statistics
+                </div>
+                <div className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                  <div>Files: {cacheStats.entryCount}</div>
+                  <div>Size: {(cacheStats.size / 1024 / 1024).toFixed(2)} MB</div>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleClearCache}
+                disabled={isClearingCache}
+                className={`w-full px-4 py-3 bg-japanese-orange text-white rounded-nav font-semibold hover:bg-japanese-orange-dark transition-colors duration-300 flex items-center justify-center gap-2 ${isClearingCache ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isClearingCache ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Clearing...
+                  </>
+                ) : (
+                  <>
+                    🧹 Clear Cache
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => setShowDatabaseResetDialog(true)}
+                className={`w-full px-4 py-3 bg-japanese-purple text-white rounded-nav font-semibold hover:bg-japanese-purple/80 transition-colors duration-300 flex items-center justify-center gap-2`}
+              >
+                🔄 Reset Database
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Dialogs */}
+        {showResetDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className={`p-6 rounded-2xl max-w-md w-full mx-4 ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+              <h3 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Reset Progress
+              </h3>
+              <p className={`mb-6 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                Are you sure you want to reset all your progress? This action cannot be undone.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowResetDialog(false)}
+                  className={`flex-1 px-4 py-2 border-2 border-japanese-red text-japanese-red rounded-nav font-semibold hover:bg-japanese-red hover:text-white transition-colors duration-300`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResetProgress}
+                  className={`flex-1 px-4 py-2 bg-japanese-red text-white rounded-nav font-semibold hover:bg-japanese-red-dark transition-colors duration-300`}
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showImportDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className={`p-6 rounded-2xl max-w-md w-full mx-4 ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+              <h3 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Import Progress
+              </h3>
+              <textarea
+                value={importData}
+                onChange={(e) => setImportData(e.target.value)}
+                placeholder="Paste your exported progress data here..."
+                className={`w-full h-32 px-4 py-2 rounded-nav border transition-colors duration-200 mb-4 resize-none ${
+                  theme === 'dark' 
+                    ? 'bg-dark border-border-dark-light text-text-dark-primary placeholder-text-dark-secondary focus:border-japanese-red' 
+                    : 'bg-light border-border-light text-text-primary placeholder-text-secondary focus:border-japanese-red'
+                }`}
+              />
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowImportDialog(false)}
+                  className={`flex-1 px-4 py-2 border-2 border-japanese-red text-japanese-red rounded-nav font-semibold hover:bg-japanese-red hover:text-white transition-colors duration-300`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleImportProgress}
+                  className={`flex-1 px-4 py-2 bg-japanese-blue text-white rounded-nav font-semibold hover:bg-japanese-blue-dark transition-colors duration-300`}
+                >
+                  Import
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showDatabaseResetDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className={`p-6 rounded-2xl max-w-md w-full mx-4 ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+              <h3 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                Reset Database
+              </h3>
+              <p className={`mb-6 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                This will clear all databases and reset the application to its initial state. This action cannot be undone and will require you to restart the application.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowDatabaseResetDialog(false)}
+                  disabled={isResettingDatabase}
+                  className={`flex-1 px-4 py-2 border-2 border-japanese-purple text-japanese-purple rounded-nav font-semibold hover:bg-japanese-purple hover:text-white transition-colors duration-300 ${isResettingDatabase ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDatabaseReset}
+                  disabled={isResettingDatabase}
+                  className={`flex-1 px-4 py-2 bg-japanese-purple text-white rounded-nav font-semibold hover:bg-japanese-purple/80 transition-colors duration-300 flex items-center justify-center gap-2 ${isResettingDatabase ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isResettingDatabase ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Resetting...
+                    </>
+                  ) : (
+                    'Reset Database'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notification */}
+        {notification.open && (
+          <div className={`fixed bottom-4 right-4 p-4 rounded-2xl max-w-sm z-50 ${
+            notification.severity === 'success' 
+              ? theme === 'dark' ? 'bg-japanese-green/20 border border-japanese-green/40' : 'bg-japanese-green/10 border border-japanese-green/30'
+              : theme === 'dark' ? 'bg-japanese-red/20 border border-japanese-red/40' : 'bg-japanese-red/10 border border-japanese-red/30'
+          }`}>
+            <div className={`font-semibold mb-1 ${
+              notification.severity === 'success' ? 'text-japanese-green' : 'text-japanese-red'
+            }`}>
+              {notification.severity === 'success' ? '✅ Success' : '❌ Error'}
+            </div>
+            <p className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+              {notification.message}
+            </p>
+            <button
+              onClick={handleCloseNotification}
+              className={`absolute top-2 right-2 text-lg ${theme === 'dark' ? 'text-text-dark-secondary hover:text-text-dark-primary' : 'text-text-secondary hover:text-text-primary'}`}
             >
-              (Unsaved Changes)
-            </Typography>
-          )}
-        </Typography>
-        <Tooltip title="Ctrl+S">
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<SaveIcon />}
-            onClick={handleSaveSettings}
-            disabled={!hasUnsavedChanges || isSaving}
-            sx={{ 
-              ml: 2,
-              ...(hasUnsavedChanges && {
-                backgroundColor: 'warning.main',
-                '&:hover': {
-                  backgroundColor: 'warning.dark',
-                }
-              })
-            }}
-          >
-            {isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
-          </Button>
-        </Tooltip>
-      </Box>
-
-      <Grid container spacing={3} sx={{ position: 'relative', zIndex: 1 }}>
-        {/* Learning Settings */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Learning Settings
-            </Typography>
-            <List>
-              <ListItem>
-                <ListItemText
-                  primary="Daily Goal"
-                  secondary="Set your daily study time goal in minutes"
-                />
-                <ListItemSecondaryAction>
-                  <TextField
-                    type="number"
-                    size="small"
-                    value={globalSettings.dailyGoal || 20}
-                    onChange={(e) => handlePreferenceChange('dailyGoal', parseInt(e.target.value) || 20)}
-                    inputProps={{ min: 5, max: 300, step: 5 }}
-                    sx={{ width: 100 }}
-                  />
-                  <Typography variant="caption" sx={{ ml: 1 }}>
-                    min
-                  </Typography>
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Show Romaji"
-                  secondary="Display romanized pronunciation"
-                />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge="end"
-                    checked={globalSettings.showRomaji || false}
-                    onChange={(e) => handlePreferenceChange('showRomaji', e.target.checked)}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Show Hints"
-                  secondary="Display helpful hints during practice"
-                />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge="end"
-                    checked={globalSettings.showHints || false}
-                    onChange={(e) => handlePreferenceChange('showHints', e.target.checked)}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Sound Effects"
-                  secondary="Play audio feedback during practice"
-                />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge="end"
-                    checked={globalSettings.soundEnabled || false}
-                    onChange={(e) => handlePreferenceChange('soundEnabled', e.target.checked)}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Safe Mode"
-                  secondary="Enable safer learning with reduced pressure and more hints"
-                />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge="end"
-                    checked={globalSettings.safeMode || false}
-                    onChange={(e) => handlePreferenceChange('safeMode', e.target.checked)}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-            </List>
-          </Paper>
-        </Grid>
-
-        {/* Audio Settings */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Audio Settings
-            </Typography>
-            <List>
-              <ListItem>
-                <ListItemText
-                  primary="Text-to-Speech"
-                  secondary="Enable voice synthesis for Japanese text"
-                />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge="end"
-                    checked={audioSettings.useTTS}
-                    onChange={(e) => handleAudioSettingsChange('useTTS', e.target.checked)}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Preferred Voice"
-                  secondary="Select voice for Japanese pronunciation"
-                />
-                <ListItemSecondaryAction>
-                  <FormControl size="small" sx={{ minWidth: 150 }}>
-                    <Select
-                      value={audioSettings.preferredVoice}
-                      onChange={(e) => handleAudioSettingsChange('preferredVoice', e.target.value)}
-                      disabled={!audioSettings.useTTS}
-                    >
-                      {availableVoices.map((voice) => (
-                        <MenuItem key={voice.name} value={voice.name}>
-                          {voice.name} ({voice.lang})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Auto Play"
-                  secondary="Automatically play audio for new words"
-                />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge="end"
-                    checked={audioSettings.autoPlay}
-                    onChange={(e) => handleAudioSettingsChange('autoPlay', e.target.checked)}
-                    disabled={!audioSettings.useTTS}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Audio Cache"
-                  secondary={`${cacheStats.entryCount} files (${(cacheStats.size / 1024 / 1024).toFixed(2)} MB)`}
-                />
-                <ListItemSecondaryAction>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={handleClearCache}
-                    disabled={isClearingCache || cacheStats.entryCount === 0}
-                  >
-                    {isClearingCache ? 'Clearing...' : 'Clear Cache'}
-                  </Button>
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Test Voice"
-                  secondary="Test the current voice selection with Japanese text"
-                />
-                <ListItemSecondaryAction>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => {
-                      const testText = 'こんにちは、日本語のテストです。';
-                      playAudio(testText);
-                    }}
-                    disabled={!audioSettings.useTTS}
-                  >
-                    Test Voice
-                  </Button>
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Voice Status"
-                  secondary={`Current: ${audioService.getTTSStatus().bestVoice}`}
-                />
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Debug Voices"
-                  secondary="Log voice information to console for troubleshooting"
-                />
-                <ListItemSecondaryAction>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => {
-                      debugVoices();
-                      setNotification({
-                        open: true,
-                        message: 'Voice debug info logged to console',
-                        severity: 'success'
-                      });
-                    }}
-                  >
-                    Debug
-                  </Button>
-                </ListItemSecondaryAction>
-              </ListItem>
-            </List>
-          </Paper>
-        </Grid>
-
-        {/* Accessibility Settings */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Accessibility
-            </Typography>
-            {isAccessibilityLoading ? (
-              <LoadingSpinner text="Loading accessibility settings..." />
-            ) : (
-              <List>
-                <ListItem>
-                  <ListItemText
-                    primary="High Contrast"
-                    secondary="Enable high contrast mode for better visibility"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={accessibilitySettings.highContrast}
-                      onChange={(e) => {
-                        updateAccessibilitySettings({ highContrast: e.target.checked });
-                        setHasUnsavedChanges(true);
-                      }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Reduced Motion"
-                    secondary="Minimize animations and transitions"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={accessibilitySettings.reducedMotion}
-                      onChange={(e) => {
-                        updateAccessibilitySettings({ reducedMotion: e.target.checked });
-                        setHasUnsavedChanges(true);
-                      }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Screen Reader"
-                    secondary="Optimize for screen readers"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={accessibilitySettings.screenReader}
-                      onChange={(e) => {
-                        updateAccessibilitySettings({ screenReader: e.target.checked });
-                        setHasUnsavedChanges(true);
-                      }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Keyboard Navigation"
-                    secondary="Enhanced keyboard controls"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={accessibilitySettings.keyboardNavigation}
-                      onChange={(e) => {
-                        updateAccessibilitySettings({ keyboardNavigation: e.target.checked });
-                        setHasUnsavedChanges(true);
-                      }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-              </List>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* Navigation Settings */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Navigation Settings
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Customize which menu items are visible in the navigation bar
-            </Typography>
-            {isSettingsLoading ? (
-              <LoadingSpinner text="Loading navigation settings..." />
-            ) : (
-              <List>
-                <ListItem>
-                  <ListItemText
-                    primary="Home"
-                    secondary="Show the home page link"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showHome ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showHome: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Learning"
-                    secondary="Show the learning section"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showLearning ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showLearning: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="VSensei"
-                    secondary="Show the VSensei learning path"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showVSensei ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showVSensei: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="SRS"
-                    secondary="Show the spaced repetition system"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showSRS ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showSRS: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Games"
-                    secondary="Show the games section"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showGames ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showGames: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Progress"
-                    secondary="Show the progress tracking"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showProgress ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showProgress: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Dictionary"
-                    secondary="Show the dictionary section"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showDictionary ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showDictionary: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Knowing"
-                    secondary="Show the knowing center"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showKnowing ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showKnowing: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Anime"
-                    secondary="Show the anime section"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showAnime ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showAnime: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Settings"
-                    secondary="Show the settings link"
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      checked={globalSettings.navigationSettings?.showSettings ?? true}
-                      onChange={(e) => handlePreferenceChange('navigationSettings', {
-                        ...globalSettings.navigationSettings,
-                        showSettings: e.target.checked
-                      })}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-              </List>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* Progress Management */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Progress Management
-            </Typography>
-            {isProgressLoading ? (
-              <LoadingSpinner text="Loading progress data..." />
-            ) : (
-              <List>
-                <ListItem>
-                  <ListItemText
-                    primary="Export Progress"
-                    secondary="Download your learning progress as a JSON file"
-                  />
-                  <ListItemSecondaryAction>
-                    <Button
-                      variant="outlined"
-                      startIcon={<ExportIcon />}
-                      onClick={handleExportProgress}
-                    >
-                      Export
-                    </Button>
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Import Progress"
-                    secondary="Import learning progress from a JSON file"
-                  />
-                  <ListItemSecondaryAction>
-                    <Button
-                      variant="outlined"
-                      startIcon={<ImportIcon />}
-                      onClick={() => setShowImportDialog(true)}
-                    >
-                      Import
-                    </Button>
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Reset Progress"
-                    secondary="Clear all learning progress and start fresh"
-                  />
-                  <ListItemSecondaryAction>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<DeleteIcon />}
-                      onClick={() => setShowResetDialog(true)}
-                    >
-                      Reset
-                    </Button>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              </List>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Reset Progress Dialog */}
-      <Dialog
-        open={showResetDialog}
-        onClose={() => setShowResetDialog(false)}
-      >
-        <DialogTitle>Reset Progress</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to reset all your learning progress? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowResetDialog(false)}>Cancel</Button>
-          <Button onClick={handleResetProgress} color="error" autoFocus>
-            Reset
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Import Progress Dialog */}
-      <Dialog
-        open={showImportDialog}
-        onClose={() => setShowImportDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Import Progress</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
-            Paste your exported progress data below:
-          </DialogContentText>
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            value={importData}
-            onChange={(e) => setImportData(e.target.value)}
-            placeholder="Paste JSON data here..."
-            variant="outlined"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowImportDialog(false)}>Cancel</Button>
-          <Button
-            onClick={handleImportProgress}
-            variant="contained"
-            startIcon={<SaveIcon />}
-          >
-            Import
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Notification Snackbar */}
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={6000}
-        onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={handleCloseNotification}
-          severity={notification.severity}
-          sx={{ width: '100%' }}
-        >
-          {notification.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+              ×
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

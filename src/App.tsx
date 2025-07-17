@@ -1,7 +1,5 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Box, CircularProgress, Typography, CssBaseline } from '@mui/material';
-import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import Navigation from './components/Navigation';
 import { useTheme } from './context/ThemeContext.tsx';
 import { useProgress } from './context/ProgressContext.tsx';
@@ -37,55 +35,24 @@ import { AppProvider } from './context/AppContext.tsx';
 const ErrorFallback: React.FC<{ componentName: string; error: Error }> = ({ componentName, error }) => {
   console.error(`Error in ${componentName}:`, error);
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column',
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh',
-      p: 3,
-      textAlign: 'center'
-    }}>
-      <Typography variant="h5" color="error" gutterBottom>
+    <div className="flex flex-col justify-center items-center h-screen p-6 text-center">
+      <h2 className="text-2xl font-bold text-red-600 mb-4">
         Something went wrong
-      </Typography>
-      <Typography variant="body1" color="text.secondary" gutterBottom>
+      </h2>
+      <p className="text-text-secondary dark:text-text-dark-secondary mb-2">
         Failed to load {componentName}
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
+      </p>
+      <p className="text-sm text-text-muted dark:text-text-dark-muted mb-4">
         {error.message}
-      </Typography>
-      <Box sx={{ mt: 2 }}>
-        <button 
-          onClick={() => window.location.reload()} 
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          Reload Page
-        </button>
-      </Box>
-    </Box>
+      </p>
+      <button 
+        onClick={() => window.location.reload()} 
+        className="px-4 py-2 bg-japanese-red text-white rounded-button hover:bg-japanese-redLight shadow-button hover:shadow-button-hover transition-all duration-300"
+      >
+        Reload Page
+      </button>
+    </div>
   );
-};
-
-// Validate Material-UI components to prevent React error #130
-const validateMaterialUIComponents = () => {
-  try {
-    // Test if Material-UI components are properly loaded
-    if (!Box || !CircularProgress || !Typography || !CssBaseline) {
-      throw new Error('Material-UI components not properly loaded');
-    }
-    return true;
-  } catch (error) {
-    console.error('Material-UI validation failed:', error);
-    return false;
-  }
 };
 
 // Enhanced lazy loading with better error handling
@@ -155,367 +122,170 @@ const ProfilePage = createLazyComponent(() => import('./pages/ProfilePage'), 'Pr
 
 // Loading component with better visual feedback
 const LoadingFallback = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-    <CircularProgress />
-  </Box>
+  <div className="flex justify-center items-center h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-japanese-red"></div>
+  </div>
 );
 
-// Theme wrapper component to handle Material-UI theme
-export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const themeContext = useTheme();
-  const [isThemeReady, setIsThemeReady] = React.useState(false);
-
-  // Create a stable theme object with proper type checking
-  const muiTheme = React.useMemo(() => {
-    try {
-      // Ensure we have a valid theme value
-      const theme = themeContext?.theme || 'dark';
-      
-      // Create theme with safe defaults
-      const themeConfig = {
-        palette: {
-          mode: theme === 'dark' ? 'dark' : 'light',
-          primary: {
-            main: theme === 'dark' ? '#3b82f6' : '#2563eb',
-          },
-          secondary: {
-            main: theme === 'dark' ? '#8b5cf6' : '#7c3aed',
-          },
-          background: {
-            default: theme === 'dark' ? '#181830' : '#ffffff',
-            paper: theme === 'dark' ? '#23233a' : '#ffffff',
-          },
-          text: {
-            primary: theme === 'dark' ? '#ffffff' : '#1f2937',
-            secondary: theme === 'dark' ? '#d1d5db' : '#4b5563',
-          },
-        },
-        components: {
-          MuiCssBaseline: {
-            styleOverrides: {
-              body: {
-                backgroundColor: theme === 'dark' ? '#181830' : '#ffffff',
-                color: theme === 'dark' ? '#ffffff' : '#1f2937',
-              },
-            },
-          },
-          MuiCard: {
-            styleOverrides: {
-              root: {
-                background: theme === 'dark' ? 'rgba(35, 35, 58, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-                backdropFilter: 'blur(10px)',
-                border: `1px solid ${
-                  theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-                }`,
-              },
-            },
-          },
-        },
-      };
-
-      const createdTheme = createTheme(themeConfig);
-      
-      // Validate the created theme
-      if (!createdTheme || !createdTheme.palette) {
-        console.error('Failed to create valid Material-UI theme');
-        throw new Error('Invalid theme configuration');
-      }
-      
-      return createdTheme;
-    } catch (error) {
-      console.error('Error creating Material-UI theme:', error);
-      // Return a minimal fallback theme
-      return createTheme({
-        palette: {
-          mode: 'dark',
-          primary: { main: '#3b82f6' },
-          secondary: { main: '#8b5cf6' },
-          background: { default: '#181830', paper: '#23233a' },
-          text: { primary: '#ffffff', secondary: '#d1d5db' },
-        },
-        components: {
-          MuiCssBaseline: {
-            styleOverrides: {
-              body: {
-                backgroundColor: '#181830',
-                color: '#ffffff',
-              },
-            },
-          },
-        },
-      });
-    }
-  }, [themeContext?.theme]);
-
-  // Ensure theme is ready before rendering children
-  React.useEffect(() => {
-    if (muiTheme && muiTheme.palette && muiTheme.palette.mode) {
-      // Add a small delay to ensure theme is fully initialized
-      const timer = setTimeout(() => {
-        setIsThemeReady(true);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [muiTheme]);
-
-  // Show loading state while theme is initializing
-  if (!isThemeReady || !muiTheme) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          bgcolor: '#181830'
-        }}
-      >
-        <Box sx={{ textAlign: 'center' }}>
-          <Box
-            sx={{
-              width: 64,
-              height: 64,
-              border: '2px solid transparent',
-              borderTop: '2px solid #3b82f6',
-              borderBottom: '2px solid #3b82f6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              mx: 'auto',
-              mb: 2
-            }}
-          />
-          <Typography variant="h6" sx={{ color: 'white' }}>
-            Loading theme...
-          </Typography>
-        </Box>
-      </Box>
-    );
-  }
-
-  return (
-    <MuiThemeProvider theme={muiTheme}>
-      <CssBaseline />
-      {children}
-    </MuiThemeProvider>
-  );
-};
-
+// Main App component
 const App: React.FC = () => {
-  console.log('[App] Component rendering...');
-  
   const [isInitialized, setIsInitialized] = useState(false);
-  const [initializationError, setInitializationError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initialize all contexts
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        console.log('[App] Initializing application...');
+        // Initialize any app-wide settings or configurations here
+        console.log('App initialized successfully');
         
-        // Force dark mode class for CSS frameworks
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-        
-        // Validate Material-UI components
-        if (!validateMaterialUIComponents()) {
-          throw new Error('Material-UI components validation failed');
-        }
+        // Add database reset utility to window for debugging
+        if (typeof window !== 'undefined') {
+          (window as any).resetJapVocDatabase = async () => {
+            console.log('🔄 Resetting JapVoc databases...');
+            const databases = [
+              'DictionaryDB',
+              'JapVocDB',
+              'japvoc-romaji-cache',
+              'JapaneseAudioDB',
+              'AudioCacheDB',
+              'JapVocAudioDB'
+            ];
 
-        // Add a small delay to ensure all contexts are properly initialized
-        await new Promise(resolve => setTimeout(resolve, 500));
+            for (const dbName of databases) {
+              try {
+                await window.indexedDB.deleteDatabase(dbName);
+                console.log(`✅ Deleted: ${dbName}`);
+              } catch (error) {
+                console.warn(`⚠️ Error deleting ${dbName}:`, error);
+              }
+            }
+
+            // Clear localStorage
+            const keysToRemove = [
+              'dbVersion',
+              'lastSync',
+              'audioCacheVersion',
+              'databaseInitialized'
+            ];
+            
+            keysToRemove.forEach(key => {
+              if (localStorage.getItem(key)) {
+                localStorage.removeItem(key);
+                console.log(`🗑️ Removed: ${key}`);
+              }
+            });
+
+            console.log('🎉 Database reset complete! Refreshing page...');
+            setTimeout(() => window.location.reload(), 1000);
+          };
+          
+          console.log('🔧 Database reset utility available: window.resetJapVocDatabase()');
+        }
         
-        console.log('[App] Application initialized successfully');
         setIsInitialized(true);
-      } catch (error) {
-        console.error('[App] Initialization error:', error);
-        setInitializationError(error instanceof Error ? error.message : 'Unknown initialization error');
+      } catch (err) {
+        console.error('Failed to initialize app:', err);
+        setError(err instanceof Error ? err.message : 'Unknown error occurred');
       }
     };
 
     initializeApp();
   }, []);
 
-  // Show initialization error if any
-  if (initializationError) {
-    return (
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        p: 3,
-        textAlign: 'center'
-      }}>
-        <Typography variant="h5" color="error" gutterBottom>
-          Initialization Error
-        </Typography>
-        <Typography variant="body1" color="text.secondary" gutterBottom>
-          {initializationError}
-        </Typography>
-        <Box sx={{ mt: 2 }}>
-          <button 
-            onClick={() => window.location.reload()} 
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Reload Page
-          </button>
-        </Box>
-      </Box>
-    );
+  if (error) {
+    return <ErrorFallback componentName="App" error={new Error(error)} />;
   }
 
-  // Show loading state while initializing
   if (!isInitialized) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          bgcolor: '#181830'
-        }}
-      >
-        <Box sx={{ textAlign: 'center' }}>
-          <Box
-            sx={{
-              width: 64,
-              height: 64,
-              border: '2px solid transparent',
-              borderTop: '2px solid #3b82f6',
-              borderBottom: '2px solid #3b82f6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              mx: 'auto',
-              mb: 2
-            }}
-          />
-          <Typography variant="h6" sx={{ color: 'white' }}>
-            Initializing application...
-          </Typography>
-        </Box>
-      </Box>
-    );
+    return <LoadingFallback />;
   }
 
   return (
+    <Router>
+      <div className="min-h-screen bg-light dark:bg-dark text-text-primary dark:text-text-dark-primary">
+        <Navigation />
+        <main className="flex-1">
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/learning" element={<LearningLayout />} />
+              <Route path="/learning/kana" element={<Kana />} />
+              <Route path="/learning/kanji-dictionary" element={<KanjiDictionary />} />
+              <Route path="/learning/romaji" element={<Romaji />} />
+              <Route path="/learning/quiz" element={<QuizPage />} />
+              <Route path="/dictionary" element={<Dictionary />} />
+              <Route path="/knowing/dictionary" element={<KnowingDictionary />} />
+              <Route path="/srs" element={<SRSPage />} />
+              <Route path="/games" element={<GamesPage />} />
+              <Route path="/progress" element={<Progress />} />
+              <Route path="/knowing" element={<KnowingCenter />} />
+              <Route path="/culture" element={<CultureAndRules />} />
+              <Route path="/mood" element={<MoodPage />} />
+              <Route path="/progress-page" element={<ProgressPage />} />
+              <Route path="/favorites" element={<FavoritesPage />} />
+              <Route path="/trivia" element={<TriviaSection />} />
+              <Route path="/anime" element={<AnimeSection />} />
+              <Route path="/faq/scoring" element={<FAQScoring />} />
+              <Route path="/faq/learning" element={<FAQLearning />} />
+              <Route path="/faq/features" element={<FAQFeatures />} />
+              <Route path="/faq/progress" element={<FAQProgress />} />
+              <Route path="/learning-path" element={<LearningPathPage />} />
+              <Route path="/lesson-numbers" element={<LessonNumbers />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/email-verification" element={<EmailVerification />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              
+              {/* Learn module routes */}
+              <Route path="/learn" element={<LearnIndex />} />
+              <Route path="/learn/:levelId" element={<LearnLevel />} />
+              <Route path="/exercise-test" element={<ExerciseTest />} />
+              
+              {/* Fallback route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </main>
+      </div>
+    </Router>
+  );
+};
+
+// App wrapper with all providers
+const AppWrapper: React.FC = () => {
+  return (
     <ThemeProvider>
-      <SettingsProvider>
-        <AccessibilityProvider>
-          <AudioProvider>
-            <AuthProvider>
-              <NotificationProvider>
-                <ProfileProvider>
-                  <QuizProvider>
-                    <SRSProvider>
-                      <VocabularyProvider>
-                        <VirtualSenseiProvider>
-                          <ProgressProvider>
-                            <AchievementProvider>
-                              <AppProvider>
-                                <ThemeWrapper>
-                                  <Router>
-                                    <Box sx={{ 
-                                      display: 'flex', 
-                                      flexDirection: 'column', 
-                                      minHeight: '100vh',
-                                      bgcolor: 'background.default',
-                                      color: 'text.primary'
-                                    }}>
-                                      <Navigation />
-                                      <Box component="main" sx={{ flexGrow: 1 }}>
-                                        <Suspense fallback={<LoadingFallback />}>
-                                          <Routes>
-                                            {/* Home */}
-                                            <Route path="/" element={<Home />} />
-                                            
-                                            {/* Settings */}
-                                            <Route path="/settings" element={<Settings />} />
-                                            
-                                            {/* Learning Path (Virtual Sensei) */}
-                                            <Route path="/learning-path" element={<LearningPathPage />} />
-                                            <Route path="/learning-path/lesson/:lessonId" element={<LessonNumbers />} />
-                                            
-                                            {/* Learn Module */}
-                                                    <Route path="/learn" element={<LearnIndex />} />
-        <Route path="/learn/:levelId" element={<LearnLevel />} />
-        <Route path="/learn-test" element={<ExerciseTest />} />
-                                            
-                                            {/* Learning Section */}
-                                            <Route path="/learning" element={<LearningLayout />}>
-                                              <Route path="kana" element={<Kana />} />
-                                              <Route path="kanji-dictionary" element={<KanjiDictionary />} />
-                                              <Route path="romaji" element={<Romaji />} />
-                                              <Route path="quiz" element={<QuizPage />} />
-                                            </Route>
-                                            
-                                            {/* Knowing Center */}
-                                            <Route path="/knowing" element={<KnowingCenter />}>
-                                              <Route path="dictionary" element={<KnowingDictionary />} />
-                                              <Route path="mood" element={<MoodPage />} />
-                                              <Route path="culture" element={<CultureAndRules />} />
-                                              <Route path="progress" element={<ProgressPage />} />
-                                              <Route path="favorites" element={<FavoritesPage />} />
-                                            </Route>
-                                            
-                                            {/* SRS */}
-                                            <Route path="/srs" element={<SRSPage />} />
-                                            
-                                            {/* Trivia */}
-                                            <Route path="/trivia" element={<TriviaSection />} />
-                                            <Route path="/trivia/anime" element={<AnimeSection />} />
-                                            <Route path="/trivia/games" element={<GamesPage />} />
-                                            
-                                            {/* FAQ */}
-                                            <Route path="/faq/scoring" element={<FAQScoring />} />
-                                            <Route path="/faq/learning" element={<FAQLearning />} />
-                                            <Route path="/faq/features" element={<FAQFeatures />} />
-                                            <Route path="/faq/progress" element={<FAQProgress />} />
-                                            
-                                            {/* Progress */}
-                                            <Route path="/progress" element={<Progress />} />
-                                            
-                                            {/* Dictionary */}
-                                            <Route path="/dictionary" element={<Dictionary />} />
-                                            
-                                            {/* Login and Signup */}
-                                            <Route path="/login" element={<Login />} />
-                                            <Route path="/signup" element={<Signup />} />
-                                            <Route path="/reset-password" element={<ResetPassword />} />
-                                            <Route path="/email-verification" element={<EmailVerification />} />
-                                            <Route path="/profile" element={<ProfilePage />} />
-                                            
-                                            {/* Catch all - redirect to home */}
-                                            <Route path="*" element={<Navigate to="/" replace />} />
-                                          </Routes>
-                                        </Suspense>
-                                      </Box>
-                                    </Box>
-                                  </Router>
-                                </ThemeWrapper>
-                              </AppProvider>
-                            </AchievementProvider>
-                          </ProgressProvider>
-                        </VirtualSenseiProvider>
-                      </VocabularyProvider>
-                    </SRSProvider>
-                  </QuizProvider>
-                </ProfileProvider>
-              </NotificationProvider>
-            </AuthProvider>
-          </AudioProvider>
-        </AccessibilityProvider>
-      </SettingsProvider>
+      <AppProvider>
+        <AuthProvider>
+          <SettingsProvider>
+            <AccessibilityProvider>
+              <AudioProvider>
+                <NotificationProvider>
+                  <ProfileProvider>
+                    <ProgressProvider>
+                      <AchievementProvider>
+                        <VocabularyProvider>
+                          <QuizProvider>
+                            <SRSProvider>
+                              <VirtualSenseiProvider>
+                                <App />
+                              </VirtualSenseiProvider>
+                            </SRSProvider>
+                          </QuizProvider>
+                        </VocabularyProvider>
+                      </AchievementProvider>
+                    </ProgressProvider>
+                  </ProfileProvider>
+                </NotificationProvider>
+              </AudioProvider>
+            </AccessibilityProvider>
+          </SettingsProvider>
+        </AuthProvider>
+      </AppProvider>
     </ThemeProvider>
   );
 };
 
-export default App; 
+export default AppWrapper; 

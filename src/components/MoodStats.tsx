@@ -1,11 +1,7 @@
 import React from 'react';
-import { Box, Typography, Paper, LinearProgress, Tooltip, IconButton } from '@mui/material';
 import { EmotionalCategory, MoodWord } from '../types/mood';
 import { EMOTIONAL_CATEGORIES } from '../types/mood';
-import InfoIcon from '@mui/icons-material/Info';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import CloudIcon from '@mui/icons-material/Cloud';
-import { useTheme } from '@mui/material/styles';
+import { useTheme } from '../context/ThemeContext';
 
 interface MoodStatsProps {
   words: MoodWord[];
@@ -22,7 +18,7 @@ interface MoodStat {
 }
 
 const MoodStats: React.FC<MoodStatsProps> = ({ words, className }) => {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const [showDetails, setShowDetails] = React.useState(false);
 
   // Calculate mood statistics
@@ -95,191 +91,133 @@ const MoodStats: React.FC<MoodStatsProps> = ({ words, className }) => {
   }, [sortedCategories]);
 
   return (
-    <Paper className={className} sx={{ p: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6" component="h2" sx={{ flex: 1 }}>
+    <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'} ${className}`}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
           Mood Statistics
-        </Typography>
-        <Tooltip title={showDetails ? "Show summary" : "Show detailed stats"}>
-          <IconButton onClick={() => setShowDetails(!showDetails)} size="small">
-            {showDetails ? <BarChartIcon /> : <CloudIcon />}
-          </IconButton>
-        </Tooltip>
-      </Box>
+        </h3>
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className={`p-2 rounded-full transition-colors duration-200 ${
+            theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
+          }`}
+          title={showDetails ? "Show summary" : "Show detailed stats"}
+        >
+          {showDetails ? '📊' : '☁️'}
+        </button>
+      </div>
 
       {showDetails ? (
         // Detailed statistics view
-        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {sortedCategories
             .filter(stat => stat && typeof stat.count === 'number' && stat.count > 0 && EMOTIONAL_CATEGORIES[stat.category])
             .map(stat => (
-              <Paper
+              <div
                 key={stat.category}
-                sx={{
-                  p: 2,
-                  borderLeft: `4px solid ${EMOTIONAL_CATEGORIES[stat.category].emoji}`,
-                  backgroundColor: `${EMOTIONAL_CATEGORIES[stat.category].emoji}10`
-                }}
+                className={`p-4 rounded-2xl border-l-4 ${
+                  theme === 'dark' ? 'bg-dark-tertiary border-border-dark-medium' : 'bg-light-tertiary border-border-medium'
+                }`}
+                style={{ borderLeftColor: EMOTIONAL_CATEGORIES[stat.category].emoji }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <Typography variant="subtitle1" sx={{ flex: 1 }}>
-                    <span style={{ marginRight: 8 }}>{EMOTIONAL_CATEGORIES[stat.category].emoji}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className={`font-semibold ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                    <span className="mr-2">{EMOTIONAL_CATEGORIES[stat.category].emoji}</span>
                     {EMOTIONAL_CATEGORIES[stat.category].name}
-                  </Typography>
-                  <Tooltip title="Words in this category">
-                    <Typography variant="caption" color="text.secondary">
-                      {stat.count} words
-                    </Typography>
-                  </Tooltip>
-                </Box>
+                  </h4>
+                  <span className={`text-sm ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                    {stat.count} words
+                  </span>
+                </div>
 
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                <div className="mb-3">
+                  <div className={`text-xs mb-1 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
                     Mastery Progress
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(stat.mastered / stat.count) * 100}
-                      sx={{
-                        flex: 1,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: `${EMOTIONAL_CATEGORIES[stat.category].emoji}20`,
-                        '& .MuiLinearProgress-bar': {
-                          backgroundColor: EMOTIONAL_CATEGORIES[stat.category].emoji
-                        }
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`flex-1 h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                      <div 
+                        className="h-full bg-gradient-to-r from-japanese-green to-japanese-blue rounded-full"
+                        style={{ width: `${(stat.mastered / stat.count) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className={`text-xs ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
                       {Math.round((stat.mastered / stat.count) * 100)}%
-                    </Typography>
-                  </Box>
-                </Box>
+                    </span>
+                  </div>
+                </div>
 
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                <div className="mb-3">
+                  <div className={`text-xs mb-1 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
                     Average Intensity
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(stat.averageIntensity / 5) * 100}
-                      sx={{
-                        flex: 1,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: `${EMOTIONAL_CATEGORIES[stat.category].emoji}20`,
-                        '& .MuiLinearProgress-bar': {
-                          backgroundColor: EMOTIONAL_CATEGORIES[stat.category].emoji
-                        }
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`flex-1 h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                      <div 
+                        className="h-full bg-gradient-to-r from-japanese-orange to-japanese-red rounded-full"
+                        style={{ width: `${(stat.averageIntensity / 5) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className={`text-xs ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
                       {stat.averageIntensity.toFixed(1)}/5
-                    </Typography>
-                  </Box>
-                </Box>
+                    </span>
+                  </div>
+                </div>
 
                 {Object.keys(stat.relatedEmotions).length > 0 && (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                  <div>
+                    <div className={`text-xs mb-2 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
                       Related Emotions
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+                    </div>
+                    <div className="flex gap-1 flex-wrap">
                       {Object.entries(stat.relatedEmotions)
                         .sort(([, a], [, b]) => b - a)
                         .slice(0, 3)
                         .map(([emotion, count]) => (
-                          <Tooltip
+                          <div
                             key={emotion}
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                              theme === 'dark' ? 'bg-gray-700 border border-gray-600' : 'bg-gray-100 border border-gray-300'
+                            }`}
                             title={`${count} words with this related emotion`}
                           >
-                            <Box
-                              sx={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                px: 1,
-                                py: 0.5,
-                                borderRadius: 1,
-                                backgroundColor: `${EMOTIONAL_CATEGORIES[emotion as EmotionalCategory].emoji}20`,
-                                border: `1px solid ${EMOTIONAL_CATEGORIES[emotion as EmotionalCategory].emoji}`,
-                                fontSize: '0.75rem'
-                              }}
-                            >
-                              <span style={{ marginRight: 4 }}>
-                                {EMOTIONAL_CATEGORIES[emotion as EmotionalCategory].emoji}
-                              </span>
-                              {EMOTIONAL_CATEGORIES[emotion as EmotionalCategory].name}
-                            </Box>
-                          </Tooltip>
+                            <span className="mr-1">
+                              {EMOTIONAL_CATEGORIES[emotion as EmotionalCategory].emoji}
+                            </span>
+                            {EMOTIONAL_CATEGORIES[emotion as EmotionalCategory].name}
+                          </div>
                         ))}
-                    </Box>
-                  </Box>
+                    </div>
+                  </div>
                 )}
-              </Paper>
+              </div>
             ))}
-        </Box>
+        </div>
       ) : (
         // Summary view (mood cloud)
-        <Box sx={{ 
-          display: 'flex', 
-          flexWrap: 'wrap', 
-          gap: 2, 
-          justifyContent: 'center',
-          p: 2
-        }}>
+        <div className="flex flex-wrap gap-4 justify-center p-4">
           {moodCloudData.map(({ category, count, intensity, mastered }) => (
-            <Tooltip
+            <div
               key={category}
-              title={
-                <Box>
-                  <Typography variant="subtitle2">
-                    {EMOTIONAL_CATEGORIES[category].name}
-                  </Typography>
-                  <Typography variant="caption" display="block">
-                    Total: {count} words
-                  </Typography>
-                  <Typography variant="caption" display="block">
-                    Mastered: {mastered} words
-                  </Typography>
-                  <Typography variant="caption" display="block">
-                    Average Intensity: {intensity.toFixed(1)}/5
-                  </Typography>
-                </Box>
-              }
+              className={`flex flex-col items-center p-4 rounded-2xl cursor-pointer transition-transform duration-200 hover:scale-105 ${
+                theme === 'dark' ? 'bg-dark-tertiary border border-border-dark-medium' : 'bg-light-tertiary border border-border-medium'
+              }`}
+              title={`${EMOTIONAL_CATEGORIES[category].name}\nTotal: ${count} words\nMastered: ${mastered} words\nAverage Intensity: ${intensity.toFixed(1)}/5`}
             >
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  p: 2,
-                  borderRadius: 2,
-                  backgroundColor: `${EMOTIONAL_CATEGORIES[category].emoji}10`,
-                  border: `1px solid ${EMOTIONAL_CATEGORIES[category].emoji}`,
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform: 'scale(1.05)'
-                  }
-                }}
-              >
-                <Typography variant="h4" sx={{ mb: 1 }}>
-                  {EMOTIONAL_CATEGORIES[category].emoji}
-                </Typography>
-                <Typography variant="subtitle2" align="center">
-                  {EMOTIONAL_CATEGORIES[category].name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {count} words
-                </Typography>
-              </Box>
-            </Tooltip>
+              <div className="text-3xl mb-2">
+                {EMOTIONAL_CATEGORIES[category].emoji}
+              </div>
+              <div className={`text-sm font-semibold text-center ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+                {EMOTIONAL_CATEGORIES[category].name}
+              </div>
+              <div className={`text-xs ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+                {count} words
+              </div>
+            </div>
           ))}
-        </Box>
+        </div>
       )}
-    </Paper>
+    </div>
   );
 };
 

@@ -25,7 +25,7 @@ module.exports = (env, argv) => {
       port: 3002,
       host: '0.0.0.0', // Bind to all interfaces for incognito compatibility
       hot: true,
-      open: false,
+      open: true,
       historyApiFallback: true,
       static: {
         directory: path.join(__dirname, 'public'),

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 import safeLocalStorage from '../utils/safeLocalStorage';
 
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -14,6 +15,7 @@ export default function Login() {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [lockoutEndTime, setLockoutEndTime] = useState<number | null>(null);
   const { login } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -85,20 +87,42 @@ export default function Login() {
   const remainingLockoutTime = lockoutEndTime ? Math.ceil((lockoutEndTime - Date.now()) / 60000) : 0;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${
+      theme === 'dark' 
+        ? 'bg-gradient-to-br from-dark via-dark-secondary to-dark-tertiary' 
+        : 'bg-gradient-to-br from-light via-light-secondary to-light-tertiary'
+    }`}>
       <div className="max-w-md w-full space-y-8">
-        <div className="bg-white dark:bg-dark-elevated dark:bg-gray-800 shadow-xl rounded-card p-8 flex flex-col items-center">
-          <h2 className="text-3xl font-extrabold text-indigo-700 dark:text-indigo-300 mb-2 text-center">Sign in to your account</h2>
-          <p className="text-text-muted dark:text-text-dark-muted dark:text-gray-400 text-center mb-6">Welcome back! Please enter your details to continue.</p>
+        <div className={`shadow-xl rounded-card p-8 flex flex-col items-center ${
+          theme === 'dark' ? 'bg-dark-elevated border border-border-dark-light' : 'bg-white border border-border-light'
+        }`}>
+          <h2 className={`text-3xl font-extrabold mb-2 text-center ${
+            theme === 'dark' ? 'text-japanese-red' : 'text-japanese-red'
+          }`}>
+            Sign in to your account
+          </h2>
+          <p className={`text-center mb-6 ${
+            theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'
+          }`}>
+            Welcome back! Please enter your details to continue.
+          </p>
           <form className="w-full space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="rounded-md bg-red-50 dark:bg-red-900 p-4 mb-2">
-                <div className="text-sm text-red-700 dark:text-red-200">{error}</div>
+              <div className={`rounded-nav p-4 mb-2 ${
+                theme === 'dark' ? 'bg-japanese-red/10 border border-japanese-red/20' : 'bg-japanese-red/5 border border-japanese-red/20'
+              }`}>
+                <div className={`text-sm ${
+                  theme === 'dark' ? 'text-japanese-red' : 'text-japanese-red'
+                }`}>{error}</div>
               </div>
             )}
             <div className="space-y-4">
               <div>
-                <label htmlFor="email-address" className="block text-sm font-medium text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary">Email address</label>
+                <label htmlFor="email-address" className={`block text-sm font-medium ${
+                  theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'
+                }`}>
+                  Email address
+                </label>
                 <input
                   id="email-address"
                   name="email"
@@ -106,14 +130,22 @@ export default function Login() {
                   autoComplete="email"
                   required
                   disabled={!!lockoutEndTime}
-                  className="appearance-none rounded-nav relative block w-full px-3 py-2 border border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium dark:border-gray-700 placeholder-gray-400 text-text-primary dark:text-text-dark-primary dark:text-gray-100 bg-white dark:bg-dark-elevated dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+                  className={`appearance-none rounded-input relative block w-full px-3 py-2 border placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-japanese-red focus:border-japanese-red disabled:cursor-not-allowed transition-all duration-300 ${
+                    theme === 'dark'
+                      ? 'border-border-dark-light text-text-dark-primary bg-dark-elevated placeholder-gray-500 disabled:bg-dark-tertiary'
+                      : 'border-border-light text-text-primary bg-white placeholder-gray-400 disabled:bg-light-tertiary'
+                  }`}
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-text-secondary dark:text-text-dark-secondary dark:text-text-secondary dark:text-text-dark-secondary">Password</label>
+                <label htmlFor="password" className={`block text-sm font-medium ${
+                  theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'
+                }`}>
+                  Password
+                </label>
                 <input
                   id="password"
                   name="password"
@@ -121,7 +153,11 @@ export default function Login() {
                   autoComplete="current-password"
                   required
                   disabled={!!lockoutEndTime}
-                  className="appearance-none rounded-nav relative block w-full px-3 py-2 border border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium dark:border-gray-700 placeholder-gray-400 text-text-primary dark:text-text-dark-primary dark:text-gray-100 bg-white dark:bg-dark-elevated dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+                  className={`appearance-none rounded-input relative block w-full px-3 py-2 border placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-japanese-red focus:border-japanese-red disabled:cursor-not-allowed transition-all duration-300 ${
+                    theme === 'dark'
+                      ? 'border-border-dark-light text-text-dark-primary bg-dark-elevated placeholder-gray-500 disabled:bg-dark-tertiary'
+                      : 'border-border-light text-text-primary bg-white placeholder-gray-400 disabled:bg-light-tertiary'
+                  }`}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -132,11 +168,11 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading || !!lockoutEndTime}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-semibold rounded-nav text-text-primary dark:text-text-dark-primary bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-semibold rounded-button text-white bg-japanese-red hover:bg-japanese-redLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-japanese-red disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-button hover:shadow-button-hover"
               >
                 {loading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin h-5 w-5 mr-2 text-text-primary dark:text-text-dark-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                     </svg>
@@ -149,10 +185,18 @@ export default function Login() {
             </div>
             <div className="flex items-center justify-between">
               <div className="text-sm">
-                <Link to="/reset-password" className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors">Forgot your password?</Link>
+                <Link to="/reset-password" className={`font-medium hover:opacity-80 transition-colors ${
+                  theme === 'dark' ? 'text-japanese-red' : 'text-japanese-red'
+                }`}>
+                  Forgot your password?
+                </Link>
               </div>
               <div className="text-sm">
-                <Link to="/signup" className="font-medium text-pink-600 dark:text-pink-400 hover:text-pink-500 dark:hover:text-pink-300 transition-colors">Sign up</Link>
+                <Link to="/signup" className={`font-medium hover:opacity-80 transition-colors ${
+                  theme === 'dark' ? 'text-japanese-blue' : 'text-japanese-blue'
+                }`}>
+                  Sign up
+                </Link>
               </div>
             </div>
           </form>

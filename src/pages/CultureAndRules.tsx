@@ -1,24 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Container,
-  Typography,
-  Box,
-  Tabs,
-  Tab,
-  IconButton,
-  Paper,
-  Grid,
-  useTheme,
-  useMediaQuery,
-  Button,
-  ButtonGroup
-} from '@mui/material';
-import {
-  Translate as TranslateIcon,
-  VolumeUp as VolumeUpIcon,
-  MenuBook as MenuBookIcon,
-  School as SchoolIcon
-} from '@mui/icons-material';
+import { useTheme } from '../context/ThemeContext';
 import CulturalItemCard from '../components/CulturalItemCard';
 import TabPanel from '../components/TabPanel';
 import { culturalTopics, languageRules, CulturalTopic } from '../data/culturalContent';
@@ -31,15 +12,15 @@ type DisplayMode = {
 type TabType = 'cultural' | 'language';
 
 const CultureAndRules: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { theme, getThemeClasses } = useTheme();
+  const themeClasses = getThemeClasses();
   const [activeTab, setActiveTab] = useState<number>(0);
   const [displayMode, setDisplayMode] = useState<DisplayMode>({
     romaji: true,
     english: true
   });
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -51,105 +32,105 @@ const CultureAndRules: React.FC = () => {
   };
 
   const renderContent = (topics: CulturalTopic[]) => (
-    <Grid container spacing={3}>
+    <div className="space-y-6">
       {topics.map((topic, index) => (
-        <Grid item xs={12} key={index}>
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Box display="flex" alignItems="center" mb={2}>
-              {topic.icon}
-              <Typography variant="h5" component="h2" ml={1}>
-                {topic.title}
-              </Typography>
-            </Box>
-            <Grid container spacing={2}>
-              {topic.content.map((item, itemIndex) => (
-                <Grid item xs={12} key={itemIndex}>
-                  <CulturalItemCard
-                    {...item}
-                    showRomaji={displayMode.romaji}
-                    showEnglish={displayMode.english}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-          </Paper>
-        </Grid>
+        <div key={index} className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'}`}>
+          <div className="flex items-center mb-4">
+            <div className="text-2xl mr-3">{topic.icon}</div>
+            <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+              {topic.title}
+            </h2>
+          </div>
+          <div className="space-y-4">
+            {topic.content.map((item, itemIndex) => (
+              <div key={itemIndex}>
+                <CulturalItemCard
+                  {...item}
+                  showRomaji={displayMode.romaji}
+                  showEnglish={displayMode.english}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       ))}
-    </Grid>
+    </div>
   );
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Hero Section */}
-      <Box
-        sx={{
-          bgcolor: 'primary.main',
-          color: 'primary.contrastText',
-          p: 4,
-          borderRadius: 2,
-          mb: 4,
-          textAlign: 'center'
-        }}
-      >
-        <Typography variant="h3" component="h1" gutterBottom>
-          Japanese Culture & Language Rules
-        </Typography>
-        <Typography variant="h6">
-          Explore the rich cultural traditions and linguistic nuances of Japan
-        </Typography>
-      </Box>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-dark text-text-dark-primary' : 'bg-light text-text-primary'}`}>
+      <div className="container mx-auto px-4 py-8">
+        {/* Hero Section */}
+        <div className={`relative overflow-hidden rounded-2xl mb-8 p-8 ${theme === 'dark' ? 'bg-gradient-to-br from-japanese-earth/20 to-japanese-earth-dark/20 border border-border-dark-light' : 'bg-gradient-to-br from-japanese-earth/10 to-japanese-earth-dark/10 border border-border-light'}`}>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+          <div className="relative z-10 text-center">
+            <h1 className={`text-4xl md:text-5xl font-bold mb-4 ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+              Japanese Culture & Language Rules
+            </h1>
+            <p className={`text-xl ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+              Explore the rich cultural traditions and linguistic nuances of Japan
+            </p>
+          </div>
+        </div>
 
-      {/* Language Display Controls */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
-        <ButtonGroup variant="contained" size={isMobile ? 'small' : 'medium'}>
-          <Button
-            onClick={() => toggleDisplayMode('romaji')}
-            color={displayMode.romaji ? 'secondary' : 'primary'}
-            startIcon={<TranslateIcon />}
-          >
-            Romaji
-          </Button>
-          <Button
-            onClick={() => toggleDisplayMode('english')}
-            color={displayMode.english ? 'secondary' : 'primary'}
-            startIcon={<MenuBookIcon />}
-          >
-            English
-          </Button>
-        </ButtonGroup>
-      </Box>
+        {/* Language Display Controls */}
+        <div className="flex justify-center mb-8">
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-nav p-1">
+            <button
+              onClick={() => toggleDisplayMode('romaji')}
+              className={`px-4 py-2 rounded-nav text-sm font-medium transition-colors duration-200 flex items-center gap-2 ${
+                displayMode.romaji
+                  ? 'bg-japanese-blue text-white'
+                  : theme === 'dark' ? 'text-text-dark-secondary hover:text-text-dark-primary' : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              📝 Romaji
+            </button>
+            <button
+              onClick={() => toggleDisplayMode('english')}
+              className={`px-4 py-2 rounded-nav text-sm font-medium transition-colors duration-200 flex items-center gap-2 ${
+                displayMode.english
+                  ? 'bg-japanese-green text-white'
+                  : theme === 'dark' ? 'text-text-dark-secondary hover:text-text-dark-primary' : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              📚 English
+            </button>
+          </div>
+        </div>
 
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          centered
-          variant={isMobile ? 'fullWidth' : 'standard'}
-        >
-          <Tab
-            label="Cultural Topics"
-            value={0}
-            icon={<MenuBookIcon />}
-            iconPosition="start"
-          />
-          <Tab
-            label="Language Rules"
-            value={1}
-            icon={<SchoolIcon />}
-            iconPosition="start"
-          />
-        </Tabs>
-      </Box>
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-nav p-1">
+            {[
+              { label: 'Cultural Topics', icon: '📚', value: 0 },
+              { label: 'Language Rules', icon: '🎓', value: 1 }
+            ].map((tab) => (
+              <button
+                key={tab.label}
+                onClick={() => handleTabChange(tab.value)}
+                className={`flex-1 px-4 py-2 rounded-nav text-sm font-medium transition-colors duration-200 ${
+                  activeTab === tab.value
+                    ? 'bg-japanese-red text-white'
+                    : `${theme === 'dark' ? 'text-text-dark-secondary hover:text-text-dark-primary' : 'text-text-secondary hover:text-text-primary'}`
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* Content */}
-      <TabPanel value={activeTab} index={0}>
-        {renderContent(culturalTopics)}
-      </TabPanel>
-      <TabPanel value={activeTab} index={1}>
-        {renderContent(languageRules)}
-      </TabPanel>
-    </Container>
+        {/* Content */}
+        <TabPanel value={activeTab} index={0}>
+          {renderContent(culturalTopics)}
+        </TabPanel>
+        <TabPanel value={activeTab} index={1}>
+          {renderContent(languageRules)}
+        </TabPanel>
+      </div>
+    </div>
   );
 };
 

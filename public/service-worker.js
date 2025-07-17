@@ -63,10 +63,10 @@ importScripts('/push-handler.js');
 const CacheManager = {
   async preloadCriticalAssets() {
     const criticalAssets = [
-      '/css/critical.css',
-      '/js/critical.js',
-      '/icons/icon-192x192.png',
-      '/icons/icon-512x512.png'
+      '/offline.html',
+      '/version.json',
+      '/manifest.json',
+      '/index.html'
     ];
 
     const cache = await caches.open(CACHE_NAME);
@@ -89,10 +89,14 @@ const CacheManager = {
   },
 
   async updateCacheVersion() {
-    const cache = await caches.open(CACHE_NAME);
-    const response = await fetch('/version.json');
-    const version = await response.json();
-    await cache.put('/version.json', new Response(JSON.stringify(version)));
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const response = await fetch('/version.json');
+      const version = await response.json();
+      await cache.put('/version.json', new Response(JSON.stringify(version)));
+    } catch (error) {
+      console.warn('Failed to update cache version:', error);
+    }
   }
 };
 
@@ -102,7 +106,7 @@ const OfflineManager = {
     const cache = await caches.open(OFFLINE_CACHE_NAME);
     const offlineResponse = await cache.match('/offline.html');
     
-    if (request.headers.get('accept').includes('application/json')) {
+    if (request.headers.get('accept')?.includes('application/json')) {
       return new Response(JSON.stringify({
         error: 'offline',
         message: 'You are currently offline. Please check your connection.',
@@ -204,38 +208,6 @@ async function markChangeAsSynced(db, id) {
   });
 }
 
-// Cache management
-const CACHE_URLS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/static/js/main.js',
-  '/static/css/main.css',
-  '/static/media/logo.svg'
-];
-
-// Install event
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(CACHE_URLS))
-      .then(() => self.skipWaiting())
-  );
-});
-
-// Activate event
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames
-          .filter(name => name !== CACHE_NAME)
-          .map(name => caches.delete(name))
-      );
-    }).then(() => self.clients.claim())
-  );
-});
-
 // Request handling function
 async function handleRequest(request) {
   // Skip cross-origin requests
@@ -289,11 +261,6 @@ async function handleRequest(request) {
   }
 }
 
-// Update fetch event listener
-self.addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request));
-});
-
 // Add a function to notify clients about updates
 const notifyClientsAboutUpdate = async () => {
   const clients = await self.clients.matchAll();
@@ -306,7 +273,7 @@ const notifyClientsAboutUpdate = async () => {
   });
 };
 
-// Update the main install event listener
+// Install event listener
 self.addEventListener('install', event => {
   console.log('Service worker installing...');
   event.waitUntil(
@@ -325,7 +292,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// Update the main activate event listener
+// Activate event listener
 self.addEventListener('activate', event => {
   console.log('Service worker activating...');
   event.waitUntil(
@@ -344,75 +311,9 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Add a function to handle font fetching with retries
-const fetchFontWithRetry = async (url, retries = 3) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url, {
-        credentials: 'omit',
-        mode: 'cors',
-        cache: 'no-cache'
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      return response;
-    } catch (error) {
-      console.warn(`Font fetch attempt ${i + 1} failed for ${url}:`, error);
-      if (i === retries - 1) {
-        // On last retry, return null instead of throwing
-        console.warn(`All font fetch attempts failed for ${url}`);
-        return null;
-      }
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-    }
-  }
-  return null;
-};
-
-// Update the font caching strategy
-self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('fonts.googleapis.com') || 
-      event.request.url.includes('fonts.gstatic.com')) {
-    event.respondWith(
-      (async () => {
-        try {
-          // Try to get from cache first
-          const cachedResponse = await caches.match(event.request);
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-
-          // If not in cache, fetch with retry
-          const response = await fetchFontWithRetry(event.request.url);
-          if (!response) {
-            // If font fetch fails, return a fallback response
-            return new Response('', {
-              status: 200,
-              headers: new Headers({
-                'Content-Type': 'text/css',
-                'Cache-Control': 'no-cache'
-              })
-            });
-          }
-
-          // Cache the successful response
-          const cache = await caches.open('font-cache');
-          await cache.put(event.request, response.clone());
-          return response;
-        } catch (error) {
-          console.warn('Font fetch error:', error);
-          // Return a fallback response instead of throwing
-          return new Response('', {
-            status: 200,
-            headers: new Headers({
-              'Content-Type': 'text/css',
-              'Cache-Control': 'no-cache'
-            })
-          });
-        }
-      })()
-    );
-  }
+// Fetch event listener
+self.addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request));
 });
 
 // Handle messages from clients
@@ -512,22 +413,14 @@ function audioBufferToWav(buffer) {
   
   // Write audio data
   const offset = 44;
-  const channelData = [];
-  for (let i = 0; i < numChannels; i++) {
-    channelData.push(buffer.getChannelData(i));
-  }
-  
-  let pos = 0;
-  while (pos < buffer.length) {
-    for (let i = 0; i < numChannels; i++) {
-      const sample = Math.max(-1, Math.min(1, channelData[i][pos]));
-      const value = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-      view.setInt16(offset + pos * blockAlign + i * bytesPerSample, value, true);
+  for (let i = 0; i < buffer.length; i++) {
+    for (let channel = 0; channel < numChannels; channel++) {
+      const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
+      view.setInt16(offset + (i * numChannels + channel) * 2, sample * 0x7FFF, true);
     }
-    pos++;
   }
   
-  return arrayBuffer;
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
 }
 
 function writeString(view, offset, string) {
@@ -537,176 +430,82 @@ function writeString(view, offset, string) {
 }
 
 async function convertToMp3(wavBlob, bitrate) {
-  // For now, return the WAV blob as we don't have MP3 conversion
-  // In a real implementation, you would use a library like lamejs
+  // This would require a Web Audio API implementation
+  // For now, return the WAV blob
   return wavBlob;
 }
 
-// Custom TimestampTrigger polyfill
 class TimestampTrigger {
   constructor(timestamp) {
     this.timestamp = timestamp;
   }
+  
+  shouldTrigger() {
+    return Date.now() >= this.timestamp;
+  }
 }
 
-// Add audio optimization configuration
-const AUDIO_OPTIMIZATION = {
-  high: {
-    bitrate: '128k',
-    sampleRate: 44100
-  },
-  low: {
-    bitrate: '64k',
-    sampleRate: 22050
-  }
-};
-
-// Add audio optimization function
 async function optimizeAudio(audioBlob, quality = 'high') {
-  const config = AUDIO_OPTIMIZATION[quality];
-  
-  // Create an audio context
-  const audioContext = new AudioContext({ sampleRate: config.sampleRate });
+  const arrayBuffer = await audioBlob.arrayBuffer();
+  const audioContext = new OfflineAudioContext(1, 44100 * 60, 44100); // 1 minute max
   
   try {
-    // Decode the audio data
-    const arrayBuffer = await audioBlob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
-    // Create a new buffer with the target sample rate
-    const offlineContext = new OfflineAudioContext(
-      audioBuffer.numberOfChannels,
-      audioBuffer.duration * config.sampleRate,
-      config.sampleRate
-    );
-    
-    // Create a source node
-    const source = offlineContext.createBufferSource();
+    const source = audioContext.createBufferSource();
     source.buffer = audioBuffer;
-    source.connect(offlineContext.destination);
+    source.connect(audioContext.destination);
     source.start();
     
-    // Render the audio
-    const renderedBuffer = await offlineContext.startRendering();
-    
-    // Convert to blob with appropriate bitrate
-    const wavBlob = await new Promise(resolve => {
-      const wav = audioBufferToWav(renderedBuffer);
-      resolve(new Blob([wav], { type: 'audio/wav' }));
-    });
-    
-    // Convert to MP3 with specified bitrate
-    const mp3Blob = await convertToMp3(wavBlob, config.bitrate);
-    
-    return mp3Blob;
-  } finally {
-    audioContext.close();
-  }
-}
-
-// Add helper function to get user's preferred audio quality
-async function getAudioQuality() {
-  try {
-    const cache = await caches.open(AUDIO_CACHE_NAME);
-    const settings = await cache.match('/audio-settings.json');
-    if (settings) {
-      const data = await settings.json();
-      return data.quality || 'high';
-    }
+    const renderedBuffer = await audioContext.startRendering();
+    return audioBufferToWav(renderedBuffer);
   } catch (error) {
-    console.error('[Service Worker] Failed to get audio quality settings:', error);
+    console.error('Audio optimization failed:', error);
+    return audioBlob;
   }
-  return 'high'; // Default to high quality
 }
 
-// Enhanced sync handling
+async function getAudioQuality() {
+  // Check device capabilities
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const sampleRate = audioContext.sampleRate;
+  
+  if (sampleRate >= 48000) return 'high';
+  if (sampleRate >= 44100) return 'medium';
+  return 'low';
+}
+
 class SyncManager {
   static async syncWithRetry(syncFunction, attempt = 1) {
-    const MAX_ATTEMPTS = 3;
-    const BACKOFF_MULTIPLIER = 2;
-    const INITIAL_DELAY = 1000;
-
     try {
-      await syncFunction();
+      return await syncFunction();
     } catch (error) {
-      if (attempt < MAX_ATTEMPTS) {
-        const delay = INITIAL_DELAY * Math.pow(BACKOFF_MULTIPLIER, attempt - 1);
-        await new Promise(resolve => setTimeout(resolve, delay));
+      if (attempt < 3) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         return this.syncWithRetry(syncFunction, attempt + 1);
       }
       throw error;
     }
   }
-
-  static async handleSync(event) {
-    const { tag } = event;
-    
-    switch (tag) {
-      case 'sync-vocabulary':
-        await this.syncWithRetry(syncVocabulary);
-        break;
-      case 'sync-progress':
-        await this.syncWithRetry(syncProgress);
-        break;
-      case 'sync-settings':
-        await this.syncWithRetry(syncSettings);
-        break;
-      default:
-        console.warn('Unknown sync tag:', tag);
-    }
-  }
-}
-
-// Update service worker event listeners
-self.addEventListener('install', event => {
-  event.waitUntil(
-    Promise.all([
-      CacheManager.preloadCriticalAssets(),
-      CacheManager.updateCacheVersion()
-    ])
-  );
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    Promise.all([
-      CacheManager.cleanupOldCaches(),
-      clients.claim()
-    ])
-  );
-});
-
-self.addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request));
-});
-
-self.addEventListener('sync', event => {
-  event.waitUntil(SyncManager.handleSync(event));
-});
-
-// Background sync for failed requests
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-vocabulary') {
-    event.waitUntil(syncVocabulary());
-  }
-});
-
-async function syncVocabulary() {
-  const db = await openDatabase();
-  const pendingItems = await db.getAll('pendingVocabulary');
   
-  for (const item of pendingItems) {
+  static async handleSync(event) {
     try {
-      const response = await fetch('/api/vocabulary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(item.data)
-      });
+      const db = await openDatabase();
+      const changes = await getPendingChanges(db);
       
-      if (response.ok) {
-        await db.delete('pendingVocabulary', item.id);
+      for (const change of changes) {
+        await this.syncWithRetry(async () => {
+          const response = await fetch('/api/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(change.data)
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Sync failed: ${response.status}`);
+          }
+          
+          await markChangeAsSynced(db, change.id);
+        });
       }
     } catch (error) {
       console.error('Sync failed:', error);
@@ -714,122 +513,84 @@ async function syncVocabulary() {
   }
 }
 
-// Sync progress data
+// Sync functions
+async function syncVocabulary() {
+  try {
+    const db = await openDatabase();
+    const response = await fetch('/api/vocabulary');
+    const vocabulary = await response.json();
+    
+    // Store in IndexedDB
+    const transaction = db.transaction(['vocabulary'], 'readwrite');
+    const store = transaction.objectStore('vocabulary');
+    await store.clear();
+    
+    for (const word of vocabulary) {
+      await store.add(word);
+    }
+  } catch (error) {
+    console.error('Vocabulary sync failed:', error);
+  }
+}
+
 async function syncProgress() {
-  const db = await openDatabase();
-  const pendingProgress = await db.getAll('pendingProgress');
-  
-  for (const item of pendingProgress) {
-    try {
-      const response = await fetch('/api/progress', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(item.data)
-      });
-      
-      if (response.ok) {
-        await db.delete('pendingProgress', item.id);
-        // Notify the client of successful sync
-        self.clients.matchAll().then(clients => {
-          clients.forEach(client => {
-            client.postMessage({
-              type: 'SYNC_COMPLETE',
-              payload: { type: 'progress', id: item.id }
-            });
-          });
-        });
-      }
-    } catch (error) {
-      console.error('Progress sync failed:', error);
-      throw error; // Let the retry mechanism handle it
+  try {
+    const db = await openDatabase();
+    const response = await fetch('/api/progress');
+    const progress = await response.json();
+    
+    // Store in IndexedDB
+    const transaction = db.transaction(['progress'], 'readwrite');
+    const store = transaction.objectStore('progress');
+    await store.clear();
+    
+    for (const item of progress) {
+      await store.add(item);
     }
+  } catch (error) {
+    console.error('Progress sync failed:', error);
   }
 }
 
-// Sync settings
 async function syncSettings() {
-  const db = await openDatabase();
-  const pendingSettings = await db.getAll('pendingSettings');
-  
-  for (const item of pendingSettings) {
-    try {
-      const response = await fetch('/api/settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(item.data)
-      });
-      
-      if (response.ok) {
-        await db.delete('pendingSettings', item.id);
-        // Update local settings cache
-        const cache = await caches.open(DATA_CACHE_NAME);
-        await cache.put('/settings.json', response.clone());
-      }
-    } catch (error) {
-      console.error('Settings sync failed:', error);
-      throw error;
+  try {
+    const db = await openDatabase();
+    const response = await fetch('/api/settings');
+    const settings = await response.json();
+    
+    // Store in IndexedDB
+    const transaction = db.transaction(['settings'], 'readwrite');
+    const store = transaction.objectStore('settings');
+    await store.clear();
+    
+    for (const setting of settings) {
+      await store.add(setting);
     }
+  } catch (error) {
+    console.error('Settings sync failed:', error);
   }
 }
 
-// Periodic sync for background updates
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'update-vocabulary') {
-    event.waitUntil(updateVocabularyCache());
-  }
-});
-
-// Update vocabulary cache periodically
 async function updateVocabularyCache() {
   try {
-    const response = await fetch('/api/vocabulary/updates');
-    if (!response.ok) throw new Error('Failed to fetch vocabulary updates');
+    const response = await fetch('/api/vocabulary/cache');
+    const cache = await response.json();
     
-    const updates = await response.json();
-    const cache = await caches.open(DATA_CACHE_NAME);
-    
-    // Update cache with new vocabulary
-    for (const item of updates) {
-      await cache.put(`/vocabulary/${item.id}.json`, new Response(JSON.stringify(item)));
-    }
-    
-    // Notify clients of the update
-    self.clients.matchAll().then(clients => {
-      clients.forEach(client => {
-        client.postMessage({
-          type: 'VOCABULARY_UPDATED',
-          payload: { count: updates.length }
-        });
-      });
-    });
+    const cacheStorage = await caches.open(DATA_CACHE_NAME);
+    await cacheStorage.put('/api/vocabulary/cache', new Response(JSON.stringify(cache)));
   } catch (error) {
-    console.error('Failed to update vocabulary cache:', error);
+    console.error('Vocabulary cache update failed:', error);
   }
 }
 
-// Add missing syncRomajiData function
 async function syncRomajiData() {
   try {
     const response = await fetch(ROMAJI_DATA_URL);
-    if (!response.ok) throw new Error(`Failed to fetch romaji data: ${response.status}`);
+    const romajiData = await response.json();
     
     const cache = await caches.open(DATA_CACHE_NAME);
-    await cache.put(ROMAJI_DATA_URL, response.clone());
-    
-    // Notify clients of the update
-    self.clients.matchAll().then(clients => {
-      clients.forEach(client => {
-        client.postMessage({
-          type: 'ROMAJI_DATA_UPDATED'
-        });
-      });
-    });
+    await cache.put(ROMAJI_DATA_URL, new Response(JSON.stringify(romajiData)));
   } catch (error) {
-    console.error('Failed to sync romaji data:', error);
-    throw error;
+    console.error('Romaji data sync failed:', error);
   }
 }

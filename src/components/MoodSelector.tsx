@@ -1,15 +1,6 @@
 import React from 'react';
-import { 
-  Box, Typography, Chip, Tooltip, IconButton, Popover, Button,
-  Paper, Grid, Fade, Zoom, Grow, useTheme
-} from '@mui/material';
 import { EmotionalCategory, EMOTIONAL_CATEGORIES } from '../types/mood';
-import MoodIcon from '@mui/icons-material/Mood';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
-import SentimentSatisfiedIcon from '@mui/icons-material/SentimentSatisfied';
-import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
-import PsychologyIcon from '@mui/icons-material/Psychology';
+import { useTheme } from '../context/ThemeContext';
 
 interface MoodSelectorProps {
   selectedMoods: EmotionalCategory[];
@@ -20,7 +11,7 @@ interface MoodSelectorProps {
 const moodGroups = [
   {
     name: "Romantic & Love",
-    icon: <SentimentSatisfiedIcon />,
+    icon: "💕",
     moods: [
       "love",
       "romantic"
@@ -28,7 +19,7 @@ const moodGroups = [
   },
   {
     name: "Anger & Frustration",
-    icon: <SentimentDissatisfiedIcon />,
+    icon: "😠",
     moods: [
       "anger",
       "angry",
@@ -37,7 +28,7 @@ const moodGroups = [
   },
   {
     name: "Positive Emotions",
-    icon: <EmojiEmotionsIcon />,
+    icon: "😊",
     moods: [
       "happiness",
       "positive",
@@ -46,7 +37,7 @@ const moodGroups = [
   },
   {
     name: "Social & Respect",
-    icon: <PsychologyIcon />,
+    icon: "🤝",
     moods: [
       "empathy",
       "empathetic",
@@ -55,7 +46,7 @@ const moodGroups = [
   },
   {
     name: "Motivation & Determination",
-    icon: <SentimentSatisfiedIcon />,
+    icon: "💪",
     moods: [
       "determination",
       "motivational"
@@ -63,7 +54,7 @@ const moodGroups = [
   },
   {
     name: "Neutral & Indifferent",
-    icon: <SentimentDissatisfiedIcon />,
+    icon: "😐",
     moods: [
       "neutral",
       "indifferent"
@@ -71,14 +62,14 @@ const moodGroups = [
   },
   {
     name: "Fear & Anxiety",
-    icon: <SentimentDissatisfiedIcon />,
+    icon: "😨",
     moods: [
       "fear"
     ] as EmotionalCategory[]
   },
   {
     name: "Surprise & Disgust",
-    icon: <SentimentDissatisfiedIcon />,
+    icon: "😲",
     moods: [
       "surprise",
       "disgust"
@@ -86,14 +77,14 @@ const moodGroups = [
   },
   {
     name: "Sadness & Grief",
-    icon: <SentimentDissatisfiedIcon />,
+    icon: "😢",
     moods: [
       "sadness"
     ] as EmotionalCategory[]
   },
   {
     name: "Gratitude & Appreciation",
-    icon: <SentimentSatisfiedIcon />,
+    icon: "🙏",
     moods: [
       "gratitude"
     ] as EmotionalCategory[]
@@ -101,17 +92,9 @@ const moodGroups = [
 ];
 
 const MoodSelector: React.FC<MoodSelectorProps> = ({ selectedMoods, onMoodSelect, className }) => {
-  const theme = useTheme();
-  const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
+  const { theme } = useTheme();
+  const [isOpen, setIsOpen] = React.useState(false);
   const [hoveredGroup, setHoveredGroup] = React.useState<string | null>(null);
-
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleMoodToggle = (mood: EmotionalCategory) => {
     const newMoods = selectedMoods.includes(mood)
@@ -137,133 +120,85 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({ selectedMoods, onMoodSelect
     }
   };
 
-  const open = Boolean(anchorEl);
-
   return (
-    <Box className={className}>
-      <Tooltip title="Select moods to filter expressions">
-        <Button
-          variant="contained"
-          onClick={handleClick}
-          startIcon={<MoodIcon />}
-          endIcon={<FilterListIcon />}
-          sx={{
-            backgroundColor: selectedMoods.length > 0 ? 'primary.main' : 'primary.light',
-            color: selectedMoods.length > 0 ? 'white' : 'primary.main',
-            px: 3,
-            py: 1.5,
-            borderRadius: 3,
-            textTransform: 'none',
-            fontSize: '1.1rem',
-            boxShadow: 3,
-            '&:hover': {
-              backgroundColor: 'primary.dark',
-              transform: 'translateY(-2px)',
-              boxShadow: 6,
-            },
-            transition: 'all 0.2s ease-in-out'
-          }}
-        >
+    <div className={`relative ${className}`}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`px-4 py-2 rounded-nav font-semibold transition-all duration-300 flex items-center gap-2 ${
+          selectedMoods.length > 0
+            ? 'bg-japanese-red text-white shadow-button'
+            : theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
+        }`}
+        title="Select moods to filter expressions"
+      >
+        <span>😊</span>
+        <span>
           {selectedMoods.length > 0 
             ? `${selectedMoods.length} Mood${selectedMoods.length > 1 ? 's' : ''} Selected`
             : 'Select Moods'}
-        </Button>
-      </Tooltip>
+        </span>
+        <span>🔽</span>
+      </button>
 
-      <Popover
-        open={open}
-        anchorEl={anchorEl}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        PaperProps={{
-          sx: {
-            p: 3,
-            maxWidth: 800,
-            maxHeight: '80vh',
-            borderRadius: 3,
-            boxShadow: 6,
-            overflow: 'hidden'
-          }
-        }}
-      >
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-            How are you feeling?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 3 }}>
-            Select one or more moods to find the perfect expressions
-          </Typography>
+      {isOpen && (
+        <div className={`absolute top-full left-0 mt-2 w-96 max-h-96 overflow-y-auto rounded-2xl shadow-lg z-50 ${
+          theme === 'dark' ? 'bg-dark-secondary border border-border-dark-light' : 'bg-light-secondary border border-border-light'
+        }`}>
+          <div className="p-4">
+            <h3 className={`text-lg font-bold mb-2 text-center ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
+              How are you feeling?
+            </h3>
+            <p className={`text-sm text-center mb-4 ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
+              Select one or more moods to find the perfect expressions
+            </p>
 
-          {/* Quick Select Groups */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            {moodGroups.map((group) => (
-              <Grid item xs={6} sm={3} key={group.name}>
-                <Paper
+            {/* Quick Select Groups */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {moodGroups.map((group) => (
+                <div
+                  key={group.name}
                   onMouseEnter={() => setHoveredGroup(group.name)}
                   onMouseLeave={() => setHoveredGroup(null)}
                   onClick={() => handleGroupSelect(group.moods)}
-                  sx={{
-                    p: 2,
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out',
-                    backgroundColor: group.moods.every(mood => selectedMoods.includes(mood))
-                      ? 'primary.light'
-                      : 'background.paper',
-                    transform: hoveredGroup === group.name ? 'translateY(-4px)' : 'none',
-                    boxShadow: hoveredGroup === group.name ? 6 : 1,
-                    '&:hover': {
-                      backgroundColor: 'primary.light',
-                      transform: 'translateY(-4px)',
-                      boxShadow: 6
-                    }
-                  }}
+                  className={`p-3 rounded-nav cursor-pointer transition-all duration-200 text-center ${
+                    group.moods.every(mood => selectedMoods.includes(mood))
+                      ? 'bg-japanese-red text-white'
+                      : theme === 'dark' ? 'bg-dark-tertiary hover:bg-gray-600' : 'bg-light-tertiary hover:bg-gray-200'
+                  } ${hoveredGroup === group.name ? 'transform -translate-y-1 shadow-lg' : ''}`}
                 >
-                  <Box sx={{ mb: 1 }}>{group.icon}</Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
+                  <div className="text-2xl mb-1">{group.icon}</div>
+                  <div className={`text-sm font-medium ${theme === 'dark' ? 'text-text-dark-primary' : 'text-text-primary'}`}>
                     {group.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  </div>
+                  <div className={`text-xs ${theme === 'dark' ? 'text-text-dark-secondary' : 'text-text-secondary'}`}>
                     {group.moods.length} moods
-                  </Typography>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          {/* Individual Mood Selection */}
-          <Grid container spacing={1}>
-            {Object.entries(EMOTIONAL_CATEGORIES).map(([category, { name, emoji, description }]) => (
-              <Grid item key={category}>
-                <Tooltip title={description}>
-                  <Chip
-                    label={name}
-                    onClick={() => handleMoodToggle(category as EmotionalCategory)}
-                    icon={<span>{emoji}</span>}
-                    sx={{
-                      backgroundColor: selectedMoods.includes(category as EmotionalCategory)
-                        ? `${emoji}20`
-                        : 'background.paper',
-                      border: `1px solid ${emoji}`,
-                      '&:hover': {
-                        backgroundColor: `${emoji}30`
-                      }
-                    }}
-                  />
-                </Tooltip>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      </Popover>
-    </Box>
+            {/* Individual Mood Selection */}
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(EMOTIONAL_CATEGORIES).map(([category, { name, emoji, description }]) => (
+                <button
+                  key={category}
+                  onClick={() => handleMoodToggle(category as EmotionalCategory)}
+                  className={`px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                    selectedMoods.includes(category as EmotionalCategory)
+                      ? 'bg-japanese-red text-white'
+                      : theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                  title={description}
+                >
+                  <span>{emoji}</span>
+                  <span>{name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

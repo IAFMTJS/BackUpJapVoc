@@ -8,6 +8,7 @@ export const MOOD_WORDS: MoodWord[] = [
     english: 'happy',
     emotionalContext: {
       category: 'happiness',
+      originalCategory: 'happiness',
       emoji: '😊',
       intensity: 5,
       usageNotes: 'Common expression for happiness. Used in both casual and formal situations.',
@@ -25,6 +26,7 @@ export const MOOD_WORDS: MoodWord[] = [
     english: 'sad',
     emotionalContext: {
       category: 'sadness',
+      originalCategory: 'sadness',
       emoji: '😢',
       intensity: 5,
       usageNotes: 'Expresses deep sadness. Can be used in both casual and formal contexts.',
@@ -42,6 +44,7 @@ export const MOOD_WORDS: MoodWord[] = [
     english: 'angry',
     emotionalContext: {
       category: 'anger',
+      originalCategory: 'anger',
       emoji: '😠',
       intensity: 5,
       usageNotes: 'Expresses current anger. More formal than 怒ってる (okotteru).',
@@ -59,6 +62,7 @@ export const MOOD_WORDS: MoodWord[] = [
     english: 'really like/love',
     emotionalContext: {
       category: 'love',
+      originalCategory: 'love',
       emoji: '❤️',
       intensity: 7,
       usageNotes: 'Strong expression of liking or love. Less formal than 愛してる (aishiteru).',
@@ -76,6 +80,7 @@ export const MOOD_WORDS: MoodWord[] = [
     english: 'surprised',
     emotionalContext: {
       category: 'surprise',
+      originalCategory: 'surprise',
       emoji: '😲',
       intensity: 5,
       usageNotes: 'Expresses surprise or astonishment. Can be used in both casual and formal situations.',
@@ -93,6 +98,7 @@ export const MOOD_WORDS: MoodWord[] = [
     english: 'scary/afraid',
     emotionalContext: {
       category: 'fear',
+      originalCategory: 'fear',
       emoji: '😨',
       intensity: 5,
       usageNotes: 'Expresses fear or being scared. Can be used for both things and situations.',
@@ -110,6 +116,7 @@ export const MOOD_WORDS: MoodWord[] = [
     english: 'dislike/hate',
     emotionalContext: {
       category: 'disgust',
+      originalCategory: 'disgust',
       emoji: '🤢',
       intensity: 5,
       usageNotes: 'Expresses strong dislike or disgust. More casual than 嫌い (kirai).',
@@ -127,6 +134,7 @@ export const MOOD_WORDS: MoodWord[] = [
     english: 'respect',
     emotionalContext: {
       category: 'respect',
+      originalCategory: 'respect',
       emoji: '🙏',
       intensity: 5,
       usageNotes: 'Formal expression of respect. Often used in professional contexts.',
@@ -144,6 +152,7 @@ export const MOOD_WORDS: MoodWord[] = [
     english: 'grateful',
     emotionalContext: {
       category: 'gratitude',
+      originalCategory: 'gratitude',
       emoji: '🙏',
       intensity: 5,
       usageNotes: 'Formal expression of gratitude. Used in both written and spoken Japanese.',
@@ -160,7 +169,8 @@ export const MOOD_WORDS: MoodWord[] = [
     romaji: 'hokori ni omou',
     english: 'proud',
     emotionalContext: {
-      category: 'pride',
+      category: 'happiness',
+      originalCategory: 'pride',
       emoji: '😊',
       intensity: 5,
       usageNotes: 'Expresses pride in something or someone. More formal than 自慢 (jiman).',
