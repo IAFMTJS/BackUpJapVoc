@@ -41,9 +41,9 @@ const Mascots: React.FC<MascotsProps> = ({
   // Get the correct image based on theme
   const getMascotImage = () => {
     if (isDark) {
-      return '/assets/mascots/Maneki Neko and penguin Dark mode.PNG';
+      return './assets/mascots/Maneki Neko and penguin Dark mode.PNG';
     } else {
-      return '/assets/mascots/Maneki Neko and penguin Light mode.PNG';
+      return './assets/mascots/Maneki Neko and penguin Light mode.PNG';
     }
   };
 
