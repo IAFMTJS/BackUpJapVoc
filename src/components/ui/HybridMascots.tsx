@@ -1,6 +1,39 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
+// Import mascot images
+import lightMascot from '../../../public/assets/mascots/Maneki Neko and penguin Light mode.PNG';
+import darkMascot from '../../../public/assets/mascots/Maneki Neko and penguin Dark mode.PNG';
+
+// Import emotion mascot images
+import happyMascot from '../../../public/assets/MascotsEmotions/Happy Maneki Neko.PNG';
+import veryHappyMascot from '../../../public/assets/MascotsEmotions/Very Very Happy Maneki Neko.PNG';
+import extremelyHappyMascot from '../../../public/assets/MascotsEmotions/Extremele Happy Proud Maneki Neko.PNG';
+import goodJobMascot from '../../../public/assets/MascotsEmotions/Good Job Maneki Neko.PNG';
+import veryGoodJobMascot from '../../../public/assets/MascotsEmotions/Very Good Job Maneki Neko.PNG';
+import averageGoodJobMascot from '../../../public/assets/MascotsEmotions/Average good job Maneki Neko.PNG';
+import congratulationsMascot from '../../../public/assets/MascotsEmotions/Congratulations Both.PNG';
+import successMascot from '../../../public/assets/MascotsEmotions/Together Succes.PNG';
+import confidentMascot from '../../../public/assets/MascotsEmotions/Confident Maneki Neko.PNG';
+import smugMascot from '../../../public/assets/MascotsEmotions/Smug Maneki Neko.PNG';
+import loveMascot from '../../../public/assets/MascotsEmotions/Love Maneki Neko.PNG';
+import inLoveMascot from '../../../public/assets/MascotsEmotions/In Love Both.PNG';
+import angryMascot from '../../../public/assets/MascotsEmotions/Angry Maneki Neko.PNG';
+import disappointedMascot from '../../../public/assets/MascotsEmotions/Dissapointed Maneki Neko.PNG';
+import veryDisappointedMascot from '../../../public/assets/MascotsEmotions/Very Dissapointed Maneki Neko.PNG';
+import bothDisappointedMascot from '../../../public/assets/MascotsEmotions/Both Dissapointed.PNG';
+import cryingMascot from '../../../public/assets/MascotsEmotions/Crying Maneki Neko.PNG';
+import shockedMascot from '../../../public/assets/MascotsEmotions/Shocked Maneki Neko.PNG';
+import sadPenguinMascot from '../../../public/assets/MascotsEmotions/Sad Penguin.PNG';
+import verySadPenguinMascot from '../../../public/assets/MascotsEmotions/Very Sad Penguin.PNG';
+import verySadPenguinsMascot from '../../../public/assets/MascotsEmotions/Very Sad Penguins.PNG';
+import confusedPenguinMascot from '../../../public/assets/MascotsEmotions/Confused Penguin.PNG';
+import disappointedPenguinMascot from '../../../public/assets/MascotsEmotions/Dissapointed Penguin.PNG';
+import annoyedPenguinMascot from '../../../public/assets/MascotsEmotions/Annoyed Penguin.PNG';
+import smugPenguinMascot from '../../../public/assets/MascotsEmotions/Smug Penguin.PNG';
+import goodJobPenguinMascot from '../../../public/assets/MascotsEmotions/Good Job Penguin.PNG';
+import neutralPenguinMascot from '../../../public/assets/MascotsEmotions/Neutral Penguin.PNG';
+
 interface HybridMascotsProps {
   variant?: 'welcome' | 'loading' | 'achievement' | 'error' | 'motivation' | 'support' | 'determination' | 'happy' | 'angry' | 'sad' | 'proud' | 'excited' | 'confused' | 'disappointed' | 'love' | 'shocked' | 'smug' | 'confident' | 'crying' | 'annoyed' | 'neutral' | 'success' | 'celebration';
   size?: 'small' | 'medium' | 'large' | 'xlarge';
@@ -38,130 +71,130 @@ const HybridMascots: React.FC<HybridMascotsProps> = ({
 
   // Original mascot images (Maneki Neko + Penguin)
   const originalMascotImages = {
-    light: './assets/mascots/Maneki Neko and penguin Light mode.PNG',
-    dark: './assets/mascots/Maneki Neko and penguin Dark mode.PNG'
+    light: lightMascot,
+    dark: darkMascot
   };
 
   // Comprehensive emotion mapping for mascots
   const emotionMascotImages = {
     // Happy emotions
     happy: {
-      light: './assets/MascotsEmotions/Happy Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Happy Maneki Neko.PNG'
+      light: happyMascot,
+      dark: happyMascot
     },
     veryHappy: {
-      light: './assets/MascotsEmotions/Very Very Happy Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Very Very Happy Maneki Neko.PNG'
+      light: veryHappyMascot,
+      dark: veryHappyMascot
     },
     extremelyHappy: {
-      light: './assets/MascotsEmotions/Extremele Happy Proud Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Extremele Happy Proud Maneki Neko.PNG'
+      light: extremelyHappyMascot,
+      dark: extremelyHappyMascot
     },
     
     // Success/Achievement emotions
     goodJob: {
-      light: './assets/MascotsEmotions/Good Job Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Good Job Maneki Neko.PNG'
+      light: goodJobMascot,
+      dark: goodJobMascot
     },
     veryGoodJob: {
-      light: './assets/MascotsEmotions/Very Good Job Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Very Good Job Maneki Neko.PNG'
+      light: veryGoodJobMascot,
+      dark: veryGoodJobMascot
     },
     averageGoodJob: {
-      light: './assets/MascotsEmotions/Average good job Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Average good job Maneki Neko.PNG'
+      light: averageGoodJobMascot,
+      dark: averageGoodJobMascot
     },
     congratulations: {
-      light: './assets/MascotsEmotions/Congratulations Both.PNG',
-      dark: './assets/MascotsEmotions/Congratulations Both.PNG'
+      light: congratulationsMascot,
+      dark: congratulationsMascot
     },
     success: {
-      light: './assets/MascotsEmotions/Together Succes.PNG',
-      dark: './assets/MascotsEmotions/Together Succes.PNG'
+      light: successMascot,
+      dark: successMascot
     },
     
     // Confident emotions
     confident: {
-      light: './assets/MascotsEmotions/Confident Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Confident Maneki Neko.PNG'
+      light: confidentMascot,
+      dark: confidentMascot
     },
     smug: {
-      light: './assets/MascotsEmotions/Smug Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Smug Maneki Neko.PNG'
+      light: smugMascot,
+      dark: smugMascot
     },
     
     // Love emotions
     love: {
-      light: './assets/MascotsEmotions/Love Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Love Maneki Neko.PNG'
+      light: loveMascot,
+      dark: loveMascot
     },
     inLove: {
-      light: './assets/MascotsEmotions/In Love Both.PNG',
-      dark: './assets/MascotsEmotions/In Love Both.PNG'
+      light: inLoveMascot,
+      dark: inLoveMascot
     },
     
     // Negative emotions
     angry: {
-      light: './assets/MascotsEmotions/Angry Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Angry Maneki Neko.PNG'
+      light: angryMascot,
+      dark: angryMascot
     },
     disappointed: {
-      light: './assets/MascotsEmotions/Dissapointed Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Dissapointed Maneki Neko.PNG'
+      light: disappointedMascot,
+      dark: disappointedMascot
     },
     veryDisappointed: {
-      light: './assets/MascotsEmotions/Very Dissapointed Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Very Dissapointed Maneki Neko.PNG'
+      light: veryDisappointedMascot,
+      dark: veryDisappointedMascot
     },
     bothDisappointed: {
-      light: './assets/MascotsEmotions/Both Dissapointed.PNG',
-      dark: './assets/MascotsEmotions/Both Dissapointed.PNG'
+      light: bothDisappointedMascot,
+      dark: bothDisappointedMascot
     },
     crying: {
-      light: './assets/MascotsEmotions/Crying Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Crying Maneki Neko.PNG'
+      light: cryingMascot,
+      dark: cryingMascot
     },
     shocked: {
-      light: './assets/MascotsEmotions/Shocked Maneki Neko.PNG',
-      dark: './assets/MascotsEmotions/Shocked Maneki Neko.PNG'
+      light: shockedMascot,
+      dark: shockedMascot
     },
     
     // Penguin emotions
     sadPenguin: {
-      light: './assets/MascotsEmotions/Sad Penguin.PNG',
-      dark: './assets/MascotsEmotions/Sad Penguin.PNG'
+      light: sadPenguinMascot,
+      dark: sadPenguinMascot
     },
     verySadPenguin: {
-      light: './assets/MascotsEmotions/Very Sad Penguin.PNG',
-      dark: './assets/MascotsEmotions/Very Sad Penguin.PNG'
+      light: verySadPenguinMascot,
+      dark: verySadPenguinMascot
     },
     verySadPenguins: {
-      light: './assets/MascotsEmotions/Very Sad Penguins.PNG',
-      dark: './assets/MascotsEmotions/Very Sad Penguins.PNG'
+      light: verySadPenguinsMascot,
+      dark: verySadPenguinsMascot
     },
     confusedPenguin: {
-      light: './assets/MascotsEmotions/Confused Penguin.PNG',
-      dark: './assets/MascotsEmotions/Confused Penguin.PNG'
+      light: confusedPenguinMascot,
+      dark: confusedPenguinMascot
     },
     disappointedPenguin: {
-      light: './assets/MascotsEmotions/Dissapointed Penguin.PNG',
-      dark: './assets/MascotsEmotions/Dissapointed Penguin.PNG'
+      light: disappointedPenguinMascot,
+      dark: disappointedPenguinMascot
     },
     annoyedPenguin: {
-      light: './assets/MascotsEmotions/Annoyed Penguin.PNG',
-      dark: './assets/MascotsEmotions/Annoyed Penguin.PNG'
+      light: annoyedPenguinMascot,
+      dark: annoyedPenguinMascot
     },
     smugPenguin: {
-      light: './assets/MascotsEmotions/Smug Penguin.PNG',
-      dark: './assets/MascotsEmotions/Smug Penguin.PNG'
+      light: smugPenguinMascot,
+      dark: smugPenguinMascot
     },
     goodJobPenguin: {
-      light: './assets/MascotsEmotions/Good Job Penguin.PNG',
-      dark: './assets/MascotsEmotions/Good Job Penguin.PNG'
+      light: goodJobPenguinMascot,
+      dark: goodJobPenguinMascot
     },
     neutralPenguin: {
-      light: './assets/MascotsEmotions/Neutral Penguin.PNG',
-      dark: './assets/MascotsEmotions/Neutral Penguin.PNG'
+      light: neutralPenguinMascot,
+      dark: neutralPenguinMascot
     }
   };
 

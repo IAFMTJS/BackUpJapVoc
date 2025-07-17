@@ -1,6 +1,10 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
+// Import mascot images
+import lightMascot from '../../../public/assets/mascots/Maneki Neko and penguin Light mode.PNG';
+import darkMascot from '../../../public/assets/mascots/Maneki Neko and penguin Dark mode.PNG';
+
 interface MascotsProps {
   variant?: 'welcome' | 'loading' | 'achievement' | 'error';
   size?: 'small' | 'medium' | 'large';
@@ -41,9 +45,9 @@ const Mascots: React.FC<MascotsProps> = ({
   // Get the correct image based on theme
   const getMascotImage = () => {
     if (isDark) {
-      return './assets/mascots/Maneki Neko and penguin Dark mode.PNG';
+      return darkMascot;
     } else {
-      return './assets/mascots/Maneki Neko and penguin Light mode.PNG';
+      return lightMascot;
     }
   };
 
