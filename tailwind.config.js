@@ -14,6 +14,8 @@ module.exports = {
           secondary: '#F5F0E8',  // Slightly darker beige for cards
           tertiary: '#F0E8D8',   // Even darker for hover states
         },
+        // Voeg top-level border kleur toe voor Tailwind utility class
+        border: '#E0E0E0', // Standaard border kleur (alias voor border.light)
         // Dark theme colors - Japanese Learning Platform
         dark: {
           DEFAULT: '#1B1C22',    // Deep, warm night blue/black
