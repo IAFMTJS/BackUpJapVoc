@@ -34,6 +34,7 @@ import {
 import { DictionaryItem } from '../types/dictionary';
 import WritingCanvas from './WritingCanvas';
 import { hiraganaList, katakanaList } from '../data/kanaData';
+import CulturalBackground from './ui/CulturalBackground';
 
 // New types for enhanced features
 type PracticeMode = 'standard' | 'practice' | 'custom' | 'daily' | 'compound' | 'kanji' | 'hiragana' | 'katakana';
@@ -1464,10 +1465,10 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
               <div className="relative">
                 <canvas
                   ref={canvasRef}
-                  className={`w-full h-64 border-2 rounded-nav ${
+                  className={`exercise-canvas w-full h-64 japanese-grid ${
                     isDarkMode 
-                      ? 'border-blue-500/30 bg-black/50' 
-                      : 'border-border-medium dark:border-border-dark dark:border-border-dark-dark-medium bg-white dark:bg-dark-elevated'
+                      ? 'border-blue-500/30 bg-dark-elevated' 
+                      : 'border-border-medium bg-white'
                   } touch-none`}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
@@ -1482,13 +1483,20 @@ const WritingPractice: React.FC<WritingPracticeProps> = ({ mode: initialMode, on
                 {showTracking && state.currentCharacter && (
                   <div 
                     className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    style={{ opacity: 0.2 }}
+                    style={{ opacity: 0.15 }}
                   >
-                    <span className="text-8xl text-gray-400">
+                    <span className="text-8xl text-japanese-red/30 dark:text-japanese-red/20 text-japanese">
                       {state.currentCharacter}
                     </span>
                   </div>
                 )}
+                
+                {/* Cultural Background */}
+                <CulturalBackground 
+                  type="sakura" 
+                  intensity="low" 
+                  className="opacity-20"
+                />
               </div>
 
               {/* Canvas Controls */}

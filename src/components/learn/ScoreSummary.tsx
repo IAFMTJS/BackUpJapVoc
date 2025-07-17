@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trophy, Star, Clock, Target, CheckCircle, XCircle } from 'lucide-react';
+import HybridMascots from '../ui/HybridMascots';
 import type { LevelResult } from '../../types/learn';
 
 interface ScoreSummaryProps {
@@ -13,7 +14,8 @@ export const ScoreSummary: React.FC<ScoreSummaryProps> = ({
   onContinue,
   onRetry
 }) => {
-  const percentage = Math.round((levelResult.score / levelResult.maxPoints) * 100);
+  // Use the percentage from levelResult instead of recalculating
+  const percentage = Math.min(Math.round((levelResult.score / levelResult.maxPoints) * 100), 100);
   const isPassed = levelResult.passed;
   const timeSpentMinutes = Math.round(levelResult.timeSpent / 1000 / 60);
 
@@ -37,7 +39,18 @@ export const ScoreSummary: React.FC<ScoreSummaryProps> = ({
   return (
     <div className="p-8 max-w-2xl mx-auto">
       {/* Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-8 relative">
+        {/* Background Mascot */}
+        <div className="absolute top-4 right-4 opacity-20 pointer-events-none">
+          <HybridMascots
+            type="emotions"
+            size="medium"
+            variant={isPassed ? "congratulations" : "disappointed"}
+            context="achievement"
+            mood={isPassed ? "positive" : "negative"}
+          />
+        </div>
+        
         <div className="mb-4">
           {isPassed ? (
             <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full">
@@ -190,7 +203,18 @@ export const ScoreSummary: React.FC<ScoreSummaryProps> = ({
 
       {/* Encouragement */}
       {!isPassed && (
-        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-nav">
+        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-nav relative">
+          {/* Encouragement Mascot */}
+          <div className="absolute top-2 right-2 opacity-30 pointer-events-none">
+            <HybridMascots
+              type="emotions"
+              size="small"
+              variant="supportive"
+              context="motivation"
+              mood="positive"
+            />
+          </div>
+          
           <div className="flex items-center space-x-2">
             <Trophy className="w-5 h-5 text-yellow-600" />
             <span className="text-yellow-800 font-medium">

@@ -24,10 +24,11 @@ module.exports = {
         'border-dark-dark': '#5A5B62',       // Lighter dark gray borders
         // Dark theme colors - Japanese Learning Platform
         dark: {
-          DEFAULT: '#1B1C22',    // Deep, warm night blue/black
-          secondary: '#23242A',  // Slightly lighter dark for cards
-          tertiary: '#2A2B32',   // Even lighter for hover states
-          elevated: '#2F3038',   // For elevated elements
+          DEFAULT: '#0F0F23',    // Deeper, richer dark background
+          secondary: '#1B1C22',  // Slightly lighter dark for cards
+          tertiary: '#23242A',   // Even lighter for hover states
+          elevated: '#2A2B32',   // For elevated elements
+          'elevated-light': '#2F3038', // Lighter elevated elements
         },
         // Text colors
         text: {
@@ -36,9 +37,9 @@ module.exports = {
           muted: '#8A8A8A',      // Light gray for muted text
           inverse: '#FFFFFF',    // White text for dark backgrounds
           // Dark theme text colors
-          'dark-primary': '#F5F5F5',    // Light gray for main text
-          'dark-secondary': '#EAEAEA',  // Slightly darker for secondary text
-          'dark-muted': '#B0B0B0',      // Muted gray for less important text
+          'dark-primary': '#F8F8F8',    // Brighter light gray for main text
+          'dark-secondary': '#E8E8E8',  // Slightly darker for secondary text
+          'dark-muted': '#B8B8B8',      // Muted gray for less important text
         },
         // Japanese Cultural Colors - Extended Palette
         japanese: {
@@ -69,6 +70,11 @@ module.exports = {
             medium: '#9A7A7A',   // Darker rosy brown
             dark: '#6B5A45',     // Darker tan
           },
+          // Enhanced dark mode variants
+          'red-glow': '#FF6B6B', // Glowing red for dark mode
+          'blue-glow': '#4ECDC4', // Glowing blue for dark mode
+          'green-glow': '#45B7D1', // Glowing green for dark mode
+          'purple-glow': '#96CEB4', // Glowing purple for dark mode
         },
         // Accent colors
         accent: {
@@ -77,8 +83,15 @@ module.exports = {
           green: '#4CAF50',      // Green for success states
           blue: '#2196F3',       // Blue for info states
           // Dark theme enhanced accents
-          'yellow-dark': '#F4B942',     // Enhanced gold for dark theme
-          'orange-dark': '#FF8C42',     // Enhanced orange for progress bars
+          'yellow-dark': '#FFE55C',     // Brighter gold for dark theme
+          'orange-dark': '#FFB347',     // Enhanced orange for progress bars
+          'green-dark': '#66BB6A',      // Brighter green for dark theme
+          'blue-dark': '#42A5F5',       // Brighter blue for dark theme
+          // Glow variants for dark mode
+          'yellow-glow': '#FFF176',     // Glowing yellow
+          'orange-glow': '#FFCC02',     // Glowing orange
+          'green-glow': '#81C784',      // Glowing green
+          'blue-glow': '#64B5F6',       // Glowing blue
         },
         // Status Colors
         status: {
@@ -160,11 +173,20 @@ module.exports = {
         'card-elevated': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         'nav': '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
         'input-focus': '0 0 0 3px rgba(212, 90, 56, 0.1)',
-        // Dark theme shadows
-        'dark-card': '0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2)',
-        'dark-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
-        'dark-button': '0 4px 6px -1px rgba(212, 90, 56, 0.3), 0 2px 4px -1px rgba(212, 90, 56, 0.2)',
-        'dark-glow': '0 0 20px rgba(212, 90, 56, 0.3)',
+        // Enhanced Dark theme shadows
+        'dark-card': '0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+        'dark-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        'dark-button': '0 4px 6px -1px rgba(212, 90, 56, 0.4), 0 2px 4px -1px rgba(212, 90, 56, 0.3), 0 0 10px rgba(212, 90, 56, 0.2)',
+        'dark-glow': '0 0 20px rgba(212, 90, 56, 0.4), 0 0 40px rgba(212, 90, 56, 0.2)',
+        'dark-glow-soft': '0 0 15px rgba(212, 90, 56, 0.3)',
+        'dark-glow-strong': '0 0 30px rgba(212, 90, 56, 0.5), 0 0 60px rgba(212, 90, 56, 0.3)',
+        // Glow effects for different colors
+        'glow-red': '0 0 20px rgba(212, 90, 56, 0.4)',
+        'glow-blue': '0 0 20px rgba(33, 150, 243, 0.4)',
+        'glow-green': '0 0 20px rgba(76, 175, 80, 0.4)',
+        'glow-yellow': '0 0 20px rgba(255, 215, 0, 0.4)',
+        'glow-orange': '0 0 20px rgba(255, 165, 0, 0.4)',
+        'glow-purple': '0 0 20px rgba(156, 39, 176, 0.4)',
       },
       backgroundImage: {
         'tokyo-noise': "url(static/media/noise.svg)",
@@ -174,10 +196,19 @@ module.exports = {
         'japanese-gradient': 'linear-gradient(135deg, #D45A38 0%, #E67A5A 100%)',
         'background-gradient': 'linear-gradient(135deg, #FAF0E6 0%, #F5F0E8 100%)',
         'card-gradient': 'linear-gradient(135deg, #F5F0E8 0%, #E0E0E0 100%)',
-        // Dark theme gradients
-        'dark-background-gradient': 'linear-gradient(135deg, #1B1C22 0%, #23242A 100%)',
-        'dark-card-gradient': 'linear-gradient(135deg, #23242A 0%, #2F3038 100%)',
+        // Enhanced Dark theme gradients
+        'dark-background-gradient': 'linear-gradient(135deg, #0F0F23 0%, #1B1C22 50%, #23242A 100%)',
+        'dark-card-gradient': 'linear-gradient(135deg, #1B1C22 0%, #23242A 50%, #2A2B32 100%)',
+        'dark-elevated-gradient': 'linear-gradient(135deg, #23242A 0%, #2A2B32 50%, #2F3038 100%)',
         'dark-japanese-gradient': 'linear-gradient(135deg, #D45A38 0%, #E67A5A 100%)',
+        'dark-glow-gradient': 'linear-gradient(135deg, rgba(212, 90, 56, 0.1) 0%, rgba(230, 122, 90, 0.1) 100%)',
+        // Color-specific gradients for dark mode
+        'dark-red-gradient': 'linear-gradient(135deg, #D45A38 0%, #FF6B6B 100%)',
+        'dark-blue-gradient': 'linear-gradient(135deg, #2196F3 0%, #4ECDC4 100%)',
+        'dark-green-gradient': 'linear-gradient(135deg, #4CAF50 0%, #45B7D1 100%)',
+        'dark-yellow-gradient': 'linear-gradient(135deg, #FFD700 0%, #FFE55C 100%)',
+        'dark-orange-gradient': 'linear-gradient(135deg, #FF9800 0%, #FFB347 100%)',
+        'dark-purple-gradient': 'linear-gradient(135deg, #9C27B0 0%, #96CEB4 100%)',
       },
       keyframes: {
         'scale-up': {
@@ -199,23 +230,53 @@ module.exports = {
         },
         // Dark theme specific animations
         'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(212, 90, 56, 0.3)' },
-          '50%': { boxShadow: '0 0 30px rgba(212, 90, 56, 0.5)' },
+          '0%, 100%': { 
+            boxShadow: '0 0 20px rgba(212, 90, 56, 0.4), 0 0 40px rgba(212, 90, 56, 0.2)' 
+          },
+          '50%': { 
+            boxShadow: '0 0 30px rgba(212, 90, 56, 0.6), 0 0 60px rgba(212, 90, 56, 0.4)' 
+          },
         },
-        'dark-fade-in': {
-          '0%': { opacity: '0', transform: 'translateY(20px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+        'glow-pulse-soft': {
+          '0%, 100%': { 
+            boxShadow: '0 0 15px rgba(212, 90, 56, 0.3)' 
+          },
+          '50%': { 
+            boxShadow: '0 0 25px rgba(212, 90, 56, 0.5)' 
+          },
+        },
+        'float-dark': {
+          '0%, 100%': { 
+            transform: 'translateY(0px)',
+            filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4))'
+          },
+          '50%': { 
+            transform: 'translateY(-10px)',
+            filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6))'
+          },
+        },
+        'shimmer-dark': {
+          '0%': { 
+            backgroundPosition: '-200% 0',
+            backgroundImage: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)'
+          },
+          '100%': { 
+            backgroundPosition: '200% 0',
+            backgroundImage: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)'
+          },
         },
       },
       animation: {
-        'scale-up': 'scale-up 0.2s ease-in-out',
+        'scale-up': 'scale-up 0.3s ease-out',
         // Japanese learning platform animations
         'fade-in': 'fade-in 0.5s ease-out',
-        'slide-up': 'slide-up 0.6s ease-out',
+        'slide-up': 'slide-up 0.5s ease-out',
         'bounce-soft': 'bounce-soft 2s ease-in-out infinite',
-        // Dark theme animations
+        // Dark theme specific animations
         'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
-        'dark-fade-in': 'dark-fade-in 0.8s ease-out',
+        'glow-pulse-soft': 'glow-pulse-soft 3s ease-in-out infinite',
+        'float-dark': 'float-dark 3s ease-in-out infinite',
+        'shimmer-dark': 'shimmer-dark 2s ease-in-out infinite',
       },
       typography: {
         DEFAULT: {

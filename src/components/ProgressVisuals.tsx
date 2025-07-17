@@ -66,8 +66,8 @@ const VisualCard = styled(Card)(({ theme }) => {
     '&:hover': {
       transform: 'translateY(-5px)',
       boxShadow: isDark 
-        ? '0 8px 16px rgba(0, 247, 255, 0.2), 0 0 32px rgba(0, 247, 255, 0.1)' 
-        : '0 8px 16px rgba(0, 0, 0, 0.1)'
+        ? '0 8px 16px rgba(212, 90, 56, 0.3), 0 0 32px rgba(212, 90, 56, 0.2)' 
+        : '0 8px 16px rgba(212, 90, 56, 0.2), 0 0 32px rgba(212, 90, 56, 0.1)'
     }
   };
 });

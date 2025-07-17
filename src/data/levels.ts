@@ -1,12 +1,36 @@
 import type { Level } from '../types/learn';
 
+// Utility function to shuffle arrays
+const shuffleArray = <T>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+// Function to get shuffled exercises for a level
+export const getShuffledLevel = (levelId: number): Level | undefined => {
+  const level = levels.find(l => l.id === levelId);
+  if (!level) return undefined;
+
+  return {
+    ...level,
+    exercises: level.exercises.map(exercise => ({
+      ...exercise,
+      items: shuffleArray(exercise.items)
+    }))
+  };
+};
+
 export const levels: Level[] = [
   {
     "id": 1,
     "title": "Hiragana 1: A to O",
     "description": "Learn the first five hiragana vowels (あ, い, う, え, お) and their pronunciations.",
     "category": "kana",
-    "estimatedTime": "5 min",
+    "estimatedTime": "10 min",
     "minScore": 80,
     "nextUnlocks": [
       2
@@ -62,6 +86,51 @@ export const levels: Level[] = [
               "あ"
             ],
             "answer": "お"
+          },
+          {
+            "question": "What sound does あ make?",
+            "options": [
+              "a",
+              "i",
+              "u"
+            ],
+            "answer": "a"
+          },
+          {
+            "question": "What sound does い make?",
+            "options": [
+              "u",
+              "i",
+              "e"
+            ],
+            "answer": "i"
+          },
+          {
+            "question": "What sound does う make?",
+            "options": [
+              "u",
+              "o",
+              "a"
+            ],
+            "answer": "u"
+          },
+          {
+            "question": "What sound does え make?",
+            "options": [
+              "i",
+              "e",
+              "o"
+            ],
+            "answer": "e"
+          },
+          {
+            "question": "What sound does お make?",
+            "options": [
+              "e",
+              "o",
+              "a"
+            ],
+            "answer": "o"
           }
         ]
       },
@@ -90,44 +159,119 @@ export const levels: Level[] = [
           {
             "question": "お",
             "answer": "o"
+          },
+          {
+            "question": "あい",
+            "answer": "ai"
+          },
+          {
+            "question": "うえ",
+            "answer": "ue"
+          },
+          {
+            "question": "おい",
+            "answer": "oi"
+          },
+          {
+            "question": "あお",
+            "answer": "ao"
+          },
+          {
+            "question": "いえ",
+            "answer": "ie"
+          },
+          {
+            "question": "あう",
+            "answer": "au"
+          },
+          {
+            "question": "えお",
+            "answer": "eo"
+          },
+          {
+            "question": "あえ",
+            "answer": "ae"
+          },
+          {
+            "question": "いう",
+            "answer": "iu"
+          },
+          {
+            "question": "おう",
+            "answer": "ou"
+          },
+          {
+            "question": "あいうえお",
+            "answer": "aiueo"
+          },
+          {
+            "question": "あおい",
+            "answer": "aoi"
+          },
+          {
+            "question": "うえい",
+            "answer": "uei"
+          },
+          {
+            "question": "おいあ",
+            "answer": "oia"
+          },
+          {
+            "question": "えおあ",
+            "answer": "eoa"
           }
         ]
       },
       {
         "title": "Listening Practice",
-        "instruction": "Listen to the audio and choose the correct character.",
+        "instruction": "Listen to the pronunciation and choose the correct hiragana character.",
         "exerciseType": "audioListen",
         "pointsPerItem": 2,
         "items": [
           {
-            "question": "Which character did you hear?",
-            "audio": "audio/a.mp3",
+            "question": "Which hiragana character did you hear?",
+            "answer": "あ",
             "options": [
               "あ",
               "お",
               "う"
-            ],
-            "answer": "あ"
+            ]
           },
           {
-            "question": "Which character did you hear?",
-            "audio": "audio/u.mp3",
+            "question": "Which hiragana character did you hear?",
+            "answer": "う",
             "options": [
               "う",
               "え",
               "お"
-            ],
-            "answer": "う"
+            ]
           },
           {
-            "question": "Which character did you hear?",
-            "audio": "audio/o.mp3",
+            "question": "Which hiragana character did you hear?",
+            "answer": "お",
             "options": [
               "あ",
               "う",
               "お"
-            ],
-            "answer": "お"
+            ]
+          },
+          {
+            "question": "Which hiragana character did you hear?",
+            "answer": "い",
+            "options": [
+              "い",
+              "え",
+              "あ"
+            ]
+          },
+          {
+            "question": "Which hiragana character did you hear?",
+            "answer": "え",
+            "options": [
+              "え",
+              "い",
+              "お"
+            ]
           }
         ]
       },
@@ -155,6 +299,130 @@ export const levels: Level[] = [
             "question": "Type the hiragana for 'ao'.",
             "answer": "あお",
             "hint": "This spells a word meaning 'blue'."
+          },
+          {
+            "question": "Type the hiragana for 'ue'.",
+            "answer": "うえ",
+            "hint": "This means 'up' or 'above'."
+          },
+          {
+            "question": "Type the hiragana for 'oi'.",
+            "answer": "おい",
+            "hint": "This means 'nephew'."
+          },
+          {
+            "question": "Type the hiragana for 'a'.",
+            "answer": "あ"
+          },
+          {
+            "question": "Type the hiragana for 'i'.",
+            "answer": "い"
+          },
+          {
+            "question": "Type the hiragana for 'e'.",
+            "answer": "え"
+          },
+          {
+            "question": "Type the hiragana for 'o'.",
+            "answer": "お"
+          }
+        ]
+      },
+      {
+        "title": "Word Recognition",
+        "instruction": "Read the hiragana word and select its meaning. Romaji is provided to help with pronunciation.",
+        "exerciseType": "multipleChoice",
+        "pointsPerItem": 3,
+        "items": [
+          {
+            "question": "あい (ai)",
+            "options": [
+              "love",
+              "house",
+              "blue"
+            ],
+            "answer": "love"
+          },
+          {
+            "question": "いえ (ie)",
+            "options": [
+              "love",
+              "house",
+              "blue"
+            ],
+            "answer": "house"
+          },
+          {
+            "question": "あお (ao)",
+            "options": [
+              "love",
+              "house",
+              "blue"
+            ],
+            "answer": "blue"
+          },
+          {
+            "question": "うえ (ue)",
+            "options": [
+              "up/above",
+              "down/below",
+              "left"
+            ],
+            "answer": "up/above"
+          },
+          {
+            "question": "おい (oi)",
+            "options": [
+              "nephew",
+              "niece",
+              "brother"
+            ],
+            "answer": "nephew"
+          },
+          {
+            "question": "あう (au)",
+            "options": [
+              "meet",
+              "blue",
+              "house"
+            ],
+            "answer": "meet"
+          },
+          {
+            "question": "えお (eo)",
+            "options": [
+              "picture",
+              "sound",
+              "fish"
+            ],
+            "answer": "picture"
+          },
+          {
+            "question": "あえ (ae)",
+            "options": [
+              "meeting",
+              "love",
+              "blue"
+            ],
+            "answer": "meeting"
+          },
+          {
+            "question": "いう (iu)",
+            "options": [
+              "say",
+              "go",
+              "come"
+            ],
+            "answer": "say"
+          },
+          {
+            "question": "おう (ou)",
+            "options": [
+              "chase",
+              "big",
+              "small"
+            ],
+            "answer": "chase"
           }
         ]
       }

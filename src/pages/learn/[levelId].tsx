@@ -5,7 +5,8 @@ import { LearnLayout } from '../../components/learn/LearnLayout';
 import { ExerciseRenderer } from '../../components/learn/ExerciseRenderer';
 import { ScoreSummary } from '../../components/learn/ScoreSummary';
 import { learnService } from '../../services/learnService';
-import { getLevelById } from '../../data/levels';
+import { getLevelById, getShuffledLevel } from '../../data/levels';
+import HybridMascots from '../../components/ui/HybridMascots';
 import { 
   Play, 
   Target, 
@@ -32,16 +33,23 @@ const LevelPage: React.FC = () => {
   const [startTime, setStartTime] = useState<number>(0);
 
   useEffect(() => {
-    if (!levelId) return;
-
-    const loadLevel = () => {
-      const levelData = getLevelById(parseInt(levelId));
-      if (!levelData) {
-        setError('Level not found');
-        setLoading(false);
+    const loadLevel = async () => {
+      if (!levelId) return;
+      
+      const levelNumber = parseInt(levelId);
+      if (isNaN(levelNumber)) {
+        setError('Invalid level ID');
         return;
       }
-      setLevel(levelData);
+
+      // Use shuffled level for random question order
+      const shuffledLevel = getShuffledLevel(levelNumber);
+      if (!shuffledLevel) {
+        setError('Level not found');
+        return;
+      }
+
+      setLevel(shuffledLevel);
       setLoading(false);
     };
 
@@ -54,48 +62,46 @@ const LevelPage: React.FC = () => {
   };
 
   const handleExerciseComplete = (results: ExerciseResult[]) => {
-    setAllResults(prev => [...prev, ...results]);
+    const newAllResults = [...allResults, ...results];
+    setAllResults(newAllResults);
     
     if (currentExerciseIndex < (level?.exercises.length || 0) - 1) {
       setCurrentExerciseIndex(prev => prev + 1);
     } else {
       // All exercises completed, calculate final result
-      calculateLevelResult();
+      // Use the updated results for calculation
+      const totalPoints = newAllResults.reduce((sum, result) => {
+        const exercise = level?.exercises[result.exerciseIndex];
+        return sum + (result.correct ? (exercise?.pointsPerItem || 0) : 0);
+      }, 0);
+
+      // Calculate maxPoints based on actual items in each exercise
+      const maxPoints = level?.exercises.reduce((sum, exercise) => {
+        return sum + (exercise.pointsPerItem * exercise.items.length);
+      }, 0) || 0;
+
+      // Ensure percentage doesn't exceed 100%
+      const percentage = Math.min(Math.round((totalPoints / maxPoints) * 100), 100);
+      const passed = percentage >= (level?.minScore || 0);
+      const timeSpent = Date.now() - startTime;
+
+      const result: LevelResult = {
+        levelId: level?.id || 0,
+        score: totalPoints,
+        totalPoints,
+        maxPoints,
+        passed,
+        completedAt: new Date().toISOString(),
+        exerciseResults: newAllResults,
+        timeSpent
+      };
+
+      setLevelResult(result);
+      setIsCompleted(true);
+
+      // Save result to Firebase or localStorage
+      saveLevelResult(result);
     }
-  };
-
-  const calculateLevelResult = () => {
-    if (!level) return;
-
-    const totalPoints = allResults.reduce((sum, result) => {
-      const exercise = level.exercises[result.exerciseIndex];
-      return sum + (result.correct ? exercise.pointsPerItem : 0);
-    }, 0);
-
-    const maxPoints = level.exercises.reduce((sum, exercise) => {
-      return sum + (exercise.pointsPerItem * exercise.items.length);
-    }, 0);
-
-    const percentage = Math.round((totalPoints / maxPoints) * 100);
-    const passed = percentage >= level.minScore;
-    const timeSpent = Date.now() - startTime;
-
-    const result: LevelResult = {
-      levelId: level.id,
-      score: totalPoints,
-      totalPoints,
-      maxPoints,
-      passed,
-      completedAt: new Date().toISOString(),
-      exerciseResults: allResults,
-      timeSpent
-    };
-
-    setLevelResult(result);
-    setIsCompleted(true);
-
-    // Save result to Firebase or localStorage
-    saveLevelResult(result);
   };
 
   const saveLevelResult = async (result: LevelResult) => {
@@ -174,6 +180,15 @@ const LevelPage: React.FC = () => {
       <LearnLayout title="Loading..." showBackButton={true}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
+            <div className="mb-4">
+              <HybridMascots
+                type="emotions"
+                size="large"
+                variant="loading"
+                context="study"
+                mood="neutral"
+              />
+            </div>
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
             <p className="text-text-muted dark:text-text-dark-muted font-medium">🔄 Level wordt geladen...</p>
           </div>
@@ -187,6 +202,15 @@ const LevelPage: React.FC = () => {
       <LearnLayout title="Error" showBackButton={true}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
+            <div className="mb-4">
+              <HybridMascots
+                type="emotions"
+                size="large"
+                variant="disappointed"
+                context="error"
+                mood="negative"
+              />
+            </div>
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-text-primary dark:text-text-dark-primary mb-2">😔 Level Niet Gevonden</h2>
             <p className="text-text-muted dark:text-text-dark-muted mb-4">{error || 'Het opgevraagde level kon niet worden gevonden.'}</p>
@@ -250,6 +274,7 @@ const LevelPage: React.FC = () => {
             exercise={currentExercise}
             onComplete={handleExerciseComplete}
             exerciseIndex={currentExerciseIndex}
+            onNext={() => {}}
           />
         </div>
       </LearnLayout>
@@ -260,7 +285,18 @@ const LevelPage: React.FC = () => {
     <LearnLayout title={`Level ${level.id} - ${level.title}`} showBackButton={true}>
       <div className="p-6">
         {/* Level Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 relative">
+          {/* Background Mascot */}
+          <div className="absolute top-4 right-4 opacity-20 pointer-events-none">
+            <HybridMascots
+              type="emotions"
+              size="medium"
+              variant="determination"
+              context="study"
+              mood="positive"
+            />
+          </div>
+          
           <div className="flex items-center justify-center space-x-2 mb-4">
             {getCategoryIcon(level.category)}
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(level.category)}`}>
@@ -330,7 +366,18 @@ const LevelPage: React.FC = () => {
         </div>
 
         {/* Start Button */}
-        <div className="text-center">
+        <div className="text-center relative">
+          {/* Bottom Mascot */}
+          <div className="absolute bottom-4 left-4 opacity-20 pointer-events-none">
+            <HybridMascots
+              type="emotions"
+              size="small"
+              variant="excited"
+              context="game"
+              mood="positive"
+            />
+          </div>
+          
           <button
             onClick={handleStartLevel}
             className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-text-primary dark:text-text-dark-primary rounded-card hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-semibold text-lg flex items-center space-x-2 mx-auto"
